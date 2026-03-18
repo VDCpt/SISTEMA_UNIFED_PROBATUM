@@ -4128,13 +4128,11 @@ function activateDemoMode() {
         IFDESystem.documents.invoices.totals.invoiceValue = 262.94;
 
         // DAC7 — 1 ficheiro · valor total comunicado à AT (PDF Gmail 2024)
-        // O DAC7 Bolt reporta apenas o 2.º Semestre como valor único (não trimestral).
-        // Distribuição indicativa Q3/Q4 para exibição no dashboard:
-        //   Q3 (Jul-Set): 3.775,16 €  |  Q4 (Out-Dez): 3.980,00 €  = 7.755,16 €
+        // Alocação exata da prova documental ao 4.º Trimestre (Q4)
         IFDESystem.documents.dac7.totals.q1              = 0;
         IFDESystem.documents.dac7.totals.q2              = 0;
-        IFDESystem.documents.dac7.totals.q3              = 3775.16;
-        IFDESystem.documents.dac7.totals.q4              = 3980.00;
+        IFDESystem.documents.dac7.totals.q3              = 0;
+        IFDESystem.documents.dac7.totals.q4              = 7755.16;
         IFDESystem.documents.dac7.totals.dac7TotalPeriodo = 7755.16;
         IFDESystem.documents.dac7.totals.receitaAnual    = 7755.16;
 
@@ -4143,8 +4141,7 @@ function activateDemoMode() {
         ValueSource.registerValue('stmtGanhosValue',         10157.73, 'demo_extrato_set-dez_2024.pdf',  'soma 4 extratos — ganhos reais auditados');
         ValueSource.registerValue('stmtDespesasValue',         2447.89, 'demo_extrato_set-dez_2024.pdf',  'comissões retidas em extrato — valor real');
         ValueSource.registerValue('stmtGanhosLiquidosValue',  7709.84, 'demo_extrato_set-dez_2024.pdf',  '10157.73 - 2447.89 = 7709.84');
-        ValueSource.registerValue('dac7Q3Value',              3775.16, 'demo_dac7_2024.pdf',             'DAC7 Gmail — Q3 indicativo');
-        ValueSource.registerValue('dac7Q4Value',              3980.00, 'demo_dac7_2024.pdf',             'DAC7 Gmail — Q4 indicativo');
+        ValueSource.registerValue('dac7Q4Value',              7755.16, 'demo_dac7_2024.pdf',             'DAC7 Gmail — Alocação total Q4');
 
         // Atualizar painel DAC7 com os valores injetados
         if (typeof filterDAC7ByPeriod === 'function') filterDAC7ByPeriod();
