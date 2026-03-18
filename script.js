@@ -6665,7 +6665,8 @@ async function exportPDF() {
             // Diagrama Sankey — injeção da imagem
             const imgW = doc.internal.pageSize.getWidth() - 28;
             const imgH = imgW * (720 / 1400); // preservar ratio 1400:720
-            doc.addImage(_enrichSankeyImage, 'PNG', left, y, imgW, imgH);
+            const imgX = (doc.internal.pageSize.getWidth() - imgW) / 2;
+            doc.addImage(_enrichSankeyImage, 'PNG', imgX, y, imgW, imgH);
             y += imgH + 6;
 
             // Legenda de valores críticos
@@ -6786,7 +6787,7 @@ async function exportPDF() {
                 'Documento gerado sob metodologia forense UNIFED-PROBATUM v13.5.0-PURE. ' +
                 'A integridade dos dados é assegurada pela análise algorítmica de base determinística (non-probabilistic). ' +
                 'Esta síntese é elaborada exclusivamente sobre os dados forenses certificados constantes do ' +
-                'IFDESystem.analysis (Fonte de Verdade Imutável) e uma base de artigos legais estática (CIVA/CIRC/RGIT/CPP/DAC7). ' +
+                'UNIFEDSystem.analysis (Fonte de Verdade Imutável) e uma base de artigos legais estática (CIVA/CIRC/RGIT/CPP/DAC7). ' +
                 'Conformidade: Art. 125.º CPP · ISO/IEC 27037:2012 · DORA (UE) 2022/2554.',
                 doc.internal.pageSize.getWidth() - 28);
             doc.text(aiNotaLines, left, y);
@@ -6851,7 +6852,7 @@ async function exportPDF() {
             const jurNota = doc.splitTextToSize(
                 'NOTA: A jurisprudência citada nesta síntese constitui referência doutrinária para orientação do advogado mandatário. ' +
                 'Toda a referência a acórdãos deve ser objeto de validação independente pelo advogado antes de qualquer uso processual. ' +
-                'O perito responsabiliza-se exclusivamente pelos dados forenses e pela metodologia UNIFED-PROBATUM.',
+                'O Consultor Técnico responsabiliza-se exclusivamente pelos dados forenses e pela metodologia UNIFED-PROBATUM.',
                 doc.internal.pageSize.getWidth() - 28);
             doc.text(jurNota, left, y); y += jurNota.length * 3.5;
 
@@ -7169,7 +7170,7 @@ async function exportPDF() {
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(9);
             doc.setTextColor(120, 70, 0);
-            doc.text('⚖  NOTA DE RECONCILIAÇÃO DAC7 — ZONA CINZENTA FISCAL', left + 3, y + 2);
+            doc.text('NOTA DE RECONCILIAÇÃO DAC7 — ZONA CINZENTA FISCAL', left + 3, y + 2);
             doc.setTextColor(0, 0, 0);
             y += 10;
 
@@ -7225,10 +7226,10 @@ async function exportPDF() {
             doc.setFontSize(8);
             const dac7Impact = doc.splitTextToSize(
                 `Impacto DAC7: Os ${formatCurrency(_auxTotalNS)} de fluxos não sujeitos a ` +
-                'comissão podem explicar parcialmente a discrepância entre o extrato da ' +
+                'comissão não justificam a totalidade da discrepância entre o extrato da ' +
                 `plataforma (${formatCurrency(totals.ganhos)}) e o valor DAC7 reportado ` +
-                `à AT (${formatCurrency(totals.dac7TotalPeriodo)}). Se incluídos indevidamente ` +
-                'no rendimento bruto DAC7, o contribuinte terá sido prejudicado na determinação ' +
+                `à AT (${formatCurrency(totals.dac7TotalPeriodo)}), porquanto a divergência apurada é materialmente superior. ` +
+                'Se incluídos indevidamente no rendimento bruto DAC7, o contribuinte terá sido prejudicado na determinação ' +
                 'da sua base tributável, podendo reclamar a correção junto da AT.',
                 dac7UseW);
             doc.text(dac7Impact, left, y); y += (dac7Impact.length * 4.5) + 5;
@@ -7258,7 +7259,7 @@ async function exportPDF() {
                 `${formatCurrency(_auxTotalNS)}) foram indevidamente incluídos no cálculo ` +
                 'do rendimento bruto para efeitos de reporte SAF-T / DAC7? ' +
                 'Se sim, porque é que foi aplicada uma presunção de rendimento sobre valores ' +
-                'que, por lei (Lei TVDE), não sofrem retenção nem comissão por parte da plataforma?',
+                'que, pelos Termos e Condições da plataforma para TVDE, não sofrem retenção nem comissão por parte da mesma?',
                 dac7UseW - 5);
             doc.text(contraditorio, left + 3, y); y += (contraditorio.length * 4.5) + 5;
 
@@ -7266,7 +7267,7 @@ async function exportPDF() {
             doc.setFontSize(7.5);
             doc.setTextColor(239, 68, 68);
             const qLegal = doc.splitTextToSize(
-                '[Fundamentação Legal] Lei TVDE · Comissões 0% sobre gorjetas e campanhas · ' +
+                '[Fundamentação Legal] Termos e Condições da Plataforma · Comissões 0% sobre gorjetas e campanhas · ' +
                 'Art. 125.º CPP (admissibilidade da prova) · Art. 103.º RGIT (Fraude Fiscal) · ' +
                 'DAC7 / Diretiva (UE) 2021/514 · AT — Autoridade Tributária e Aduaneira',
                 dac7UseW - 5);
@@ -7402,32 +7403,12 @@ async function exportPDF() {
                 '"Qual o fundamento legal que suporta a inclusão de fluxos financeiros não sujeitos a comissão — ' +
                 'nomeadamente gorjetas dos passageiros, ganhos de campanha e reembolsos de portagens — ' +
                 'no valor bruto reportado à Autoridade Tributária (AT) via DAC7 (Diretiva UE 2021/514)? ' +
-                'Estes fluxos, identificados pelo UNIFED-PROBATUM como isentos de comissão ao abrigo da Lei TVDE, ' +
-                'podem ter inflacionado artificialmente a base tributável do parceiro, prejudicando-o na ' +
-                'determinação do seu rendimento líquido real. Em que normativo legal se baseia esta prática? ' +
+                'Estes fluxos, identificados pelo UNIFED-PROBATUM como isentos de comissão ao abrigo dos ' +
+                'Termos e Condições da plataforma para TVDE, podem ter inflacionado artificialmente a base tributável do parceiro, ' +
+                'prejudicando-o na determinação do seu rendimento líquido real. Em que normativo legal se baseia esta prática? ' +
                 'Cfr. Decreto-Lei n.º 28/2019 (obrigações de faturação) e Art. 36.º, n.º 11 do CIVA."',
                 _cqUseW - 5);
             doc.text(_cqQ2, left + 3, y); y += (_cqQ2.length * 3.5) + 7;
-
-            // ── QUESTÃO 3: Contribuição IMT/AMT 5% ───────────────────────────
-            if (y > 245) { doc.addPage(); pageNumber++; y = 20; }
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(8);
-            doc.setTextColor(30, 60, 120);
-            doc.text('Q3 — CONTRIBUIÇÃO IMT/AMT (5%) SOBRE OS DIFERENCIAIS DETETADOS:', left, y); y += 5;
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(8);
-            doc.setTextColor(0, 0, 0);
-            const _cqQ3 = doc.splitTextToSize(
-                `"Onde se encontra o comprovativo de liquidação da contribuição de 5% ao Instituto da Mobilidade e dos Transportes (IMT) / ` +
-                `Autoridade da Mobilidade e dos Transportes (AMT) sobre os diferenciais de rendimento detetados? ` +
-                `O sistema UNIFED-PROBATUM calculou uma Contribuição IMT/AMT Omitida de ${formatCurrency(cross.discrepancia5IMT)} ` +
-                `(5% sobre a discrepância SAF-T vs DAC7 de ${formatCurrency(cross.discrepanciaSaftVsDac7)}). ` +
-                `A ausência deste comprovativo constitui indício de incumprimento das obrigações contributivas no âmbito da ` +
-                `regulação do transporte em veículo descaracterizado (TVDE), podendo fundamentar a qualificação do facto ` +
-                `nos termos do Art. 103.º e Art. 104.º do RGIT."`,
-                _cqUseW - 5);
-            doc.text(_cqQ3, left + 3, y); y += (_cqQ3.length * 3.5) + 5;
 
             // ── Nota de rodapé legal da secção ────────────────────────────────
             doc.setFont('helvetica', 'italic');
@@ -7461,10 +7442,12 @@ async function exportPDF() {
         // Fundamento Legal: Art. 125.º CPP · Art. 103.º RGIT · ISO/IEC 27037:2012
         // ══════════════════════════════════════════════════════════════════════
 
-        // ① Página nova INCONDICIONAL (não condicional) — garante isolamento total
-        doc.addPage();
-        pageNumber++;
-        y = 20;
+        // ① Página nova CONDICIONAL — garante isolamento total sem ecrã em branco
+        if (y > 20) {
+            doc.addPage();
+            pageNumber++;
+            y = 20;
+        }
 
         {
             const _termW   = doc.internal.pageSize.getWidth();
