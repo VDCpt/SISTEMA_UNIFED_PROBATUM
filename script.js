@@ -4143,6 +4143,24 @@ function activateDemoMode() {
         ValueSource.registerValue('stmtGanhosLiquidosValue',  7709.84, 'demo_extrato_set-dez_2024.pdf',  '10157.73 - 2447.89 = 7709.84');
         ValueSource.registerValue('dac7Q4Value',              7755.16, 'demo_dac7_2024.pdf',             'DAC7 Gmail — Alocação total Q4');
 
+        // ── Fluxos não sujeitos a comissão (INDICAÇÃO DE APOIO PERICIAL) ─────────
+        // Valores consolidados do período Set–Dez 2024 (fonte: extratos PDF Gmail)
+        // Critério legal: Lei TVDE — comissão 0% sobre campanhas, gorjetas e portagens.
+        // totalNaoSujeitos = campanhas + portagens + gorjetas (cancelamentos excluídos da soma)
+        IFDESystem.auxiliaryData.campanhas        = 405.00;  // Ganhos da campanha (incentivo plataforma)
+        IFDESystem.auxiliaryData.portagens        =   0.15;  // Reembolso operacional
+        IFDESystem.auxiliaryData.gorjetas         =  46.00;  // Gorjetas dos passageiros (transferência P2P)
+        IFDESystem.auxiliaryData.cancelamentos    =  58.10;  // Taxas de cancelamento (já incluído em Despesas)
+        IFDESystem.auxiliaryData.totalNaoSujeitos = 451.15;  // 405,00 + 0,15 + 46,00
+        IFDESystem.auxiliaryData.extractedAt      = new Date().toISOString();
+        IFDESystem.auxiliaryData.processedFrom    = ['demo_extrato_set-dez_2024.pdf'];
+        ValueSource.registerValue('auxCampanhasValue',    405.00, 'demo_extrato_set-dez_2024.pdf', 'Ganhos da campanha — Set/Out/Nov/Dez 2024');
+        ValueSource.registerValue('auxPortagensValue',      0.15, 'demo_extrato_set-dez_2024.pdf', 'Reembolso operacional — portagens 2024');
+        ValueSource.registerValue('auxGorjetasValue',      46.00, 'demo_extrato_set-dez_2024.pdf', 'Gorjetas dos passageiros — período 2.º Sem 2024');
+        ValueSource.registerValue('auxCancelValue',        58.10, 'demo_extrato_set-dez_2024.pdf', 'Taxas de cancelamento — incluídas em Despesas');
+        ValueSource.registerValue('auxTotalNSValue',      451.15, 'demo_extrato_set-dez_2024.pdf', 'Total não sujeitos: 405,00 + 0,15 + 46,00');
+        if (typeof _updateAuxiliaryBoxes === 'function') _updateAuxiliaryBoxes();
+
         // Atualizar painel DAC7 com os valores injetados
         if (typeof filterDAC7ByPeriod === 'function') filterDAC7ByPeriod();
 
