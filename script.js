@@ -8028,7 +8028,7 @@ function injectAuxiliaryHelperBoxes() {
                     pode a parte contrária confirmar se estes valores (isentos de comissão) foram
                     indevidamente incluídos na base de cálculo para o apuramento de rendimentos brutos
                     reportados no SAF-T? Se sim, por que razão foi aplicada uma presunção de rendimento
-                    sobre valores que legalmente não sofrem retenção ou comissão pela plataforma (Lei TVDE)?"</em>
+                    sobre valores que legalmente não sofrem retenção ou comissão pela plataforma (Termos e Condições)?"</em>
                 </p>
             </div>
         </div>
