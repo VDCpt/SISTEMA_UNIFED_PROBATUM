@@ -5666,7 +5666,11 @@ async function exportPDF() {
         doc.setFont('courier', 'italic');
         doc.setFontSize(7.5);
         doc.setTextColor(80, 80, 80);
-        doc.text('[ Nota: Este sistema não realiza contabilidade — realiza RECONSTITUIÇÃO DA VERDADE MATERIAL DIGITAL (Art. 125.º CPP · ISO/IEC 27037:2012) ]', left, y, { lineHeightFactor: 1.5 }); y += 8;
+        const _notaLines = doc.splitTextToSize(
+            '[ Nota: Este sistema não realiza contabilidade — realiza RECONSTITUIÇÃO DA VERDADE MATERIAL DIGITAL ' +
+            '(Art. 125.º CPP · ISO/IEC 27037:2012) ]',
+            doc.internal.pageSize.getWidth() - left - 10);
+        doc.text(_notaLines, left, y, { lineHeightFactor: 1.5 }); y += (_notaLines.length * 4.5) + 2;
         doc.setFont('courier', 'normal');
         doc.setFontSize(9);
         doc.setTextColor(0, 0, 0);
