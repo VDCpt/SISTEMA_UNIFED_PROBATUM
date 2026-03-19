@@ -7184,7 +7184,7 @@ async function exportPDF() {
             const dac7Body1 = doc.splitTextToSize(
                 'A diferença entre os Ganhos Brutos reportados pelo extrato da plataforma e o ' +
                 'valor comunicado à AT via DAC7 inclui fluxos que não estão sujeitos a comissão ' +
-                'pela plataforma (Lei TVDE). Estes valores — gorjetas dos passageiros, ganhos de ' +
+                'pela plataforma (Termos e Condições). Estes valores — gorjetas dos passageiros, ganhos de ' +
                 'campanha e portagens — são transferências diretas ou reembolsos operacionais ' +
                 'que não integram a base de cálculo da comissão, mas podem ter sido ' +
                 'indevidamente incluídos no reporte DAC7, inflacionando o rendimento bruto ' +
@@ -7196,7 +7196,7 @@ async function exportPDF() {
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(8);
             doc.setTextColor(30, 60, 120);
-            doc.text('FLUXOS NÃO SUJEITOS A COMISSÃO (Lei TVDE — 0%)', left, y); y += 5;
+            doc.text('FLUXOS NÃO SUJEITOS A COMISSÃO (Termos e Condições da Plataforma — 0%)', left, y); y += 5;
             doc.setTextColor(0, 0, 0);
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(8);
@@ -7404,13 +7404,12 @@ async function exportPDF() {
             doc.setFontSize(8);
             doc.setTextColor(0, 0, 0);
             const _cqQ2 = doc.splitTextToSize(
-                '"Qual o fundamento legal que suporta a inclusão de fluxos financeiros não sujeitos a comissão — ' +
-                'nomeadamente gorjetas dos passageiros, ganhos de campanha e reembolsos de portagens — ' +
-                'no valor bruto reportado à Autoridade Tributária (AT) via DAC7 (Diretiva UE 2021/514)? ' +
-                'Estes fluxos, identificados pelo UNIFED-PROBATUM como isentos de comissão ao abrigo dos ' +
-                'Termos e Condições da plataforma para TVDE, podem ter inflacionado artificialmente a base tributável do parceiro, ' +
-                'prejudicando-o na determinação do seu rendimento líquido real. Em que normativo legal se baseia esta prática? ' +
-                'Cfr. Decreto-Lei n.º 28/2019 (obrigações de faturação) e Art. 36.º, n.º 11 do CIVA."',
+                '"Qual o fundamento legal e contratual que suporta a inclusão de fluxos financeiros não sujeitos a comissão — ' +
+                'gorjetas, campanhas e portagens — no valor bruto reportado via DAC7? Embora a Lei TVDE regule a ' +
+                'atividade, a isenção de comissão sobre estes valores está vinculada estritamente aos Termos e Condições ' +
+                'da Plataforma. A inclusão destes montantes no reporte da AT, sem a devida segregação de fluxos não ' +
+                'remuneratórios (cfr. Art. 36.º, n.º 11 do CIVA), pode constituir uma deficiência na extração de dados ' +
+                'do sistema de informação da plataforma, resultando num reporte fiscalmente inexato."',
                 _cqUseW - 5);
             doc.text(_cqQ2, left + 3, y); y += (_cqQ2.length * 3.5) + 7;
 
@@ -7422,7 +7421,7 @@ async function exportPDF() {
                 'Fundamentação Legal: Art. 327.º CPP (Contraditório) · Art. 125.º CPP (Admissibilidade de Prova) · ' +
                 'Art. 103.º/104.º RGIT (Fraude Fiscal/Qualificada) · Art. 36.º, n.º 11 CIVA · ' +
                 'Decreto-Lei n.º 28/2019 (SAF-T/DAC7) · Diretiva (UE) 2021/514 (DAC7) · ' +
-                'Lei TVDE (fluxos isentos de comissão) · ISO/IEC 27037:2012 (prova digital)',
+                'Termos e Condições da Plataforma · ISO/IEC 27037:2012 (prova digital)',
                 _cqUseW);
             doc.text(_cqNota, left, y); y += (_cqNota.length * 3) + 6;
             doc.setTextColor(0, 0, 0);
