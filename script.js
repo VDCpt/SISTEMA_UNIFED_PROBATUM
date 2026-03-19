@@ -7446,7 +7446,9 @@ async function exportPDF() {
         // ══════════════════════════════════════════════════════════════════════
 
         // ① Página nova CONDICIONAL — garante isolamento total sem ecrã em branco
-        if (y > 20) {
+        // Threshold elevado de 20→50 para evitar página em branco quando o bloco
+        // anterior termina imediatamente após um addPage() (y parte sempre de 20).
+        if (y > 50) {
             doc.addPage();
             pageNumber++;
             y = 20;
