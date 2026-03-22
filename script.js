@@ -103,7 +103,7 @@ const PLATFORM_DATA = {
         fullAddress: 'Rua de São Paulo, 56, 4150-179 Porto, Portugal'
     },
     outra: {
-        name: 'Plataforma A',
+        name: 'Plataforma Não Identificada',
         address: 'A verificar em documentação complementar',
         nif: 'A VERIFICAR',
         fullAddress: 'A verificar em documentação complementar'
@@ -1741,16 +1741,16 @@ document.addEventListener('keydown', e => {
 const ForensicLogger = {
     // -------------------------------------------────────────────────────────
     // PERSISTÊNCIA NORMATIVA — Art. 30.º RGPD (UE) 2016/679
-    // Chave canónica: IFDE_FORENSIC_LOGS (invariante de integridade — não alterar)
+    // Chave canónica: UNIFED_FORENSIC_LOGS (invariante de integridade — não alterar)
     // Retenção: buffer completo no localStorage; exportação mensal via exportMonthly()
     // -------------------------------------------────────────────────────────
-    STORAGE_KEY: 'IFDE_FORENSIC_LOGS',  // INVARIANTE localStorage: não alterar — mudança destrói persistência dos logs forenses existentes
+    STORAGE_KEY: 'UNIFED_FORENSIC_LOGS',  // INVARIANTE localStorage: não alterar — mudança destrói persistência dos logs forenses existentes
     MAX_ENTRIES: 5000, // ~5-10 anos de actividade moderada
 
     // Carga automática dos logs persistidos ao arrancar
     logs: (function () {
         try {
-            const raw = localStorage.getItem('IFDE_FORENSIC_LOGS'); // INVARIANTE localStorage: chave sincronizada com STORAGE_KEY
+            const raw = localStorage.getItem('UNIFED_FORENSIC_LOGS'); // INVARIANTE localStorage: chave sincronizada com STORAGE_KEY
             return raw ? JSON.parse(raw) : [];
         } catch (e) {
             return [];
@@ -1950,7 +1950,7 @@ const ForensicLogger = {
             if (!secret) return; // CryptoJS não disponível — fallback silencioso
             const payload      = JSON.stringify(logsArray);
             const encryptedData = CryptoJS.AES.encrypt(payload, secret).toString();
-            localStorage.setItem('IFDE_FORENSIC_LOGS_ENC', encryptedData);
+            localStorage.setItem('UNIFED_FORENSIC_LOGS_ENC', encryptedData);
         } catch (e) {
             console.warn('[SECURITY] Cifragem AES indisponível — logs em texto plano (fallback RGPD):', e.message);
         }
@@ -1963,7 +1963,7 @@ const ForensicLogger = {
     getDecryptedLogs() {
         try {
             if (typeof CryptoJS === 'undefined') return this.getLogs();
-            const encryptedData = localStorage.getItem('IFDE_FORENSIC_LOGS_ENC');
+            const encryptedData = localStorage.getItem('UNIFED_FORENSIC_LOGS_ENC');
             if (!encryptedData) return this.getLogs();
             const secret        = this._getSecret();
             const bytes         = CryptoJS.AES.decrypt(encryptedData, secret);
@@ -2051,7 +2051,7 @@ const translations = {
     pt: {
         startBtn: "INICIAR PERÍCIA v13.5.0-PURE",
         splashLogsBtn: "REGISTO DE ATIVIDADES (LOG)",
-        navDemo: "CASO REAL",
+        navDemo: "CASO SIMULADO",
         langBtn: "EN",
         headerSubtitle: "ISO/IEC 27037 | NIST SP 800-86 | INTERPOL · CSC | BIG DATA",
         sidebarIdTitle: "IDENTIFICAÇÃO DO SUJEITO PASSIVO",
@@ -2172,7 +2172,7 @@ const translations = {
     en: {
         startBtn: "START FORENSIC EXAM v13.5.0-PURE",
         splashLogsBtn: "ACTIVITY LOG (GDPR Art. 30)",
-        navDemo: "REAL CASE",
+        navDemo: "SIMULATED CASE",
         langBtn: "PT",
         headerSubtitle: "ISO/IEC 27037 | NIST SP 800-86 | INTERPOL · CSC | BIG DATA",
         sidebarIdTitle: "TAXPAYER IDENTIFICATION",
@@ -2983,7 +2983,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupWipeButton();
     setupClearConsoleButton();
 
-    // ForensicLogger carrega automaticamente os logs persistidos (IFDE_FORENSIC_LOGS — invariante)
+    // ForensicLogger carrega automaticamente os logs persistidos (UNIFED_FORENSIC_LOGS — invariante)
     // ao ser definido — não é necessário carregamento manual aqui.
     ForensicLogger.addEntry('SYSTEM_START', { version: IFDESystem.version, logsCarregados: ForensicLogger.logs.length });
 });
@@ -4042,7 +4042,7 @@ function updateCounters() {
 // 21. MODO DEMO — v13.1.2-GOLD · DADOS FIXOS PARA APRESENTAÇÃO
 // ============================================================================
 // Dados fixados para DEMO:
-//   Sujeito Passivo : Driver Real - Unipessoal, Lda · NIF 123456789
+//   Sujeito Passivo : Demo Driver, Lda · NIF 123456789
 //   Ano Fiscal      : 2024
 //   Período         : 2.º Semestre (2s)
 //   Plataforma      : Outra Plataforma
@@ -4061,12 +4061,10 @@ function activateDemoMode() {
         demoBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> CARREGANDO...';
     }
 
-    logAudit('🚀 ATIVANDO CASO REAL v13.1.2-GOLD · DRIVER REAL - UNIPESSOAL, LDA · 2024 · 2.º SEM...', 'info');
+    logAudit('🚀 ATIVANDO CASO SIMULADO v13.1.2-GOLD · DEMO DRIVER, LDA · 2024 · 2.º SEM...', 'info');
 
     // ── 1. Identificação do sujeito passivo ──────────────────────────────────
-    document.getElementById('clientNameFixed').value = 'Driver Real - Unipessoal, Lda';
-        if (!IFDESystem.client) IFDESystem.client = {};
-        IFDESystem.client.name = 'Parceiro X';
+    document.getElementById('clientNameFixed').value = 'Demo Driver, Lda';
     document.getElementById('clientNIFFixed').value = '123456789';
     registerClient();
 
@@ -4168,7 +4166,7 @@ function activateDemoMode() {
 
         performAudit();
 
-        logAudit('✅ CASO REAL concluído — Driver Real - Unipessoal, Lda · NIF 123456789 · 2024 · 2.º Semestre.', 'success');
+        logAudit('✅ DEMO concluída — Demo Driver, Lda · NIF 123456789 · 2024 · 2.º Semestre.', 'success');
         IFDESystem.processing = false;
         if(demoBtn) {
             demoBtn.disabled = false;
@@ -4177,7 +4175,7 @@ function activateDemoMode() {
 
         forensicDataSynchronization();
         ForensicLogger.addEntry('DEMO_MODE_COMPLETED', {
-            client: 'Driver Real - Unipessoal, Lda',
+            client: 'Demo Driver, Lda',
             nif: '123456789',
             ano: 2024,
             periodo: '2s',
@@ -5661,10 +5659,7 @@ async function exportPDF() {
 
         y = 55;
         doc.setFontSize(9);
-        doc.setFont('courier', 'bold');
-        doc.text('CONFIDENCIAL', doc.internal.pageSize.getWidth() - left, y - 10, { align: 'right' });
         doc.setFont('courier', 'normal');
-        doc.text('Cadeia de Custódia Forense: Ativa', doc.internal.pageSize.getWidth() - left, y - 5, { align: 'right' });
         doc.text(`PROCESSO N.º: ${IFDESystem.sessionId}`, left, y, { lineHeightFactor: 1.5 }); y += 5;
         doc.text(`DATA: ${new Date().toLocaleDateString('pt-PT')}`, left, y, { lineHeightFactor: 1.5 }); y += 5;
         doc.text(`OBJETO: RECONSTITUIÇÃO DA VERDADE MATERIAL DIGITAL / ART. 103.º RGIT`, left, y, { lineHeightFactor: 1.5 }); y += 4;
@@ -7559,33 +7554,25 @@ async function exportPDF() {
                 doc.setFont('helvetica', 'bold');
                 doc.setFontSize(8);
                 doc.setTextColor(0, 0, 0);
-                doc.text('CONSULTOR TÉCNICO — COMPROMISSO DE HONRA E SALVAGUARDA (ART. 153.º E 155.º CPP)', left, y); y += 6;
+                doc.text('CONSULTOR TÉCNICO — COMPROMISSO DE SEGUIMENTO DE NORMAS DE HONRA (ART. 153.º CPP)', left, y); y += 6;
 
                 doc.setFont('helvetica', 'normal');
                 doc.setFontSize(8);
                 // Identificação do Analista Responsável — hardcoded (UNIFED-GOLD v13.2.1)
                 const _sigResponsavel = 'Eduardo Monteiro';
-                const _sigCargo       = 'Analista e Consultor Forense Independente | Big Data Analytics';
-                const _sigRegisto     = 'Consultor Técnico Independente (Art. 155.º do CPP). Atuação em conformidade com o regime de liberdade de prova e perícia documental.';
+                const _sigCargo       = 'Analista e Consultor Forense Independente de Investigação e Big Data Analytics / Consultor Técnico';
+                const _sigRegisto     = 'Consultor Forense Independente — Sem inscrição obrigatória em ordem profissional para a natureza do parecer';
 
-                doc.text('Identificação:', left, y); y += 5;
-                doc.text(`* Nome:     ${_sigResponsavel}`, left, y); y += 5;
-                doc.text(`* Cargo:    ${_sigCargo}`, left, y); y += 5;
-                const _sigRegLines = doc.splitTextToSize(`* Estatuto: ${_sigRegisto}`, doc.internal.pageSize.getWidth() - left - 14);
-                doc.text(_sigRegLines, left, y); y += (_sigRegLines.length * 4) + 3;
-
-                const _sigNota = doc.splitTextToSize(
-                    'NOTA DE SALVAGUARDA JURÍDICA E ÂMBITO: As conclusões constantes neste documento infraestruturam-se exclusivamente nos artefactos e elementos documentais disponibilizados pelo solicitante. O presente parecer constitui uma análise técnica independente de natureza consultiva e prova documental assistencial, não substituindo, para quaisquer efeitos processuais, a realização de uma perícia oficial ordenada pela autoridade judiciária competente.',
-                    _sigW);
-                doc.text(_sigNota, left, y); y += (_sigNota.length * 3.5) + 3;
-
-                const _sigLimit = doc.splitTextToSize(
-                    'LIMITAÇÃO TÉCNICA: Não disponho de informação suficiente para concluir uma análise pericial total; para uma conclusão definitiva e plena cadeia de custódia, seria imperativo o acesso aos artefactos brutos (DUMP de memória volátil ou imagens bit-to-bit / DD), aos quais não tive acesso até à presente data.',
-                    _sigW);
-                doc.text(_sigLimit, left, y); y += (_sigLimit.length * 3.5) + 3;
+                doc.text(`Nome:  ${_sigResponsavel}`, left, y); y += 5;
+                doc.text(`Cargo: ${_sigCargo}`, left, y); y += 5;
+                doc.text(`Ref.:  ${_sigRegisto}`, left, y, { maxWidth: doc.internal.pageSize.getWidth() - left - 14 }); y += 7;
 
                 const _sigDecl = doc.splitTextToSize(
-                    'DECLARAÇÃO DE COMPROMISSO: Declaro, sob compromisso de honra, que o presente parecer técnico foi elaborado na qualidade de Consultor Técnico Independente, assumindo estritamente os deveres de independência, objetividade e imparcialidade previstos no Artigo 153.º do Código de Processo Penal Português. Certifico que a metodologia aplicada (Baseada em ISRS 4400 e boas práticas de Digital Forensics) é reprodutível e que os resultados aqui vertidos traduzem fielmente a análise técnica realizada sobre o lote de dados fornecido.',
+                    'Declaro, sob compromisso de honra, que o presente parecer técnico foi elaborado em qualidade ' +
+                    'de Consultor Técnico Independente, assumindo os deveres de independência, objetividade e ' +
+                    'imparcialidade previstos no artigo 153.º do Código de Processo Penal Português para peritos, ' +
+                    'com base exclusivamente nos documentos fornecidos, mediante aplicação de metodologia forense ' +
+                    'reprodutível (ISRS 4400), certificando que os resultados traduzem fielmente a análise técnica realizada.',
                     _sigW);
                 doc.text(_sigDecl, left, y); y += (_sigDecl.length * 3.8) + 4;
 
@@ -7596,7 +7583,7 @@ async function exportPDF() {
                 doc.line(_sigLineX, y + 3, left + _sigW, y + 3);
                 doc.setFontSize(6.5);
                 doc.setTextColor(80, 80, 80);
-                doc.text('Assinatura Do Técnico Responsável Pela Análise', _sigLineX, y + 7);
+                doc.text('Ass.  Consultor Técnico', _sigLineX, y + 7);
                 doc.text('Data: ' + new Date().toLocaleDateString('pt-PT'), left, y + 7); // DATA DINÂMICA v13.5.0-PURE
                 y += 14;
 
@@ -8583,7 +8570,7 @@ window.resetAuxiliaryData = resetAuxiliaryData;
      "IVA", "Preço da viagem". Parser RFC-4180 com sanitização por linha.
      Estrutura de saída (IFDESystem.documents.saft.totals) inalterada.
    ✓ clearConsole: Purga Total — IFDESystem.client=null, DOM reset, .client-data-field, LEDs
-   ✓ ForensicLogger (Art. 30.º RGPD): IFDE_FORENSIC_LOGS (invariante), 5000 entradas, exportMonthly()
+   ✓ ForensicLogger (Art. 30.º RGPD): UNIFED_FORENSIC_LOGS (invariante), 5000 entradas, exportMonthly()
    ✓ filterDAC7ByPeriod(): reactivo ao seletor, Q1-Q4 visíveis por período, recalc de totais
    ✓ box-border-blink: border+shadow only, background estável, target #jurosCard/#discrepancy5Card
    ✓ Box "OMISSÃO DE DESPESAS %": (Despesas/Ganhos)*100 — Big Data v13.0
