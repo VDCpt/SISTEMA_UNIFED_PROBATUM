@@ -33,49 +33,49 @@ const _REAL_CASE_MMLADX8Q = Object.freeze({
 
     // ── Totais extraídos do JSON (analysis.totals) ───────────────────────────
     totals: Object.freeze({
-        saftBruto:        8227.97,
-        saftIliquido:     7761.67,
-        saftIva:           466.30,
-        ganhos:          10013.11,
-        despesas:         2399.53,
-        ganhosLiquidos:   7613.58,
-        faturaPlataforma:  262.94,
-        dac7Q1:              0.00,
-        dac7Q2:              0.00,
-        dac7Q3:              0.00,
-        dac7Q4:           7755.16,
-        dac7TotalPeriodo: 7755.16
+        saftBruto:        10157.73,
+        saftIliquido:      9582.76,
+        saftIva:            574.97,
+        ganhos:           10157.73,
+        despesas:          2447.89,
+        ganhosLiquidos:    7709.84,
+        faturaPlataforma:   262.94,
+        dac7Q1:               0.00,
+        dac7Q2:               0.00,
+        dac7Q3:               0.00,
+        dac7Q4:            7755.16,
+        dac7TotalPeriodo:  7755.16
     }),
 
     // ── Discrepâncias verificadas (analysis.crossings) ───────────────────────
     crossings: Object.freeze({
         // C2 — Smoking Gun: Despesas/Comissões Extrato vs Fatura BTF
-        discrepanciaCritica:    2136.59,  // BTOR(2399,53) - BTF(262,94)
-        percentagemOmissao:       89.04,  // (2136,59 / 2399,53) × 100
+        discrepanciaCritica:    2184.95,  // BTOR(2447,89) - BTF(262,94)
+        percentagemOmissao:       89.26,  // (2184,95 / 2447,89) × 100
 
         // C1 — SAF-T Bruto vs DAC7
-        discrepanciaSaftVsDac7:  472.81,  // 8227,97 - 7755,16
-        percentagemSaftVsDac7:     5.75,
+        discrepanciaSaftVsDac7: 2402.57,  // 10157,73 - 7755,16
+        percentagemSaftVsDac7:    23.65,
 
-        // C3 — Ganhos Extrato vs SAF-T (alerta: extrato > SAF-T em 21,70%)
-        c3_delta:              -1785.14,  // SAF-T inferior aos ganhos reais
-        c3_pct:                  -21.70,
+        // C3 — Ganhos Extrato vs SAF-T (coincidentes neste lote)
+        c3_delta:                  0.00,  // SAF-T == Ganhos reais
+        c3_pct:                    0.00,
 
         // C4 — Líquido declarado vs real
         c4_delta:               351.45,
         c4_pct:                   4.41,
 
         // Fiscal
-        ivaFalta:               491.42,   // 23% sobre discrepância base
-        ivaFalta6:              128.20,   // 6% transporte
-        agravamentoBrutoIRC:   6409.77,
-        ircEstimado:           1346.05,
+        ivaFalta:               502.54,   // 23% × 2184,95
+        ivaFalta6:              131.10,   // 6% × 2184,95
+        agravamentoBrutoIRC:   2184.95,
+        ircEstimado:            458.84,   // 21% × 2184,95
 
-        // Projeção sistémica (calculada pelo motor: média mensal × 38.000 × 12 × 7)
-        // Fonte: impactoMensalMercado = (2136,59 / 4 meses) × 38.000 = €20.297.605/mês
-        impactoMensalMercado:  20297605,
-        impactoAnualMercado:  243571260,
-        impactoSeteAnosMercado: 1704998820
+        // Projeção sistémica (média mensal × 38.000 × 12 × 7)
+        // Fonte: impactoMensalMercado = (2184,95 / 4 meses) × 38.000 = €20.757.025/mês
+        impactoMensalMercado:  20757120,
+        impactoAnualMercado:  249085440,
+        impactoSeteAnosMercado: 1743598080
     }),
 
     // ── Veredicto (analysis.verdict) ─────────────────────────────────────────
@@ -83,7 +83,7 @@ const _REAL_CASE_MMLADX8Q = Object.freeze({
         level: { pt: 'RISCO ELEVADO', en: 'HIGH RISK' },
         key:   'high',
         color: '#ef4444',
-        percent: '89,04%'
+        percent: '89,26%'
     }),
 
     // ── Valores auxiliares (não sujeitos a comissão — isolados pelo sistema) ─
@@ -97,13 +97,10 @@ const _REAL_CASE_MMLADX8Q = Object.freeze({
     }),
 
     // ── Dados mensais para o motor ATF ───────────────────────────────────────
-    // Reconstituídos do audit log de custódia (processamento em lote).
-    // Setembro excluído do ATF activo (ganhos = 0,00 — mês de arranque parcial).
+    // NOTA: Os dados mensais (Out/Nov/Dez 2024) pertenciam ao lote anterior
+    // (SAF-T 8.227,97 €). Este lote (SAF-T 10.157,73 €) não dispõe de
+    // decomposição mensal verificada — ATF opera em modo de lote global.
     monthlyData: Object.freeze({
-        '202410': Object.freeze({ ganhos: 3291.26, despesas: 776.86, saft: 2743.70 }),
-        '202411': Object.freeze({ ganhos: 3519.31, despesas: 830.08, saft: 2704.86 }),
-        '202412': Object.freeze({ ganhos: 3202.54, despesas: 792.59, saft: 2647.00 })
-        // 202409: excluído (ganhos: 0,00 — mês de arranque parcial, não representativo)
     })
 });
 
