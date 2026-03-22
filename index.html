@@ -924,37 +924,27 @@
         //   2. Chama loadAnonymizedRealCase() para popular os dados
         //   3. Torna o wrapper visível
         // O fetch do panel.html é local — sem dependências externas.
-        (function _activatePurePanel() {
-            function _inject() {
-                if (typeof IFDESystem === 'undefined' || typeof loadAnonymizedRealCase !== 'function') {
-                    setTimeout(_inject, 200);
-                    return;
-                }
-                fetch('panel.html')
-                    .then(function(r) { return r.text(); })
-                    .then(function(html) {
-                        var wrapper = document.getElementById('pureDashboardWrapper');
-                        if (wrapper) {
-                            wrapper.innerHTML = html;
-                            wrapper.style.display = 'block';
-                        }
-                        // Popular os dados reais verificados
-                        if (typeof IFDESystem.loadAnonymizedRealCase === 'function') {
-                            IFDESystem.loadAnonymizedRealCase();
-                        }
-                        console.info('[UNIFED-PURE] ✅ Painel v13.5.0-PURE activado — UNIFED-MMLADX8Q-CV69L.');
-                    })
-                    .catch(function(err) {
-                        // Fallback silencioso: o painel não está disponível (standalone mode)
-                        console.info('[UNIFED-PURE] [i] panel.html não encontrado — modo standalone.');
-                    });
-            }
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', _inject);
-            } else {
-                setTimeout(_inject, 400);
-            }
-        })();
+        // Painel v13.5.0-PURE: NÃO auto-executa.
+        // Activação exclusiva via window._activatePurePanel() chamado em activateDemoMode().
+        // Numa sessão limpa o pureDashboardWrapper permanece display:none.
+        window._activatePurePanel = function() {
+            fetch('panel.html')
+                .then(function(r) { return r.text(); })
+                .then(function(html) {
+                    var wrapper = document.getElementById('pureDashboardWrapper');
+                    if (wrapper) {
+                        wrapper.innerHTML = html;
+                        wrapper.style.display = 'block';
+                    }
+                    if (typeof IFDESystem !== 'undefined' && typeof IFDESystem.loadAnonymizedRealCase === 'function') {
+                        IFDESystem.loadAnonymizedRealCase();
+                    }
+                    console.info('[UNIFED-PURE] ✅ Painel v13.5.0-PURE activado.');
+                })
+                .catch(function() {
+                    console.info('[UNIFED-PURE] [i] panel.html não encontrado — modo standalone.');
+                });
+        };
     </script>
 
 </body>
