@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-PT">
 <head>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https:; font-src 'self' data: https:; img-src 'self' data: blob: https:; connect-src 'self' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:;">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="UNIFED - PROBATUM (Unidade Independente de Inteligência Forense Económica e Digital) v13.5.0-PURE · DORA COMPLIANT · COURT READY · PROVA DIGITAL MATERIAL">
@@ -915,8 +916,8 @@
          Conformidade: ISO/IEC 27037 · Art. 125.º CPP · DORA (UE) 2022/2554
          Core Freeze: não altera fórmulas de script.js nem módulos enrichment/nexus.
          ══════════════════════════════════════════════════════════════════════════ -->
-    <link rel="stylesheet" href="style_additions.css">
-    <script src="script_injection.js"></script>
+    <link rel="stylesheet" href="style_additions_v13.5.0-PURE.css">
+    <script src="script_injection_v13.5.0-PURE.js"></script>
     <script>
         // ── Activação do Painel v13.5.0-PURE ───────────────────────────────────
         // Aguarda IFDESystem estar disponível, depois:
@@ -930,7 +931,7 @@
                     setTimeout(_inject, 200);
                     return;
                 }
-                fetch('panel_v13.5.0-PURE.html')
+                fetch('panel.html')
                     .then(function(r) { return r.text(); })
                     .then(function(html) {
                         var wrapper = document.getElementById('pureDashboardWrapper');
@@ -946,7 +947,7 @@
                     })
                     .catch(function(err) {
                         // Fallback silencioso: o painel não está disponível (standalone mode)
-                        console.info('[UNIFED-PURE] [i] panel_v13.5.0-PURE.html não encontrado — modo standalone.');
+                        console.info('[UNIFED-PURE] [i] panel.html não encontrado — modo standalone.');
                     });
             }
             if (document.readyState === 'loading') {
