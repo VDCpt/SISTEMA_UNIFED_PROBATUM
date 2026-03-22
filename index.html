@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-PT">
 <head>
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https:; font-src 'self' data: https:; img-src 'self' data: blob: https:; connect-src 'self' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:;">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="UNIFED - PROBATUM (Unidade Independente de Inteligência Forense Económica e Digital) v13.5.0-PURE · DORA COMPLIANT · COURT READY · PROVA DIGITAL MATERIAL">
@@ -436,7 +435,7 @@
                                 <p id="dac7Q2Value">0,00 €</p>
                                 <span class="file-source-badge" id="dac7Q2Source" data-original-file=""></span>
                             </div>
-                            <div class="kpi-card">
+                            <div class="kpi-card" style="display:none" id="dac7Q3Card">
                                 <h4 id="dac7Q3Label">3.º TRI</h4>
                                 <p id="dac7Q3Value">0,00 €</p>
                                 <span class="file-source-badge" id="dac7Q3Source" data-original-file=""></span>
@@ -931,7 +930,7 @@
                     setTimeout(_inject, 200);
                     return;
                 }
-                fetch('panel.html')
+                fetch('panel_v13.5.0-PURE.html')
                     .then(function(r) { return r.text(); })
                     .then(function(html) {
                         var wrapper = document.getElementById('pureDashboardWrapper');
@@ -947,7 +946,7 @@
                     })
                     .catch(function(err) {
                         // Fallback silencioso: o painel não está disponível (standalone mode)
-                        console.info('[UNIFED-PURE] [i] panel.html não encontrado — modo standalone.');
+                        console.info('[UNIFED-PURE] [i] panel_v13.5.0-PURE.html não encontrado — modo standalone.');
                     });
             }
             if (document.readyState === 'loading') {
