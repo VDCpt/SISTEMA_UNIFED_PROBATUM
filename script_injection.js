@@ -209,9 +209,11 @@ function _syncPureDashboard(sys) {
     _set('pure-atf-outliers',   '0 outliers &gt; 2σ');
 
     // ── Painel IV — Zona Cinzenta (Valores não sujeitos a comissão) ───────────
-    _set('pure-nc-campanhas',   _eur(sys.nonCommissionable && sys.nonCommissionable.campanhas));
-    _set('pure-nc-gorjetas',    _eur(sys.nonCommissionable && sys.nonCommissionable.gorjetas));
-    _set('pure-nc-total',       _eur(sys.nonCommissionable && sys.nonCommissionable.totalNaoSujeitos));
+    _set('pure-nc-campanhas',      _eur(sys.nonCommissionable && sys.nonCommissionable.campanhas));
+    _set('pure-nc-gorjetas',       _eur(sys.nonCommissionable && sys.nonCommissionable.gorjetas));
+    _set('pure-nc-portagens',      _eur(sys.nonCommissionable && sys.nonCommissionable.portagens));
+    _set('pure-nc-cancelamentos',  _eur(sys.nonCommissionable && sys.nonCommissionable.cancelamentos));
+    _set('pure-nc-total',          _eur(sys.nonCommissionable && sys.nonCommissionable.totalNaoSujeitos));
 
     // ── Painel V — Veredicto ──────────────────────────────────────────────────
     _set('pure-verdict',        v.level && v.level.pt ? v.level.pt : 'RISCO ELEVADO');
