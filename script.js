@@ -2051,7 +2051,7 @@ const translations = {
     pt: {
         startBtn: "INICIAR PERÍCIA v13.5.0-PURE",
         splashLogsBtn: "REGISTO DE ATIVIDADES (LOG)",
-        navDemo: "CASO SIMULADO",
+        navDemo: "CASO REAL",
         langBtn: "EN",
         headerSubtitle: "ISO/IEC 27037 | NIST SP 800-86 | INTERPOL · CSC | BIG DATA",
         sidebarIdTitle: "IDENTIFICAÇÃO DO SUJEITO PASSIVO",
@@ -2172,7 +2172,7 @@ const translations = {
     en: {
         startBtn: "START FORENSIC EXAM v13.5.0-PURE",
         splashLogsBtn: "ACTIVITY LOG (GDPR Art. 30)",
-        navDemo: "SIMULATED CASE",
+        navDemo: "REAL CASE",
         langBtn: "PT",
         headerSubtitle: "ISO/IEC 27037 | NIST SP 800-86 | INTERPOL · CSC | BIG DATA",
         sidebarIdTitle: "TAXPAYER IDENTIFICATION",
@@ -4066,7 +4066,7 @@ function activateDemoMode() {
         demoBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> CARREGANDO...';
     }
 
-    logAudit('🚀 ATIVANDO CASO SIMULADO v13.1.2-GOLD · DEMO DRIVER, LDA · 2024 · 2.º SEM...', 'info');
+    logAudit('🚀 ATIVANDO CASO REAL v13.1.2-GOLD · DRIVER REAL - UNIPESSOAL, LDA · 2024 · 2.º SEM...', 'info');
 
     // ── 1. Identificação do sujeito passivo ──────────────────────────────────
     document.getElementById('clientNameFixed').value = 'Driver Real – Unipessoal, Lda';
@@ -5668,7 +5668,10 @@ async function exportPDF() {
 
         y = 55;
         doc.setFontSize(9);
+        doc.setFont('courier', 'bold');
+        doc.text('CONFIDENCIAL', doc.internal.pageSize.getWidth() - left, y - 10, { align: 'right' });
         doc.setFont('courier', 'normal');
+        doc.text('Cadeia de Custódia Forense: Ativa', doc.internal.pageSize.getWidth() - left, y - 5, { align: 'right' });
         doc.text(`PROCESSO N.º: ${IFDESystem.sessionId}`, left, y, { lineHeightFactor: 1.5 }); y += 5;
         doc.text(`DATA: ${new Date().toLocaleDateString('pt-PT')}`, left, y, { lineHeightFactor: 1.5 }); y += 5;
         doc.text(`OBJETO: RECONSTITUIÇÃO DA VERDADE MATERIAL DIGITAL / ART. 103.º RGIT`, left, y, { lineHeightFactor: 1.5 }); y += 4;
@@ -6484,7 +6487,7 @@ async function exportPDF() {
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(8);
         const p1Lines = doc.splitTextToSize(
-            'Dada a volatilidade das plataformas digitais, o sistema detetou que a estrutura de reporte (Ledger) e objeto de atualizacao anual. Exemplo material verificado na transicao 2024/2025: o campo anteriormente designado "Portagens" transitou para "Reembolsos de despesas". Adicionalmente, detetou-se a alteracao deliberada de separadores decimais (ponto vs. virgula) e do posicionamento do simbolo monetario (EUR) entre periodos anuais — exemplo: "7755.16EUR" torna-se "EUR 7.731,22" no ano seguinte. O IFDE PROBATUM garante a reconciliacao de ambos os campos para efeitos de reconstrucao de passivo fiscal. Esta mutacao sintatica e semantica sistematica dificulta a leitura algoritmica automatica e impede a reconciliacao direta por auditores externos, constituindo indicio de manipulacao intencional do formato dos dados com o proposito de dificultar a auditoria forense.',
+            'Dada a volatilidade das plataformas digitais, o sistema detetou que a estrutura de reporte (Ledger) e objeto de atualizacao anual. Exemplo material verificado na transicao 2024/2025: o campo anteriormente designado "Portagens" transitou para "Reembolsos de despesas". Adicionalmente, detetou-se a alteracao deliberada de separadores decimais (ponto vs. virgula) e do posicionamento do simbolo monetario (EUR) entre periodos anuais — exemplo: "7755.16EUR" torna-se "EUR 7.731,22" no ano seguinte. O UNIFED PROBATUM garante a reconciliacao de ambos os campos para efeitos de reconstrucao de passivo fiscal. Esta mutacao sintatica e semantica sistematica dificulta a leitura algoritmica automatica e impede a reconciliacao direta por auditores externos, constituindo indicio de manipulacao intencional do formato dos dados com o proposito de dificultar a auditoria forense.',
             adendaIndentW - 3);
         doc.text(p1Lines, left + 3, y); y += (p1Lines.length * 4.5) + 5;
 
@@ -7563,25 +7566,33 @@ async function exportPDF() {
                 doc.setFont('helvetica', 'bold');
                 doc.setFontSize(8);
                 doc.setTextColor(0, 0, 0);
-                doc.text('CONSULTOR TÉCNICO — COMPROMISSO DE SEGUIMENTO DE NORMAS DE HONRA (ART. 153.º CPP)', left, y); y += 6;
+                doc.text('CONSULTOR TÉCNICO — COMPROMISSO DE HONRA E SALVAGUARDA (ART. 153.º E 155.º CPP)', left, y); y += 6;
 
                 doc.setFont('helvetica', 'normal');
                 doc.setFontSize(8);
                 // Identificação do Analista Responsável — hardcoded (UNIFED-GOLD v13.2.1)
                 const _sigResponsavel = 'Eduardo Monteiro';
-                const _sigCargo       = 'Analista e Consultor Forense Independente de Investigação e Big Data Analytics / Consultor Técnico';
-                const _sigRegisto     = 'Consultor Forense Independente — Sem inscrição obrigatória em ordem profissional para a natureza do parecer';
+                const _sigCargo       = 'Analista e Consultor Forense Independente | Big Data Analytics';
+                const _sigRegisto     = 'Consultor Técnico Independente (Art. 155.º do CPP). Atuação em conformidade com o regime de liberdade de prova e perícia documental.';
 
-                doc.text(`Nome:  ${_sigResponsavel}`, left, y); y += 5;
-                doc.text(`Cargo: ${_sigCargo}`, left, y); y += 5;
-                doc.text(`Ref.:  ${_sigRegisto}`, left, y, { maxWidth: doc.internal.pageSize.getWidth() - left - 14 }); y += 7;
+                doc.text('Identificação:', left, y); y += 5;
+                doc.text(`* Nome:     ${_sigResponsavel}`, left, y); y += 5;
+                doc.text(`* Cargo:    ${_sigCargo}`, left, y); y += 5;
+                const _sigRegLines = doc.splitTextToSize(`* Estatuto: ${_sigRegisto}`, doc.internal.pageSize.getWidth() - left - 14);
+                doc.text(_sigRegLines, left, y); y += (_sigRegLines.length * 4) + 3;
+
+                const _sigNota = doc.splitTextToSize(
+                    'NOTA DE SALVAGUARDA JURÍDICA E ÂMBITO: As conclusões constantes neste documento infraestruturam-se exclusivamente nos artefactos e elementos documentais disponibilizados pelo solicitante. O presente parecer constitui uma análise técnica independente de natureza consultiva e prova documental assistencial, não substituindo, para quaisquer efeitos processuais, a realização de uma perícia oficial ordenada pela autoridade judiciária competente.',
+                    _sigW);
+                doc.text(_sigNota, left, y); y += (_sigNota.length * 3.5) + 3;
+
+                const _sigLimit = doc.splitTextToSize(
+                    'LIMITAÇÃO TÉCNICA: Não disponho de informação suficiente para concluir uma análise pericial total; para uma conclusão definitiva e plena cadeia de custódia, seria imperativo o acesso aos artefactos brutos (DUMP de memória volátil ou imagens bit-to-bit / DD), aos quais não tive acesso até à presente data.',
+                    _sigW);
+                doc.text(_sigLimit, left, y); y += (_sigLimit.length * 3.5) + 3;
 
                 const _sigDecl = doc.splitTextToSize(
-                    'Declaro, sob compromisso de honra, que o presente parecer técnico foi elaborado em qualidade ' +
-                    'de Consultor Técnico Independente, assumindo os deveres de independência, objetividade e ' +
-                    'imparcialidade previstos no artigo 153.º do Código de Processo Penal Português para peritos, ' +
-                    'com base exclusivamente nos documentos fornecidos, mediante aplicação de metodologia forense ' +
-                    'reprodutível (ISRS 4400), certificando que os resultados traduzem fielmente a análise técnica realizada.',
+                    'DECLARAÇÃO DE COMPROMISSO: Declaro, sob compromisso de honra, que o presente parecer técnico foi elaborado na qualidade de Consultor Técnico Independente, assumindo estritamente os deveres de independência, objetividade e imparcialidade previstos no Artigo 153.º do Código de Processo Penal Português. Certifico que a metodologia aplicada (Baseada em ISRS 4400 e boas práticas de Digital Forensics) é reprodutível e que os resultados aqui vertidos traduzem fielmente a análise técnica realizada sobre o lote de dados fornecido.',
                     _sigW);
                 doc.text(_sigDecl, left, y); y += (_sigDecl.length * 3.8) + 4;
 
@@ -7592,7 +7603,7 @@ async function exportPDF() {
                 doc.line(_sigLineX, y + 3, left + _sigW, y + 3);
                 doc.setFontSize(6.5);
                 doc.setTextColor(80, 80, 80);
-                doc.text('Ass.  Consultor Técnico', _sigLineX, y + 7);
+                doc.text('Assinatura do Técnico Responsável Pela Análise', _sigLineX, y + 7);
                 doc.text('Data: ' + new Date().toLocaleDateString('pt-PT'), left, y + 7); // DATA DINÂMICA v13.5.0-PURE
                 y += 14;
 
