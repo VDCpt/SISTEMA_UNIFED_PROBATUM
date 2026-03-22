@@ -435,7 +435,7 @@
                                 <p id="dac7Q2Value">0,00 €</p>
                                 <span class="file-source-badge" id="dac7Q2Source" data-original-file=""></span>
                             </div>
-                            <div class="kpi-card" style="display:none" id="dac7Q3Card">
+                            <div class="kpi-card">
                                 <h4 id="dac7Q3Label">3.º TRI</h4>
                                 <p id="dac7Q3Value">0,00 €</p>
                                 <span class="file-source-badge" id="dac7Q3Source" data-original-file=""></span>
@@ -928,12 +928,6 @@
             function _inject() {
                 if (typeof IFDESystem === 'undefined' || typeof loadAnonymizedRealCase !== 'function') {
                     setTimeout(_inject, 200);
-                    return;
-                }
-                // Sessão limpa: não activar o painel automaticamente.
-                // O painel só é activado em modo DEMO (demoMode=true) ou via
-                // chamada explícita a IFDESystem.loadAnonymizedRealCase().
-                if (!IFDESystem.demoMode) {
                     return;
                 }
                 fetch('panel.html')
