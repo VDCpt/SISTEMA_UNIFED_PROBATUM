@@ -4055,6 +4055,11 @@ function activateDemoMode() {
 
     ForensicLogger.addEntry('DEMO_MODE_ACTIVATED');
 
+    // Activar o painel de caso real anonimizado (só no modo DEMO)
+    if (typeof window._activatePurePanel === 'function') {
+        window._activatePurePanel();
+    }
+
     const demoBtn = document.getElementById('demoModeBtn');
     if(demoBtn) {
         demoBtn.disabled = true;
@@ -4636,17 +4641,10 @@ function filterDAC7ByPeriod() {
     const visible = visibilityMap[periodo] || [1, 2, 3, 4];
 
     // Show/hide cada card de trimestre
-    // Regra: mostrar se dentro do período seleccionado.
-    // Excepção: em demoMode, ocultar trimestres com valor=0 (sem dados reais).
-    // Em sessão limpa (demoMode=false) todos os trimestres do período são sempre visíveis.
-    const _isDemoMode = (typeof IFDESystem !== 'undefined' && IFDESystem.demoMode === true);
     [1, 2, 3, 4].forEach(q => {
         const card = document.getElementById(`dac7Q${q}Value`)?.closest('.kpi-card');
         if (card) {
-            const inPeriod = visible.includes(q);
-            const qVal = dac7[`q${q}`] || 0;
-            const hideDemo = _isDemoMode && qVal === 0;
-            card.style.display = (inPeriod && !hideDemo) ? '' : 'none';
+            card.style.display = visible.includes(q) ? '' : 'none';
         }
     });
 
