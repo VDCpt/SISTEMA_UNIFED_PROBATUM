@@ -280,7 +280,7 @@
                                 <option value="freenow">FREE NOW</option>
                                 <option value="cabify">Cabify</option>
                                 <option value="indrive">inDrive</option>
-                                <option value="outra">Outra Plataforma</option>
+                                <option value="outra">Plataforma A</option>
                             </select>
                         </div>
                     </div>
@@ -616,7 +616,7 @@
                             <span id="masterHashValue">A aguardar dados...</span>
                         </div>
                         <div id="qrcodeContainer" style="margin-top: 10px; display: flex; justify-content: center;"></div>
-                        <p class="copyright">UNIFED - PROBATUM © 2024/2026 | Módulo de Peritagem Forense v13.5.0-PURE | DORA COMPLIANT | COURT READY | DIAMOND | SMOKING GUN</p>
+                        <p class="copyright">UNIFED - PROBATUM © 2024/2026 | EM | Módulo de Peritagem Forense v13.5.0-PURE | DORA COMPLIANT | COURT READY | DIAMOND | SMOKING GUN</p>
                         <span id="pageCount" style="display: none;"></span>
 
                         <!-- ── Acesso à Cadeia de Custódia ── -->
@@ -926,7 +926,6 @@
         // O fetch do panel.html é local — sem dependências externas.
         // Painel v13.5.0-PURE: NÃO auto-executa.
         // Activação exclusiva via window._activatePurePanel() chamado em activateDemoMode().
-        // Numa sessão limpa o pureDashboardWrapper permanece display:none.
         window._activatePurePanel = function() {
             fetch('panel.html')
                 .then(function(r) { return r.text(); })

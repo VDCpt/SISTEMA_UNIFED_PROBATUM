@@ -205,7 +205,7 @@ function _syncPureDashboard(sys) {
     _set('pure-atf-sp',         '40<span style="font-size:1rem;opacity:0.6">/100</span>');
     _set('pure-atf-trend',      '📉 DESCENDENTE');
     _set('pure-atf-status',     'OMISSÃO PONTUAL / RISCO MODERADO');
-    _set('pure-atf-meses',      '3 meses activos (Out–Dez 2024)');
+    _set('pure-atf-meses',      '2.º Semestre 2024 — 4 meses com dados (Set–Dez)');
     _set('pure-atf-outliers',   '0 outliers &gt; 2σ');
 
     // ── Painel IV — Zona Cinzenta (Valores não sujeitos a comissão) ───────────

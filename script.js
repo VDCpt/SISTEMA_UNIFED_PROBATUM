@@ -4069,7 +4069,7 @@ function activateDemoMode() {
     logAudit('🚀 ATIVANDO CASO SIMULADO v13.1.2-GOLD · DEMO DRIVER, LDA · 2024 · 2.º SEM...', 'info');
 
     // ── 1. Identificação do sujeito passivo ──────────────────────────────────
-    document.getElementById('clientNameFixed').value = 'Demo Driver, Lda';
+    document.getElementById('clientNameFixed').value = 'Driver Real – Unipessoal, Lda';
     document.getElementById('clientNIFFixed').value = '123456789';
     registerClient();
 
@@ -4089,7 +4089,7 @@ function activateDemoMode() {
     if (platformEl) platformEl.value = 'outra';
 
     // ── 5. Meses do 2.º Semestre: Jul–Dez 2024 ──────────────────────────────
-    ['202407','202408','202409','202410','202411','202412'].forEach(m => IFDESystem.dataMonths.add(m));
+    ['202409','202410','202411','202412'].forEach(m => IFDESystem.dataMonths.add(m));
 
     // ── 6. Evidências: 4 CTRL · 4 SAF-T · 2 FAT · 4 EXT · 1 DAC7 ───────────
     simulateUpload('control',    4);
@@ -4171,7 +4171,7 @@ function activateDemoMode() {
 
         performAudit();
 
-        logAudit('✅ DEMO concluída — Demo Driver, Lda · NIF 123456789 · 2024 · 2.º Semestre.', 'success');
+        logAudit('✅ CASO REAL concluído — Driver Real – Unipessoal, Lda · NIF 123456789 · 2024 · 2.º Semestre.', 'success');
         IFDESystem.processing = false;
         if(demoBtn) {
             demoBtn.disabled = false;
@@ -4180,7 +4180,7 @@ function activateDemoMode() {
 
         forensicDataSynchronization();
         ForensicLogger.addEntry('DEMO_MODE_COMPLETED', {
-            client: 'Demo Driver, Lda',
+            client: 'Driver Real – Unipessoal, Lda',
             nif: '123456789',
             ano: 2024,
             periodo: '2s',
@@ -4641,10 +4641,14 @@ function filterDAC7ByPeriod() {
     const visible = visibilityMap[periodo] || [1, 2, 3, 4];
 
     // Show/hide cada card de trimestre
+    // Em demoMode ocultar trimestres com valor=0; em sessão real mostrar todos os do período
+    const _isDemoHide = (typeof IFDESystem !== 'undefined' && IFDESystem.demoMode === true);
     [1, 2, 3, 4].forEach(q => {
         const card = document.getElementById(`dac7Q${q}Value`)?.closest('.kpi-card');
         if (card) {
-            card.style.display = visible.includes(q) ? '' : 'none';
+            const qVal = dac7[`q${q}`] || 0;
+            const hide = !visible.includes(q) || (_isDemoHide && qVal === 0);
+            card.style.display = hide ? 'none' : '';
         }
     });
 
