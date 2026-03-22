@@ -4636,10 +4636,14 @@ function filterDAC7ByPeriod() {
     const visible = visibilityMap[periodo] || [1, 2, 3, 4];
 
     // Show/hide cada card de trimestre
+    // Regra: mostrar apenas se (1) dentro do período seleccionado E (2) valor > 0
+    // Garante que trimestres sem dados (zero) ficam ocultos; nova análise com dados mostra todos
     [1, 2, 3, 4].forEach(q => {
         const card = document.getElementById(`dac7Q${q}Value`)?.closest('.kpi-card');
         if (card) {
-            card.style.display = visible.includes(q) ? '' : 'none';
+            const qVal = dac7[`q${q}`] || 0;
+            const showByPeriod = visible.includes(q);
+            card.style.display = (showByPeriod && qVal > 0) ? '' : 'none';
         }
     });
 
