@@ -25,7 +25,7 @@
 
 /* ── Secção raiz ───────────────────────────────────────────────────────────── */
 .pure-section {
-  max-width: 1100px;
+  max-width: 100%;
   margin: 32px auto;
   padding: 0 16px;
   font-family: var(--pure-font-mono);
