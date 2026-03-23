@@ -362,8 +362,7 @@ async function renderSankeyToImage(analysis) {
         ctx.strokeStyle = nd.color;
         ctx.lineWidth   = 2;
         ctx.beginPath();
-        ctx.rect(nd.x, nd.y, nd.w, nd.h);  // ctx.roundRect polyfill — rect standard API
-        else ctx.rect(nd.x, nd.y, nd.w, nd.h);
+        ctx.rect(nd.x, nd.y, nd.w, nd.h);
         ctx.fill(); ctx.stroke();
 
         ctx.fillStyle = nd.color;

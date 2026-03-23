@@ -8153,6 +8153,12 @@ function generateMasterHash() {
     IFDESystem.masterHash = CryptoJS.SHA256(data).toString();
     setElementText('masterHashValue', IFDESystem.masterHash);
     generateQRCode();
+    // SSoT: actualizar activeForensicSession após cada geração de hash
+    window.activeForensicSession = {
+        sessionId:  IFDESystem.sessionId,
+        masterHash: IFDESystem.masterHash
+    };
+    try { sessionStorage.setItem('currentSession', JSON.stringify(window.activeForensicSession)); } catch (_e) {}
 }
 
 function logAudit(message, type = 'info') {
