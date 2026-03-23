@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * UNIFED - PROBATUM · NEXUS LAYER · v13.3.0-DIAMOND
+ * UNIFED - PROBATUM · NEXUS LAYER · v13.5.0-PURE
  * ============================================================================
  * Arquitetura : Adaptive Extension Layer — carregado APÓS enrichment.js
  * Padrão      : Read-Only sobre IFDESystem · Nenhum cálculo fiscal alterado
@@ -275,7 +275,7 @@
             _para('', false),
             _hr(),
             _para('', false),
-            _para('VI. JURISPRUDENCIA APLICAVEL — CRUZAMENTO RAG · NEXUS v13.3.0-DIAMOND', true, '26', '003366'),
+            _para('VI. JURISPRUDENCIA APLICAVEL — CRUZAMENTO RAG · NEXUS v13.5.0-PURE', true, '26', '003366'),
             _para('Modulo de Jurisprud\u00eancia Pericial \u2014 Cita\u00e7\u00f5es injectadas com base nas anomalias detetadas e qualificacao legal apurada', false, '16', '888888'),
             _para('', false),
 
@@ -302,7 +302,7 @@
                 'desta prova digital pericial e qualifica a conduta como penalmente relevante.',
                 false, '20', '333333'),
             _para('', false),
-            _para('[Secao gerada automaticamente pelo Modulo RAG Jurisprudencial — NEXUS v13.3.0-DIAMOND · Art. 125.o CPP]', false, '16', '999999'),
+            _para('[Secao gerada automaticamente pelo Modulo RAG Jurisprudencial — NEXUS v13.5.0-PURE · Art. 125.o CPP]', false, '16', '999999'),
             _para('', false)
         ].join('');
     }
@@ -833,7 +833,7 @@
         var enriched = await Promise.all(registry.map(async function(item) {
             if (!item.hash) {
                 item.hash = await _sha256Nexus(item.filename + (item.ts || Date.now()));
-                item.otsStatus = 'PENDENTE — Hash gerado localmente (NEXUS v13.3.0)';
+                item.otsStatus = 'PENDENTE — Hash gerado localmente (NEXUS v13.5.0-PURE)';
             }
             return item;
         }));
@@ -924,7 +924,7 @@
                     'background:rgba(0,229,255,0.04);' +
                 '">' +
                     '<div>' +
-                        '<div style="color:#00E5FF;font-size:0.85rem;font-weight:700;letter-spacing:0.08em">⛓️ BLOCKCHAIN EVIDENCE EXPLORER · NEXUS v13.3.0-DIAMOND</div>' +
+                        '<div style="color:#00E5FF;font-size:0.85rem;font-weight:700;letter-spacing:0.08em">⛓️ BLOCKCHAIN EVIDENCE EXPLORER · NEXUS v13.5.0-PURE</div>' +
                         '<div style="color:rgba(255,255,255,0.4);font-size:0.62rem;margin-top:2px">' +
                             'SHA-256 Individual · OTS Status · Cadeia de Custódia · ' +
                             enriched.length + ' documento' + (enriched.length !== 1 ? 's' : '') +
@@ -1118,7 +1118,7 @@
 // NEXUS · EXPOSIÇÃO GLOBAL E LOG DE ARRANQUE
 // ============================================================================
 console.info(
-    '%c[NEXUS · UNIFED-PROBATUM · v13.3.0-DIAMOND]\n' +
+    '%c[NEXUS · UNIFED-PROBATUM · v13.5.0-PURE]\n' +
     '%c  M1 · Stealth Network Interceptor     — Anti-F12 Protocol ATIVO\n' +
     '  M2 · RAG Jurisprudencial DOCX         — Hook exportDOCX() instalado\n' +
     '  M3 · Motor Preditivo ATF (6M)         — Hook openATFModal() instalado\n' +
@@ -1129,7 +1129,7 @@ console.info(
 );
 
 /* =========================================================================
-   FIM DO FICHEIRO NEXUS.JS · v13.3.0-DIAMOND · UNIFED - PROBATUM
+   FIM DO FICHEIRO NEXUS.JS · v13.5.0-PURE · UNIFED - PROBATUM
    ARQUITETURA: Adaptive Extension Layer — ZERO IMPACTO no script.js
    ============================================================ ============
    M1 — Stealth Network Interceptor:
