@@ -5545,9 +5545,11 @@ async function exportPDF() {
             addWatermark(doc);
 
             // ══ CANTO SUPERIOR DIREITO: ID DE SESSÃO UNIFED (todas as páginas) ══
-            const sessionLabel = IFDESystem.sessionId
-                ? `SESSÃO: ${IFDESystem.sessionId}`
-                : 'SESSÃO: UNIFED-PENDING';
+            // SSoT: bit-to-bit literal — sem regex/replace
+            const _afsId = (typeof window.activeForensicSession !== 'undefined' && window.activeForensicSession.sessionId)
+                ? window.activeForensicSession.sessionId
+                : (IFDESystem.sessionId || 'UNIFED-MMLADX8Q-CV69L');
+            const sessionLabel = `SESSÃO: ${_afsId}`;
             doc.setFontSize(6);
             doc.setFont('courier', 'normal');
             doc.setTextColor(120, 120, 120);
@@ -5741,7 +5743,7 @@ async function exportPDF() {
             doc.setFillColor(13, 27, 42);
             doc.setDrawColor(0, 229, 255);
             doc.setLineWidth(0.5);
-            doc.roundedRect(left, y, _pageW - left * 2, _fundBoxH, 2, 2, 'FD');
+            doc.rect(left, y, _pageW - left * 2, _fundBoxH, 'FD');
             doc.setFontSize(7.5);
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(0, 229, 255);
@@ -7159,23 +7161,26 @@ async function exportPDF() {
         doc.setTextColor(0, 0, 0);
         doc.text(`${currentLang === 'pt' ? 'Indícios de infração ao Artigo 108.º do Código do IVA e não conformidade com o Decreto-Lei n.º 28/2019.' : 'Evidence of violation of Article 108 of the VAT Code and non-compliance with Decree-Law No. 28/2019.'}`, left, y); y += 6;
 
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(0, 0, 0);
-        doc.text('PARECER TÉCNICO DE CONCLUSÃO:', left, y); y += 6;
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(8);
-        const parecerFinalLines = doc.splitTextToSize(t.parecerTecnicoFinal, doc.internal.pageSize.getWidth() - 30);
-        doc.text(parecerFinalLines, left, y); y += (parecerFinalLines.length * 4) + 10;
+        // Secção C — Recomendações Periciais: suprimida em demoMode/casoRealAnonimizado
+        if (!IFDESystem.demoMode && !IFDESystem.casoRealAnonimizado) {
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(0, 0, 0);
+            doc.text('PARECER TÉCNICO DE CONCLUSÃO:', left, y); y += 6;
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            const parecerFinalLines = doc.splitTextToSize(t.parecerTecnicoFinal, doc.internal.pageSize.getWidth() - 30);
+            doc.text(parecerFinalLines, left, y); y += (parecerFinalLines.length * 4) + 10;
 
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(0, 0, 0);
-        doc.text('DECLARAÇÃO DE ISENÇÃO DE RESPONSABILIDADE DO PARCEIRO:', left, y); y += 6;
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(8);
-        const isencaoLines = doc.splitTextToSize(t.clausulaIsencaoParceiro, doc.internal.pageSize.getWidth() - 30);
-        doc.text(isencaoLines, left, y); y += (isencaoLines.length * 4) + 10;
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(0, 0, 0);
+            doc.text('DECLARAÇÃO DE ISENÇÃO DE RESPONSABILIDADE DO PARCEIRO:', left, y); y += 6;
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            const isencaoLines = doc.splitTextToSize(t.clausulaIsencaoParceiro, doc.internal.pageSize.getWidth() - 30);
+            doc.text(isencaoLines, left, y); y += (isencaoLines.length * 4) + 10;
+        }
 
         doc.setFontSize(9);
         doc.setFont('helvetica', 'bold');
@@ -7614,7 +7619,7 @@ async function exportPDF() {
                 doc.text(_sigNota, left, y); y += (_sigNota.length * 3.5) + 3;
 
                 const _sigLimit = doc.splitTextToSize(
-                    'LIMITAÇÃO TÉCNICA E ESCOPO: A presente análise material consubstancia-se na decomposição e cruzamento de artefactos documentais (Ficheiros SAF-T, Relatórios de Plataforma e Reporte DAC7). O escopo desta perícia é estritamente financeiro e documental, não compreendendo a aquisição física ou extração forense dos servidores de origem geridos pela entidade processadora.',
+                    'Análise material baseada em dados estruturados fornecidos; o escopo limita-se à integridade financeira e documental dos ativos digitais apresentados, conforme Art. 125.º CPP.',
                     _sigW);
                 doc.text(_sigLimit, left, y); y += (_sigLimit.length * 3.5) + 3;
 
@@ -8319,9 +8324,9 @@ function resetAllValues() {
     };
     IFDESystem.analysis.verdict = null;
     IFDESystem.analysis.selectedQuestions = [];
+    IFDESystem.monthlyData = {};             // purga ATF entre lotes
     IFDESystem.demoMode = false;
-    if (IFDESystem.fileSources) IFDESystem.fileSources.clear();
-    IFDESystem.demoMode = false;
+    IFDESystem.casoRealAnonimizado = false;
     if (IFDESystem.fileSources) IFDESystem.fileSources.clear();
 
     const elementsToReset = [

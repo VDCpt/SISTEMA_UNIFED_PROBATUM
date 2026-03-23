@@ -362,7 +362,7 @@ async function renderSankeyToImage(analysis) {
         ctx.strokeStyle = nd.color;
         ctx.lineWidth   = 2;
         ctx.beginPath();
-        if (ctx.roundRect) ctx.roundRect(nd.x, nd.y, nd.w, nd.h, 8);
+        ctx.rect(nd.x, nd.y, nd.w, nd.h);  // ctx.roundRect polyfill — rect standard API
         else ctx.rect(nd.x, nd.y, nd.w, nd.h);
         ctx.fill(); ctx.stroke();
 
@@ -426,10 +426,10 @@ function generateIntegritySeal(masterHash, doc, x, y, sealSize) {
     doc.saveGraphicsState();
 
     doc.setFillColor(8, 18, 36);
-    doc.roundedRect(x, y, SZ, SZ, 2, 2, 'F');
+    doc.rect(x, y, SZ, SZ, 'F');  // roundedRect polyfill
     doc.setDrawColor(0, 229, 255);
     doc.setLineWidth(0.6);
-    doc.roundedRect(x, y, SZ, SZ, 2, 2, 'S');
+    doc.rect(x, y, SZ, SZ, 'S');  // roundedRect polyfill
 
     doc.setFontSize(3.8);
     doc.setFont('courier', 'bold');
