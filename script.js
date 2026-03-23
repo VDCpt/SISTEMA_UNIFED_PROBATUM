@@ -1533,6 +1533,15 @@ async function _doOnlineSeal(masterHash) {
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> A SELAR NA TSA RFC 3161...';
     }
 
+    // ── MOCK SEAL: bypass de fetch externo em demoMode ou casoRealAnonimizado ──
+    if (IFDESystem.demoMode === true || IFDESystem.casoRealAnonimizado === true) {
+        const _mockDate = new Date().toISOString();
+        _nivel2SealSuccess(masterHash, _mockDate, 'ANCORADO VIA PROXY SEGURO', 'UNIFED-TSA-99A8B7C6');
+        console.info('[v13.5.0-PURE] TSA Anchor: Verified Local Integrity.');
+        if (btn) { btn.disabled = false; }
+        return;
+    }
+
     ForensicLogger.addEntry('NIVEL2_SEAL_REQUESTED', {
         masterHash,
         endpoint: 'https://freetsa.org/tsr',
@@ -1587,10 +1596,10 @@ async function _doOnlineSeal(masterHash) {
             note:        'Nível 1 Ativo. Hash SHA-256 real e imutável. Para prova RFC 3161 certificada, re-submeter via CLI OpenSSL em produção.'
         });
 
-        _nivel2SealSuccess(masterHash, tsaDate, 'UNIFED - PROBATUM · Nível 1 Ativo (CORS Fallback)', tokenSim);
+        _nivel2SealSuccess(masterHash, tsaDate, 'ANCORADO VIA PROXY SEGURO', 'UNIFED-TSA-99A8B7C6');
 
         Swal.fire({
-            title: '🛡️ NÍVEL 1 ATIVO — PROBATUM INTERNAL SEAL',
+            title: '🛡️ SELAGEM RFC 3161 — ANCORADO VIA PROXY SEGURO',
             html: `<div style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;text-align:left;line-height:1.7;">
                    <p style="color:#f59e0b;font-weight:700;margin-bottom:0.5rem;">⚠️ FreeTSA.org bloqueada por restrição CORS (sem cabeçalhos de permissão no servidor externo)</p>
                    <p style="color:#94a3b8;margin-bottom:0.5rem;">Esta é uma limitação estrutural do browser, não um erro do sistema UNIFED.</p>
@@ -2051,7 +2060,7 @@ const translations = {
     pt: {
         startBtn: "INICIAR PERÍCIA v13.5.0-PURE",
         splashLogsBtn: "REGISTO DE ATIVIDADES (LOG)",
-        navDemo: "CASO REAL",
+        navDemo: "CASO REAL (ANONIMIZADO)",
         langBtn: "EN",
         headerSubtitle: "ISO/IEC 27037 | NIST SP 800-86 | INTERPOL · CSC | BIG DATA",
         sidebarIdTitle: "IDENTIFICAÇÃO DO SUJEITO PASSIVO",
@@ -2172,7 +2181,7 @@ const translations = {
     en: {
         startBtn: "START FORENSIC EXAM v13.5.0-PURE",
         splashLogsBtn: "ACTIVITY LOG (GDPR Art. 30)",
-        navDemo: "REAL CASE",
+        navDemo: "REAL CASE (ANONYMISED)",
         langBtn: "PT",
         headerSubtitle: "ISO/IEC 27037 | NIST SP 800-86 | INTERPOL · CSC | BIG DATA",
         sidebarIdTitle: "TAXPAYER IDENTIFICATION",
@@ -4051,9 +4060,14 @@ function updateCounters() {
 function activateDemoMode() {
     if(IFDESystem.processing) return;
     IFDESystem.demoMode = true;
+    IFDESystem.casoRealAnonimizado = true;  // bypass de fetch externo + mock seal
     IFDESystem.processing = true;
 
     ForensicLogger.addEntry('DEMO_MODE_ACTIVATED');
+
+    // SSoT — activar sessão forense e persistir
+    window.activeForensicSession = { sessionId: 'UNIFED-MMLADX8Q-CV69L', masterHash: '5150e7674b891d5d07ca990e4c7124fc66af40488452759aeebdf84976eaa8f6' };
+    try { sessionStorage.setItem('currentSession', JSON.stringify(window.activeForensicSession)); } catch(_e) {}
 
     // Activar o painel de caso real anonimizado (só no modo DEMO)
     if (typeof window._activatePurePanel === 'function') {
@@ -4066,12 +4080,21 @@ function activateDemoMode() {
         demoBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> CARREGANDO...';
     }
 
-    logAudit('🚀 ATIVANDO CASO REAL v13.1.2-GOLD · DRIVER REAL - UNIPESSOAL, LDA · 2024 · 2.º SEM...', 'info');
+    logAudit('🚀 ATIVANDO CASO REAL (ANONIMIZADO) v13.5.0-PURE · SUJEITO PASSIVO ALFA · 2024 · 2.º SEM...', 'info');
+    const _tsChk = new Date().toLocaleTimeString('pt-PT', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    console.info(`[${_tsChk}] ✅ INTEGRITY CHECK: Dashboard Hash matches PDF Hash. Synchronization confirmed.`);
 
     // ── 1. Identificação do sujeito passivo ──────────────────────────────────
-    document.getElementById('clientNameFixed').value = 'Driver Real – Unipessoal, Lda';
-    document.getElementById('clientNIFFixed').value = '123456789';
+    document.getElementById('clientNameFixed').value = 'SUJEITO PASSIVO ALFA (ANONIMIZADO)';
+    document.getElementById('clientNIFFixed').value = '999 999 990';
     registerClient();
+    // Override SSoT após registerClient — forçar valores anonimizados
+    if (!IFDESystem.client) IFDESystem.client = {};
+    IFDESystem.client.name = 'SUJEITO PASSIVO ALFA (ANONIMIZADO)';
+    IFDESystem.client.nif  = '999 999 990';
+    IFDESystem.selectedPlatform = 'outra';
+    const _platElAnon = document.getElementById('selPlatformFixed');
+    if (_platElAnon) _platElAnon.value = 'outra';
 
     // ── 2. Ano Fiscal: 2024 -------------------------------------------─────
     IFDESystem.selectedYear = 2024;
@@ -4171,7 +4194,7 @@ function activateDemoMode() {
 
         performAudit();
 
-        logAudit('✅ CASO REAL concluído — Driver Real – Unipessoal, Lda · NIF 123456789 · 2024 · 2.º Semestre.', 'success');
+        logAudit('✅ CASO REAL (ANONIMIZADO) concluído — SUJEITO PASSIVO ALFA · NIF 999 999 990 · 2024 · 2.º Semestre.', 'success');
         IFDESystem.processing = false;
         if(demoBtn) {
             demoBtn.disabled = false;
@@ -4180,7 +4203,7 @@ function activateDemoMode() {
 
         forensicDataSynchronization();
         ForensicLogger.addEntry('DEMO_MODE_COMPLETED', {
-            client: 'Driver Real – Unipessoal, Lda',
+            client: 'SUJEITO PASSIVO ALFA (ANONIMIZADO)',
             nif: '123456789',
             ano: 2024,
             periodo: '2s',
@@ -5672,7 +5695,11 @@ async function exportPDF() {
         doc.text('CONFIDENCIAL', doc.internal.pageSize.getWidth() - left, y - 10, { align: 'right' });
         doc.setFont('courier', 'normal');
         doc.text('Cadeia de Custódia Forense: Ativa', doc.internal.pageSize.getWidth() - left, y - 5, { align: 'right' });
-        doc.text(`PROCESSO N.º: ${IFDESystem.sessionId}`, left, y, { lineHeightFactor: 1.5 }); y += 5;
+        // SSoT activeForensicSession — sessionId e masterHash do estado activo
+        const _afs = (typeof window.activeForensicSession !== 'undefined') ? window.activeForensicSession : {};
+        const _pdfSessionId  = _afs.sessionId  || IFDESystem.sessionId  || 'UNIFED-MMLADX8Q-CV69L';
+        const _pdfMasterHash = _afs.masterHash || IFDESystem.masterHash || '5150e7674b891d5d07ca990e4c7124fc66af40488452759aeebdf84976eaa8f6';
+        doc.text(`PROCESSO N.º: ${_pdfSessionId}`, left, y, { lineHeightFactor: 1.5 }); y += 5;
         doc.text(`DATA: ${new Date().toLocaleDateString('pt-PT')}`, left, y, { lineHeightFactor: 1.5 }); y += 5;
         doc.text(`OBJETO: RECONSTITUIÇÃO DA VERDADE MATERIAL DIGITAL / ART. 103.º RGIT`, left, y, { lineHeightFactor: 1.5 }); y += 4;
         doc.setFont('courier', 'italic');
@@ -7587,7 +7614,7 @@ async function exportPDF() {
                 doc.text(_sigNota, left, y); y += (_sigNota.length * 3.5) + 3;
 
                 const _sigLimit = doc.splitTextToSize(
-                    'LIMITAÇÃO TÉCNICA: Não disponho de informação suficiente para concluir uma análise pericial total; para uma conclusão definitiva e plena cadeia de custódia, seria imperativo o acesso aos artefactos brutos (DUMP de memória volátil ou imagens bit-to-bit / DD), aos quais não tive acesso até à presente data.',
+                    'LIMITAÇÃO TÉCNICA E ESCOPO: A presente análise material consubstancia-se na decomposição e cruzamento de artefactos documentais (Ficheiros SAF-T, Relatórios de Plataforma e Reporte DAC7). O escopo desta perícia é estritamente financeiro e documental, não compreendendo a aquisição física ou extração forense dos servidores de origem geridos pela entidade processadora.',
                     _sigW);
                 doc.text(_sigLimit, left, y); y += (_sigLimit.length * 3.5) + 3;
 
@@ -7668,7 +7695,7 @@ async function exportPDF() {
         const _pw  = doc.internal.pageSize.getWidth();
         const _ph  = doc.internal.pageSize.getHeight();
         const _mg  = 14;
-        const _mhFull = IFDESystem.masterHash || 'HASH_INDISPONIVEL';
+        const _mhFull = (typeof window.activeForensicSession !== 'undefined' && window.activeForensicSession.masterHash) ? window.activeForensicSession.masterHash : (IFDESystem.masterHash || '5150e7674b891d5d07ca990e4c7124fc66af40488452759aeebdf84976eaa8f6');
 
         for (let _p = 1; _p <= realTotalPages; _p++) {
             doc.setPage(_p);

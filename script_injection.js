@@ -224,6 +224,23 @@ function _syncPureDashboard(sys) {
     _set('pure-hash-prefix',    (sys.masterHash || '').substring(0, 24) + '...');
 }
 
+// ── SSoT: activeForensicSession ─────────────────────────────────────────────
+if (typeof window.activeForensicSession === 'undefined') {
+    window.activeForensicSession = {
+        sessionId:  _REAL_CASE_MMLADX8Q.sessionId,
+        masterHash: _REAL_CASE_MMLADX8Q.masterHash
+    };
+    try {
+        const _stored = sessionStorage.getItem('currentSession');
+        if (_stored) {
+            const _s = JSON.parse(_stored);
+            if (_s && _s.sessionId && _s.masterHash) window.activeForensicSession = _s;
+        } else {
+            sessionStorage.setItem('currentSession', JSON.stringify(window.activeForensicSession));
+        }
+    } catch (_e) {}
+}
+
 // Expor globalmente
 window.loadAnonymizedRealCase = IFDESystem.loadAnonymizedRealCase.bind(IFDESystem);
 window._REAL_CASE_MMLADX8Q    = _REAL_CASE_MMLADX8Q;  // Read-only reference
