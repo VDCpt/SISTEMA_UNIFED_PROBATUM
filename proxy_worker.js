@@ -2,6 +2,7 @@
  * ============================================================================
  * UNIFED - PROBATUM · CLOUDFLARE WORKER — Anthropic API Reverse Proxy
  * ============================================================================
+ * Versão     : v13.5.0-PURE
  * Deploy URL  : https://api.unifed.com/claude-proxy
  * Rota        : POST /claude-proxy  →  forward para api.anthropic.com/v1/messages
  *
@@ -26,6 +27,9 @@
  * CONFORMIDADE: DORA (UE) 2022/2554 · RGPD · ISO/IEC 27037:2012
  * ============================================================================
  */
+
+/** Versão do Worker — sincronizada com o ciclo de release UNIFED-PROBATUM. */
+const VERSION = "13.5.0-PURE";
 
 // ES Modules format — obrigatório para Cloudflare Workers (module workers)
 export default {

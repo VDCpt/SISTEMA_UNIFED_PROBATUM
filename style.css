@@ -48,6 +48,11 @@
     --presentation-scale: 1.2;
     --presentation-font-size-base: 1.1rem;
     --presentation-font-size-large: 2rem;
+
+    /* ── v13.5.0-PURE — Aliases periciais (compatibilidade style_additions) ── */
+    --pure-accent:  #00E5FF;
+    --pure-warn:    #EF4444;
+    --pure-version: "v13.5.0-PURE";
 }
 
 *,

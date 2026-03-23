@@ -7,6 +7,31 @@
    Conformidade: WCAG 2.1 AA · Palette forense (dark + alert accents).
    ============================================================================ */
 
+/* ── Variáveis globais PURE (partilhadas com style.css base) ────────────────── */
+/* NOTA: Duplicadas aqui para standalone rendering; style.css tem precedência
+   quando ambos os ficheiros são carregados em conjunto (cascade normal). */
+:root {
+    --pure-accent:  #00E5FF; /* Cyan Forense */
+    --pure-warn:    #EF4444; /* Alerta Fiscal */
+    --pure-version: "v13.5.0-PURE";
+}
+
+/* ── Wrapper do painel PURE — transição de entrada ──────────────────────────── */
+/* ATENÇÃO: style.css define opacity:0 com transição para fade-in controlado por JS.
+   Este selector actua em modo standalone (sem style.css carregado). */
+#pureDashboardWrapper {
+    opacity: 1;
+    transition: all 0.4s ease-in-out;
+}
+
+/* ── Grid de painéis (pure-card-grid) ───────────────────────────────────────── */
+.pure-card-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0; /* espaçamento já gerido pelo margin-bottom de .pure-card */
+    width: 100%;
+}
+
 /* ── Variáveis locais com fallback ─────────────────────────────────────────── */
 #pureDashboard {
   --pure-bg-card:      var(--bg-secondary,     rgba(13, 27, 42, 0.85));
