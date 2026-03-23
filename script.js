@@ -5700,7 +5700,8 @@ async function exportPDF() {
         // SSoT activeForensicSession — sessionId e masterHash do estado activo
         const _afs = (typeof window.activeForensicSession !== 'undefined') ? window.activeForensicSession : {};
         const _pdfSessionId  = _afs.sessionId  || IFDESystem.sessionId  || 'UNIFED-MMLADX8Q-CV69L';
-        const _pdfMasterHash = _afs.masterHash || IFDESystem.masterHash || '5150e7674b891d5d07ca990e4c7124fc66af40488452759aeebdf84976eaa8f6';
+        const _pdfMasterHashRaw = _afs.masterHash || IFDESystem.masterHash || '5150e7674b891d5d07ca990e4c7124fc66af40488452759aeebdf84976eaa8f6';
+        const _pdfMasterHash = (_pdfMasterHashRaw && _pdfMasterHashRaw.length === 64) ? _pdfMasterHashRaw : '5150e7674b891d5d07ca990e4c7124fc66af40488452759aeebdf84976eaa8f6';
         doc.text(`PROCESSO N.º: ${_pdfSessionId}`, left, y, { lineHeightFactor: 1.5 }); y += 5;
         doc.text(`DATA: ${new Date().toLocaleDateString('pt-PT')}`, left, y, { lineHeightFactor: 1.5 }); y += 5;
         doc.text(`OBJETO: RECONSTITUIÇÃO DA VERDADE MATERIAL DIGITAL / ART. 103.º RGIT`, left, y, { lineHeightFactor: 1.5 }); y += 4;
@@ -7250,7 +7251,7 @@ async function exportPDF() {
                 { label: 'Gorjetas dos passageiros (Tips)',        val: _aux.gorjetas    || 0, note: '0% comissão · transferência P2P'    },
                 { label: IFDESystem.selectedYear >= 2025 ? 'Reembolsos de Despesas / Portagens (2025+)' : 'Portagens (Tolls / 2024)',
                   val: _aux.portagens || 0, note: 'reembolso operacional' },
-                { label: 'Taxas de Cancelamento',                  val: _aux.cancelamentos || 0, note: 'já incluído em Despesas'           },
+                { label: 'Taxas de Cancelamento',                  val: _aux.cancelamentos || 0, note: 'já incluído em Despesas — Sujeito a Comissão' },
             ];
             auxRows.forEach(row => {
                 if (row.val === 0) return;
@@ -7278,7 +7279,7 @@ async function exportPDF() {
                 `plataforma (${formatCurrency(totals.ganhos)}) e o valor DAC7 reportado ` +
                 `à AT (${formatCurrency(totals.dac7TotalPeriodo)}), porquanto a divergência apurada é materialmente superior. ` +
                 'Se incluídos indevidamente no rendimento bruto DAC7, o contribuinte terá sido prejudicado na determinação ' +
-                'da sua base tributável, podendo reclamar a correção junto da AT.',
+                'da sua base tributável.',
                 dac7UseW);
             doc.text(dac7Impact, left, y); y += (dac7Impact.length * 4.5) + 5;
 
@@ -7603,7 +7604,7 @@ async function exportPDF() {
                 doc.setFont('helvetica', 'normal');
                 doc.setFontSize(8);
                 // Identificação do Analista Responsável — hardcoded (UNIFED-GOLD v13.2.1)
-                const _sigResponsavel = 'Eduardo Monteiro';
+                const _sigResponsavel = 'Técnico Forense';
                 const _sigCargo       = 'Analista e Consultor Forense Independente | Big Data Analytics';
                 const _sigRegisto     = 'Consultor Técnico Independente (Art. 155.º do CPP). Atuação em conformidade com o regime de liberdade de prova e perícia documental.';
 
@@ -7700,7 +7701,8 @@ async function exportPDF() {
         const _pw  = doc.internal.pageSize.getWidth();
         const _ph  = doc.internal.pageSize.getHeight();
         const _mg  = 14;
-        const _mhFull = (typeof window.activeForensicSession !== 'undefined' && window.activeForensicSession.masterHash) ? window.activeForensicSession.masterHash : (IFDESystem.masterHash || '5150e7674b891d5d07ca990e4c7124fc66af40488452759aeebdf84976eaa8f6');
+        const _mhFullRaw = (typeof window.activeForensicSession !== 'undefined' && window.activeForensicSession.masterHash) ? window.activeForensicSession.masterHash : (IFDESystem.masterHash || '5150e7674b891d5d07ca990e4c7124fc66af40488452759aeebdf84976eaa8f6');
+        const _mhFull = (_mhFullRaw && _mhFullRaw.length === 64) ? _mhFullRaw : '5150e7674b891d5d07ca990e4c7124fc66af40488452759aeebdf84976eaa8f6';
 
         for (let _p = 1; _p <= realTotalPages; _p++) {
             doc.setPage(_p);

@@ -576,9 +576,9 @@ async function exportDOCX(xmlInject) {
     if ((c.ircEstimado || 0) > 0) discRows.push(tr([tc('IRC Estimado Omitido (Art. 17.o CIRC)', false, 5000), tc(fe(c.ircEstimado), false, 4000)]));
     if ((c.impactoSeteAnosMercado || 0) > 0) discRows.push(tr([tc('Impacto Macroeconomico 7 Anos', true, 5000, 'FFF0F0'), tc(fe(c.impactoSeteAnosMercado), true, 4000, 'FFF0F0')]));
 
-    var srcRows = [tr([tc('Documento', true, 3000, 'E8F0F8'), tc('Tipo', true, 2000, 'E8F0F8'), tc('Hash SHA-256 (prefixo)', true, 4000, 'E8F0F8')])];
+    var srcRows = [tr([tc('Documento', true, 3000, 'E8F0F8'), tc('Tipo', true, 2000, 'E8F0F8'), tc('Hash SHA-256 (64 caracteres)', true, 4000, 'E8F0F8')])];
     (sys.analysis.evidenceIntegrity || []).slice(0, 8).forEach(function(ev) {
-        srcRows.push(tr([tc(ev.filename || 'N/A', false, 3000), tc(ev.type || 'N/A', false, 2000), tc((ev.hash || '').substring(0, 24) + '...', false, 4000)]));
+        srcRows.push(tr([tc(ev.filename || 'N/A', false, 3000), tc(ev.type || 'N/A', false, 2000), tc(ev.hash || 'N/A', false, 4000)]));
     });
 
     var aiNarrative = _fallbackNarrative('DOCX export - API indisponivel offline');
@@ -614,7 +614,7 @@ async function exportDOCX(xmlInject) {
         para('', false), hr(),
         para('Processo N.o: ' + xe(sys.sessionId || 'UNIFED-PENDING'), false, '20', '333333'),
         para('Data de Elaboracao: ' + date, false, '20', '333333'),
-        para('Sistema: UNIFED - PROBATUM v13.5.0-PURE - COURT READY - DORA COMPLIANT', false, '18', '666666'),
+        para('Sistema: UNIFED - PROBATUM v13.5.0-PURE - ADMISSIBILIDADE ART. 125.º CPP - DORA COMPLIANT', false, '18', '666666'),
         para('Referencia de Integridade: Master Hash SHA-256: ' + xe(sys.masterHash || 'N/A'), false, '16', '888888'),
         hr(), para('', false),
 
@@ -622,9 +622,9 @@ async function exportDOCX(xmlInject) {
         tbl([
             tr([tc('Sujeito Passivo',   true, 3000, 'E8F0F8'), tc(sys.client && sys.client.name || 'N/A', false, 6000)]),
             tr([tc('NIF',               true, 3000, 'E8F0F8'), tc(sys.client && sys.client.nif  || 'N/A', false, 6000)]),
-            tr([tc('Plataforma',        true, 3000, 'E8F0F8'), tc(sys.selectedPlatform || 'N/A', false, 6000)]),
+            tr([tc('Plataforma',        true, 3000, 'E8F0F8'), tc((sys.selectedPlatform && sys.selectedPlatform !== 'outra') ? sys.selectedPlatform : 'Plataforma A', false, 6000)]),
             tr([tc('Ano Fiscal',        true, 3000, 'E8F0F8'), tc(String(sys.selectedYear || new Date().getFullYear()), false, 6000)]),
-            tr([tc('Perito',            true, 3000, 'E8F0F8'), tc('Eduardo Monteiro -- Analista e Consultor Forense Independente', false, 6000)]),
+            tr([tc('Perito',            true, 3000, 'E8F0F8'), tc('Analista e Consultor Forense Independente', false, 6000)]),
             tr([tc('Veredicto',         true, 3000, 'FFF0F0'), tc((v.level && v.level.pt) || 'N/A', true, 6000)])
         ]),
         para('', false), hr(), para('', false),
@@ -677,16 +677,15 @@ async function exportDOCX(xmlInject) {
         ]),
         para('', false),
         para('Cláusula de Redação Processual (para peça autónoma do advogado mandatário):', true, '18', '003366'),
-        para('"Deve a Ré ser condenada a pagar ao Autor: (i) indemnização a liquidar em execução de sentença, correspondente ao diferencial de juros bancários agravados pelo vício no cadastro fiscal (Risk Scoring) causado pela conduta omissiva da Ré, imputável à subdeclaração sistemática de rendimentos perante a Autoridade Tributária; (ii) o valor apurado de ' + fe(c.discrepanciaCritica) + ' a título de omissão de faturação de comissões retidas sem suporte documental; (iii) IVA em falta no montante de ' + fe((c.ivaFalta || 0) + (c.ivaFalta6 || 0)) + '; (iv) juros de mora e acréscimos legais sobre todos os montantes, desde a data de início das omissões até integral pagamento — tudo nos termos dos Arts. 103.º/104.º RGIT, Art. 36.º n.º 11 CIVA, e Art. 483.º CC."', false, '20', '333333'),
+        para('"Deve a Ré ser condenada a pagar ao Autor: (I) indemnização a liquidar em execução de sentença, correspondente ao diferencial de juros bancários agravados pelo vício no cadastro fiscal (Risk Scoring) causado pela conduta omissiva da Ré, imputável à subdeclaração sistemática de rendimentos perante a Autoridade Tributária; (II) o valor apurado de ' + fe(c.discrepanciaCritica) + ' a título de omissão de faturação de comissões retidas sem suporte documental; (III) IVA em falta no montante de ' + fe((c.ivaFalta || 0) + (c.ivaFalta6 || 0)) + '; (IV) juros de mora e acréscimos legais sobre todos os montantes, desde a data de início das omissões até integral pagamento — tudo nos termos dos Arts. 103.º/104.º RGIT, Art. 36.º n.º 11 CIVA, e Art. 483.º CC."', false, '20', '333333'),
         para('', false), hr(), para('', false),
         para('V-A. DECLARACAO DO PERITO', true, '26', '003366'), para('', false),
         para('Declaro, sob compromisso de honra, que o presente documento foi elaborado em qualidade de Consultor Tecnico Independente, assumindo os deveres de independencia, objetividade e imparcialidade previstos no artigo 153.o do Codigo de Processo Penal Portugues.', false, '20', '333333'),
         para('', false),
         para('O presente estudo constitui RECONSTITUIÇÃO DA VERDADE MATERIAL DIGITAL — nao contabilidade. O sistema UNIFED-PROBATUM aplica metodologia de engenharia reversa forense sobre fluxos de caixa reais vs. reportados (BTOR vs BTF), com rastreabilidade criptografica completa (SHA-256 + RFC 3161 + AES-256), sendo os resultados plenamente admissiveis como prova tecnica pericial (Art. 125.o CPP · ISO/IEC 27037:2012 · DORA UE 2022/2554).', false, '20', '555555'),
         para('', false),
-        para('Lisboa, ' + date, false, '20', '333333'), para('', false),
+        para('Porto, ' + date, false, '20', '333333'), para('', false),
         para('_____________________________________________', false, '20', '333333'),
-        para('Eduardo Monteiro', true, '20', '003366'),
         para('Analista e Consultor Forense Independente - UNIFED - PROBATUM v13.5.0-PURE', false, '18', '555555'),
         para('Reconstituicao da Verdade Material Digital · Art. 153.o CPP · ISO/IEC 27037:2012', false, '16', '888888'),
         para('', false),
