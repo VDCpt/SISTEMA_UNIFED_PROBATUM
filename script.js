@@ -10,7 +10,7 @@
  *    - Parser RFC-4180 completo (campos com aspas e vírgulas internas).
  *    - Sanitização de strings para float em cada iteração (normalizeNumericValue).
  *    - Log de diagnóstico de mapeamento e contagem de linhas processadas.
- *    - Estrutura de saída (IFDESystem.documents.saft.totals) inalterada.
+ *    - Estrutura de saída (UNIFEDSystem.documents.saft.totals) inalterada.
  * 2. clearConsole: Purga Total com reset de todos os objetos e LEDs.
  * 3. led-red-blink / box-despesas-blink: comportamento visual de alerta.
  * 4. Conformidade DORA (UE) 2022/2554 inserida no PDF e nos badges.
@@ -437,9 +437,9 @@ function robustSAFTParser(csvText) {
     }
 
     // --- FASE 3: Persistência — estrutura de saída inalterada ---
-    IFDESystem.documents.saft.totals.iliquido = totalIliquido;
-    IFDESystem.documents.saft.totals.iva      = totalIVA;
-    IFDESystem.documents.saft.totals.bruto    = totalBruto;
+    UNIFEDSystem.documents.saft.totals.iliquido = totalIliquido;
+    UNIFEDSystem.documents.saft.totals.iva      = totalIVA;
+    UNIFEDSystem.documents.saft.totals.bruto    = totalBruto;
 
     // --- FASE 4: Actualização da UI — lógica de formatação inalterada ---
     const setUI = (id, value) => {
@@ -714,8 +714,8 @@ function openCustodyChainModal() {
     const modal = document.getElementById('custodyModal');
     if (!modal) return;
     const sessionEl = document.getElementById('custodySessionId');
-    if (sessionEl && typeof IFDESystem !== 'undefined' && IFDESystem.sessionId) {
-        sessionEl.textContent = IFDESystem.sessionId;
+    if (sessionEl && typeof UNIFEDSystem !== 'undefined' && UNIFEDSystem.sessionId) {
+        sessionEl.textContent = UNIFEDSystem.sessionId;
     }
     renderCustodyLog(ForensicLogger.getLogs());
     modal.classList.add('active');
@@ -812,7 +812,7 @@ function clearCustodyLogs() {
 // IMPORTAÇÃO DE CONTROLO DE AUTENTICIDADE — importForensicControlCSV()
 // Lê o ficheiro 01_CONTROLO_AUTENTICIDADE.csv gerado localmente pelo motor
 // de selagem PowerShell/OpenSSL e sincroniza os metadados RFC 3161 com o
-// IFDESystem.analysis.evidenceIntegrity existente.
+// UNIFEDSystem.analysis.evidenceIntegrity existente.
 //
 // Colunas esperadas (separador ponto-e-vírgula):
 //   Data;Nome_Ficheiro;Hash_SHA256;Status_Selo;Caminho_TSR
@@ -872,7 +872,7 @@ async function importForensicControlCSV(file) {
                     importedEntries.push(entry);
 
                     // Sincronizar com evidenceIntegrity existente (match por hash SHA-256)
-                    const existing = IFDESystem.analysis.evidenceIntegrity.find(
+                    const existing = UNIFEDSystem.analysis.evidenceIntegrity.find(
                         ev => ev.hash && ev.hash.toLowerCase() === entry.hash.toLowerCase()
                     );
 
@@ -885,7 +885,7 @@ async function importForensicControlCSV(file) {
                         matchCount++;
                     } else {
                         // Registar entrada nova proveniente do CSV (ficheiro fora do sistema)
-                        IFDESystem.analysis.evidenceIntegrity.push({
+                        UNIFEDSystem.analysis.evidenceIntegrity.push({
                             filename:   entry.nome,
                             type:       'control',
                             hash:       entry.hash,
@@ -970,7 +970,7 @@ window.triggerImportCSV = triggerImportCSV;
 // ============================================================================
 async function submitToOpenTimestamps() {
     const btn = document.getElementById('otsSealBtn');
-    const masterHash = IFDESystem.masterHash;
+    const masterHash = UNIFEDSystem.masterHash;
 
     if (!masterHash || masterHash.length < 60) {
         Swal.fire({
@@ -1000,7 +1000,7 @@ async function submitToOpenTimestamps() {
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> A CERTIFICAR NA BLOCKCHAIN...';
         }
 
-        const sessionId = IFDESystem.sessionId || 'PROBATUM';
+        const sessionId = UNIFEDSystem.sessionId || 'PROBATUM';
         const stubFilename = `PROCESSO_${sessionId}_BLOCKCHAIN_PENDING.ots`;
         const stubData = JSON.stringify({
             _type:       'OTS_PENDING_STUB',
@@ -1023,8 +1023,8 @@ async function submitToOpenTimestamps() {
         document.body.removeChild(aStub);
         setTimeout(() => URL.revokeObjectURL(stubUrl), 5000);
 
-        if (!IFDESystem.forensicMetadata) IFDESystem.forensicMetadata = getForensicMetadata();
-        IFDESystem.forensicMetadata.otsAnchor = {
+        if (!UNIFEDSystem.forensicMetadata) UNIFEDSystem.forensicMetadata = getForensicMetadata();
+        UNIFEDSystem.forensicMetadata.otsAnchor = {
             status:     'PENDING_STUB_LOCAL',
             protocol:   'OpenTimestamps (Bitcoin) — CDN inacessível',
             anchoredAt: new Date().toISOString(),
@@ -1052,7 +1052,7 @@ async function submitToOpenTimestamps() {
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> A CERTIFICAR NA BLOCKCHAIN...';
     }
 
-    const sessionId = IFDESystem.sessionId || 'PROBATUM';
+    const sessionId = UNIFEDSystem.sessionId || 'PROBATUM';
     const filename = `PROCESSO_${sessionId}_BLOCKCHAIN.ots`;
 
     ForensicLogger.addEntry('OTS_ANCHOR_REQUESTED', {
@@ -1110,8 +1110,8 @@ async function submitToOpenTimestamps() {
         setTimeout(() => URL.revokeObjectURL(otsUrl), 5000);
 
         // ── 7. Persistir no forensicMetadata ─────────────────────────────────
-        if (!IFDESystem.forensicMetadata) IFDESystem.forensicMetadata = getForensicMetadata();
-        IFDESystem.forensicMetadata.otsAnchor = {
+        if (!UNIFEDSystem.forensicMetadata) UNIFEDSystem.forensicMetadata = getForensicMetadata();
+        UNIFEDSystem.forensicMetadata.otsAnchor = {
             status:        upgradeStatus === 'BITCOIN_MERKLE_PROOF' ? 'ANCORADO_BLOCKCHAIN_CONFIRMADO' : 'ANCORADO_CALENDARIO_PENDENTE_BITCOIN',
             protocol:      'OpenTimestamps (Bitcoin blockchain)',
             upgradeStatus,
@@ -1127,7 +1127,7 @@ async function submitToOpenTimestamps() {
 
         // ── Persistir sealType = 'OTS' nas evidências da sessão ──────────────
         const otsDate = new Date().toISOString();
-        IFDESystem.analysis.evidenceIntegrity.forEach(ev => {
+        UNIFEDSystem.analysis.evidenceIntegrity.forEach(ev => {
             if (!ev.sealType || ev.sealType === 'NONE') {
                 ev.sealType   = 'OTS';
                 ev.sealStatus = 'BLOCKCHAIN OTS (Nível 1)';
@@ -1180,8 +1180,8 @@ async function submitToOpenTimestamps() {
         document.body.removeChild(aStub);
         setTimeout(() => URL.revokeObjectURL(stubUrl), 5000);
 
-        if (!IFDESystem.forensicMetadata) IFDESystem.forensicMetadata = getForensicMetadata();
-        IFDESystem.forensicMetadata.otsAnchor = {
+        if (!UNIFEDSystem.forensicMetadata) UNIFEDSystem.forensicMetadata = getForensicMetadata();
+        UNIFEDSystem.forensicMetadata.otsAnchor = {
             status:     'PENDING_STUB_LOCAL',
             protocol:   'OpenTimestamps (Bitcoin) — erro de ligação',
             anchoredAt: new Date().toISOString(),
@@ -1347,11 +1347,11 @@ function _showOTSSuccessModal(filename, masterHash, isPendingStub = false, upgra
 
 // ── NÍVEL 2: SELAGEM EXTERNA RFC 3161 — anchorMasterHashExternal()
 // Submete o masterHash SHA-256 para https://freetsa.org/tsr
-// Injeta o token de resposta em IFDESystem.forensicMetadata.nivel2Seal
+// Injeta o token de resposta em UNIFEDSystem.forensicMetadata.nivel2Seal
 // ============================================================================
 // ── NÍVEL 2 — Painel Dual: Carregar TSR (validação local) OU Selar Online ──
 async function anchorMasterHashExternal() {
-    const masterHash = IFDESystem.masterHash;
+    const masterHash = UNIFEDSystem.masterHash;
 
     if (!masterHash || masterHash.length < 60) {
         Swal.fire({
@@ -1452,9 +1452,9 @@ function _loadAndValidateTSR(masterHash) {
             _nivel2SealSuccess(masterHash, tsaDate, `FreeTSA.org (TSR Local: ${file.name})`, tsrToken);
 
             // Armazenar detalhes da validação TSR
-            if (!IFDESystem.forensicMetadata) IFDESystem.forensicMetadata = {};
-            IFDESystem.forensicMetadata.nivel2Seal = Object.assign(
-                IFDESystem.forensicMetadata.nivel2Seal || {},
+            if (!UNIFEDSystem.forensicMetadata) UNIFEDSystem.forensicMetadata = {};
+            UNIFEDSystem.forensicMetadata.nivel2Seal = Object.assign(
+                UNIFEDSystem.forensicMetadata.nivel2Seal || {},
                 {
                     validationMode:  'TSR_LOCAL_UPLOAD',
                     tsrFilename:     file.name,
@@ -1468,7 +1468,7 @@ function _loadAndValidateTSR(masterHash) {
             );
 
             // Marcar todas as evidências como RFC3161 seladas (sessão atual)
-            IFDESystem.analysis.evidenceIntegrity.forEach(ev => {
+            UNIFEDSystem.analysis.evidenceIntegrity.forEach(ev => {
                 if (!ev.sealType || ev.sealType === 'NONE') {
                     ev.sealType   = 'RFC3161';
                     ev.sealStatus = 'SELADO VIA RFC 3161 (OpenSSL)';
@@ -1534,7 +1534,7 @@ async function _doOnlineSeal(masterHash) {
     }
 
     // ── MOCK SEAL: bypass de fetch externo em demoMode ou casoRealAnonimizado ──
-    if (IFDESystem.demoMode === true || IFDESystem.casoRealAnonimizado === true) {
+    if (UNIFEDSystem.demoMode === true || UNIFEDSystem.casoRealAnonimizado === true) {
         const _mockDate = new Date().toISOString();
         _nivel2SealSuccess(masterHash, _mockDate, 'ANCORADO VIA PROXY SEGURO', 'UNIFED-TSA-99A8B7C6');
         console.info('[v13.5.0-PURE] TSA Anchor: Verified Local Integrity.');
@@ -1624,8 +1624,8 @@ function _nivel2SealSuccess(hash, tsaDate, tsaProvider, token) {
     const btn = document.getElementById('nivel2SealBtn');
 
     // Injectar no forensicMetadata
-    if (!IFDESystem.forensicMetadata) IFDESystem.forensicMetadata = getForensicMetadata();
-    IFDESystem.forensicMetadata.nivel2Seal = {
+    if (!UNIFEDSystem.forensicMetadata) UNIFEDSystem.forensicMetadata = getForensicMetadata();
+    UNIFEDSystem.forensicMetadata.nivel2Seal = {
         status:      'ANCORADO',
         protocol:    'RFC 3161',
         tsaProvider: tsaProvider,
@@ -1636,7 +1636,7 @@ function _nivel2SealSuccess(hash, tsaDate, tsaProvider, token) {
     };
 
     // ── Persistir sealType = 'RFC3161' em todas as evidências da sessão ──────
-    IFDESystem.analysis.evidenceIntegrity.forEach(ev => {
+    UNIFEDSystem.analysis.evidenceIntegrity.forEach(ev => {
         if (!ev.sealType || ev.sealType === 'NONE') {
             ev.sealType   = 'RFC3161';
             ev.sealStatus = 'SELADO VIA RFC 3161';
@@ -1781,8 +1781,8 @@ const ForensicLogger = {
             id: this.logs.length + 1,
             timestamp: new Date().toISOString(),
             timestampUnix: Math.floor(Date.now() / 1000),
-            sessionId: typeof IFDESystem !== 'undefined' && IFDESystem.sessionId ? IFDESystem.sessionId : 'PRE_SESSION',
-            user: typeof IFDESystem !== 'undefined' && IFDESystem.client?.name ? IFDESystem.client.name : 'Anónimo',
+            sessionId: typeof UNIFEDSystem !== 'undefined' && UNIFEDSystem.sessionId ? UNIFEDSystem.sessionId : 'PRE_SESSION',
+            user: typeof UNIFEDSystem !== 'undefined' && UNIFEDSystem.client?.name ? UNIFEDSystem.client.name : 'Anónimo',
             action: action,
             data: data,
             ip: 'local',
@@ -1888,7 +1888,7 @@ const ForensicLogger = {
 
         // ── FIX-2: RESILIÊNCIA AES-256 — ÂNCORAS sessionStorage ─────────────────
         // PROBLEMA ORIGINAL: _sessionId e _sessionStart eram lidos diretamente de
-        // IFDESystem em runtime. Um reload (F5) destrói IFDESystem antes da
+        // UNIFEDSystem em runtime. Um reload (F5) destrói UNIFEDSystem antes da
         // re-inicialização, gerando novos valores → chave diferente → payload
         // cifrado em localStorage permanentemente indecifrável (key mismatch).
         //
@@ -1896,8 +1896,8 @@ const ForensicLogger = {
         //   · sessionStorage sobrevive a F5/reload mas é destruído ao fechar a aba
         //     (isola corretamente sessões forenses distintas por aba/janela).
         //   · Fluxo: verificar sessionStorage primeiro; se existir, consumir;
-        //     se não existir, gerar a partir de IFDESystem, guardar e usar.
-        //   · Fallback triplo: IFDESystem → dia UTC → literal pré-sessão.
+        //     se não existir, gerar a partir de UNIFEDSystem, guardar e usar.
+        //   · Fallback triplo: UNIFEDSystem → dia UTC → literal pré-sessão.
         //   · A estrutura HMAC-SHA256 (sessionId + start + salt) é preservada.
         //   · try/catch para Private Browsing com restrições de storage.
         // ────────────────────────────────────────────────────────────────────────
@@ -1917,13 +1917,13 @@ const ForensicLogger = {
                 _sessionId    = _storedId;
                 _sessionStart = _storedStart;
             } else {
-                // Gerar a partir de IFDESystem (primeira inicialização da aba)
-                _sessionId = (typeof IFDESystem !== 'undefined' && IFDESystem.sessionId)
-                    ? IFDESystem.sessionId
+                // Gerar a partir de UNIFEDSystem (primeira inicialização da aba)
+                _sessionId = (typeof UNIFEDSystem !== 'undefined' && UNIFEDSystem.sessionId)
+                    ? UNIFEDSystem.sessionId
                     : 'UNIFED-DIAMOND-PROBATUM-PRESESSION';
 
-                _sessionStart = (typeof IFDESystem !== 'undefined' && IFDESystem._sessionStart)
-                    ? String(IFDESystem._sessionStart)
+                _sessionStart = (typeof UNIFEDSystem !== 'undefined' && UNIFEDSystem._sessionStart)
+                    ? String(UNIFEDSystem._sessionStart)
                     : String(Math.floor(Date.now() / 86400000)); // Fallback: dia atual (UTC)
 
                 // Persistir no sessionStorage — sobreviverá a reloads desta aba
@@ -1932,13 +1932,13 @@ const ForensicLogger = {
             }
         } catch (_ssErr) {
             // sessionStorage indisponível (Private Browsing restrito, iframe sandbox)
-            // Fallback: ler diretamente de IFDESystem (comportamento anterior)
-            _sessionId = (typeof IFDESystem !== 'undefined' && IFDESystem.sessionId)
-                ? IFDESystem.sessionId
+            // Fallback: ler diretamente de UNIFEDSystem (comportamento anterior)
+            _sessionId = (typeof UNIFEDSystem !== 'undefined' && UNIFEDSystem.sessionId)
+                ? UNIFEDSystem.sessionId
                 : 'UNIFED-DIAMOND-PROBATUM-PRESESSION';
 
-            _sessionStart = (typeof IFDESystem !== 'undefined' && IFDESystem._sessionStart)
-                ? String(IFDESystem._sessionStart)
+            _sessionStart = (typeof UNIFEDSystem !== 'undefined' && UNIFEDSystem._sessionStart)
+                ? String(UNIFEDSystem._sessionStart)
                 : String(Math.floor(Date.now() / 86400000));
         }
         // ── FIM FIX-2 ─────────────────────────────────────────────────────────────
@@ -2606,13 +2606,13 @@ const SchemaRegistry = {
 
             case 'trimestral': {
                 // Quarterly Scope: apenas o índice Q correspondente ao trimestre ativo
-                let triAtivo = IFDESystem.selectedTrimestre || 1;
+                let triAtivo = UNIFEDSystem.selectedTrimestre || 1;
                 const triSelector = document.getElementById('trimestralSelector');
                 if (triSelector) {
                     const triVal = parseInt(triSelector.value, 10);
                     if (triVal >= 1 && triVal <= 4) {
                         triAtivo = triVal;
-                        IFDESystem.selectedTrimestre = triAtivo;
+                        UNIFEDSystem.selectedTrimestre = triAtivo;
                     }
                 }
                 result.q1 = triAtivo === 1 ? q1Extracted : 0;
@@ -2732,7 +2732,7 @@ const SchemaRegistry = {
 // ============================================================================
 // 9. ESTADO GLOBAL (SINGLE SOURCE OF TRUTH) - UNIFED - PROBATUM
 // ============================================================================
-const IFDESystem = {
+const UNIFEDSystem = {
     version: 'v13.5.0-PURE-DORA-COMPLIANT',
     name: 'UNIFED - PROBATUM',
     sessionId: null,
@@ -2823,8 +2823,8 @@ const IFDESystem = {
 
     // ============================================================================
     // AUXILIARYDATA — NON-INTERFERING DATA OBJECT (Encapsulamento Pericial)
-    // ISOLAMENTO TOTAL: Este objeto NÃO interfere com IFDESystem.financials,
-    // IFDESystem.analysis.totals nem com qualquer variável de estado de cálculo fiscal.
+    // ISOLAMENTO TOTAL: Este objeto NÃO interfere com UNIFEDSystem.financials,
+    // UNIFEDSystem.analysis.totals nem com qualquer variável de estado de cálculo fiscal.
     // Os valores aqui armazenados são fluxos de caixa de terceiros (0% comissão)
     // que NÃO devem ser incluídos na base tributável da plataforma.
     // Fundamento Legal: Lei TVDE · Art. 125.º CPP (Integridade da Prova)
@@ -2853,42 +2853,42 @@ function forensicDataSynchronization() {
     ForensicLogger.addEntry('SYNC_STARTED');
     console.log('🔍 SINCRONIZAÇÃO FORENSE ATIVADA');
 
-    const statementFiles = IFDESystem.analysis.evidenceIntegrity.filter(
+    const statementFiles = UNIFEDSystem.analysis.evidenceIntegrity.filter(
         item => item.type === 'statement'
     ).length;
 
-    const invoiceFiles = IFDESystem.analysis.evidenceIntegrity.filter(
+    const invoiceFiles = UNIFEDSystem.analysis.evidenceIntegrity.filter(
         item => item.type === 'invoice'
     ).length;
 
-    const controlFiles = IFDESystem.analysis.evidenceIntegrity.filter(
+    const controlFiles = UNIFEDSystem.analysis.evidenceIntegrity.filter(
         item => item.type === 'control'
     ).length;
 
-    const saftFiles = IFDESystem.analysis.evidenceIntegrity.filter(
+    const saftFiles = UNIFEDSystem.analysis.evidenceIntegrity.filter(
         item => item.type === 'saft'
     ).length;
 
-    const dac7Files = IFDESystem.analysis.evidenceIntegrity.filter(
+    const dac7Files = UNIFEDSystem.analysis.evidenceIntegrity.filter(
         item => item.type === 'dac7'
     ).length;
 
-    if (IFDESystem.documents.statements) {
-        IFDESystem.documents.statements.files =
-            IFDESystem.analysis.evidenceIntegrity
+    if (UNIFEDSystem.documents.statements) {
+        UNIFEDSystem.documents.statements.files =
+            UNIFEDSystem.analysis.evidenceIntegrity
                 .filter(item => item.type === 'statement')
                 .map(item => ({ name: item.filename, size: item.size }));
 
-        IFDESystem.documents.statements.totals.records = statementFiles;
+        UNIFEDSystem.documents.statements.totals.records = statementFiles;
     }
 
-    if (IFDESystem.documents.invoices) {
-        IFDESystem.documents.invoices.files =
-            IFDESystem.analysis.evidenceIntegrity
+    if (UNIFEDSystem.documents.invoices) {
+        UNIFEDSystem.documents.invoices.files =
+            UNIFEDSystem.analysis.evidenceIntegrity
                 .filter(item => item.type === 'invoice')
                 .map(item => ({ name: item.filename, size: item.size }));
 
-        IFDESystem.documents.invoices.totals.records = invoiceFiles;
+        UNIFEDSystem.documents.invoices.totals.records = invoiceFiles;
     }
 
     setElementText('controlCountCompact', controlFiles);
@@ -2907,7 +2907,7 @@ function forensicDataSynchronization() {
     setElementText('summaryTotal', total);
     const evidenceCountEl = document.getElementById('evidenceCountTotal');
     if (evidenceCountEl) evidenceCountEl.textContent = total;
-    IFDESystem.counts.total = total;
+    UNIFEDSystem.counts.total = total;
 
     logAudit(`🔬 SINCRONIZAÇÃO: ${total} total (CTRL:${controlFiles} SAFT:${saftFiles} FAT:${invoiceFiles} EXT:${statementFiles} DAC7:${dac7Files})`, 'success');
 
@@ -2948,17 +2948,17 @@ function openHashModal() {
 
     const masterHashEl = document.getElementById('masterHashFull');
     if (masterHashEl) {
-        masterHashEl.textContent = IFDESystem.masterHash || 'HASH INDISPONÍVEL';
+        masterHashEl.textContent = UNIFEDSystem.masterHash || 'HASH INDISPONÍVEL';
     }
 
     const evidenceListEl = document.getElementById('evidenceHashList');
     if (evidenceListEl) {
         evidenceListEl.innerHTML = '';
 
-        if (IFDESystem.analysis.evidenceIntegrity.length === 0) {
+        if (UNIFEDSystem.analysis.evidenceIntegrity.length === 0) {
             evidenceListEl.innerHTML = '<p style="color: var(--text-tertiary);">Nenhuma evidência processada.</p>';
         } else {
-            IFDESystem.analysis.evidenceIntegrity.forEach((item, index) => {
+            UNIFEDSystem.analysis.evidenceIntegrity.forEach((item, index) => {
                 const itemEl = document.createElement('div');
                 itemEl.className = 'evidence-hash-item';
                 itemEl.innerHTML = `
@@ -2994,7 +2994,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ForensicLogger carrega automaticamente os logs persistidos (UNIFED_FORENSIC_LOGS — invariante)
     // ao ser definido — não é necessário carregamento manual aqui.
-    ForensicLogger.addEntry('SYSTEM_START', { version: IFDESystem.version, logsCarregados: ForensicLogger.logs.length });
+    ForensicLogger.addEntry('SYSTEM_START', { version: UNIFEDSystem.version, logsCarregados: ForensicLogger.logs.length });
 });
 
 function setupStaticListeners() {
@@ -3046,18 +3046,18 @@ function startGatekeeperSession() {
 
 function loadSystemCore() {
     updateLoadingProgress(20);
-    IFDESystem.sessionId = generateSessionId();
+    UNIFEDSystem.sessionId = generateSessionId();
     // ── UNIFED-v13.5.0-PURE: Âncora temporal da sessão forense ───────────
     // _sessionStart é imutável durante toda a sessão — usado como segundo
     // fator de entropia na derivação da chave AES-256 do ForensicLogger.
     // Garante isolamento criptográfico completo entre sessões distintas.
-    IFDESystem._sessionStart = Date.now();
+    UNIFEDSystem._sessionStart = Date.now();
     // ─────────────────────────────────────────────────────────────────────────
-    setElementText('sessionIdDisplay', IFDESystem.sessionId);
-    setElementText('verdictSessionId', IFDESystem.sessionId);
+    setElementText('sessionIdDisplay', UNIFEDSystem.sessionId);
+    setElementText('verdictSessionId', UNIFEDSystem.sessionId);
     generateQRCode();
 
-    ForensicLogger.addEntry('SESSION_CREATED', { sessionId: IFDESystem.sessionId });
+    ForensicLogger.addEntry('SESSION_CREATED', { sessionId: UNIFEDSystem.sessionId });
 
     setTimeout(() => {
         updateLoadingProgress(40);
@@ -3118,7 +3118,7 @@ function loadSystemRecursively() {
         if (stored) {
             const client = JSON.parse(stored);
             if (client && client.name && client.nif) {
-                IFDESystem.client = client;
+                UNIFEDSystem.client = client;
                 document.getElementById('clientStatusFixed').style.display = 'flex';
                 setElementText('clientNameDisplayFixed', client.name);
                 setElementText('clientNifDisplayFixed', client.nif);
@@ -3181,8 +3181,8 @@ function generateQRCode() {
 
     // Usar apenas o hash completo como string simples — evita borrão por densidade JSON
     // CorrectLevel.L = menor redundância = módulos maiores e mais legíveis em impressão
-    const hashFull = IFDESystem.masterHash || 'HASH_INDISPONIVEL';
-    const sessionShort = IFDESystem.sessionId ? IFDESystem.sessionId.substring(0, 16) : 'N/A';
+    const hashFull = UNIFEDSystem.masterHash || 'HASH_INDISPONIVEL';
+    const sessionShort = UNIFEDSystem.sessionId ? UNIFEDSystem.sessionId.substring(0, 16) : 'N/A';
 
     // Formato compacto: UNIFED|SESSION|HASH (sem JSON, sem timestamp variável)
     const qrData = `UNIFED|${sessionShort}|${hashFull}`;
@@ -3211,7 +3211,7 @@ function setupMainListeners() {
     const anoFiscal = document.getElementById('anoFiscal');
     if (anoFiscal) {
         anoFiscal.addEventListener('change', (e) => {
-            IFDESystem.selectedYear = parseInt(e.target.value);
+            UNIFEDSystem.selectedYear = parseInt(e.target.value);
             logAudit(`Ano fiscal em exame alterado para: ${e.target.value}`, 'info');
             ForensicLogger.addEntry('YEAR_CHANGED', { year: e.target.value });
         });
@@ -3233,7 +3233,7 @@ function setupMainListeners() {
         };
 
         periodoAnalise.addEventListener('change', (e) => {
-            IFDESystem.selectedPeriodo = e.target.value;
+            UNIFEDSystem.selectedPeriodo = e.target.value;
             const periodos = {
                 'anual': 'Exercício Completo (Anual)',
                 '1s': '1.º Semestre',
@@ -3254,7 +3254,7 @@ function setupMainListeners() {
             triSel.addEventListener('change', (e) => {
                 const tri = parseInt(e.target.value, 10);
                 if (tri >= 1 && tri <= 4) {
-                    IFDESystem.selectedTrimestre = tri;
+                    UNIFEDSystem.selectedTrimestre = tri;
                     logAudit(`Trimestre activo alterado para: Q${tri}`, 'info');
                     filterDAC7ByPeriod();
                 }
@@ -3268,7 +3268,7 @@ function setupMainListeners() {
     const selPlatform = document.getElementById('selPlatformFixed');
     if (selPlatform) {
         selPlatform.addEventListener('change', (e) => {
-            IFDESystem.selectedPlatform = e.target.value;
+            UNIFEDSystem.selectedPlatform = e.target.value;
             logAudit(`Plataforma alterada para: ${e.target.value.toUpperCase()}`, 'info');
             ForensicLogger.addEntry('PLATFORM_CHANGED', { platform: e.target.value });
         });
@@ -3631,7 +3631,7 @@ function switchLanguage() {
     setElementText('closeHashBtnText', t.closeHashBtnText);
     setElementText('omissaoDespesasPctTitle', t.omissaoDespesasPctTitle);
 
-    if (IFDESystem.analysis.totals) {
+    if (UNIFEDSystem.analysis.totals) {
         updateDashboard();
         updateModulesUI();
     }
@@ -3649,8 +3649,8 @@ function registerClient() {
     if (!name || name.length < 3) return showToast('Nome inválido', 'error');
     if (!validateNIF(nif)) return showToast('NIF inválido (checksum falhou)', 'error');
 
-    IFDESystem.client = { name, nif, platform: IFDESystem.selectedPlatform };
-    localStorage.setItem('ifde_client_data_v12_8', JSON.stringify(IFDESystem.client));
+    UNIFEDSystem.client = { name, nif, platform: UNIFEDSystem.selectedPlatform };
+    localStorage.setItem('ifde_client_data_v12_8', JSON.stringify(UNIFEDSystem.client));
 
     document.getElementById('clientStatusFixed').style.display = 'flex';
     setElementText('clientNameDisplayFixed', name);
@@ -3667,11 +3667,11 @@ function registerClient() {
 // ============================================================================
 async function processFile(file, type) {
     const fileKey = `${file.name}_${file.size}_${file.lastModified}`;
-    if (IFDESystem.processedFiles.has(fileKey)) {
+    if (UNIFEDSystem.processedFiles.has(fileKey)) {
         logAudit(`[!] Ficheiro duplicado ignorado: ${file.name}`, 'warning');
         return;
     }
-    IFDESystem.processedFiles.add(fileKey);
+    UNIFEDSystem.processedFiles.add(fileKey);
     ForensicLogger.addEntry('FILE_PROCESSING_START', { filename: file.name, type });
 
     let text = "";
@@ -3716,22 +3716,22 @@ async function processFile(file, type) {
     await generateForensicLog('FILE_INGESTED', file.name, hash);
     // -------------------------------------------────────────────────────────
 
-    if(!IFDESystem.documents[type]) {
-        IFDESystem.documents[type] = { files: [], hashes: {}, totals: { records: 0 } };
+    if(!UNIFEDSystem.documents[type]) {
+        UNIFEDSystem.documents[type] = { files: [], hashes: {}, totals: { records: 0 } };
     }
 
-    if (!IFDESystem.documents[type].files) {
-        IFDESystem.documents[type].files = [];
+    if (!UNIFEDSystem.documents[type].files) {
+        UNIFEDSystem.documents[type].files = [];
     }
 
     // Chave composta: permite múltiplos ficheiros com nome igual mas conteúdo diferente
     // (ex: "Ganhos da Empresa.pdf" de meses distintos)
     const fileEntryKey = `${file.name}_${file.size}_${file.lastModified}`;
-    const fileExists = IFDESystem.documents[type].files.some(
+    const fileExists = UNIFEDSystem.documents[type].files.some(
         f => `${f.name}_${f.size}_${f.lastModified}` === fileEntryKey
     );
     if (!fileExists) {
-        IFDESystem.documents[type].files.push({
+        UNIFEDSystem.documents[type].files.push({
             name: file.name,
             size: file.size,
             type: file.type,
@@ -3747,10 +3747,10 @@ async function processFile(file, type) {
     }
 
     // Hash indexado pela chave composta para não colidir ficheiros com mesmo nome
-    IFDESystem.documents[type].hashes[fileEntryKey] = hash;
-    IFDESystem.documents[type].totals.records = IFDESystem.documents[type].files.length;
+    UNIFEDSystem.documents[type].hashes[fileEntryKey] = hash;
+    UNIFEDSystem.documents[type].totals.records = UNIFEDSystem.documents[type].files.length;
 
-    IFDESystem.analysis.evidenceIntegrity.push({
+    UNIFEDSystem.analysis.evidenceIntegrity.push({
         filename:     file.name,
         type,
         hash,
@@ -3763,7 +3763,7 @@ async function processFile(file, type) {
         tsrPath:      null
     });
 
-    IFDESystem.fileSources.set(file.name, {
+    UNIFEDSystem.fileSources.set(file.name, {
         type: type,
         hash: hash,
         processedAt: new Date().toISOString()
@@ -3812,15 +3812,15 @@ async function processFile(file, type) {
             }
 
             if (yearMonth) {
-                IFDESystem.dataMonths.add(yearMonth);
+                UNIFEDSystem.dataMonths.add(yearMonth);
             }
 
             // EXTRAÇÃO CORRETA: Usar o novo método processStatement
             const extracted = SchemaRegistry.processStatement(text, file.name);
 
-            IFDESystem.documents.statements.totals.ganhos = (IFDESystem.documents.statements.totals.ganhos || 0) + extracted.ganhos;
-            IFDESystem.documents.statements.totals.despesas = (IFDESystem.documents.statements.totals.despesas || 0) + extracted.despesas;
-            IFDESystem.documents.statements.totals.ganhosLiquidos = (IFDESystem.documents.statements.totals.ganhosLiquidos || 0) + extracted.ganhosLiq;
+            UNIFEDSystem.documents.statements.totals.ganhos = (UNIFEDSystem.documents.statements.totals.ganhos || 0) + extracted.ganhos;
+            UNIFEDSystem.documents.statements.totals.despesas = (UNIFEDSystem.documents.statements.totals.despesas || 0) + extracted.despesas;
+            UNIFEDSystem.documents.statements.totals.ganhosLiquidos = (UNIFEDSystem.documents.statements.totals.ganhosLiquidos || 0) + extracted.ganhosLiq;
 
             ValueSource.registerValue('stmtGanhosValue', extracted.ganhos, file.name, 'extração tabela Ganhos líquidos');
             ValueSource.registerValue('stmtDespesasValue', extracted.despesas, file.name, 'extração tabela Ganhos líquidos');
@@ -3828,12 +3828,12 @@ async function processFile(file, type) {
 
             // ── ATF: Populate monthlyData (non-interfering) ─────────────────────
             if (yearMonth) {
-                if (!IFDESystem.monthlyData[yearMonth]) {
-                    IFDESystem.monthlyData[yearMonth] = { ganhos: 0, despesas: 0, ganhosLiq: 0 };
+                if (!UNIFEDSystem.monthlyData[yearMonth]) {
+                    UNIFEDSystem.monthlyData[yearMonth] = { ganhos: 0, despesas: 0, ganhosLiq: 0 };
                 }
-                IFDESystem.monthlyData[yearMonth].ganhos    += extracted.ganhos    || 0;
-                IFDESystem.monthlyData[yearMonth].despesas  += extracted.despesas  || 0;
-                IFDESystem.monthlyData[yearMonth].ganhosLiq += extracted.ganhosLiq || 0;
+                UNIFEDSystem.monthlyData[yearMonth].ganhos    += extracted.ganhos    || 0;
+                UNIFEDSystem.monthlyData[yearMonth].despesas  += extracted.despesas  || 0;
+                UNIFEDSystem.monthlyData[yearMonth].ganhosLiq += extracted.ganhosLiq || 0;
             }
             // ── ATF FIM ──
 
@@ -3864,16 +3864,16 @@ async function processFile(file, type) {
             const extracted = SchemaRegistry.processInvoice(text, file.name);
 
             if (extracted.valorTotal > 0) {
-                if (!IFDESystem.documents.invoices.totals) {
-                    IFDESystem.documents.invoices.totals = { invoiceValue: 0, records: 0 };
+                if (!UNIFEDSystem.documents.invoices.totals) {
+                    UNIFEDSystem.documents.invoices.totals = { invoiceValue: 0, records: 0 };
                 }
 
-                IFDESystem.documents.invoices.totals.invoiceValue = (IFDESystem.documents.invoices.totals.invoiceValue || 0) + extracted.valorTotal;
-                IFDESystem.documents.invoices.totals.records = (IFDESystem.documents.invoices.totals.records || 0) + 1;
+                UNIFEDSystem.documents.invoices.totals.invoiceValue = (UNIFEDSystem.documents.invoices.totals.invoiceValue || 0) + extracted.valorTotal;
+                UNIFEDSystem.documents.invoices.totals.records = (UNIFEDSystem.documents.invoices.totals.records || 0) + 1;
 
                 ValueSource.registerValue('kpiInvValue', extracted.valorTotal, file.name, 'extração dinâmica SchemaRegistry');
 
-                logAudit(`💰 Fatura processada: ${file.name} | +${formatCurrency(extracted.valorTotal)} | Total acumulado: ${formatCurrency(IFDESystem.documents.invoices.totals.invoiceValue)} (${IFDESystem.documents.invoices.totals.records} faturas)`, 'success');
+                logAudit(`💰 Fatura processada: ${file.name} | +${formatCurrency(extracted.valorTotal)} | Total acumulado: ${formatCurrency(UNIFEDSystem.documents.invoices.totals.invoiceValue)} (${UNIFEDSystem.documents.invoices.totals.records} faturas)`, 'success');
                 ForensicLogger.addEntry('INVOICE_PROCESSED', { filename: file.name, valor: extracted.valorTotal });
             } else {
                 logAudit(`[!] Não foi possível extrair valor da fatura: ${file.name}`, 'warning');
@@ -3894,7 +3894,7 @@ async function processFile(file, type) {
             const monthMatch = file.name.match(/131509_(\d{6})/);
             if (monthMatch && monthMatch[1]) {
                 const yearMonth = monthMatch[1];
-                IFDESystem.dataMonths.add(yearMonth);
+                UNIFEDSystem.dataMonths.add(yearMonth);
                 logAudit(`   Mês detetado: ${yearMonth}`, 'info');
             }
 
@@ -3911,14 +3911,14 @@ async function processFile(file, type) {
 
             const extracted = SchemaRegistry.processSAFT(parseResult, file.name);
 
-            if (!IFDESystem.documents.saft.totals) {
-                IFDESystem.documents.saft.totals = { records: 0, iliquido: 0, iva: 0, bruto: 0 };
+            if (!UNIFEDSystem.documents.saft.totals) {
+                UNIFEDSystem.documents.saft.totals = { records: 0, iliquido: 0, iva: 0, bruto: 0 };
             }
 
-            IFDESystem.documents.saft.totals.bruto = (IFDESystem.documents.saft.totals.bruto || 0) + extracted.totalBruto;
-            IFDESystem.documents.saft.totals.iva = (IFDESystem.documents.saft.totals.iva || 0) + extracted.totalIVA;
-            IFDESystem.documents.saft.totals.iliquido = (IFDESystem.documents.saft.totals.iliquido || 0) + extracted.totalIliquido;
-            IFDESystem.documents.saft.totals.records = (IFDESystem.documents.saft.totals.records || 0) + extracted.recordCount;
+            UNIFEDSystem.documents.saft.totals.bruto = (UNIFEDSystem.documents.saft.totals.bruto || 0) + extracted.totalBruto;
+            UNIFEDSystem.documents.saft.totals.iva = (UNIFEDSystem.documents.saft.totals.iva || 0) + extracted.totalIVA;
+            UNIFEDSystem.documents.saft.totals.iliquido = (UNIFEDSystem.documents.saft.totals.iliquido || 0) + extracted.totalIliquido;
+            UNIFEDSystem.documents.saft.totals.records = (UNIFEDSystem.documents.saft.totals.records || 0) + extracted.recordCount;
 
             ValueSource.registerValue('saftBrutoValue', extracted.totalBruto, file.name, 'soma direta coluna 16');
             ValueSource.registerValue('saftIvaValue', extracted.totalIVA, file.name, 'soma direta coluna 15');
@@ -3940,13 +3940,13 @@ async function processFile(file, type) {
     if (type === 'dac7') {
         try {
             // Passar o período selecionado para a extração
-            const extracted = SchemaRegistry.processDAC7(text, file.name, IFDESystem.selectedPeriodo);
+            const extracted = SchemaRegistry.processDAC7(text, file.name, UNIFEDSystem.selectedPeriodo);
 
-            IFDESystem.documents.dac7.totals.q1 = (IFDESystem.documents.dac7.totals.q1 || 0) + extracted.q1;
-            IFDESystem.documents.dac7.totals.q2 = (IFDESystem.documents.dac7.totals.q2 || 0) + extracted.q2;
-            IFDESystem.documents.dac7.totals.q3 = (IFDESystem.documents.dac7.totals.q3 || 0) + extracted.q3;
-            IFDESystem.documents.dac7.totals.q4 = (IFDESystem.documents.dac7.totals.q4 || 0) + extracted.q4;
-            IFDESystem.documents.dac7.totals.receitaAnual = (IFDESystem.documents.dac7.totals.receitaAnual || 0) + extracted.receitaAnual;
+            UNIFEDSystem.documents.dac7.totals.q1 = (UNIFEDSystem.documents.dac7.totals.q1 || 0) + extracted.q1;
+            UNIFEDSystem.documents.dac7.totals.q2 = (UNIFEDSystem.documents.dac7.totals.q2 || 0) + extracted.q2;
+            UNIFEDSystem.documents.dac7.totals.q3 = (UNIFEDSystem.documents.dac7.totals.q3 || 0) + extracted.q3;
+            UNIFEDSystem.documents.dac7.totals.q4 = (UNIFEDSystem.documents.dac7.totals.q4 || 0) + extracted.q4;
+            UNIFEDSystem.documents.dac7.totals.receitaAnual = (UNIFEDSystem.documents.dac7.totals.receitaAnual || 0) + extracted.receitaAnual;
 
             ValueSource.registerValue('dac7Q1Value', extracted.q1, file.name, 'extração dinâmica SchemaRegistry');
             ValueSource.registerValue('dac7Q2Value', extracted.q2, file.name, 'extração dinâmica SchemaRegistry');
@@ -3978,7 +3978,7 @@ async function processFile(file, type) {
         const fileItem = document.createElement('div');
         fileItem.className = 'file-item-modal';
 
-        const demoBadge = IFDESystem.demoMode ? '<span class="demo-badge">DEMO</span>' : '';
+        const demoBadge = UNIFEDSystem.demoMode ? '<span class="demo-badge">DEMO</span>' : '';
         const shortHash = hash.substring(0, 8) + '...';
 
         fileItem.innerHTML = `
@@ -4013,7 +4013,7 @@ function updateEvidenceSummary() {
     };
 
     Object.keys(tipos).forEach(k => {
-        const count = IFDESystem.documents[k]?.files?.length || 0;
+        const count = UNIFEDSystem.documents[k]?.files?.length || 0;
         const elId = tipos[k];
         const el = document.getElementById(elId);
         if(el) el.textContent = count;
@@ -4021,10 +4021,10 @@ function updateEvidenceSummary() {
 
     let total = 0;
     ['control', 'saft', 'invoices', 'statements', 'dac7'].forEach(k => {
-        total += IFDESystem.documents[k]?.files?.length || 0;
+        total += UNIFEDSystem.documents[k]?.files?.length || 0;
     });
     setElementText('summaryTotal', total);
-    IFDESystem.counts.total = total;
+    UNIFEDSystem.counts.total = total;
 }
 
 function updateCounters() {
@@ -4038,13 +4038,13 @@ function updateCounters() {
     };
 
     Object.keys(tipoMap).forEach(k => {
-        const count = IFDESystem.documents[k]?.files?.length || 0;
+        const count = UNIFEDSystem.documents[k]?.files?.length || 0;
         total += count;
         setElementText(tipoMap[k], count);
     });
 
     document.getElementById('evidenceCountTotal').textContent = total;
-    IFDESystem.counts.total = total;
+    UNIFEDSystem.counts.total = total;
 }
 
 // ============================================================================
@@ -4058,10 +4058,10 @@ function updateCounters() {
 //   Evidências      : 4 CTRL · 4 SAF-T · 2 FAT · 4 EXT · 1 DAC7
 // ============================================================================
 function activateDemoMode() {
-    if(IFDESystem.processing) return;
-    IFDESystem.demoMode = true;
-    IFDESystem.casoRealAnonimizado = true;  // bypass de fetch externo + mock seal
-    IFDESystem.processing = true;
+    if(UNIFEDSystem.processing) return;
+    UNIFEDSystem.demoMode = true;
+    UNIFEDSystem.casoRealAnonimizado = true;  // bypass de fetch externo + mock seal
+    UNIFEDSystem.processing = true;
 
     ForensicLogger.addEntry('DEMO_MODE_ACTIVATED');
 
@@ -4089,30 +4089,30 @@ function activateDemoMode() {
     document.getElementById('clientNIFFixed').value = '999 999 990';
     registerClient();
     // Override SSoT após registerClient — forçar valores anonimizados
-    if (!IFDESystem.client) IFDESystem.client = {};
-    IFDESystem.client.name = 'SUJEITO PASSIVO ALFA (ANONIMIZADO)';
-    IFDESystem.client.nif  = '999 999 990';
-    IFDESystem.selectedPlatform = 'outra';
+    if (!UNIFEDSystem.client) UNIFEDSystem.client = {};
+    UNIFEDSystem.client.name = 'SUJEITO PASSIVO ALFA (ANONIMIZADO)';
+    UNIFEDSystem.client.nif  = '999 999 990';
+    UNIFEDSystem.selectedPlatform = 'outra';
     const _platElAnon = document.getElementById('selPlatformFixed');
     if (_platElAnon) _platElAnon.value = 'outra';
 
     // ── 2. Ano Fiscal: 2024 -------------------------------------------─────
-    IFDESystem.selectedYear = 2024;
+    UNIFEDSystem.selectedYear = 2024;
     const anoFiscalEl = document.getElementById('anoFiscal');
     if (anoFiscalEl) anoFiscalEl.value = '2024';
 
     // ── 3. Período Temporal: 2.º Semestre ────────────────────────────────────
-    IFDESystem.selectedPeriodo = '2s';
+    UNIFEDSystem.selectedPeriodo = '2s';
     const periodoEl = document.getElementById('periodoAnalise');
     if (periodoEl) periodoEl.value = '2s';
 
     // ── 4. Plataforma: Outra -------------------------------------------────
-    IFDESystem.selectedPlatform = 'outra';
+    UNIFEDSystem.selectedPlatform = 'outra';
     const platformEl = document.getElementById('selPlatformFixed');
     if (platformEl) platformEl.value = 'outra';
 
     // ── 5. Meses do 2.º Semestre: Jul–Dez 2024 ──────────────────────────────
-    ['202409','202410','202411','202412'].forEach(m => IFDESystem.dataMonths.add(m));
+    ['202409','202410','202411','202412'].forEach(m => UNIFEDSystem.dataMonths.add(m));
 
     // ── 6. Evidências: 4 CTRL · 4 SAF-T · 2 FAT · 4 EXT · 1 DAC7 ───────────
     simulateUpload('control',    4);
@@ -4139,30 +4139,30 @@ function activateDemoMode() {
         // ══════════════════════════════════════════════════════════════════════
 
         // SAF-T — 4 ficheiros (alinhado com os ganhos reais dos extratos)
-        IFDESystem.documents.saft.totals.bruto    = 10157.73;
-        IFDESystem.documents.saft.totals.iliquido =  8519.94; // bruto / 1.06 (IVA 6% transporte)
-        IFDESystem.documents.saft.totals.iva      =  1637.79; // 10157.73 - 8519.94
+        UNIFEDSystem.documents.saft.totals.bruto    = 10157.73;
+        UNIFEDSystem.documents.saft.totals.iliquido =  8519.94; // bruto / 1.06 (IVA 6% transporte)
+        UNIFEDSystem.documents.saft.totals.iva      =  1637.79; // 10157.73 - 8519.94
 
         // ── Extratos — 4 ficheiros · Set–Dez 2024 ────────────────────────────
         // Despesas = comissões RETIDAS em extrato (valor real bruto)
         // Fatura  = documentos fiscais emitidos PT1124-91599 + PT1125-3582
         // Smoking Gun 1: 2447.89 - 262.94 = 2 184,95 € (89,26% de omissão)
         // Ganhos Líquidos = 10157.73 - 2447.89 = 7 709,84 €
-        IFDESystem.documents.statements.totals.ganhos         = 10157.73;
-        IFDESystem.documents.statements.totals.despesas       =  2447.89; // comissões retidas (extrato real)
-        IFDESystem.documents.statements.totals.ganhosLiquidos =  7709.84; // 10157.73 - 2447.89
+        UNIFEDSystem.documents.statements.totals.ganhos         = 10157.73;
+        UNIFEDSystem.documents.statements.totals.despesas       =  2447.89; // comissões retidas (extrato real)
+        UNIFEDSystem.documents.statements.totals.ganhosLiquidos =  7709.84; // 10157.73 - 2447.89
 
         // Faturas — 2 ficheiros · PT1124-91599 + PT1125-3582 (valor fiscal documentado)
-        IFDESystem.documents.invoices.totals.invoiceValue = 262.94;
+        UNIFEDSystem.documents.invoices.totals.invoiceValue = 262.94;
 
         // DAC7 — 1 ficheiro · valor total comunicado à AT (PDF Gmail 2024)
         // Alocação exata da prova documental ao 4.º Trimestre (Q4)
-        IFDESystem.documents.dac7.totals.q1              = 0;
-        IFDESystem.documents.dac7.totals.q2              = 0;
-        IFDESystem.documents.dac7.totals.q3              = 0;
-        IFDESystem.documents.dac7.totals.q4              = 7755.16;
-        IFDESystem.documents.dac7.totals.dac7TotalPeriodo = 7755.16;
-        IFDESystem.documents.dac7.totals.receitaAnual    = 7755.16;
+        UNIFEDSystem.documents.dac7.totals.q1              = 0;
+        UNIFEDSystem.documents.dac7.totals.q2              = 0;
+        UNIFEDSystem.documents.dac7.totals.q3              = 0;
+        UNIFEDSystem.documents.dac7.totals.q4              = 7755.16;
+        UNIFEDSystem.documents.dac7.totals.dac7TotalPeriodo = 7755.16;
+        UNIFEDSystem.documents.dac7.totals.receitaAnual    = 7755.16;
 
         // ValueSource — rastreabilidade forense
         ValueSource.registerValue('saftBrutoValue',          10157.73, 'demo_saft_set-dez_2024.csv',     'soma direta coluna Bruto (Set-Dez 2024)');
@@ -4175,13 +4175,13 @@ function activateDemoMode() {
         // Valores consolidados do período Set–Dez 2024 (fonte: extratos PDF Gmail)
         // Critério legal: Lei TVDE — comissão 0% sobre campanhas, gorjetas e portagens.
         // totalNaoSujeitos = campanhas + portagens + gorjetas (cancelamentos excluídos da soma)
-        IFDESystem.auxiliaryData.campanhas        = 405.00;  // Ganhos da campanha (incentivo plataforma)
-        IFDESystem.auxiliaryData.portagens        =   0.15;  // Reembolso operacional
-        IFDESystem.auxiliaryData.gorjetas         =  46.00;  // Gorjetas dos passageiros (transferência P2P)
-        IFDESystem.auxiliaryData.cancelamentos    =  58.10;  // Taxas de cancelamento (já incluído em Despesas)
-        IFDESystem.auxiliaryData.totalNaoSujeitos = 451.15;  // 405,00 + 0,15 + 46,00
-        IFDESystem.auxiliaryData.extractedAt      = new Date().toISOString();
-        IFDESystem.auxiliaryData.processedFrom    = ['demo_extrato_set-dez_2024.pdf'];
+        UNIFEDSystem.auxiliaryData.campanhas        = 405.00;  // Ganhos da campanha (incentivo plataforma)
+        UNIFEDSystem.auxiliaryData.portagens        =   0.15;  // Reembolso operacional
+        UNIFEDSystem.auxiliaryData.gorjetas         =  46.00;  // Gorjetas dos passageiros (transferência P2P)
+        UNIFEDSystem.auxiliaryData.cancelamentos    =  58.10;  // Taxas de cancelamento (já incluído em Despesas)
+        UNIFEDSystem.auxiliaryData.totalNaoSujeitos = 451.15;  // 405,00 + 0,15 + 46,00
+        UNIFEDSystem.auxiliaryData.extractedAt      = new Date().toISOString();
+        UNIFEDSystem.auxiliaryData.processedFrom    = ['demo_extrato_set-dez_2024.pdf'];
         ValueSource.registerValue('auxCampanhasValue',    405.00, 'demo_extrato_set-dez_2024.pdf', 'Ganhos da campanha — Set/Out/Nov/Dez 2024');
         ValueSource.registerValue('auxPortagensValue',      0.15, 'demo_extrato_set-dez_2024.pdf', 'Reembolso operacional — portagens 2024');
         ValueSource.registerValue('auxGorjetasValue',      46.00, 'demo_extrato_set-dez_2024.pdf', 'Gorjetas dos passageiros — período 2.º Sem 2024');
@@ -4195,7 +4195,7 @@ function activateDemoMode() {
         performAudit();
 
         logAudit('✅ CASO REAL (ANONIMIZADO) concluído — SUJEITO PASSIVO ALFA · NIF 999 999 990 · 2024 · 2.º Semestre.', 'success');
-        IFDESystem.processing = false;
+        UNIFEDSystem.processing = false;
         if(demoBtn) {
             demoBtn.disabled = false;
             demoBtn.innerHTML = `<i class="fas fa-flask"></i> ${translations[currentLang].navDemo}`;
@@ -4213,12 +4213,12 @@ function activateDemoMode() {
 }
 
 function simulateUpload(type, count) {
-    if (!IFDESystem.documents[type]) {
-        IFDESystem.documents[type] = { files: [], hashes: {}, totals: { records: 0 } };
+    if (!UNIFEDSystem.documents[type]) {
+        UNIFEDSystem.documents[type] = { files: [], hashes: {}, totals: { records: 0 } };
     }
 
-    if (!IFDESystem.documents[type].files) {
-        IFDESystem.documents[type].files = [];
+    if (!UNIFEDSystem.documents[type].files) {
+        UNIFEDSystem.documents[type].files = [];
     }
 
     for (let i = 0; i < count; i++) {
@@ -4226,14 +4226,14 @@ function simulateUpload(type, count) {
         const fileObj = { name: fileName, size: 1024 * (i + 1) };
 
         const simFileKey = `${fileName}_${fileObj.size}_0`;
-        const fileExists = IFDESystem.documents[type].files.some(
+        const fileExists = UNIFEDSystem.documents[type].files.some(
             f => `${f.name}_${f.size}_${f.lastModified || 0}` === simFileKey
         );
         if (!fileExists) {
-            IFDESystem.documents[type].files.push(fileObj);
+            UNIFEDSystem.documents[type].files.push(fileObj);
         }
 
-        IFDESystem.documents[type].totals.records = IFDESystem.documents[type].files.length;
+        UNIFEDSystem.documents[type].totals.records = UNIFEDSystem.documents[type].files.length;
 
         // Full 64-char SHA-256 for demo — deterministic per filename
         const demoHashFull = CryptoJS.SHA256('UNIFED-PROBATUM-DEMO-EVIDENCE-' + fileName + '-' + i + '-2024').toString().toUpperCase();
@@ -4243,7 +4243,7 @@ function simulateUpload(type, count) {
         const normalizedType = type === 'invoices' ? 'invoice'
                              : type === 'statements' ? 'statement'
                              : type;
-        IFDESystem.analysis.evidenceIntegrity.push({
+        UNIFEDSystem.analysis.evidenceIntegrity.push({
             filename:     fileName,
             type:         normalizedType,
             hash:         demoHashForPDF,  // full 64-char SHA-256 for PDF
@@ -4275,18 +4275,18 @@ function simulateUpload(type, count) {
 // 22. MOTOR DE PERÍCIA FORENSE (v12.8.9) COM CORREÇÕES
 // ============================================================================
 function performAudit() {
-    if (!IFDESystem.client) return showToast('Registe o sujeito passivo primeiro.', 'error');
+    if (!UNIFEDSystem.client) return showToast('Registe o sujeito passivo primeiro.', 'error');
 
     ForensicLogger.addEntry('AUDIT_STARTED');
 
-    const hasFiles = Object.values(IFDESystem.documents).some(d => d.files && d.files.length > 0);
+    const hasFiles = Object.values(UNIFEDSystem.documents).some(d => d.files && d.files.length > 0);
     if (!hasFiles) {
         ForensicLogger.addEntry('AUDIT_FAILED', { reason: 'No files' });
         return showToast('Carregue pelo menos um ficheiro de evidência antes de executar a perícia.', 'error');
     }
 
-    IFDESystem.forensicMetadata = getForensicMetadata();
-    IFDESystem.performanceTiming.start = performance.now();
+    UNIFEDSystem.forensicMetadata = getForensicMetadata();
+    UNIFEDSystem.performanceTiming.start = performance.now();
 
     const analyzeBtn = document.getElementById('analyzeBtn');
     if(analyzeBtn) {
@@ -4297,25 +4297,25 @@ function performAudit() {
     setTimeout(() => {
         try {
             // --- EXTRAÇÃO DOS TOTAIS DAS EVIDÊNCIAS ---
-            const saftBruto = IFDESystem.documents.saft?.totals?.bruto || 0;
-            const saftIliquido = IFDESystem.documents.saft?.totals?.iliquido || 0;
-            const saftIva = IFDESystem.documents.saft?.totals?.iva || 0;
+            const saftBruto = UNIFEDSystem.documents.saft?.totals?.bruto || 0;
+            const saftIliquido = UNIFEDSystem.documents.saft?.totals?.iliquido || 0;
+            const saftIva = UNIFEDSystem.documents.saft?.totals?.iva || 0;
 
             // Extrato: valores da tabela "Ganhos líquidos"
-            const stmtGanhos = IFDESystem.documents.statements?.totals?.ganhos || 0;
-            const stmtDespesas = IFDESystem.documents.statements?.totals?.despesas || 0;
-            const stmtGanhosLiquidos = IFDESystem.documents.statements?.totals?.ganhosLiquidos || 0;
+            const stmtGanhos = UNIFEDSystem.documents.statements?.totals?.ganhos || 0;
+            const stmtDespesas = UNIFEDSystem.documents.statements?.totals?.despesas || 0;
+            const stmtGanhosLiquidos = UNIFEDSystem.documents.statements?.totals?.ganhosLiquidos || 0;
 
-            const invoiceVal = IFDESystem.documents.invoices?.totals?.invoiceValue || 0;
+            const invoiceVal = UNIFEDSystem.documents.invoices?.totals?.invoiceValue || 0;
 
-            const dac7Q1 = IFDESystem.documents.dac7?.totals?.q1 || 0;
-            const dac7Q2 = IFDESystem.documents.dac7?.totals?.q2 || 0;
-            const dac7Q3 = IFDESystem.documents.dac7?.totals?.q3 || 0;
-            const dac7Q4 = IFDESystem.documents.dac7?.totals?.q4 || 0;
+            const dac7Q1 = UNIFEDSystem.documents.dac7?.totals?.q1 || 0;
+            const dac7Q2 = UNIFEDSystem.documents.dac7?.totals?.q2 || 0;
+            const dac7Q3 = UNIFEDSystem.documents.dac7?.totals?.q3 || 0;
+            const dac7Q4 = UNIFEDSystem.documents.dac7?.totals?.q4 || 0;
 
             // --- AGREGAÇÃO DO DAC7 BASEADA NO PERÍODO SELECIONADO ---
             let dac7TotalPeriodo = 0;
-            switch (IFDESystem.selectedPeriodo) {
+            switch (UNIFEDSystem.selectedPeriodo) {
                 case 'anual':
                     dac7TotalPeriodo = dac7Q1 + dac7Q2 + dac7Q3 + dac7Q4;
                     break;
@@ -4344,7 +4344,7 @@ function performAudit() {
             }
 
             // --- GUARDAR TOTAIS NO ESTADO GLOBAL ---
-            IFDESystem.analysis.totals = {
+            UNIFEDSystem.analysis.totals = {
                 saftBruto: saftBruto,
                 saftIliquido: saftIliquido,
                 saftIva: saftIva,
@@ -4368,7 +4368,7 @@ function performAudit() {
             console.log('   Extrato - Despesas:', formatCurrency(stmtDespesas));
             console.log('   Extrato - Líquido:', formatCurrency(stmtGanhosLiquidos));
             console.log('   Fatura Comissões:', formatCurrency(invoiceVal));
-            console.log(`   DAC7 (${IFDESystem.selectedPeriodo}):`, formatCurrency(dac7TotalPeriodo));
+            console.log(`   DAC7 (${UNIFEDSystem.selectedPeriodo}):`, formatCurrency(dac7TotalPeriodo));
 
             calculateTwoAxisDiscrepancy();
             performForensicCrossings();
@@ -4376,7 +4376,7 @@ function performAudit() {
             // VALIDAÇÃO DE CONSISTÊNCIA
             validateConsistency();
 
-            selectQuestions(IFDESystem.analysis.verdict ? IFDESystem.analysis.verdict.key : 'low');
+            selectQuestions(UNIFEDSystem.analysis.verdict ? UNIFEDSystem.analysis.verdict.key : 'low');
             updateDashboard();
             updateModulesUI();
             renderChart();
@@ -4385,31 +4385,31 @@ function performAudit() {
             showTwoAxisAlerts();
             filterDAC7ByPeriod();
 
-            IFDESystem.performanceTiming.end = performance.now();
-            const duration = (IFDESystem.performanceTiming.end - IFDESystem.performanceTiming.start).toFixed(2);
+            UNIFEDSystem.performanceTiming.end = performance.now();
+            const duration = (UNIFEDSystem.performanceTiming.end - UNIFEDSystem.performanceTiming.start).toFixed(2);
 
             logAudit(`📊 VALORES UTILIZADOS NA PERÍCIA (v12.8.9):`, 'info');
-            logAudit(`   SAF-T Bruto: ${formatCurrency(saftBruto)} (${IFDESystem.documents.saft?.files?.length || 0} ficheiros)`, 'info');
+            logAudit(`   SAF-T Bruto: ${formatCurrency(saftBruto)} (${UNIFEDSystem.documents.saft?.files?.length || 0} ficheiros)`, 'info');
             logAudit(`   Ganhos (Extrato): ${formatCurrency(stmtGanhos)}`, 'info');
             logAudit(`   Despesas (Extrato): ${formatCurrency(stmtDespesas)}`, 'info');
             logAudit(`   Ganhos Líquidos (Extrato): ${formatCurrency(stmtGanhosLiquidos)}`, 'info');
-            logAudit(`   Fatura Comissões: ${formatCurrency(invoiceVal)} (${IFDESystem.documents.invoices?.files?.length || 0} ficheiros)`, 'info');
-            logAudit(`   DAC7 (${IFDESystem.selectedPeriodo}): ${formatCurrency(dac7TotalPeriodo)}`, 'info');
+            logAudit(`   Fatura Comissões: ${formatCurrency(invoiceVal)} (${UNIFEDSystem.documents.invoices?.files?.length || 0} ficheiros)`, 'info');
+            logAudit(`   DAC7 (${UNIFEDSystem.selectedPeriodo}): ${formatCurrency(dac7TotalPeriodo)}`, 'info');
             logAudit(`   Discrepância Comissões (Despesas - Fatura): ${formatCurrency(stmtDespesas - invoiceVal)}`, 'info');
             logAudit(`   Smoking Gun — Ganhos vs DAC7: ${formatCurrency(stmtGanhos - dac7TotalPeriodo)} (Ganhos: ${formatCurrency(stmtGanhos)} | DAC7: ${formatCurrency(dac7TotalPeriodo)})`, 'error');
             logAudit(`   Revenue Gap (SAF-T vs Ganhos): ${formatCurrency(saftBruto - stmtGanhos)}`, 'info');
             logAudit(`   Expense Gap (Despesas - Fatura): ${formatCurrency(stmtDespesas - invoiceVal)}`, 'info');
-            logAudit(`   Meses com dados: ${IFDESystem.dataMonths.size}`, 'info');
+            logAudit(`   Meses com dados: ${UNIFEDSystem.dataMonths.size}`, 'info');
 
             logAudit(`✅ Perícia BIG DATA v12.8.9 concluída em ${duration}ms.`, 'success');
 
             ForensicLogger.addEntry('AUDIT_COMPLETED', {
                 duration,
-                discrepancy: IFDESystem.analysis.crossings.discrepanciaCritica,
-                saftVsDac7: IFDESystem.analysis.crossings.discrepanciaSaftVsDac7,
-                revenueGap: IFDESystem.analysis.twoAxis.revenueGap,
-                expenseGap: IFDESystem.analysis.twoAxis.expenseGap,
-                verdict: IFDESystem.analysis.verdict?.level,
+                discrepancy: UNIFEDSystem.analysis.crossings.discrepanciaCritica,
+                saftVsDac7: UNIFEDSystem.analysis.crossings.discrepanciaSaftVsDac7,
+                revenueGap: UNIFEDSystem.analysis.twoAxis.revenueGap,
+                expenseGap: UNIFEDSystem.analysis.twoAxis.expenseGap,
+                verdict: UNIFEDSystem.analysis.verdict?.level,
                 ganhos: stmtGanhos,
                 despesas: stmtDespesas
             });
@@ -4432,7 +4432,7 @@ function performAudit() {
 
 // FUNÇÃO DE VALIDAÇÃO DE CONSISTÊNCIA
 function validateConsistency() {
-    const totals = IFDESystem.analysis.totals;
+    const totals = UNIFEDSystem.analysis.totals;
 
     // Verificar se SAF-T Bruto ≈ Ganhos (Extrato)
     if (Math.abs(totals.saftBruto - totals.ganhos) > 1000) {
@@ -4475,8 +4475,8 @@ function validateConsistency() {
 }
 
 function calculateTwoAxisDiscrepancy() {
-    const totals = IFDESystem.analysis.totals;
-    const twoAxis = IFDESystem.analysis.twoAxis;
+    const totals = UNIFEDSystem.analysis.totals;
+    const twoAxis = UNIFEDSystem.analysis.twoAxis;
 
     // Revenue Gap = SAF-T Bruto vs Ganhos (Extrato)
     twoAxis.revenueGap = totals.saftBruto - totals.ganhos;
@@ -4497,8 +4497,8 @@ function calculateTwoAxisDiscrepancy() {
 }
 
 function performForensicCrossings() {
-    const totals = IFDESystem.analysis.totals;
-    const cross = IFDESystem.analysis.crossings;
+    const totals = UNIFEDSystem.analysis.totals;
+    const cross = UNIFEDSystem.analysis.crossings;
 
     const saftBruto = totals.saftBruto || 0;
     const ganhos = totals.ganhos || 0;
@@ -4512,7 +4512,7 @@ function performForensicCrossings() {
     // Implementa os 4 eixos de prova da falha sistemática da plataforma.
     // ═══════════════════════════════════════════════════════════════════════
 
-    const mesesDados = IFDESystem.dataMonths.size || 1;
+    const mesesDados = UNIFEDSystem.dataMonths.size || 1;
 
     // ── C1: SAF-T Valor Bruto Total vs DAC7 ─────────────────────────────────
     // Prova: O que a plataforma fatura internamente vs o que reporta ao Estado
@@ -4576,14 +4576,14 @@ function performForensicCrossings() {
     cross.bigDataAlertActive   = Math.abs(cross.discrepanciaCritica) > 0.01;
 
     const baseComparacao = Math.max(saftBruto, ganhos, dac7Total);
-    IFDESystem.analysis.verdict = getRiskVerdict(Math.abs(cross.discrepanciaCritica), baseComparacao);
+    UNIFEDSystem.analysis.verdict = getRiskVerdict(Math.abs(cross.discrepanciaCritica), baseComparacao);
 
-    if (IFDESystem.analysis.verdict) {
-        IFDESystem.analysis.verdict.percent = cross.percentagemDiscrepancia.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
+    if (UNIFEDSystem.analysis.verdict) {
+        UNIFEDSystem.analysis.verdict.percent = cross.percentagemDiscrepancia.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
     }
 
     // ── Audit Log — 4 eixos forenses individuais ────────────────────────────
-    logAudit(`━━ MATRIZ FORENSE v13.5.0-PURE ━━ Período: ${IFDESystem.selectedPeriodo} | Meses: ${mesesDados}`, 'info');
+    logAudit(`━━ MATRIZ FORENSE v13.5.0-PURE ━━ Período: ${UNIFEDSystem.selectedPeriodo} | Meses: ${mesesDados}`, 'info');
     logAudit(`[C1] SAF-T Bruto (${formatCurrency(saftBruto)}) vs DAC7 (${formatCurrency(dac7Total)}) → Δ ${formatCurrency(cross.c1_delta)} (${cross.c1_pct.toFixed(2)}%) — Sub-comunicação plataforma→Estado`, 'warning');
     logAudit(`[C2] 🔫 SMOKING GUN — Despesas/Comissões (${formatCurrency(despesas)}) vs Faturado (${formatCurrency(faturaPlataforma)}) → Δ ${formatCurrency(cross.c2_delta)} (${cross.c2_pct.toFixed(2)}%) — Retenção ilegal provada`, 'error');
     logAudit(`[C3] SAF-T Bruto (${formatCurrency(saftBruto)}) vs Ganhos Extrato (${formatCurrency(ganhos)}) → Δ ${formatCurrency(cross.c3_delta)} (${cross.c3_pct.toFixed(2)}%) — Viagens faturadas vs transferências efectivas`, 'warning');
@@ -4627,25 +4627,25 @@ function selectQuestions(riskKey) {
         return 0.5 - Math.random(); // aleatorização dentro do mesmo nível
     });
     // Top 10 — as primeiras 5 são obrigatoriamente de nível "high" (máxima prioridade)
-    IFDESystem.analysis.selectedQuestions = sorted.slice(0, 10);
+    UNIFEDSystem.analysis.selectedQuestions = sorted.slice(0, 10);
 
-    ForensicLogger.addEntry('QUESTIONS_SELECTED', { count: IFDESystem.analysis.selectedQuestions.length, riskKey });
+    ForensicLogger.addEntry('QUESTIONS_SELECTED', { count: UNIFEDSystem.analysis.selectedQuestions.length, riskKey });
 }
 
 // ============================================================================
 // FILTRO TEMPORAL DAC7 — Sincronização com o Seletor de Período
-// Oculta/mostra trimestres e recalcula totais conforme IFDESystem.selectedPeriodo
+// Oculta/mostra trimestres e recalcula totais conforme UNIFEDSystem.selectedPeriodo
 // ============================================================================
 function filterDAC7ByPeriod() {
-    const periodo = IFDESystem.selectedPeriodo || 'anual';
-    const dac7 = IFDESystem.documents.dac7.totals;
+    const periodo = UNIFEDSystem.selectedPeriodo || 'anual';
+    const dac7 = UNIFEDSystem.documents.dac7.totals;
 
     // Mapeamento período → trimestres visíveis (1-indexed)
     const visibilityMap = {
         'anual':      [1, 2, 3, 4],
         '1s':         [1, 2],
         '2s':         [3, 4],
-        'trimestral': [IFDESystem.selectedTrimestre || 1], // trimestre seleccionado via UI
+        'trimestral': [UNIFEDSystem.selectedTrimestre || 1], // trimestre seleccionado via UI
         'mensal':     [1, 2, 3, 4] // mostra todos (sem tabela mensal específica)
     };
 
@@ -4655,7 +4655,7 @@ function filterDAC7ByPeriod() {
         if (triSelector) {
             const tri = parseInt(triSelector.value, 10);
             if (tri >= 1 && tri <= 4) {
-                IFDESystem.selectedTrimestre = tri;
+                UNIFEDSystem.selectedTrimestre = tri;
                 visibilityMap['trimestral'] = [tri];
             }
         }
@@ -4665,7 +4665,7 @@ function filterDAC7ByPeriod() {
 
     // Show/hide cada card de trimestre
     // Em demoMode ocultar trimestres com valor=0; em sessão real mostrar todos os do período
-    const _isDemoHide = (typeof IFDESystem !== 'undefined' && IFDESystem.demoMode === true);
+    const _isDemoHide = (typeof UNIFEDSystem !== 'undefined' && UNIFEDSystem.demoMode === true);
     [1, 2, 3, 4].forEach(q => {
         const card = document.getElementById(`dac7Q${q}Value`)?.closest('.kpi-card');
         if (card) {
@@ -4682,16 +4682,16 @@ function filterDAC7ByPeriod() {
     });
 
     // Actualizar o total de período no sistema e na UI
-    IFDESystem.documents.dac7.totals.totalPeriodo = periodoTotal;
-    IFDESystem.analysis.totals = IFDESystem.analysis.totals || {};
-    IFDESystem.analysis.totals.dac7TotalPeriodo = periodoTotal;
+    UNIFEDSystem.documents.dac7.totals.totalPeriodo = periodoTotal;
+    UNIFEDSystem.analysis.totals = UNIFEDSystem.analysis.totals || {};
+    UNIFEDSystem.analysis.totals.dac7TotalPeriodo = periodoTotal;
 
     // Label de período descritivo
     const periodoLabel = {
         'anual': 'Anual',
         '1s': '1.º Semestre',
         '2s': '2.º Semestre',
-        'trimestral': `${IFDESystem.selectedTrimestre || 1}.º Trimestre`,
+        'trimestral': `${UNIFEDSystem.selectedTrimestre || 1}.º Trimestre`,
         'mensal': 'Mensal'
     }[periodo] || periodo;
 
@@ -4702,8 +4702,8 @@ function filterDAC7ByPeriod() {
 }
 
 function showTwoAxisAlerts() {
-    const twoAxis = IFDESystem.analysis.twoAxis;
-    const totals  = IFDESystem.analysis.totals;
+    const twoAxis = UNIFEDSystem.analysis.twoAxis;
+    const totals  = UNIFEDSystem.analysis.totals;
     const t = translations[currentLang];
 
     const revenueGapCard = document.getElementById('revenueGapCard');
@@ -4783,9 +4783,9 @@ let _nifafAlertedHash = null;
 // ── FIM NIFAF Session Guard ──
 
 function updateDashboard() {
-    const totals = IFDESystem.analysis.totals;
-    const cross = IFDESystem.analysis.crossings;
-    const twoAxis = IFDESystem.analysis.twoAxis;
+    const totals = UNIFEDSystem.analysis.totals;
+    const cross = UNIFEDSystem.analysis.crossings;
+    const twoAxis = UNIFEDSystem.analysis.twoAxis;
 
     const netValue = totals.ganhosLiquidos || 0;
 
@@ -4806,7 +4806,7 @@ function updateDashboard() {
 
     setElementText('quantumValue', formatCurrency(cross.impactoSeteAnosMercado || 0));
 
-    const mesesDados = IFDESystem.dataMonths.size || 1;
+    const mesesDados = UNIFEDSystem.dataMonths.size || 1;
 
     const quantumFormulaEl = document.getElementById('quantumFormula');
     if (quantumFormulaEl) {
@@ -4842,7 +4842,7 @@ function updateDashboard() {
                 <span>${formatCurrency(totals.saftBruto)}</span>
             </div>
             <div class="quantum-breakdown-item">
-                <span>DAC7 (${IFDESystem.selectedPeriodo}):</span>
+                <span>DAC7 (${UNIFEDSystem.selectedPeriodo}):</span>
                 <span>${formatCurrency(totals.dac7TotalPeriodo)}</span>
             </div>
             <div class="quantum-breakdown-item" style="border-top: 1px solid rgba(245,158,11,0.3); margin-top:0.3rem; padding-top:0.3rem;">
@@ -4911,7 +4911,7 @@ function updateDashboard() {
 
     // ── NIFAF Gatilho Orquestrado — v13.2.4-PREMIUM ──────────────────────────
     {
-        const _ch = IFDESystem.masterHash || '';
+        const _ch = UNIFEDSystem.masterHash || '';
         if (cross.percentagemOmissao > 15 && _ch && _ch !== _nifafAlertedHash) {
             _nifafAlertedHash = _ch;
             if (window.NIFAF) window.NIFAF.playCriticalAlert();
@@ -4923,8 +4923,8 @@ function updateDashboard() {
 }
 
 function activateIntermittentAlerts() {
-    const cross = IFDESystem.analysis.crossings;
-    const twoAxis = IFDESystem.analysis.twoAxis;
+    const cross = UNIFEDSystem.analysis.crossings;
+    const twoAxis = UNIFEDSystem.analysis.twoAxis;
 
     const kpiInvCard = document.getElementById('kpiInvCard');
     if (kpiInvCard) {
@@ -4998,7 +4998,7 @@ function activateIntermittentAlerts() {
 }
 
 function updateModulesUI() {
-    const totals = IFDESystem.analysis.totals;
+    const totals = UNIFEDSystem.analysis.totals;
 
     setElementText('saftIliquidoValue', formatCurrency(totals.saftIliquido || 0));
     setElementText('saftIvaValue', formatCurrency(totals.saftIva || 0));
@@ -5026,23 +5026,23 @@ function updateModulesUI() {
 }
 
 function showAlerts() {
-    const totals = IFDESystem.analysis.totals;
-    const cross = IFDESystem.analysis.crossings;
+    const totals = UNIFEDSystem.analysis.totals;
+    const cross = UNIFEDSystem.analysis.crossings;
     const t = translations[currentLang];
 
     const verdictDisplay = document.getElementById('verdictDisplay');
-    if(verdictDisplay && IFDESystem.analysis.verdict) {
+    if(verdictDisplay && UNIFEDSystem.analysis.verdict) {
         verdictDisplay.style.display = 'block';
-        verdictDisplay.className = `verdict-display active verdict-${IFDESystem.analysis.verdict.key}`;
-        setElementText('verdictLevel', IFDESystem.analysis.verdict.level[currentLang]);
+        verdictDisplay.className = `verdict-display active verdict-${UNIFEDSystem.analysis.verdict.key}`;
+        setElementText('verdictLevel', UNIFEDSystem.analysis.verdict.level[currentLang]);
 
         const verdictPercentSpan = document.getElementById('verdictPercentSpan');
         if (verdictPercentSpan) {
-            verdictPercentSpan.textContent = IFDESystem.analysis.verdict.percent;
+            verdictPercentSpan.textContent = UNIFEDSystem.analysis.verdict.percent;
         }
 
-        const platform = PLATFORM_DATA[IFDESystem.selectedPlatform] || PLATFORM_DATA.outra;
-        const mesesDados = IFDESystem.dataMonths.size || 1;
+        const platform = PLATFORM_DATA[UNIFEDSystem.selectedPlatform] || PLATFORM_DATA.outra;
+        const mesesDados = UNIFEDSystem.dataMonths.size || 1;
 
         const periodoTexto = {
             'anual': 'Anual',
@@ -5050,7 +5050,7 @@ function showAlerts() {
             '2s': '2.º Semestre',
             'trimestral': 'Trimestral',
             'mensal': 'Mensal'
-        }[IFDESystem.selectedPeriodo] || IFDESystem.selectedPeriodo;
+        }[UNIFEDSystem.selectedPeriodo] || UNIFEDSystem.selectedPeriodo;
 
         const parecerHTML = `
             <div style="margin-bottom: 1rem;">
@@ -5084,21 +5084,21 @@ function showAlerts() {
             <div style="margin-bottom: 1rem;">
                 <strong style="color: var(--accent-primary);">V. CADEIA DE CUSTÓDIA:</strong><br>
                 <span style="color: var(--text-secondary); font-family: var(--font-mono); font-size: 0.7rem;">Master Hash SHA-256:</span><br>
-                <span style="color: var(--accent-secondary); font-family: var(--font-mono); font-size: 0.7rem; word-break: break-all;">${IFDESystem.masterHash || 'A calcular...'}</span><br>
-                <span style="color: var(--text-secondary); font-size: 0.7rem;">${IFDESystem.analysis.evidenceIntegrity.length} evidências processadas (clique no QR Code para verificar)</span>
+                <span style="color: var(--accent-secondary); font-family: var(--font-mono); font-size: 0.7rem; word-break: break-all;">${UNIFEDSystem.masterHash || 'A calcular...'}</span><br>
+                <span style="color: var(--text-secondary); font-size: 0.7rem;">${UNIFEDSystem.analysis.evidenceIntegrity.length} evidências processadas (clique no QR Code para verificar)</span>
             </div>
             <div style="margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 0.5rem;">
                 <strong style="color: var(--warn-primary);">VI. CONCLUSÃO:</strong><br>
                 <span style="color: var(--text-secondary);">${
                     currentLang === 'pt'
-                        ? (IFDESystem.analysis.verdict?.description?.pt || 'Indícios de infração ao Artigo 108.º do Código do IVA e não conformidade com o Decreto-Lei n.º 28/2019.')
-                        : (IFDESystem.analysis.verdict?.description?.en || 'Evidence of violation of Article 108 of the VAT Code and non-compliance with Decree-Law No. 28/2019.')
+                        ? (UNIFEDSystem.analysis.verdict?.description?.pt || 'Indícios de infração ao Artigo 108.º do Código do IVA e não conformidade com o Decreto-Lei n.º 28/2019.')
+                        : (UNIFEDSystem.analysis.verdict?.description?.en || 'Evidence of violation of Article 108 of the VAT Code and non-compliance with Decree-Law No. 28/2019.')
                 }</span>
             </div>
         `;
 
         document.getElementById('verdictDesc').innerHTML = parecerHTML;
-        document.getElementById('verdictLevel').style.color = IFDESystem.analysis.verdict.color;
+        document.getElementById('verdictLevel').style.color = UNIFEDSystem.analysis.verdict.color;
     }
 
     const bigDataAlert = document.getElementById('bigDataAlert');
@@ -5125,10 +5125,10 @@ function showAlerts() {
 function renderChart() {
     const ctx = document.getElementById('mainChart');
     if(!ctx) return;
-    if(IFDESystem.chart) IFDESystem.chart.destroy();
+    if(UNIFEDSystem.chart) UNIFEDSystem.chart.destroy();
 
-    const totals = IFDESystem.analysis.totals;
-    const cross = IFDESystem.analysis.crossings;
+    const totals = UNIFEDSystem.analysis.totals;
+    const cross = UNIFEDSystem.analysis.crossings;
 
     const t = translations[currentLang];
 
@@ -5138,7 +5138,7 @@ function renderChart() {
         '2s': '2S',
         'trimestral': 'Trim',
         'mensal': 'Mensal'
-    }[IFDESystem.selectedPeriodo] || '';
+    }[UNIFEDSystem.selectedPeriodo] || '';
 
     const labels = [
         t.saftBruto || 'SAF-T Bruto',
@@ -5160,7 +5160,7 @@ function renderChart() {
 
     const colors = ['#0ea5e9', '#10b981', '#ef4444', '#8b5cf6', '#6366f1', '#f59e0b'];
 
-    IFDESystem.chart = new Chart(ctx, {
+    UNIFEDSystem.chart = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: labels,
@@ -5205,14 +5205,14 @@ function renderChart() {
 function renderDiscrepancyChart() {
     const ctx = document.getElementById('discrepancyChart');
     if(!ctx) return;
-    if(IFDESystem.discrepancyChart) IFDESystem.discrepancyChart.destroy();
+    if(UNIFEDSystem.discrepancyChart) UNIFEDSystem.discrepancyChart.destroy();
 
-    const totals = IFDESystem.analysis.totals;
-    const cross = IFDESystem.analysis.crossings;
+    const totals = UNIFEDSystem.analysis.totals;
+    const cross = UNIFEDSystem.analysis.crossings;
 
     const t = translations[currentLang];
 
-    IFDESystem.discrepancyChart = new Chart(ctx, {
+    UNIFEDSystem.discrepancyChart = new Chart(ctx, {
         type: 'scatter',
         data: {
             datasets: [{
@@ -5274,62 +5274,62 @@ async function exportDataJSON() {
 
     const exportData = {
         metadata: {
-            version: IFDESystem.version,
-            sessionId: IFDESystem.sessionId,
+            version: UNIFEDSystem.version,
+            sessionId: UNIFEDSystem.sessionId,
             timestamp: new Date().toISOString(),
             timestampUnix: Math.floor(Date.now() / 1000),
             timestampRFC3161: new Date().toUTCString(),
             language: currentLang,
-            client: IFDESystem.client,
-            anoFiscal: IFDESystem.selectedYear,
-            periodoAnalise: IFDESystem.selectedPeriodo,
-            platform: IFDESystem.selectedPlatform,
-            demoMode: IFDESystem.demoMode,
-            forensicMetadata: IFDESystem.forensicMetadata || getForensicMetadata(),
-            dataMonths: Array.from(IFDESystem.dataMonths)
+            client: UNIFEDSystem.client,
+            anoFiscal: UNIFEDSystem.selectedYear,
+            periodoAnalise: UNIFEDSystem.selectedPeriodo,
+            platform: UNIFEDSystem.selectedPlatform,
+            demoMode: UNIFEDSystem.demoMode,
+            forensicMetadata: UNIFEDSystem.forensicMetadata || getForensicMetadata(),
+            dataMonths: Array.from(UNIFEDSystem.dataMonths)
         },
         analysis: {
-            totals:            IFDESystem.analysis.totals,
-            twoAxis:           IFDESystem.analysis.twoAxis,
-            crossings:         IFDESystem.analysis.crossings,          // chave canonica — alinhada com Dashboard/PDF/DOCX
-            discrepancies:     IFDESystem.analysis.crossings,          // alias retrocompativel — nao remover
-            verdict:           IFDESystem.analysis.verdict,
-            selectedQuestions: IFDESystem.analysis.selectedQuestions,
-            evidenceCount:     IFDESystem.counts?.total || 0,
+            totals:            UNIFEDSystem.analysis.totals,
+            twoAxis:           UNIFEDSystem.analysis.twoAxis,
+            crossings:         UNIFEDSystem.analysis.crossings,          // chave canonica — alinhada com Dashboard/PDF/DOCX
+            discrepancies:     UNIFEDSystem.analysis.crossings,          // alias retrocompativel — nao remover
+            verdict:           UNIFEDSystem.analysis.verdict,
+            selectedQuestions: UNIFEDSystem.analysis.selectedQuestions,
+            evidenceCount:     UNIFEDSystem.counts?.total || 0,
             valueSources:      sources
         },
         evidence: {
-            integrity: IFDESystem.analysis.evidenceIntegrity,
+            integrity: UNIFEDSystem.analysis.evidenceIntegrity,
             invoices: {
-                count: IFDESystem.documents.invoices?.files?.length || 0,
-                totalValue: IFDESystem.documents.invoices?.totals?.invoiceValue || 0,
-                files: IFDESystem.documents.invoices?.files?.map(f => f.name) || []
+                count: UNIFEDSystem.documents.invoices?.files?.length || 0,
+                totalValue: UNIFEDSystem.documents.invoices?.totals?.invoiceValue || 0,
+                files: UNIFEDSystem.documents.invoices?.files?.map(f => f.name) || []
             },
             statements: {
-                count: IFDESystem.documents.statements?.files?.length || 0,
-                ganhos: IFDESystem.documents.statements?.totals?.ganhos || 0,
-                despesas: IFDESystem.documents.statements?.totals?.despesas || 0,
-                ganhosLiquidos: IFDESystem.documents.statements?.totals?.ganhosLiquidos || 0,
-                files: IFDESystem.documents.statements?.files?.map(f => f.name) || []
+                count: UNIFEDSystem.documents.statements?.files?.length || 0,
+                ganhos: UNIFEDSystem.documents.statements?.totals?.ganhos || 0,
+                despesas: UNIFEDSystem.documents.statements?.totals?.despesas || 0,
+                ganhosLiquidos: UNIFEDSystem.documents.statements?.totals?.ganhosLiquidos || 0,
+                files: UNIFEDSystem.documents.statements?.files?.map(f => f.name) || []
             },
             saft: {
-                count: IFDESystem.documents.saft?.files?.length || 0,
-                bruto: IFDESystem.documents.saft?.totals?.bruto || 0,
-                iliquido: IFDESystem.documents.saft?.totals?.iliquido || 0,
-                iva: IFDESystem.documents.saft?.totals?.iva || 0,
-                files: IFDESystem.documents.saft?.files?.map(f => f.name) || []
+                count: UNIFEDSystem.documents.saft?.files?.length || 0,
+                bruto: UNIFEDSystem.documents.saft?.totals?.bruto || 0,
+                iliquido: UNIFEDSystem.documents.saft?.totals?.iliquido || 0,
+                iva: UNIFEDSystem.documents.saft?.totals?.iva || 0,
+                files: UNIFEDSystem.documents.saft?.files?.map(f => f.name) || []
             },
             dac7: {
-                count: IFDESystem.documents.dac7?.files?.length || 0,
-                q1: IFDESystem.documents.dac7?.totals?.q1 || 0,
-                q2: IFDESystem.documents.dac7?.totals?.q2 || 0,
-                q3: IFDESystem.documents.dac7?.totals?.q3 || 0,
-                q4: IFDESystem.documents.dac7?.totals?.q4 || 0,
-                receitaAnual: IFDESystem.documents.dac7?.totals?.receitaAnual || 0,
-                files: IFDESystem.documents.dac7?.files?.map(f => f.name) || []
+                count: UNIFEDSystem.documents.dac7?.files?.length || 0,
+                q1: UNIFEDSystem.documents.dac7?.totals?.q1 || 0,
+                q2: UNIFEDSystem.documents.dac7?.totals?.q2 || 0,
+                q3: UNIFEDSystem.documents.dac7?.totals?.q3 || 0,
+                q4: UNIFEDSystem.documents.dac7?.totals?.q4 || 0,
+                receitaAnual: UNIFEDSystem.documents.dac7?.totals?.receitaAnual || 0,
+                files: UNIFEDSystem.documents.dac7?.files?.map(f => f.name) || []
             }
         },
-        auditLog: IFDESystem.logs.slice(-50),
+        auditLog: UNIFEDSystem.logs.slice(-50),
         forensicLogs: ForensicLogger.getLogs().slice(-20)
     };
 
@@ -5346,21 +5346,21 @@ async function exportDataJSON() {
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `UNIFED_PERITIA_${IFDESystem.sessionId}.json`;
+    a.download = `UNIFED_PERITIA_${UNIFEDSystem.sessionId}.json`;
     a.click();
     URL.revokeObjectURL(a.href);
 
     logAudit('📊 Relatório JSON exportado com rastreabilidade completa.', 'success');
     showToast('JSON probatório exportado', 'success');
 
-    ForensicLogger.addEntry('JSON_EXPORT_COMPLETED', { sessionId: IFDESystem.sessionId });
+    ForensicLogger.addEntry('JSON_EXPORT_COMPLETED', { sessionId: UNIFEDSystem.sessionId });
 }
 
 // ============================================================================
 // 24. EXPORTAÇÃO PDF (v12.8.9 - Atualizada para novos campos)
 // ============================================================================
 async function exportPDF() {
-    if (!IFDESystem.client) return showToast('Sem sujeito passivo para gerar parecer.', 'error');
+    if (!UNIFEDSystem.client) return showToast('Sem sujeito passivo para gerar parecer.', 'error');
     if (typeof window.jspdf === 'undefined') {
         logAudit('❌ Erro: jsPDF não carregado.', 'error');
         return showToast('Erro de sistema (jsPDF)', 'error');
@@ -5373,11 +5373,11 @@ async function exportPDF() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
         const t = translations[currentLang];
-        const platform = PLATFORM_DATA[IFDESystem.selectedPlatform] || PLATFORM_DATA.outra;
-        const totals = IFDESystem.analysis.totals;
-        const twoAxis = IFDESystem.analysis.twoAxis;
-        const cross = IFDESystem.analysis.crossings;
-        const verdict = IFDESystem.analysis.verdict || { level: { pt: 'N/A', en: 'N/A' }, key: 'low', color: '#8c7ae6', description: { pt: 'Perícia não executada.', en: 'Forensic exam not executed.' }, percent: '0.00%' };
+        const platform = PLATFORM_DATA[UNIFEDSystem.selectedPlatform] || PLATFORM_DATA.outra;
+        const totals = UNIFEDSystem.analysis.totals;
+        const twoAxis = UNIFEDSystem.analysis.twoAxis;
+        const cross = UNIFEDSystem.analysis.crossings;
+        const verdict = UNIFEDSystem.analysis.verdict || { level: { pt: 'N/A', en: 'N/A' }, key: 'low', color: '#8c7ae6', description: { pt: 'Perícia não executada.', en: 'Forensic exam not executed.' }, percent: '0.00%' };
 
         let pageNumber = 1;
         let TOTAL_PAGES = 8; // Valor provisório — actualizado por doc.getNumberOfPages() na 2.ª passagem
@@ -5408,11 +5408,11 @@ async function exportPDF() {
             : forensicRound(cross.discrepanciaCritica * 12 * 38000 * 7);
 
         // ── Dados auxiliares (Lei TVDE — fluxos não sujeitos a comissão) ──
-        const _aux        = IFDESystem.auxiliaryData;
+        const _aux        = UNIFEDSystem.auxiliaryData;
         const _auxTotalNS = _aux ? _aux.totalNaoSujeitos : 0;
 
         // ── Veredicto dinâmico: usa o veredicto calculado pelo motor forense ──
-        // (já definido acima como `verdict` a partir de IFDESystem.analysis.verdict)
+        // (já definido acima como `verdict` a partir de UNIFEDSystem.analysis.verdict)
         // Não é forçado um nível específico — o motor decide com base nos dados reais.
 
         // ══════════════════════════════════════════════════════════════════════
@@ -5445,8 +5445,8 @@ async function exportPDF() {
         // O dataURL resultante é usado sincronamente em addFooter(isLastPage=true).
         // Conformidade: DORA (UE) 2022/2554 · ISO/IEC 27037:2012
         // ══════════════════════════════════════════════════════════════════════
-        const _qrHashFull    = IFDESystem.masterHash || 'HASH_INDISPONIVEL';
-        const _qrSessionShort = IFDESystem.sessionId ? IFDESystem.sessionId.substring(0, 20) : 'N/A';
+        const _qrHashFull    = UNIFEDSystem.masterHash || 'HASH_INDISPONIVEL';
+        const _qrSessionShort = UNIFEDSystem.sessionId ? UNIFEDSystem.sessionId.substring(0, 20) : 'N/A';
         const _qrPayload     = `UNIFED|${_qrSessionShort}|${_qrHashFull}`;
 
         const _qrDataUrl = await new Promise((resolve) => {
@@ -5483,7 +5483,7 @@ async function exportPDF() {
         // CAMADA DE ENRIQUECIMENTO DE SAÍDA — v13.2.2-GOLD
         // Asynchronous Post-Computation Orchestration
         // Ponto de injeção: APÓS geração do Master Hash, ANTES da construção de páginas.
-        // Padrão: Read-Only sobre IFDESystem.analysis (Fonte de Verdade Imutável).
+        // Padrão: Read-Only sobre UNIFEDSystem.analysis (Fonte de Verdade Imutável).
         // Isolamento total: se qualquer módulo falhar, o motor forense permanece íntegro.
         // Conformidade: DORA (UE) 2022/2554 · RGPD · ISO/IEC 27037:2012
         // ══════════════════════════════════════════════════════════════════════
@@ -5494,7 +5494,7 @@ async function exportPDF() {
         if (typeof window.generateLegalNarrative === 'function') {
             try {
                 logAudit('🤖 [v13.3.0] A gerar Síntese Jurídica + Simulador Adversarial (IA)...', 'info');
-                _enrichLegalNarrative = await window.generateLegalNarrative(IFDESystem.analysis);
+                _enrichLegalNarrative = await window.generateLegalNarrative(UNIFEDSystem.analysis);
                 logAudit('✅ [v13.3.0] Síntese Jurídica + Contra-Interrogatório gerados.', 'success');
             } catch (_aiErr) {
                 _enrichLegalNarrative = '[Síntese jurídica indisponível — motor forense íntegro]';
@@ -5505,7 +5505,7 @@ async function exportPDF() {
         if (typeof window.renderSankeyToImage === 'function') {
             try {
                 logAudit('📊 [v13.3.0] A renderizar Diagrama de Fluxo Financeiro (Sankey)...', 'info');
-                _enrichSankeyImage = await window.renderSankeyToImage(IFDESystem.analysis);
+                _enrichSankeyImage = await window.renderSankeyToImage(UNIFEDSystem.analysis);
                 if (_enrichSankeyImage) {
                     logAudit('✅ [v13.3.0] Diagrama Sankey renderizado com sucesso.', 'success');
                 } else {
@@ -5519,7 +5519,7 @@ async function exportPDF() {
         if (typeof window.generateTemporalChartImage === 'function') {
             try {
                 logAudit('📅 [v13.3.0] A renderizar Gráfico ATF (Análise Temporal Forense)...', 'info');
-                _enrichTemporalImage = await window.generateTemporalChartImage(IFDESystem.monthlyData, IFDESystem.analysis);
+                _enrichTemporalImage = await window.generateTemporalChartImage(UNIFEDSystem.monthlyData, UNIFEDSystem.analysis);
                 if (_enrichTemporalImage) {
                     logAudit('✅ [v13.3.0] Gráfico ATF renderizado com sucesso.', 'success');
                 }
@@ -5548,7 +5548,7 @@ async function exportPDF() {
             // SSoT: bit-to-bit literal — sem regex/replace
             const _afsId = (typeof window.activeForensicSession !== 'undefined' && window.activeForensicSession.sessionId)
                 ? window.activeForensicSession.sessionId
-                : (IFDESystem.sessionId || 'UNIFED-MMLADX8Q-CV69L');
+                : (UNIFEDSystem.sessionId || 'UNIFED-MMLADX8Q-CV69L');
             const sessionLabel = `SESSÃO: ${_afsId}`;
             doc.setFontSize(6);
             doc.setFont('courier', 'normal');
@@ -5699,8 +5699,8 @@ async function exportPDF() {
         doc.text('Cadeia de Custódia Forense: Ativa', doc.internal.pageSize.getWidth() - left, y - 5, { align: 'right' });
         // SSoT activeForensicSession — sessionId e masterHash do estado activo
         const _afs = (typeof window.activeForensicSession !== 'undefined') ? window.activeForensicSession : {};
-        const _pdfSessionId  = _afs.sessionId  || IFDESystem.sessionId  || 'UNIFED-MMLADX8Q-CV69L';
-        const _pdfMasterHashRaw = _afs.masterHash || IFDESystem.masterHash || '5150e7674b891d5d07ca990e4c7124fc66af40488452759aeebdf84976eaa8f6';
+        const _pdfSessionId  = _afs.sessionId  || UNIFEDSystem.sessionId  || 'UNIFED-MMLADX8Q-CV69L';
+        const _pdfMasterHashRaw = _afs.masterHash || UNIFEDSystem.masterHash || '5150e7674b891d5d07ca990e4c7124fc66af40488452759aeebdf84976eaa8f6';
         const _pdfMasterHash = (_pdfMasterHashRaw && _pdfMasterHashRaw.length === 64) ? _pdfMasterHashRaw : '5150e7674b891d5d07ca990e4c7124fc66af40488452759aeebdf84976eaa8f6';
         doc.text(`PROCESSO N.º: ${_pdfSessionId}`, left, y, { lineHeightFactor: 1.5 }); y += 5;
         doc.text(`DATA: ${new Date().toLocaleDateString('pt-PT')}`, left, y, { lineHeightFactor: 1.5 }); y += 5;
@@ -5763,7 +5763,7 @@ async function exportPDF() {
         doc.text('O sistema UNIFED - PROBATUM assegura a inviolabilidade dos dados atraves de funcoes criptograficas SHA-256. As', left, y); y += 4;
         doc.text('seguintes evidências foram processadas e incorporadas na análise, garantindo a rastreabilidade total da prova:', left, y); y += 6;
 
-        const evidenceList = IFDESystem.analysis.evidenceIntegrity.slice(0, 5);
+        const evidenceList = UNIFEDSystem.analysis.evidenceIntegrity.slice(0, 5);
         evidenceList.forEach((item, index) => {
             const shortHash = item.hashShort ? item.hashShort.substring(0, 20) : (item.hash ? item.hash.substring(0, 16) + '...' : 'N/A');
             doc.text(`${index + 1}. ${item.filename} - Hash: ${shortHash}`, left, y); y += 4;
@@ -5781,13 +5781,13 @@ async function exportPDF() {
         doc.text('METADADOS DA PERÍCIA', left, y); y += 6;
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(8);
-        doc.text(`${t.pdfLabelName}: ${IFDESystem.client.name}`, left, y); y += 4;
-        doc.text(`${t.pdfLabelNIF}: ${IFDESystem.client.nif}`, left, y); y += 4;
+        doc.text(`${t.pdfLabelName}: ${UNIFEDSystem.client.name}`, left, y); y += 4;
+        doc.text(`${t.pdfLabelNIF}: ${UNIFEDSystem.client.nif}`, left, y); y += 4;
         doc.text(`${t.pdfLabelPlatform}: ${platform.name}`, left, y); y += 4;
         doc.text(`${t.pdfLabelAddress}: ${platform.fullAddress || platform.address}`, left, y); y += 4;
         doc.text(`${t.pdfLabelNIFPlatform}: ${platform.nif}`, left, y); y += 4;
-        doc.text(`Ano Fiscal: ${IFDESystem.selectedYear}`, left, y); y += 4;
-        doc.text(`Período: ${IFDESystem.selectedPeriodo}`, left, y); y += 4;
+        doc.text(`Ano Fiscal: ${UNIFEDSystem.selectedYear}`, left, y); y += 4;
+        doc.text(`Período: ${UNIFEDSystem.selectedPeriodo}`, left, y); y += 4;
         doc.text(`${t.pdfLabelTimestamp}: ${Math.floor(Date.now() / 1000)}`, left, y); y += 4;
 
         addFooter(doc, pageNumber);
@@ -5890,7 +5890,7 @@ async function exportPDF() {
             '2s': '2S',
             'trimestral': 'Trim',
             'mensal': 'Mensal'
-        }[IFDESystem.selectedPeriodo] || '';
+        }[UNIFEDSystem.selectedPeriodo] || '';
 
         // ── VALORES AUDITADOS SELADOS — VERDADE MATERIAL v13.1.6-GOLD ──
         const rows = [
@@ -6780,7 +6780,7 @@ async function exportPDF() {
             // Score de Persistência
             if (typeof window.computeTemporalAnalysis === 'function') {
                 try {
-                    const _atfData = window.computeTemporalAnalysis(IFDESystem.monthlyData, IFDESystem.analysis);
+                    const _atfData = window.computeTemporalAnalysis(UNIFEDSystem.monthlyData, UNIFEDSystem.analysis);
                     doc.setFontSize(8);
                     doc.setFont('helvetica', 'bold');
                     doc.setTextColor(239, 68, 68);
@@ -6919,7 +6919,7 @@ async function exportPDF() {
         doc.setFontSize(8);
         doc.text(`Master Hash: SHA256(Hash_SAFT + Hash_Extrato + Hash_Fatura)`, left, y); y += 5;
 
-        const masterHashFull = IFDESystem.masterHash || 'HASH_INDISPONIVEL';
+        const masterHashFull = UNIFEDSystem.masterHash || 'HASH_INDISPONIVEL';
         doc.setFont('courier', 'bold');
         doc.setFontSize(7);
         doc.setTextColor(0, 0, 0);
@@ -6939,7 +6939,7 @@ async function exportPDF() {
         const custodyPageW = doc.internal.pageSize.getWidth();
         const custodyUsableW = custodyPageW - left - 14;
 
-        IFDESystem.analysis.evidenceIntegrity.forEach((item, index) => {
+        UNIFEDSystem.analysis.evidenceIntegrity.forEach((item, index) => {
             // ── Filename row ──
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(7);
@@ -7003,7 +7003,7 @@ async function exportPDF() {
         y += 8;
 
         // ── Metadados do Selo TSA ─────────────────────────────────────────────
-        const seal2 = (IFDESystem.forensicMetadata && IFDESystem.forensicMetadata.nivel2Seal) || null;
+        const seal2 = (UNIFEDSystem.forensicMetadata && UNIFEDSystem.forensicMetadata.nivel2Seal) || null;
         const sealStatus = seal2 ? seal2.status : 'NÃO APLICADO NESTA SESSÃO';
         const sealProtocol = seal2 ? seal2.protocol || 'RFC 3161' : 'RFC 3161 (FreeTSA.org)';
         const sealProvider = seal2 ? seal2.tsaProvider || 'FreeTSA.org' : 'FreeTSA.org — https://freetsa.org';
@@ -7022,7 +7022,7 @@ async function exportPDF() {
             ['MODO DE SELAGEM',     sealMode === 'TSR_LOCAL_UPLOAD' ? 'Carregamento Local (.tsr via PowerShell/OpenSSL)' : 'Submissão Online ao Nó FreeTSA'],
             ['FICHEIRO TSR',        tsrFile],
             ['NÚMERO DE SÉRIE (TSR)', tsrSerial],
-            ['HASH MASTER SHA-256', (IFDESystem.masterHash || 'N/D').substring(0, 40) + '...'],
+            ['HASH MASTER SHA-256', (UNIFEDSystem.masterHash || 'N/D').substring(0, 40) + '...'],
         ];
 
         doc.setFontSize(7.5);
@@ -7073,7 +7073,7 @@ async function exportPDF() {
         doc.text('STATUS DE SELAGEM POR EVIDÊNCIA:', left, y); y += 6;
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7);
-        IFDESystem.analysis.evidenceIntegrity.slice(0, 20).forEach((ev, idx) => {
+        UNIFEDSystem.analysis.evidenceIntegrity.slice(0, 20).forEach((ev, idx) => {
             const sType  = ev.sealType  || 'NONE';
             const sLabel = sType === 'RFC3161' ? '✓ RFC 3161 (Nível 2)' :
                            sType === 'OTS'     ? '⟁ OTS Blockchain (Nível 1)' :
@@ -7097,9 +7097,9 @@ async function exportPDF() {
         doc.setFontSize(8);
 
         let questionsToShow = [];
-        if (IFDESystem.analysis.selectedQuestions && IFDESystem.analysis.selectedQuestions.length > 0) {
+        if (UNIFEDSystem.analysis.selectedQuestions && UNIFEDSystem.analysis.selectedQuestions.length > 0) {
             // Já ordenadas por prioridade em selectQuestions() — manter ordem
-            questionsToShow = IFDESystem.analysis.selectedQuestions.slice(0, 10);
+            questionsToShow = UNIFEDSystem.analysis.selectedQuestions.slice(0, 10);
         }
         // Preencher até 10 com questões "high" não duplicadas se necessário
         if (questionsToShow.length < 10) {
@@ -7163,7 +7163,7 @@ async function exportPDF() {
         doc.text(`${currentLang === 'pt' ? 'Indícios de infração ao Artigo 108.º do Código do IVA e não conformidade com o Decreto-Lei n.º 28/2019.' : 'Evidence of violation of Article 108 of the VAT Code and non-compliance with Decree-Law No. 28/2019.'}`, left, y); y += 6;
 
         // Secção C — Recomendações Periciais: suprimida em demoMode/casoRealAnonimizado
-        if (!IFDESystem.demoMode && !IFDESystem.casoRealAnonimizado) {
+        if (!UNIFEDSystem.demoMode && !UNIFEDSystem.casoRealAnonimizado) {
             doc.setFontSize(9);
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(0, 0, 0);
@@ -7200,7 +7200,7 @@ async function exportPDF() {
         // NOTA DE RECONCILIAÇÃO DAC7 + QUESTIONÁRIO ESTRATÉGICO — DINÂMICO
         // Espelha fielmente os painéis .aux-dac7-reconciliation-note e
         // .dac7-question-contraditorio do Dashboard (v13.2.1-GOLD-AUX).
-        // Fonte dos valores: IFDESystem.auxiliaryData.totalNaoSujeitos
+        // Fonte dos valores: UNIFEDSystem.auxiliaryData.totalNaoSujeitos
         // Fundamento Legal: Lei TVDE · 0% comissão · Art. 125.º CPP
         // ══════════════════════════════════════════════════════════════════════
         if (_auxTotalNS > 0) {
@@ -7249,7 +7249,7 @@ async function exportPDF() {
             const auxRows = [
                 { label: 'Ganhos da campanha (Campanhas)',        val: _aux.campanhas   || 0, note: '0% comissão · incentivo plataforma' },
                 { label: 'Gorjetas dos passageiros (Tips)',        val: _aux.gorjetas    || 0, note: '0% comissão · transferência P2P'    },
-                { label: IFDESystem.selectedYear >= 2025 ? 'Reembolsos de Despesas / Portagens (2025+)' : 'Portagens (Tolls / 2024)',
+                { label: UNIFEDSystem.selectedYear >= 2025 ? 'Reembolsos de Despesas / Portagens (2025+)' : 'Portagens (Tolls / 2024)',
                   val: _aux.portagens || 0, note: 'reembolso operacional' },
                 { label: 'Taxas de Cancelamento',                  val: _aux.cancelamentos || 0, note: 'já incluído em Despesas — Sujeito a Comissão' },
             ];
@@ -7266,7 +7266,7 @@ async function exportPDF() {
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(9);
             doc.setTextColor(120, 70, 0);
-            doc.text(`TOTAL NÃO SUJEITOS (Campanhas + Gorjetas + ${IFDESystem.selectedYear >= 2025 ? "Reembolsos/Portagens" : "Portagens"}): ${formatCurrency(_auxTotalNS)}`, left + 2, y + 2);
+            doc.text(`TOTAL NÃO SUJEITOS (Campanhas + Gorjetas + ${UNIFEDSystem.selectedYear >= 2025 ? "Reembolsos/Portagens" : "Portagens"}): ${formatCurrency(_auxTotalNS)}`, left + 2, y + 2);
             doc.setTextColor(0, 0, 0);
             y += 12;
 
@@ -7304,7 +7304,7 @@ async function exportPDF() {
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(8);
             const contraditorio = doc.splitTextToSize(
-                `Os valores isentos de comissão (Campanhas + Gorjetas + ${IFDESystem.selectedYear >= 2025 ? 'Reembolsos/Portagens' : 'Portagens'} = ` +
+                `Os valores isentos de comissão (Campanhas + Gorjetas + ${UNIFEDSystem.selectedYear >= 2025 ? 'Reembolsos/Portagens' : 'Portagens'} = ` +
                 `${formatCurrency(_auxTotalNS)}) foram indevidamente incluídos no cálculo ` +
                 'do rendimento bruto para efeitos de reporte SAF-T / DAC7? ' +
                 'Se sim, porque é que foi aplicada uma presunção de rendimento sobre valores ' +
@@ -7337,7 +7337,7 @@ async function exportPDF() {
         // ══════════════════════════════════════════════════════════════════════
         {
             // Cálculo de discrepância — PROTOCOLO UNIFED-GOLD v13.2.1
-            const totalDiscrepancy  = Math.abs(IFDESystem.analysis.crossings.discrepanciaSaftVsDac7 || 0);
+            const totalDiscrepancy  = Math.abs(UNIFEDSystem.analysis.crossings.discrepanciaSaftVsDac7 || 0);
             const grossBase         = totals.ganhos || 1;
             const percDiscrepancia  = (totalDiscrepancy / grossBase) * 100;
 
@@ -7502,7 +7502,7 @@ async function exportPDF() {
         {
             const _termW   = doc.internal.pageSize.getWidth();
             const _termUW  = _termW - left - 14;   // largura utilizável (≈182mm)
-            const _termMH  = IFDESystem.masterHash || 'N/A';
+            const _termMH  = UNIFEDSystem.masterHash || 'N/A';
 
             // ── Fundo branco absoluto — AÇÃO 2 UNIFED-GOLD v13.2.1-FINAL ─────
             // Todas as páginas, incluindo a de fecho, têm fundo #FFFFFF para
@@ -7665,7 +7665,7 @@ async function exportPDF() {
                 try {
                     const _sealX = 14;
                     const _sealY = doc.internal.pageSize.getHeight() - 14 - 52 - 8;
-                    window.generateIntegritySeal(IFDESystem.masterHash, doc, _sealX, _sealY, 52);
+                    window.generateIntegritySeal(UNIFEDSystem.masterHash, doc, _sealX, _sealY, 52);
                 } catch (_sealErr) {
                     console.warn('[UNIFED-SEAL] ⚠ Integrity Seal indisponível:', _sealErr.message);
                 }
@@ -7701,7 +7701,7 @@ async function exportPDF() {
         const _pw  = doc.internal.pageSize.getWidth();
         const _ph  = doc.internal.pageSize.getHeight();
         const _mg  = 14;
-        const _mhFullRaw = (typeof window.activeForensicSession !== 'undefined' && window.activeForensicSession.masterHash) ? window.activeForensicSession.masterHash : (IFDESystem.masterHash || '5150e7674b891d5d07ca990e4c7124fc66af40488452759aeebdf84976eaa8f6');
+        const _mhFullRaw = (typeof window.activeForensicSession !== 'undefined' && window.activeForensicSession.masterHash) ? window.activeForensicSession.masterHash : (UNIFEDSystem.masterHash || '5150e7674b891d5d07ca990e4c7124fc66af40488452759aeebdf84976eaa8f6');
         const _mhFull = (_mhFullRaw && _mhFullRaw.length === 64) ? _mhFullRaw : '5150e7674b891d5d07ca990e4c7124fc66af40488452759aeebdf84976eaa8f6';
 
         for (let _p = 1; _p <= realTotalPages; _p++) {
@@ -7746,10 +7746,10 @@ async function exportPDF() {
         // ══ FIM LOOP UNIVERSAL DE RODAPÉ ══
 
         // Guardar PDF — sincronamente após inserção garantida do QR Code e correcção de numeração
-        doc.save(`UNIFED_PERITIA_${IFDESystem.sessionId}.pdf`);
+        doc.save(`UNIFED_PERITIA_${UNIFEDSystem.sessionId}.pdf`);
         logAudit(`✅ PDF UNIFED_PERITIA exportado com sucesso — ${realTotalPages} páginas · QR Code selado`, 'success');
         showToast(`PDF gerado · ${realTotalPages} páginas · Selo QR PROBATUM`, 'success');
-        ForensicLogger.addEntry('PDF_EXPORT_COMPLETED', { sessionId: IFDESystem.sessionId, pages: realTotalPages, qrSealed: !!_qrDataUrl });
+        ForensicLogger.addEntry('PDF_EXPORT_COMPLETED', { sessionId: UNIFEDSystem.sessionId, pages: realTotalPages, qrSealed: !!_qrDataUrl });
 
     } catch (error) {
         console.error('Erro PDF:', error);
@@ -7770,10 +7770,10 @@ async function exportPDF() {
 // IMUTABILIDADE GARANTIDA: Esta função NÃO modifica, acede ou interfere com:
 //   - calculateDiscrepancy()       [PROTEGIDA — Core Freeze]
 //   - robustSAFTParser()           [PROTEGIDA — Core Freeze]
-//   - IFDESystem.financials        [PROTEGIDA — Core Freeze]
-//   - IFDESystem.analysis.totals   [PROTEGIDA — Core Freeze]
+//   - UNIFEDSystem.financials        [PROTEGIDA — Core Freeze]
+//   - UNIFEDSystem.analysis.totals   [PROTEGIDA — Core Freeze]
 //
-// Os valores extraídos são persistidos em IFDESystem.auxiliaryData (isolado).
+// Os valores extraídos são persistidos em UNIFEDSystem.auxiliaryData (isolado).
 //
 // Fundamento Legal:
 //   • Gorjetas e Campanhas: isentos de comissão (0%) — Lei TVDE
@@ -7823,7 +7823,7 @@ function processAuxiliaryPlatformData(text, filename) {
         }
     }
     // Rótulo dinâmico: regista o termo real encontrado para uso na UI e no PDF
-    const portageLabel = (IFDESystem.selectedYear >= 2025)
+    const portageLabel = (UNIFEDSystem.selectedYear >= 2025)
         ? 'REEMBOLSOS / PORTAGENS (2025+)'
         : 'PORTAGENS (2024)';
 
@@ -7850,18 +7850,18 @@ function processAuxiliaryPlatformData(text, filename) {
     const cancelamentos = cancelMatch  && cancelMatch[1]   ? normalizeNumericValue(cancelMatch[1])   : 0;
 
     // Acumulação (suporte multi-ficheiro)
-    IFDESystem.auxiliaryData.campanhas       += campanhas;
-    IFDESystem.auxiliaryData.portagens       += portagens;
-    IFDESystem.auxiliaryData.gorjetas        += gorjetas;
-    IFDESystem.auxiliaryData.cancelamentos   += cancelamentos;
-    IFDESystem.auxiliaryData.totalNaoSujeitos =
-        forensicRound(IFDESystem.auxiliaryData.campanhas +
-                      IFDESystem.auxiliaryData.portagens  +
-                      IFDESystem.auxiliaryData.gorjetas);
-    IFDESystem.auxiliaryData.extractedAt = new Date().toISOString();
+    UNIFEDSystem.auxiliaryData.campanhas       += campanhas;
+    UNIFEDSystem.auxiliaryData.portagens       += portagens;
+    UNIFEDSystem.auxiliaryData.gorjetas        += gorjetas;
+    UNIFEDSystem.auxiliaryData.cancelamentos   += cancelamentos;
+    UNIFEDSystem.auxiliaryData.totalNaoSujeitos =
+        forensicRound(UNIFEDSystem.auxiliaryData.campanhas +
+                      UNIFEDSystem.auxiliaryData.portagens  +
+                      UNIFEDSystem.auxiliaryData.gorjetas);
+    UNIFEDSystem.auxiliaryData.extractedAt = new Date().toISOString();
 
-    if (filename && !IFDESystem.auxiliaryData.processedFrom.includes(filename)) {
-        IFDESystem.auxiliaryData.processedFrom.push(filename);
+    if (filename && !UNIFEDSystem.auxiliaryData.processedFrom.includes(filename)) {
+        UNIFEDSystem.auxiliaryData.processedFrom.push(filename);
     }
 
     // ── Actualizar boxes de UI via IDs (DOM já injetado por injectAuxiliaryHelperBoxes) ──
@@ -7876,7 +7876,7 @@ function processAuxiliaryPlatformData(text, filename) {
             `Portagens: ${formatCurrency(portagens)} | ` +
             `Gorjetas: ${formatCurrency(gorjetas)} | ` +
             `Cancelamentos: ${formatCurrency(cancelamentos)} | ` +
-            `Total Não Sujeitos: ${formatCurrency(IFDESystem.auxiliaryData.totalNaoSujeitos)}`,
+            `Total Não Sujeitos: ${formatCurrency(UNIFEDSystem.auxiliaryData.totalNaoSujeitos)}`,
             'success'
         );
         ForensicLogger.addEntry('AUXILIARY_DATA_EXTRACTED', {
@@ -7885,7 +7885,7 @@ function processAuxiliaryPlatformData(text, filename) {
             portagens,
             gorjetas,
             cancelamentos,
-            totalNaoSujeitos: IFDESystem.auxiliaryData.totalNaoSujeitos
+            totalNaoSujeitos: UNIFEDSystem.auxiliaryData.totalNaoSujeitos
         });
     } else {
         logAudit(
@@ -7897,7 +7897,7 @@ function processAuxiliaryPlatformData(text, filename) {
 
 // ── Actualização interna das boxes de UI (chamada após cada extração) ─────────
 function _updateAuxiliaryBoxes() {
-    const aux = IFDESystem.auxiliaryData;
+    const aux = UNIFEDSystem.auxiliaryData;
     const setBox = (id, val) => {
         const el = document.getElementById(id);
         if (el) el.textContent = formatCurrency(val);
@@ -7911,7 +7911,7 @@ function _updateAuxiliaryBoxes() {
     // ── Rótulo dinâmico da BOX 2: Portagens (2024) vs Reembolsos de despesas (2025+) ──
     // Protocolo UNIFED-GOLD v13.2 — Adaptação anual da nomenclatura da plataforma.
     // O advogado e o juiz identificam visualmente a adaptação técnica do perito.
-    const anoFiscal = IFDESystem.selectedYear || new Date().getFullYear();
+    const anoFiscal = UNIFEDSystem.selectedYear || new Date().getFullYear();
     const labelEl   = document.getElementById('auxBoxPortagensLabel');
     const descEl    = document.getElementById('auxBoxPortagensDesc');
     const boxEl     = document.getElementById('auxBoxPortagens');
@@ -7979,7 +7979,7 @@ function injectAuxiliaryHelperBoxes() {
     wrapper.innerHTML = `
         <!-- ══ SECÇÃO DE INDICAÇÃO DE APOIO PERICIAL ══════════════════════════════
              UNIFED - PROBATUM · Módulo Auxiliar de Dados de Plataforma
-             Isolado de IFDESystem.financials (Non-Interfering Data Objects)
+             Isolado de UNIFEDSystem.financials (Non-Interfering Data Objects)
              Valores: fluxos de caixa de terceiros — 0% comissão — Lei TVDE
              ══════════════════════════════════════════════════════════════════ -->
         <div class="aux-section-header">
@@ -8109,7 +8109,7 @@ function injectAuxiliaryHelperBoxes() {
 
 // ── Reset auxiliaryData no clearConsole / resetAllValues ─────────────────────
 function resetAuxiliaryData() {
-    IFDESystem.auxiliaryData = {
+    UNIFEDSystem.auxiliaryData = {
         campanhas:        0,
         portagens:        0,
         gorjetas:         0,
@@ -8129,36 +8129,36 @@ function generateMasterHash() {
     // metadata.forensicSummary para garantir a imutabilidade da análise."
     const forensicSummary = {
         auxiliaryData: {
-            campanhas:        IFDESystem.auxiliaryData.campanhas,
-            portagens:        IFDESystem.auxiliaryData.portagens,
-            gorjetas:         IFDESystem.auxiliaryData.gorjetas,
-            cancelamentos:    IFDESystem.auxiliaryData.cancelamentos,
-            totalNaoSujeitos: IFDESystem.auxiliaryData.totalNaoSujeitos,
-            processedFrom:    IFDESystem.auxiliaryData.processedFrom,
-            extractedAt:      IFDESystem.auxiliaryData.extractedAt,
+            campanhas:        UNIFEDSystem.auxiliaryData.campanhas,
+            portagens:        UNIFEDSystem.auxiliaryData.portagens,
+            gorjetas:         UNIFEDSystem.auxiliaryData.gorjetas,
+            cancelamentos:    UNIFEDSystem.auxiliaryData.cancelamentos,
+            totalNaoSujeitos: UNIFEDSystem.auxiliaryData.totalNaoSujeitos,
+            processedFrom:    UNIFEDSystem.auxiliaryData.processedFrom,
+            extractedAt:      UNIFEDSystem.auxiliaryData.extractedAt,
             legalBasis:       'Lei TVDE · 0% comissão · Art. 125.º CPP'
         }
     };
 
     const data = JSON.stringify({
-        client: IFDESystem.client,
-        docs: IFDESystem.documents,
-        session: IFDESystem.sessionId,
-        months: Array.from(IFDESystem.dataMonths),
+        client: UNIFEDSystem.client,
+        docs: UNIFEDSystem.documents,
+        session: UNIFEDSystem.sessionId,
+        months: Array.from(UNIFEDSystem.dataMonths),
         sources: Array.from(ValueSource.sources.entries()),
-        twoAxis: IFDESystem.analysis.twoAxis,
+        twoAxis: UNIFEDSystem.analysis.twoAxis,
         timestamp: Date.now(),
         timestampRFC3161: new Date().toUTCString(),
-        version: IFDESystem.version,
+        version: UNIFEDSystem.version,
         metadata: { forensicSummary }
     });
-    IFDESystem.masterHash = CryptoJS.SHA256(data).toString();
-    setElementText('masterHashValue', IFDESystem.masterHash);
+    UNIFEDSystem.masterHash = CryptoJS.SHA256(data).toString();
+    setElementText('masterHashValue', UNIFEDSystem.masterHash);
     generateQRCode();
     // SSoT: actualizar activeForensicSession após cada geração de hash
     window.activeForensicSession = {
-        sessionId:  IFDESystem.sessionId,
-        masterHash: IFDESystem.masterHash
+        sessionId:  UNIFEDSystem.sessionId,
+        masterHash: UNIFEDSystem.masterHash
     };
     try { sessionStorage.setItem('currentSession', JSON.stringify(window.activeForensicSession)); } catch (_e) {}
 }
@@ -8172,7 +8172,7 @@ function logAudit(message, type = 'info') {
 
     const timestamp = new Date().toLocaleTimeString('pt-PT');
     const entry = { timestamp, message, type };
-    IFDESystem.logs.push(entry);
+    UNIFEDSystem.logs.push(entry);
 
     const consoleOutput = document.getElementById('consoleOutput');
     if (consoleOutput) {
@@ -8209,20 +8209,20 @@ function showToast(message, type = 'info') {
 
 function clearConsole() {
     // Reset documentos
-    IFDESystem.documents = {
+    UNIFEDSystem.documents = {
         control: { files: [], hashes: {}, totals: { records: 0 } },
         saft: { files: [], hashes: {}, totals: { records: 0, iliquido: 0, iva: 0, bruto: 0 } },
         invoices: { files: [], hashes: {}, totals: { records: 0, invoiceValue: 0 } },
         statements: { files: [], hashes: {}, totals: { records: 0, ganhos: 0, despesas: 0, ganhosLiquidos: 0 } },
         dac7: { files: [], hashes: {}, totals: { records: 0, q1: 0, q2: 0, q3: 0, q4: 0, total: 0 } }
     };
-    IFDESystem.analysis.evidenceIntegrity = [];
-    IFDESystem.dataMonths = new Set();
-    IFDESystem.monthlyData = {}; // ATF reset
-    IFDESystem.processedFiles = new Set();
+    UNIFEDSystem.analysis.evidenceIntegrity = [];
+    UNIFEDSystem.dataMonths = new Set();
+    UNIFEDSystem.monthlyData = {}; // ATF reset
+    UNIFEDSystem.processedFiles = new Set();
 
     // Purga completa do Sujeito Passivo (transacional)
-    IFDESystem.client = null;
+    UNIFEDSystem.client = null;
     document.querySelectorAll('.client-data-field').forEach(el => el.textContent = '---');
     const clientNameInput = document.getElementById('clientNameFixed');
     const clientNIFInput = document.getElementById('clientNIFFixed');
@@ -8253,8 +8253,8 @@ function clearConsole() {
         statCommCardWipe.style.boxShadow   = '';
     }
     // Purgar modo demo
-    IFDESystem.demoMode = false;
-    if (IFDESystem.fileSources) IFDESystem.fileSources.clear();
+    UNIFEDSystem.demoMode = false;
+    if (UNIFEDSystem.fileSources) UNIFEDSystem.fileSources.clear();
 
     // Reset valores numéricos de UI via resetAllValues
     resetAllValues();
@@ -8265,27 +8265,27 @@ function clearConsole() {
 }
 
 function resetAllValues() {
-    IFDESystem.documents.saft.totals = { records: 0, iliquido: 0, iva: 0, bruto: 0 };
-    IFDESystem.documents.statements.totals = { records: 0, ganhos: 0, despesas: 0, ganhosLiquidos: 0 };
-    IFDESystem.documents.invoices.totals = { invoiceValue: 0, records: 0 };
-    IFDESystem.documents.dac7.totals = {
+    UNIFEDSystem.documents.saft.totals = { records: 0, iliquido: 0, iva: 0, bruto: 0 };
+    UNIFEDSystem.documents.statements.totals = { records: 0, ganhos: 0, despesas: 0, ganhosLiquidos: 0 };
+    UNIFEDSystem.documents.invoices.totals = { invoiceValue: 0, records: 0 };
+    UNIFEDSystem.documents.dac7.totals = {
         records: 0, q1: 0, q2: 0, q3: 0, q4: 0,
         totalPeriodo: 0, receitaAnual: 0
     };
-    IFDESystem.documents.control.totals = { records: 0 };
+    UNIFEDSystem.documents.control.totals = { records: 0 };
 
-    IFDESystem.documents.statements.files = [];
-    IFDESystem.documents.invoices.files = [];
-    IFDESystem.documents.saft.files = [];
-    IFDESystem.documents.control.files = [];
-    IFDESystem.documents.dac7.files = [];
+    UNIFEDSystem.documents.statements.files = [];
+    UNIFEDSystem.documents.invoices.files = [];
+    UNIFEDSystem.documents.saft.files = [];
+    UNIFEDSystem.documents.control.files = [];
+    UNIFEDSystem.documents.dac7.files = [];
 
-    IFDESystem.processedFiles.clear();
-    IFDESystem.dataMonths.clear();
-    IFDESystem.analysis.evidenceIntegrity = [];
+    UNIFEDSystem.processedFiles.clear();
+    UNIFEDSystem.dataMonths.clear();
+    UNIFEDSystem.analysis.evidenceIntegrity = [];
     ValueSource.sources.clear();
 
-    IFDESystem.analysis.totals = {
+    UNIFEDSystem.analysis.totals = {
         saftBruto: 0,
         saftIliquido: 0,
         saftIva: 0,
@@ -8300,14 +8300,14 @@ function resetAllValues() {
         dac7TotalPeriodo: 0
     };
 
-    IFDESystem.analysis.twoAxis = {
+    UNIFEDSystem.analysis.twoAxis = {
         revenueGap: 0,
         expenseGap: 0,
         revenueGapActive: false,
         expenseGapActive: false
     };
 
-    IFDESystem.analysis.crossings = {
+    UNIFEDSystem.analysis.crossings = {
         delta: 0,
         bigDataAlertActive: false,
         invoiceDivergence: false,
@@ -8330,12 +8330,12 @@ function resetAllValues() {
         agravamentoBrutoIRC: 0,
         ircEstimado: 0
     };
-    IFDESystem.analysis.verdict = null;
-    IFDESystem.analysis.selectedQuestions = [];
-    IFDESystem.monthlyData = {};             // purga ATF entre lotes
-    IFDESystem.demoMode = false;
-    IFDESystem.casoRealAnonimizado = false;
-    if (IFDESystem.fileSources) IFDESystem.fileSources.clear();
+    UNIFEDSystem.analysis.verdict = null;
+    UNIFEDSystem.analysis.selectedQuestions = [];
+    UNIFEDSystem.monthlyData = {};             // purga ATF entre lotes
+    UNIFEDSystem.demoMode = false;
+    UNIFEDSystem.casoRealAnonimizado = false;
+    if (UNIFEDSystem.fileSources) UNIFEDSystem.fileSources.clear();
 
     const elementsToReset = [
         'saftIliquidoValue', 'saftIvaValue', 'saftBrutoValue',
@@ -8412,14 +8412,14 @@ function resetAllValues() {
     updateCounters();
     updateEvidenceSummary();
 
-    if (IFDESystem.chart) {
-        IFDESystem.chart.destroy();
-        IFDESystem.chart = null;
+    if (UNIFEDSystem.chart) {
+        UNIFEDSystem.chart.destroy();
+        UNIFEDSystem.chart = null;
     }
 
-    if (IFDESystem.discrepancyChart) {
-        IFDESystem.discrepancyChart.destroy();
-        IFDESystem.discrepancyChart = null;
+    if (UNIFEDSystem.discrepancyChart) {
+        UNIFEDSystem.discrepancyChart.destroy();
+        UNIFEDSystem.discrepancyChart = null;
     }
 
     generateMasterHash();
@@ -8441,8 +8441,8 @@ function resetSystem() {
 function updateAnalysisButton() {
     const btn = document.getElementById('analyzeBtn');
     if (btn) {
-        const hasFiles = Object.values(IFDESystem.documents).some(d => d.files && d.files.length > 0);
-        const hasClient = IFDESystem.client !== null;
+        const hasFiles = Object.values(UNIFEDSystem.documents).some(d => d.files && d.files.length > 0);
+        const hasClient = UNIFEDSystem.client !== null;
         btn.disabled = !(hasFiles && hasClient);
     }
 }
@@ -8487,7 +8487,7 @@ function setupLogsModal() {
             const blob = new Blob([logs], { type: 'application/json' });
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
-            a.download = `IFDE_LOGS_${IFDESystem.sessionId || 'PRE_SESSION'}.json`;
+            a.download = `IFDE_LOGS_${UNIFEDSystem.sessionId || 'PRE_SESSION'}.json`;
             a.click();
             URL.revokeObjectURL(a.href);
             showToast('Logs exportados', 'success');
@@ -8548,11 +8548,11 @@ function setupWipeButton() {
             document.getElementById('clientNameFixed').value = '';
             document.getElementById('clientNIFFixed').value = '';
             document.getElementById('clientStatusFixed').style.display = 'none';
-            IFDESystem.client = null;
+            UNIFEDSystem.client = null;
 
-            IFDESystem.sessionId = generateSessionId();
-            setElementText('sessionIdDisplay', IFDESystem.sessionId);
-            setElementText('verdictSessionId', IFDESystem.sessionId);
+            UNIFEDSystem.sessionId = generateSessionId();
+            setElementText('sessionIdDisplay', UNIFEDSystem.sessionId);
+            setElementText('verdictSessionId', UNIFEDSystem.sessionId);
 
             const consoleOutput = document.getElementById('consoleOutput');
             if (consoleOutput) {
@@ -8607,7 +8607,7 @@ function setupDualScreenDetection() {
 // ============================================================================
 // 30. EXPOSIÇÃO GLOBAL
 // ============================================================================
-window.IFDESystem = IFDESystem;
+window.UNIFEDSystem = UNIFEDSystem;
 window.ValueSource = ValueSource;
 window.ForensicLogger = ForensicLogger;
 window.SchemaRegistry = SchemaRegistry;
@@ -8628,8 +8628,8 @@ window.resetAuxiliaryData = resetAuxiliaryData;
    ✓ robustSAFTParser v13.1.6-GOLD: Header-Based CSV Mapping (mapeamento dinâmico
      por label de cabeçalho) — labels exactas: "Preço da viagem (sem IVA)",
      "IVA", "Preço da viagem". Parser RFC-4180 com sanitização por linha.
-     Estrutura de saída (IFDESystem.documents.saft.totals) inalterada.
-   ✓ clearConsole: Purga Total — IFDESystem.client=null, DOM reset, .client-data-field, LEDs
+     Estrutura de saída (UNIFEDSystem.documents.saft.totals) inalterada.
+   ✓ clearConsole: Purga Total — UNIFEDSystem.client=null, DOM reset, .client-data-field, LEDs
    ✓ ForensicLogger (Art. 30.º RGPD): UNIFED_FORENSIC_LOGS (invariante), 5000 entradas, exportMonthly()
    ✓ filterDAC7ByPeriod(): reactivo ao seletor, Q1-Q4 visíveis por período, recalc de totais
    ✓ box-border-blink: border+shadow only, background estável, target #jurosCard/#discrepancy5Card
@@ -8638,7 +8638,7 @@ window.resetAuxiliaryData = resetAuxiliaryData;
    ✓ DORA (UE) 2022/2554 — cláusula no PDF e nos badges
 
    NOVO — v13.5.0-PURE (Refatoração Cirúrgica — Court Ready):
-   ✓ IFDESystem.auxiliaryData: Non-Interfering Data Object — isolado de financials
+   ✓ UNIFEDSystem.auxiliaryData: Non-Interfering Data Object — isolado de financials
      Campos: campanhas, portagens, gorjetas, cancelamentos, totalNaoSujeitos
      Base Legal: Lei TVDE · 0% comissão · Art. 125.º CPP
    ✓ processAuxiliaryPlatformData(text, filename): Regex Pattern Matching para
@@ -8647,7 +8647,7 @@ window.resetAuxiliaryData = resetAuxiliaryData;
    ✓ injectAuxiliaryHelperBoxes(): DOM Injection via DocumentFragment
      5 div.small-info-box injetadas APÓS #dashboardAlerts (sem tocar na main-grid)
      Nota de Reconciliação DAC7 incluída — explica a "zona cinzenta" AT vs motorista
-   ✓ generateMasterHash(): incluí IFDESystem.auxiliaryData no metadata.forensicSummary
+   ✓ generateMasterHash(): incluí UNIFEDSystem.auxiliaryData no metadata.forensicSummary
      garantindo imutabilidade da análise sobre os campos auxiliares
    ✓ resetAuxiliaryData(): sincronizado com resetAllValues() — purga total coerente
    ✓ Questionário Estratégico ao Advogado (Contraditório) integrado na Nota DAC7
@@ -8658,7 +8658,7 @@ window.resetAuxiliaryData = resetAuxiliaryData;
    UNIFED - PROBATUM · v13.5.0-PURE · INICIALIZAÇÃO DO PAINEL DE CASO REAL
    ============================================================================
    Este bloco é o ponto de entrada no script.js para a v13.5.0-PURE.
-   Expõe o método loadAnonymizedRealCase() como extensão do IFDESystem.
+   Expõe o método loadAnonymizedRealCase() como extensão do UNIFEDSystem.
    A lógica de dados e o HTML do painel residem em:
      · script_injection_v13.5.0-PURE.js  (dados verificados + _syncPureDashboard)
      · panel_v13.5.0-PURE.html           (estrutura HTML do painel)
@@ -8668,22 +8668,22 @@ window.resetAuxiliaryData = resetAuxiliaryData;
    Core Freeze: este bloco não altera nenhuma fórmula de análise forense.
    ============================================================================ */
 
-// ── Registo do módulo v13.5.0-PURE no IFDESystem ─────────────────────────────
+// ── Registo do módulo v13.5.0-PURE no UNIFEDSystem ─────────────────────────────
 // Garante que o método está disponível mesmo que script_injection seja carregado
 // depois deste ficheiro (ordem de carregamento em index.html: enrichment → script → nexus → injection).
 (function _registerPUREModule() {
-    if (typeof IFDESystem === 'undefined') {
-        console.warn('[UNIFED-PURE] IFDESystem não disponível no momento do registo — aguardar DOMContentLoaded.');
+    if (typeof UNIFEDSystem === 'undefined') {
+        console.warn('[UNIFED-PURE] UNIFEDSystem não disponível no momento do registo — aguardar DOMContentLoaded.');
         return;
     }
 
     // Marcador de versão do módulo PURE
-    IFDESystem._pureModuleVersion = 'v13.5.0-PURE';
-    IFDESystem._pureModuleLoaded  = false;
+    UNIFEDSystem._pureModuleVersion = 'v13.5.0-PURE';
+    UNIFEDSystem._pureModuleLoaded  = false;
 
     // Stub de segurança: se script_injection não for carregado, evita erro de runtime
-    if (typeof IFDESystem.loadAnonymizedRealCase !== 'function') {
-        IFDESystem.loadAnonymizedRealCase = function _pureStub() {
+    if (typeof UNIFEDSystem.loadAnonymizedRealCase !== 'function') {
+        UNIFEDSystem.loadAnonymizedRealCase = function _pureStub() {
             console.warn(
                 '[UNIFED-PURE] ⚠ script_injection_v13.5.0-PURE.js não carregado. ' +
                 'Verificar ordem de carregamento em index.html.'
@@ -8692,8 +8692,8 @@ window.resetAuxiliaryData = resetAuxiliaryData;
     }
 
     console.info(
-        '[UNIFED-PURE] ✅ Módulo v13.5.0-PURE registado no IFDESystem.\n' +
-        '  Activação : IFDESystem.loadAnonymizedRealCase()\n' +
+        '[UNIFED-PURE] ✅ Módulo v13.5.0-PURE registado no UNIFEDSystem.\n' +
+        '  Activação : UNIFEDSystem.loadAnonymizedRealCase()\n' +
         '  Fonte     : UNIFED-MMLADX8Q-CV69L · demoMode: false\n' +
         '  Hash ref. : 5150e767... (SHA-256 verificado)'
     );

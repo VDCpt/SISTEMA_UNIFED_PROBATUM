@@ -10,7 +10,7 @@
  * PRINCÍPIO DE INTEGRIDADE (Core Freeze):
  *   · Todos os valores injetados provêm diretamente do JSON verificado.
  *   · Nenhum valor é estimado, simulado ou extrapolado nesta função.
- *   · O motor forense (IFDESystem.analysis) não é alterado — Read-Only.
+ *   · O motor forense (UNIFEDSystem.analysis) não é alterado — Read-Only.
  *   · monthlyData é reconstituído dos logs de custódia para uso pelo ATF.
  * ============================================================================
  */
@@ -107,11 +107,11 @@ const _REAL_CASE_MMLADX8Q = Object.freeze({
 
 // ============================================================================
 // loadAnonymizedRealCase()
-// Carrega o caso real anonimizado no IFDESystem para visualização no Dashboard.
+// Carrega o caso real anonimizado no UNIFEDSystem para visualização no Dashboard.
 // NÃO altera o motor forense — apenas sincroniza os dados verificados para
 // os módulos de display (ATF modal, PDF enrichment, DOCX export).
 // ============================================================================
-IFDESystem.loadAnonymizedRealCase = function _loadAnonymizedRealCase() {
+UNIFEDSystem.loadAnonymizedRealCase = function _loadAnonymizedRealCase() {
 
     // ── 1. Metadados anonimizados ─────────────────────────────────────────────
     this.metadata        = this.metadata || {};
@@ -242,8 +242,8 @@ if (typeof window.activeForensicSession === 'undefined') {
 }
 
 // Expor globalmente
-window.loadAnonymizedRealCase = IFDESystem.loadAnonymizedRealCase.bind(IFDESystem);
+window.loadAnonymizedRealCase = UNIFEDSystem.loadAnonymizedRealCase.bind(UNIFEDSystem);
 window._REAL_CASE_MMLADX8Q    = _REAL_CASE_MMLADX8Q;  // Read-only reference
 
 console.info('[UNIFED-PURE] v13.5.0-PURE · Módulo de caso real anonimizado registado.');
-console.info('[UNIFED-PURE] Chamar IFDESystem.loadAnonymizedRealCase() para activar.');
+console.info('[UNIFED-PURE] Chamar UNIFEDSystem.loadAnonymizedRealCase() para activar.');

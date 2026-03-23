@@ -593,7 +593,7 @@
 
                 <!-- ══ UNIFED - PROBATUM v13.5.0-PURE · PAINEL DE CASO REAL ANONIMIZADO ══════
                      Reconstituição da Verdade Material — Dados verificados JSON UNIFED-MMLADX8Q-CV69L
-                     Activação: IFDESystem.loadAnonymizedRealCase() (chamada em script_injection.js)
+                     Activação: UNIFEDSystem.loadAnonymizedRealCase() (chamada em script_injection.js)
                      Conformidade: ISO/IEC 27037 · Art. 125.º CPP · DORA (UE) 2022/2554
                      ══════════════════════════════════════════════════════════════════════════════ -->
                 <div id="pureDashboardWrapper" style="display:none">
@@ -899,7 +899,7 @@
     <script src="enrichment.js"></script>
     <script src="script.js"></script>
     <!-- ══ UNIFED PROBATUM v13.3.0-DIAMOND — NEXUS Adaptive Extension Layer ══════
-         Carregado APÓS enrichment.js e script.js. Consome IFDESystem em Read-Only.
+         Carregado APÓS enrichment.js e script.js. Consome UNIFEDSystem em Read-Only.
          NÃO altera fórmulas fiscais nem o Dashboard. Módulos:
            M1 · Stealth Network Interceptor (Anti-F12 Protocol)
            M2 · RAG Jurisprudencial DOCX (Art. 103/104 RGIT · Art. 78 CIVA · STA)
@@ -911,7 +911,7 @@
 
     <!-- ══ UNIFED - PROBATUM v13.5.0-PURE · CASO REAL ANONIMIZADO ═══════════════
          Carregado APÓS nexus.js. Injeta os dados reais verificados (UNIFED-MMLADX8Q-CV69L)
-         no IFDESystem e activa o painel #pureDashboard.
+         no UNIFEDSystem e activa o painel #pureDashboard.
          Conformidade: ISO/IEC 27037 · Art. 125.º CPP · DORA (UE) 2022/2554
          Core Freeze: não altera fórmulas de script.js nem módulos enrichment/nexus.
          ══════════════════════════════════════════════════════════════════════════ -->
@@ -919,7 +919,7 @@
     <script src="script_injection.js"></script>
     <script>
         // ── Activação do Painel v13.5.0-PURE ───────────────────────────────────
-        // Aguarda IFDESystem estar disponível, depois:
+        // Aguarda UNIFEDSystem estar disponível, depois:
         //   1. Injeta o HTML do painel no wrapper
         //   2. Chama loadAnonymizedRealCase() para popular os dados
         //   3. Torna o wrapper visível
@@ -935,8 +935,8 @@
                         wrapper.innerHTML = html;
                         wrapper.style.display = 'block';
                     }
-                    if (typeof IFDESystem !== 'undefined' && typeof IFDESystem.loadAnonymizedRealCase === 'function') {
-                        IFDESystem.loadAnonymizedRealCase();
+                    if (typeof UNIFEDSystem !== 'undefined' && typeof UNIFEDSystem.loadAnonymizedRealCase === 'function') {
+                        UNIFEDSystem.loadAnonymizedRealCase();
                     }
                     console.info('[UNIFED-PURE] ✅ Painel v13.5.0-PURE activado.');
                 })

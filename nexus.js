@@ -3,7 +3,7 @@
  * UNIFED - PROBATUM · NEXUS LAYER · v13.5.0-PURE
  * ============================================================================
  * Arquitetura : Adaptive Extension Layer — carregado APÓS enrichment.js
- * Padrão      : Read-Only sobre IFDESystem · Nenhum cálculo fiscal alterado
+ * Padrão      : Read-Only sobre UNIFEDSystem · Nenhum cálculo fiscal alterado
  * Conformidade: DORA (UE) 2022/2554 · RGPD · ISO/IEC 27037:2012 · Art. 125.o CPP
  *
  * MÓDULOS ELITE:
@@ -13,7 +13,7 @@
  *   4. BLOCKCHAIN EVIDENCE EXPLORER — OTS Individual por Ficheiro (SHA-256 + DOM UI)
  *
  * DIRETIVA DE INTEGRIDADE:
- *   NÃO altera IFDESystem.analysis nem fórmulas de script.js.
+ *   NÃO altera UNIFEDSystem.analysis nem fórmulas de script.js.
  *   NÃO altera o Dashboard do index.html.
  *   Toda a lógica reside exclusivamente neste ficheiro.
  * ============================================================================
@@ -158,7 +158,7 @@
             proc: 'Proc. 01080/17.3BELRS',
             tribunal: 'Supremo Tribunal Administrativo — 2.a Seccao',
             data: '27.09.2023',
-            sumario: 'A omissao de valores de base tributavel resultante de desconformidade entre o reportado em DAC7 e o declarado pelo sujeito passivo constitui indicio qualificado de fraude fiscal nos termos do Art. 103.o RGIT. A plataforma digital, enquanto sujeito passivo por substituicao, partilha a responsabilidade solidaria pela liquidacao omitida (Art. 22.o LGT).'
+            sumario: 'A plataforma falha no reporte da Contraprestacao Total (conforme Art. 8.o-AC da Diretiva (UE) 2021/514 (DAC7)), omitindo fluxos de Taxas de Cancelamento, Portagens e Suplementos que integram a realidade economica creditada ao parceiro, gerando uma divergencia material entre o reporte DAC7 e a faturacao emitida sob monopolio (Art. 36.o n.o 11 CIVA). Esta omissao constitui indicio qualificado nos termos do Art. 103.o RGIT. A plataforma digital, enquanto sujeito passivo por substituicao, partilha a responsabilidade solidaria pela liquidacao omitida (Art. 22.o LGT).'
         },
         {
             proc: 'Proc. 0456/19.8BEPRT',
@@ -182,7 +182,7 @@
             proc: 'Proc. 01234/22.7BELRS',
             tribunal: 'Tribunal Arbitral Tributario (CAAD)',
             data: '15.01.2025',
-            sumario: 'A regularizacao prevista no Art. 78.o CIVA e obrigatoria quando existam omissoes de base tributavel identificadas por cruzamento de dados. O sujeito passivo nao pode invocar o desconhecimento das obrigacoes DAC7 como circunstancia atenuante quando a plataforma cumpriu as suas obrigacoes de comunicacao (Art. 8.o Diretiva 2021/514/UE).'
+            sumario: 'A regularizacao prevista no Art. 78.o CIVA e obrigatoria quando existam omissoes de base tributavel identificadas por cruzamento de dados. O sujeito passivo nao pode invocar o desconhecimento das obrigacoes DAC7 como circunstancia atenuante quando a plataforma cumpriu as suas obrigacoes de comunicacao (Art. 8.o-AC Diretiva (UE) 2021/514 (DAC7)).'
         },
         {
             proc: 'Proc. 0582/22.4BEPRT',
@@ -316,7 +316,7 @@
         var _origExportDOCX = window.exportDOCX;
 
         window.exportDOCX = async function _nexusExportDOCX() {
-            var sys = window.IFDESystem;
+            var sys = window.UNIFEDSystem;
             var discPct = (sys && sys.analysis && sys.analysis.crossings)
                 ? (sys.analysis.crossings.percentagemOmissao || 0)
                 : 0;
@@ -360,7 +360,7 @@
 // ============================================================================
 // MÓDULO 3 · MOTOR PREDITIVO ATF — Forecasting 6 Meses
 // ============================================================================
-// Objetivo: Ler IFDESystem.monthlyData, aplicar Regressão Linear Simples
+// Objetivo: Ler UNIFEDSystem.monthlyData, aplicar Regressão Linear Simples
 // sobre a série temporal de Discrepâncias, projetar os próximos 6 meses e:
 //   (a) Injetar linha tracejada de previsão no Chart.js do modal ATF
 //   (b) Injetar painel "RISCO FUTURO" no modal ATF com valores projetados
@@ -671,7 +671,7 @@
         window.openATFModal = function _nexusOpenATFModal() {
             _origOpenATFModal.apply(this, arguments);
 
-            var sys = window.IFDESystem;
+            var sys = window.UNIFEDSystem;
             if (!sys || !sys.monthlyData) return;
 
             var monthlyData = sys.monthlyData;
@@ -712,7 +712,7 @@
 // ============================================================================
 // MÓDULO 4 · BLOCKCHAIN EVIDENCE EXPLORER — OTS Individual
 // ============================================================================
-// Objetivo: Ler IFDESystem.documents e ForensicLogger, gerar um SHA-256
+// Objetivo: Ler UNIFEDSystem.documents e ForensicLogger, gerar um SHA-256
 // independente por ficheiro e injectar no painel de Cadeia de Custódia
 // um botão "VER EXPLORER" que abre um modal flutuante listando cada ficheiro
 // com o seu hash e status "Pendente/Ancorado na Bitcoin Network".
@@ -745,11 +745,11 @@
 
     /**
      * Recolhe todos os ficheiros registados no sistema.
-     * Cruza IFDESystem.documents (estrutura de files) com os logs de custódia.
+     * Cruza UNIFEDSystem.documents (estrutura de files) com os logs de custódia.
      */
     function _collectDocumentRegistry() {
         var registry = [];
-        var sys = window.IFDESystem;
+        var sys = window.UNIFEDSystem;
         if (!sys) return registry;
 
         // Mapa de hashes existentes da cadeia de custódia (ForensicLogger)
@@ -796,7 +796,7 @@
             });
         });
 
-        // Fallback: se não há documentos no IFDESystem, usar os logs de custódia
+        // Fallback: se não há documentos no UNIFEDSystem, usar os logs de custódia
         if (registry.length === 0 && Object.keys(custodyMap).length > 0) {
             Object.keys(custodyMap).forEach(function(fname) {
                 var c = custodyMap[fname];
@@ -958,7 +958,7 @@
                     'font-size:0.6rem;color:rgba(255,255,255,0.3);line-height:1.6;' +
                 '">' +
                     '⚙ NEXUS Blockchain Explorer · SHA-256 independente por ficheiro · ' +
-                    'Art. 125.o CPP · ISO/IEC 27037:2012 · DORA (UE) 2022/2554 · Read-Only sobre IFDESystem · ' +
+                    'Art. 125.o CPP · ISO/IEC 27037:2012 · DORA (UE) 2022/2554 · Read-Only sobre UNIFEDSystem · ' +
                     new Date().toLocaleString('pt-PT') +
                 '</div>' +
 

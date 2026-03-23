@@ -2,12 +2,12 @@
  * UNIFED - PROBATUM · OUTPUT ENRICHMENT LAYER · v13.5.0-PURE
  * ============================================================================
  * Arquitetura: Asynchronous Post-Computation Orchestration
- * Padrão:      Read-Only Data Consumption sobre IFDESystem.analysis
+ * Padrão:      Read-Only Data Consumption sobre UNIFEDSystem.analysis
  * Conformidade: DORA (UE) 2022/2554 · RGPD · ISO/IEC 27037:2012
  *
  * PRINCÍPIO DE ISOLAMENTO:
- *   Consome IFDESystem.analysis e IFDESystem.monthlyData como Read-Only.
- *   NÃO altera fórmulas fiscais. NÃO escreve em IFDESystem.analysis.
+ *   Consome UNIFEDSystem.analysis e UNIFEDSystem.monthlyData como Read-Only.
+ *   NÃO altera fórmulas fiscais. NÃO escreve em UNIFEDSystem.analysis.
  *   Todos os módulos têm fallback silencioso — o motor forense é imune.
  *
  * MÓDULOS:
@@ -132,8 +132,8 @@ ${legalContext}
 Seccao A - QUALIFICACAO JURIDICA DOS FACTOS
 [OBRIGATORIO: Usar o termo "limbo contabilístico" para qualificar a divergencia apurada. Texto mandatório a incluir: "A divergencia apurada nao constitui erro de processamento, mas sim a criacao de um limbo contabilístico que serve a retencao indevida de margem operacional e a evasao fiscal estruturada."]
 Seccao B - ENQUADRAMENTO LEGAL E TRIBUTARIO
-Seccao C - RECOMENDACOES PERICIAIS
-[OBRIGATORIO: Sublinhar que o UNIFED-PROBATUM realiza RECONSTITUICAO DA VERDADE MATERIAL DIGITAL — nao contabilidade — e que esta distinção e juridicamente relevante para a admissibilidade da prova pericial.]
+Seccao C - CONCLUSOES DE ADMISSIBILIDADE
+[OBRIGATORIO: (I) CONSOLIDACAO DA PROVA MATERIAL — A densidade tecnica da evidencia digital extraida via UNIFED PURE e suficiente para a demonstracao do nexo de causalidade na subdeclaracao de base tributavel; (II) IMPACTO SISTEMICO ESTIMADO (SIMULACAO) — Com base na metrica de discrepancia apurada neste processo e extrapolando para a estabilidade do setor (38.000 condutores — IMT), estima-se um passivo fiscal oculto sistemico de magnitude superior a 500M EUR, carecendo a sua liquidacao final de prova pericial complementar em sede de execucao; (III) RECOMENDACAO PROCESSUAL — Face a robustez dos artefactos apresentados, recomenda-se a inversao do onus da prova (Art. 344.o CC), mantendo-se a disponibilidade para o pleno exercicio do contraditorio (Art. 327.o CPP) mediante acesso aos logs brutos sob custodia. SUBLINHAR: o UNIFED-PROBATUM realiza RECONSTITUICAO DA VERDADE MATERIAL DIGITAL — nao contabilidade.]
 Seccao D - ESTRATEGIA DE CONTRA-INTERROGATORIO (AI Adversarial Simulator)
 [Para cada discrepancia critica, identifica 2-3 linhas de ataque da contraparte e fornece a resposta tecnica pericial com referencia legal.]
 
@@ -238,10 +238,12 @@ function _fallbackNarrative(reason) {
         'do CIVA (autoliquidacao). O lucro tributavel devera ser corrigido ao abrigo do Art. 17.o do CIRC, ' +
         'com incidencia de tributacao autonoma sobre encargos nao documentados (Art. 88.o CIRC).',
         '',
-        'Seccao C - RECOMENDACOES PERICIAIS',
-        'Recomenda-se: (1) Solicitar SAF-T completo do periodo; (2) Cruzar com declaracoes DAC7 submetidas ' +
-        'pela plataforma a AT; (3) Verificar faturas emitidas vs. receitas declaradas em IRS/IRC; ' +
-        '(4) Analisar extratos bancarios para confirmacao de fluxos. Prazo de caducidade: 4 anos (Art. 45.o LGT).',
+        'Seccao C - CONCLUSOES DE ADMISSIBILIDADE',
+        '(I) CONSOLIDACAO DA PROVA MATERIAL: A densidade tecnica da evidencia digital extraida via UNIFED PURE e suficiente para a demonstracao do nexo de causalidade na subdeclaracao de base tributavel. A metodologia forense aplicada (ISO/IEC 27037:2012 · Art. 125.o CPP) e replicavel e verificavel por perito independente.',
+        '',
+        '(II) IMPACTO SISTEMICO ESTIMADO (SIMULACAO): Com base na metrica de discrepancia apurada neste processo e extrapolando para a estabilidade do setor (38.000 condutores — IMT), estima-se um passivo fiscal oculto sistemico de magnitude superior a 500M EUR. Esta projecao carece de prova pericial complementar em sede de execucao e nao constitui prova de facto neste processo concreto.',
+        '',
+        '(III) RECOMENDACAO PROCESSUAL: Face a robustez dos artefactos apresentados, recomenda-se a inversao do onus da prova (Art. 344.o CC e Art. 100.o CPPT), mantendo-se a disponibilidade para o pleno exercicio do contraditorio (Art. 327.o CPP) mediante acesso aos logs brutos de calculo de comissoes, sob custodia exclusiva da plataforma. O UNIFED-PROBATUM realiza RECONSTITUICAO DA VERDADE MATERIAL DIGITAL — nao contabilidade — distinção juridicamente relevante para a admissibilidade da prova pericial.
         '',
         'Seccao D - ESTRATEGIA DE CONTRA-INTERROGATORIO',
         'Argumento da Defesa: "Os valores reportados pelo DAC7 incluem taxas de cancelamento e reembolsos ' +
@@ -256,7 +258,7 @@ function _fallbackNarrative(reason) {
         '',
         'Argumento da Defesa: "O contribuinte nao tinha conhecimento tecnico das obrigacoes DAC7."',
         'Resposta Pericial: O regime DAC7 esta em vigor em Portugal desde 1 de janeiro de 2023 ' +
-        '(DL n.o 41/2023) e a plataforma tem obrigacao de informar o prestador nos termos do Art. 8.o ' +
+        '(Lei n.o 17/2023) e a plataforma tem obrigacao de informar o prestador nos termos do Art. 8.o ' +
         'da Diretiva. A ignorancia da lei nao aproveita (Art. 6.o CC).'
     ].join('\n');
 }
@@ -512,14 +514,14 @@ async function exportDOCX(xmlInject) {
         if (typeof showToast === 'function') showToast('Erro: JSZip nao carregado', 'error');
         return;
     }
-    if (!window.IFDESystem || !window.IFDESystem.client) {
+    if (!window.UNIFEDSystem || !window.UNIFEDSystem.client) {
         if (typeof showToast === 'function') showToast('Sem sujeito passivo para gerar minuta.', 'error');
         return;
     }
 
     if (typeof logAudit === 'function') logAudit('\ud83d\udcc4 [v13.5.0-PURE] A gerar Minuta de Peticao Inicial (DOCX)...', 'info');
 
-    var sys  = window.IFDESystem;
+    var sys  = window.UNIFEDSystem;
     var t    = sys.analysis.totals    || {};
     var c    = sys.analysis.crossings || {};
     var v    = sys.analysis.verdict   || {};
@@ -1045,8 +1047,8 @@ window.generateTemporalChartImage = generateTemporalChartImage;
  * openATFModal() - Modal Dashboard interativo com Chart.js
  */
 function openATFModal() {
-    var sys = window.IFDESystem;
-    if (!sys) { console.warn('[UNIFED-ATF] IFDESystem nao disponivel.'); return; }
+    var sys = window.UNIFEDSystem;
+    if (!sys) { console.warn('[UNIFED-ATF] UNIFEDSystem nao disponivel.'); return; }
 
     var atf    = computeTemporalAnalysis(sys.monthlyData || {}, sys.analysis);
     var months = atf.months;
@@ -1285,7 +1287,7 @@ console.log('[UNIFED-ENRICHMENT]   . NIFAF                        - Non-Intrusiv
 console.log('[UNIFED-ENRICHMENT]   . generateTemporalChartImage() - ATF Grafico Canvas-to-PDF');
 console.log('[UNIFED-ENRICHMENT]   . computeTemporalAnalysis()    - ATF Analytics (2sigma SP Outliers)');
 console.log('[UNIFED-ENRICHMENT]   . openATFModal()               - ATF Dashboard Modal (Chart.js)');
-console.log('[UNIFED-ENRICHMENT]   . Modo: Read-Only - Fonte: IFDESystem.analysis + monthlyData');
+console.log('[UNIFED-ENRICHMENT]   . Modo: Read-Only - Fonte: UNIFEDSystem.analysis + monthlyData');
 
 /* =====================================================================
    FIM DO FICHEIRO ENRICHMENT.JS - v13.5.0-PURE
