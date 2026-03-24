@@ -168,9 +168,14 @@ function _syncPureDashboard(sys) {
     var c = sys.analysis.crossings || {};
     var v = sys.analysis.verdict   || {};
 
-    // Utilitário de formatação EUR
+    // Idioma activo
+    var _L   = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
+    var _T   = function(pt, en) { return _L === 'en' ? en : pt; };
+    var _loc = _L === 'en' ? 'en-GB' : 'pt-PT';
+
+    // Utilitário de formatação EUR — locale bilíngue
     var _eur = function(val) {
-        return new Intl.NumberFormat('pt-PT', {
+        return new Intl.NumberFormat(_loc, {
             style: 'currency', currency: 'EUR',
             minimumFractionDigits: 2, maximumFractionDigits: 2
         }).format(val || 0);
@@ -199,15 +204,14 @@ function _syncPureDashboard(sys) {
     _set('pure-iva-6',          _eur(c.ivaFalta6));
     _set('pure-irc',            _eur(c.ircEstimado));
 
-    // ── Painel III — ATF (preenchido pelo motor computeTemporalAnalysis) ──────
-    // O Score de Persistência real para 3 meses (Out/Nov/Dez 2024) é SP=40.
-    // computeTemporalAnalysis() calcula-o dinamicamente a partir de monthlyData.
-    // Os valores abaixo são actualizados pelo openATFModal() em enrichment.js.
-    _set('pure-atf-sp',         '40<span style="font-size:1rem;opacity:0.6">/100</span>');
-    _set('pure-atf-trend',      '📉 DESCENDENTE');
-    _set('pure-atf-status',     'OMISSÃO PONTUAL / RISCO MODERADO');
-    _set('pure-atf-meses',      '2.º Semestre 2024 — 4 meses com dados (Set–Dez)');
-    _set('pure-atf-outliers',   '0 outliers &gt; 2σ');
+    // ── Painel III — ATF — bilíngue ───────────────────────────────────────────
+    // SP=40 verificado para lote Out/Nov/Dez 2024 (3 meses histórico)
+    _set('pure-atf-sp',       '40<span style="font-size:1rem;opacity:0.6">/100</span>');
+    _set('pure-atf-trend',    _T('📉 DESCENDENTE', '📉 DESCENDING'));
+    _set('pure-atf-status',   _T('OMISSÃO PONTUAL / RISCO MODERADO', 'OCCASIONAL OMISSION / MODERATE RISK'));
+    _set('pure-atf-meses',    _T('2.º Semestre 2024 — 4 meses com dados (Set–Dez)',
+                                 '2nd Semester 2024 — 4 months with data (Sep–Dec)'));
+    _set('pure-atf-outliers', _T('0 outliers &gt; 2σ', '0 outliers &gt; 2σ'));
 
     // ── Painel IV — Zona Cinzenta (Valores não sujeitos a comissão) ───────────
     _set('pure-nc-campanhas',      _eur(sys.nonCommissionable && sys.nonCommissionable.campanhas));
@@ -216,13 +220,21 @@ function _syncPureDashboard(sys) {
     _set('pure-nc-cancelamentos',  _eur(sys.nonCommissionable && sys.nonCommissionable.cancelamentos));
     _set('pure-nc-total',          _eur(sys.nonCommissionable && sys.nonCommissionable.totalNaoSujeitos));
 
-    // ── Painel V — Veredicto ──────────────────────────────────────────────────
-    _set('pure-verdict',        v.level && v.level.pt ? v.level.pt : 'RISCO ELEVADO');
-    _set('pure-verdict-pct',    v.percent || '89,04%');
+    // ── Painel V — Veredicto — bilíngue ──────────────────────────────────────
+    var _vLevel = (_L === 'en')
+        ? (v.level && v.level.en ? v.level.en : 'HIGH RISK')
+        : (v.level && v.level.pt ? v.level.pt : 'RISCO ELEVADO');
+    _set('pure-verdict',        _vLevel);
+    _set('pure-verdict-pct',    v.percent || '89,26%');
 
     // ── Badge de integridade ──────────────────────────────────────────────────
     _set('pure-session-id',     sys.sessionId || '');
     _set('pure-hash-prefix',    (sys.masterHash || '').substring(0, 24) + '...');
+
+    // ── Chamar _translatePurePanel para cobrir todos os data-pt/data-en ───────
+    if (typeof window._translatePurePanel === 'function') {
+        window._translatePurePanel(_L);
+    }
 }
 
 // ── SSoT: activeForensicSession ─────────────────────────────────────────────

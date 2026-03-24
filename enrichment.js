@@ -846,7 +846,9 @@ function computeTemporalAnalysis(monthlyData, analysis) {
             months: [], ganhosSeries: [], despesasSeries: [], discrepancySeries: [],
             mean: 0, stdDev: 0, outlierMonths: [],
             persistenceScore: 0,
-            persistenceLabel: 'Dados insuficientes. Carregue extratos mensais (nome AAAAMM).',
+            persistenceLabel: (typeof window.currentLang !== 'undefined' && window.currentLang === 'en')
+                ? 'Insufficient data. Upload monthly statements (filename must include YYYYMM).'
+                : 'Dados insuficientes. Carregue extratos mensais (nome AAAAMM).',
             trend: 'neutral', opportunisticPattern: false
         };
     }
@@ -882,18 +884,36 @@ function computeTemporalAnalysis(monthlyData, analysis) {
     var spOpp    = opportunisticPattern ? 10 : 0;
     var persistenceScore = Math.min(Math.round(spBase + spTrend + spOut + spOpp), 100);
 
+    var _atfLang = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
+    var _atfT    = function(pt, en) { return _atfLang === 'en' ? en : pt; };
+
     var persistenceLabel;
     if (persistenceScore >= 80) {
-        persistenceLabel = 'PADRAO DE OMISSAO SISTEMATICA DETETADO - Comportamento consistente com dolo para efeitos Art. 104.o RGIT.';
+        persistenceLabel = _atfT(
+            'PADRAO DE OMISSAO SISTEMATICA DETETADO - Comportamento consistente com dolo para efeitos Art. 104.o RGIT.',
+            'SYSTEMATIC OMISSION PATTERN DETECTED - Behaviour consistent with intent under Art. 104 RGIT.'
+        );
     } else if (persistenceScore >= 55) {
-        persistenceLabel = 'PADRAO DE OMISSAO RECORRENTE - Indicios de negligencia grave ou comportamento oportunistico.';
+        persistenceLabel = _atfT(
+            'PADRAO DE OMISSAO RECORRENTE - Indicios de negligencia grave ou comportamento oportunistico.',
+            'RECURRENT OMISSION PATTERN - Indications of gross negligence or opportunistic behaviour.'
+        );
     } else if (persistenceScore >= 30) {
-        persistenceLabel = 'OMISSOES PONTUAIS IDENTIFICADAS - Analise complementar recomendada.';
+        persistenceLabel = _atfT(
+            'OMISSOES PONTUAIS IDENTIFICADAS - Analise complementar recomendada.',
+            'OCCASIONAL OMISSIONS IDENTIFIED - Supplementary analysis recommended.'
+        );
     } else {
-        persistenceLabel = 'Omissoes esporadicas - possivel erro operacional.';
+        persistenceLabel = _atfT(
+            'Omissoes esporadicas - possivel erro operacional.',
+            'Sporadic omissions - possible operational error.'
+        );
     }
     if (opportunisticPattern) {
-        persistenceLabel += ' PADRAO OPORTUNISTICO: omissoes concentradas em meses de maior faturacao.';
+        persistenceLabel += ' ' + _atfT(
+            'PADRAO OPORTUNISTICO: omissoes concentradas em meses de maior faturacao.',
+            'OPPORTUNISTIC PATTERN: omissions concentrated in highest-revenue months.'
+        );
     }
 
     return {

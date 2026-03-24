@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-PT">
+<html lang="pt-PT" id="htmlRoot">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -155,8 +155,8 @@
     <div id="loadingOverlay" class="loading-overlay">
         <div class="loading-content">
             <div class="loading-spinner"><i class="fas fa-atom"></i></div>
-            <h2>INICIALIZAÇÃO DO SISTEMA</h2>
-            <p>A carregar módulos forenses BIG DATA...</p>
+            <h2 id="loadingTitle" data-pt="INICIALIZAÇÃO DO SISTEMA" data-en="SYSTEM INITIALISATION">INICIALIZAÇÃO DO SISTEMA</h2>
+            <p id="loadingSubtitle" data-pt="A carregar módulos forenses BIG DATA..." data-en="Loading BIG DATA forensic modules...">A carregar módulos forenses BIG DATA...</p>
             <div class="loading-progress">
                 <div id="loadingProgress" class="loading-progress-bar"></div>
             </div>
@@ -255,21 +255,21 @@
                         <div class="info-item">
                             <span class="info-label" id="lblPeriodo"><i class="fas fa-clock"></i> PERÍODO TEMPORAL</span>
                             <select id="periodoAnalise">
-                                <option value="anual">Exercício Completo (Anual)</option>
-                                <option value="1s">1.º Semestre</option>
-                                <option value="2s">2.º Semestre</option>
-                                <option value="trimestral">Trimestral</option>
-                                <option value="mensal">Mensal</option>
+                                <option value="anual"  data-pt="Exercício Completo (Anual)"  data-en="Full Year (Annual)">Exercício Completo (Anual)</option>
+                                <option value="1s"     data-pt="1.º Semestre"                data-en="1st Semester">1.º Semestre</option>
+                                <option value="2s"     data-pt="2.º Semestre"                data-en="2nd Semester">2.º Semestre</option>
+                                <option value="trimestral" data-pt="Trimestral"              data-en="Quarterly">Trimestral</option>
+                                <option value="mensal" data-pt="Mensal"                      data-en="Monthly">Mensal</option>
                             </select>
                         </div>
                         <!-- SELECTOR DE TRIMESTRE — visível apenas quando periodoAnalise = trimestral -->
                         <div class="info-item" id="trimestralSelectorContainer" style="display:none;">
-                            <span class="info-label"><i class="fas fa-filter"></i> TRIMESTRE ACTIVO</span>
+                            <span class="info-label"><i class="fas fa-filter"></i> <span id="lblTrimestre" data-pt="TRIMESTRE ACTIVO" data-en="ACTIVE QUARTER">TRIMESTRE ACTIVO</span></span>
                             <select id="trimestralSelector">
-                                <option value="1">1.º Trimestre</option>
-                                <option value="2">2.º Trimestre</option>
-                                <option value="3">3.º Trimestre</option>
-                                <option value="4">4.º Trimestre</option>
+                                <option value="1" data-pt="1.º Trimestre" data-en="1st Quarter">1.º Trimestre</option>
+                                <option value="2" data-pt="2.º Trimestre" data-en="2nd Quarter">2.º Trimestre</option>
+                                <option value="3" data-pt="3.º Trimestre" data-en="3rd Quarter">3.º Trimestre</option>
+                                <option value="4" data-pt="4.º Trimestre" data-en="4th Quarter">4.º Trimestre</option>
                             </select>
                         </div>
                         <div class="info-item">
@@ -505,50 +505,50 @@
                 <!-- DASHBOARD FIXED (ALERTS EXISTENTES) -->
                 <div class="dashboard-fixed" id="dashboardAlerts">
                     <div class="stat-card">
-                        <h4 id="cardNet"><i class="fas fa-coins"></i> GANHOS LÍQUIDOS RECONSTRUÍDOS</h4>
+                        <h4 id="cardNet"><i class="fas fa-coins"></i> <span data-pt="GANHOS LÍQUIDOS RECONSTRUÍDOS" data-en="RECONSTRUCTED NET VALUE">GANHOS LÍQUIDOS RECONSTRUÍDOS</span></h4>
                         <p id="statNet">0,00 €</p>
-                        <span class="stat-desc">Resultado Líquido (Extrato)</span>
+                        <span class="stat-desc" id="descNet" data-pt="Resultado Líquido (Extrato)" data-en="Net Result (Statement)">Resultado Líquido (Extrato)</span>
                     </div>
                     <div class="stat-card" id="statCommCard">
-                        <h4 id="cardComm"><i class="fas fa-percentage"></i> DESPESAS/COMISSÕES DETETADAS</h4>
+                        <h4 id="cardComm"><i class="fas fa-percentage"></i> <span data-pt="DESPESAS/COMISSÕES DETETADAS" data-en="DETECTED COMMISSIONS">DESPESAS/COMISSÕES DETETADAS</span></h4>
                         <p id="statComm">0,00 €</p>
-                        <span class="stat-desc">Total de despesas/comissões (Extrato)</span>
+                        <span class="stat-desc" id="descComm" data-pt="Total de despesas/comissões (Extrato)" data-en="Total expenses/commissions (Statement)">Total de despesas/comissões (Extrato)</span>
                     </div>
                     <div class="stat-card success" id="jurosCard" style="display: none;">
-                        <h4 id="cardJuros"><i class="fas fa-chart-line"></i> DISCREPÂNCIA DESPESAS/COMISSÕES</h4>
+                        <h4 id="cardJuros"><i class="fas fa-chart-line"></i> <span data-pt="DISCREPÂNCIA DESPESAS/COMISSÕES" data-en="COMMISSION DISCREPANCY">DISCREPÂNCIA DESPESAS/COMISSÕES</span></h4>
                         <p id="statJuros">0,00 €</p>
-                        <span class="stat-desc">Despesas/Comissões Extrato vs Fatura</span>
+                        <span class="stat-desc" id="descJuros" data-pt="Despesas/Comissões Extrato vs Fatura" data-en="Expenses/Commissions Statement vs Invoice">Despesas/Comissões Extrato vs Fatura</span>
                     </div>
                     
                     <!-- NOVAS BOXES DE ALERTA -->
                     <div class="stat-card alert" id="discrepancy5Card" style="display: none;">
-                        <h4><i class="fas fa-exclamation-triangle"></i> DISCREPÂNCIA SAF-T vs DAC7</h4>
+                        <h4><i class="fas fa-exclamation-triangle"></i> <span id="discrepancy5" data-pt="DISCREPÂNCIA SAF-T vs DAC7" data-en="SAF-T vs DAC7 DISCREPANCY">DISCREPÂNCIA SAF-T vs DAC7</span></h4>
                         <p id="discrepancy5Value">0,00 €</p>
-                        <span class="stat-desc">Valores omitidos no reporte DAC7</span>
+                        <span class="stat-desc" id="descDisc5" data-pt="Valores omitidos no reporte DAC7" data-en="Values omitted in DAC7 report">Valores omitidos no reporte DAC7</span>
                     </div>
                     
                     <div class="stat-card alert" id="agravamentoBrutoCard" style="display: none;">
-                        <h4><i class="fas fa-chart-line"></i> AGRAVAMENTO BRUTO/IRC</h4>
+                        <h4><i class="fas fa-chart-line"></i> <span id="agravamentoBruto" data-pt="AGRAVAMENTO BRUTO/IRC" data-en="GROSS AGGRAVATION/CIT">AGRAVAMENTO BRUTO/IRC</span></h4>
                         <p id="agravamentoBrutoValue">0,00 €</p>
-                        <span class="stat-desc">Impacto no lucro tributável</span>
+                        <span class="stat-desc" id="descAgrav" data-pt="Impacto no lucro tributável" data-en="Impact on taxable profit">Impacto no lucro tributável</span>
                     </div>
                     
                     <div class="stat-card alert" id="ircCard" style="display: none;">
-                        <h4><i class="fas fa-percent"></i> IRC (21% + Derrama)</h4>
+                        <h4><i class="fas fa-percent"></i> <span id="irc" data-pt="IRC (21% + Derrama)" data-en="CIT (21% + Surtax)">IRC (21% + Derrama)</span></h4>
                         <p id="ircValue">0,00 €</p>
-                        <span class="stat-desc">Estimativa de imposto</span>
+                        <span class="stat-desc" id="descIrc" data-pt="Estimativa de imposto" data-en="Tax estimate">Estimativa de imposto</span>
                     </div>
                     
                     <div class="stat-card alert" id="iva6Card" style="display: none;">
-                        <h4><i class="fas fa-percent"></i> IVA 6% OMITIDO</h4>
+                        <h4><i class="fas fa-percent"></i> <span id="iva6" data-pt="IVA 6% OMITIDO" data-en="VAT 6% OMITTED">IVA 6% OMITIDO</span></h4>
                         <p id="iva6Value">0,00 €</p>
-                        <span class="stat-desc">Valor não pago pelo sujeito passivo</span>
+                        <span class="stat-desc" id="descIva6" data-pt="Valor não pago pelo sujeito passivo" data-en="Amount unpaid by the taxpayer">Valor não pago pelo sujeito passivo</span>
                     </div>
                     
                     <div class="stat-card alert" id="iva23Card" style="display: none;">
-                        <h4><i class="fas fa-percent"></i> IVA 23% OMITIDO</h4>
+                        <h4><i class="fas fa-percent"></i> <span id="iva23" data-pt="IVA 23% OMITIDO" data-en="VAT 23% OMITTED">IVA 23% OMITIDO</span></h4>
                         <p id="iva23Value">0,00 €</p>
-                        <span class="stat-desc">Valor não pago pelo sujeito passivo</span>
+                        <span class="stat-desc" id="descIva23" data-pt="Valor não pago pelo sujeito passivo" data-en="Amount unpaid by the taxpayer">Valor não pago pelo sujeito passivo</span>
                     </div>
                 </div>
 

@@ -1908,7 +1908,6 @@ const translations = {
         btnPDF: "PARECER TÉCNICO",
         btnDOCX: "MINUTA WORD",
         btnATF: "&#x23F3; TENDÊNCIA ATF",
-        btnDOCX: "MINUTA WORD",
         btnJSON: "EXPORTAR JSON",
         btnReset: "REINICIAR",
         btnCustody: "CADEIA DE CUSTÓDIA",
@@ -2090,7 +2089,6 @@ const translations = {
         btnPDF: "EXPERT OPINION",
         btnDOCX: "WORD DRAFT",
         btnATF: "&#x23F3; ATF TREND",
-        btnDOCX: "WORD DRAFT",
         btnJSON: "EXPORT JSON",
         btnReset: "RESTART",
         btnCustody: "CHAIN OF CUSTODY",
@@ -2667,25 +2665,49 @@ function switchLanguage() {
 
 // ============================================================================
 // 7.2 _translatePurePanel — Tradução dinâmica do painel #pureDashboard
+//     + tradução de todos os elementos [data-pt][data-en] no documento
+//     + actualização das <option> dos selects com data-pt/data-en
 // ============================================================================
 window._translatePurePanel = function _translatePurePanel(lang) {
-    const _panel = document.getElementById('pureDashboard');
-    if (!_panel) return;
-    
     const _lang = lang || 'pt';
-    
-    // Seleccionar todos os elementos com data-pt e data-en dentro do painel
-    _panel.querySelectorAll('[data-pt][data-en]').forEach(function(el) {
+
+    // ── A. Painel pureDashboard ───────────────────────────────────────────────
+    const _panel = document.getElementById('pureDashboard');
+    if (_panel) {
+        _panel.querySelectorAll('[data-pt][data-en]').forEach(function(el) {
+            const _val = _lang === 'en' ? el.getAttribute('data-en') : el.getAttribute('data-pt');
+            if (_val !== null) el.textContent = _val;
+        });
+        _panel.querySelectorAll('button[data-pt][data-en]').forEach(function(btn) {
+            const _span = btn.querySelector('span');
+            const _val  = _lang === 'en' ? btn.getAttribute('data-en') : btn.getAttribute('data-pt');
+            if (_val !== null) {
+                if (_span) _span.textContent = _val;
+                else btn.textContent = _val;
+            }
+        });
+    }
+
+    // ── B. Todos os elementos [data-pt][data-en] fora do painel ──────────────
+    document.querySelectorAll('[data-pt][data-en]').forEach(function(el) {
+        // Evitar re-processar elementos dentro do pureDashboard (já cobertos acima)
+        if (_panel && _panel.contains(el)) return;
         const _val = _lang === 'en' ? el.getAttribute('data-en') : el.getAttribute('data-pt');
         if (_val !== null) el.textContent = _val;
     });
-    
-    // Botões com data-pt/data-en no atributo próprio
-    _panel.querySelectorAll('button[data-pt][data-en]').forEach(function(btn) {
-        const _val = _lang === 'en' ? btn.getAttribute('data-en') : btn.getAttribute('data-pt');
-        if (_val !== null) btn.textContent = _val;
+
+    // ── C. <option> dos selects com data-pt/data-en ───────────────────────────
+    document.querySelectorAll('select').forEach(function(sel) {
+        sel.querySelectorAll('option[data-pt][data-en]').forEach(function(opt) {
+            const _val = _lang === 'en' ? opt.getAttribute('data-en') : opt.getAttribute('data-pt');
+            if (_val !== null) opt.textContent = _val;
+        });
     });
-    
+
+    // ── D. Atributo lang do <html> ────────────────────────────────────────────
+    const _htmlRoot = document.getElementById('htmlRoot') || document.documentElement;
+    _htmlRoot.setAttribute('lang', _lang === 'en' ? 'en-GB' : 'pt-PT');
+
     console.log('[UNIFED-PURE] Painel traduzido para: ' + _lang.toUpperCase());
 };
 
@@ -4253,10 +4275,12 @@ function activateDemoMode() {
     const demoBtn = document.getElementById('demoModeBtn');
     if(demoBtn) {
         demoBtn.disabled = true;
-        demoBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> CARREGANDO...';
+        demoBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + (currentLang === 'en' ? 'LOADING...' : 'CARREGANDO...');
     }
 
-    logAudit('🚀 ATIVANDO CASO REAL (ANONIMIZADO) v13.5.0-PURE · SUJEITO PASSIVO ALFA · 2024 · 2.º SEM...', 'info');
+    logAudit(currentLang === 'en'
+        ? '🚀 ACTIVATING REAL CASE (ANONYMISED) v13.5.0-PURE · TAXPAYER ALFA · 2024 · 2nd SEM...'
+        : '🚀 ATIVANDO CASO REAL (ANONIMIZADO) v13.5.0-PURE · SUJEITO PASSIVO ALFA · 2024 · 2.º SEM...', 'info');
     const _tsChk = new Date().toLocaleTimeString('pt-PT', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
     console.info(`[${_tsChk}] ✅ INTEGRITY CHECK: Dashboard Hash matches PDF Hash. Synchronization confirmed.`);
 
@@ -4332,7 +4356,9 @@ function activateDemoMode() {
 
         performAudit();
 
-        logAudit('✅ CASO REAL (ANONIMIZADO) concluído — SUJEITO PASSIVO ALFA · NIF 999 999 990 · 2024 · 2.º Semestre.', 'success');
+        logAudit(currentLang === 'en'
+            ? '✅ REAL CASE (ANONYMISED) completed — TAXPAYER ALFA · NIF 999 999 990 · 2024 · 2nd Semester.'
+            : '✅ CASO REAL (ANONIMIZADO) concluído — SUJEITO PASSIVO ALFA · NIF 999 999 990 · 2024 · 2.º Semestre.', 'success');
         UNIFEDSystem.processing = false;
         if(demoBtn) {
             demoBtn.disabled = false;
@@ -4411,14 +4437,14 @@ function simulateUpload(type, count) {
 // 22. MOTOR DE PERÍCIA FORENSE (v12.8.9) COM CORREÇÕES
 // ============================================================================
 function performAudit() {
-    if (!UNIFEDSystem.client) return showToast('Registe o sujeito passivo primeiro.', 'error');
+    if (!UNIFEDSystem.client) return showToast(currentLang === 'en' ? 'Register the taxpayer first.' : 'Registe o sujeito passivo primeiro.', 'error');
 
     ForensicLogger.addEntry('AUDIT_STARTED');
 
     const hasFiles = Object.values(UNIFEDSystem.documents).some(d => d.files && d.files.length > 0);
     if (!hasFiles) {
         ForensicLogger.addEntry('AUDIT_FAILED', { reason: 'No files' });
-        return showToast('Carregue pelo menos um ficheiro de evidência antes de executar a perícia.', 'error');
+        return showToast(currentLang === 'en' ? 'Upload at least one evidence file before running the forensic exam.' : 'Carregue pelo menos um ficheiro de evidência antes de executar a perícia.', 'error');
     }
 
     UNIFEDSystem.forensicMetadata = getForensicMetadata();
@@ -4427,7 +4453,7 @@ function performAudit() {
     const analyzeBtn = document.getElementById('analyzeBtn');
     if(analyzeBtn) {
         analyzeBtn.disabled = true;
-        analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> A EXECUTAR PERÍCIA BIG DATA...';
+        analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + (currentLang === 'en' ? 'RUNNING FORENSIC EXAM BIG DATA...' : 'A EXECUTAR PERÍCIA BIG DATA...');
     }
 
     setTimeout(() => {
