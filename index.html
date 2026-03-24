@@ -945,7 +945,22 @@
                 });
         };
     </script>
-<!-- TRÍADE DOCUMENTAL - MÓDULO DE EXPORTAÇÃO -->
-<script src="unifed_triada_export.js"></script>
+    <!-- TRÍADE DOCUMENTAL - MÓDULO DE EXPORTAÇÃO -->
+    <script src="unifed_triada_export.js"></script>
+
+    <!-- SCRIPTS EXISTENTES -->
+    <script>
+        window.pdfjsLib = window['pdfjs-dist/build/pdf'];
+        if (window.pdfjsLib) {
+            window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+    </script>
+    <script src="enrichment.js"></script>
+    <script src="script.js"></script>
+    <script src="nexus.js"></script>
+    <link rel="stylesheet" href="style_additions.css">
+    <script src="script_injection.js"></script>
+    <!-- ... resto do código ... -->
+</body>
 </body>
 </html>
