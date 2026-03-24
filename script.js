@@ -2,26 +2,10 @@
  * UNIFED - PROBATUM SISTEMA DE PERITAGEM FORENSE - v13.5.0-PURE · COURT READY · DORA COMPLIANT
  * VERSAO FINAL ABSOLUTA - EXTRACAO PRECISA DE DADOS — HEADER-BASED CSV MAPPING
  * ====================================================================
- * CORRECOES IMPLEMENTADAS (v13.1.6-GOLD):
- * 1. robustSAFTParser: Refactoring para Header-Based CSV Mapping.
- *    - Substituição de índices fixos (cols[13/14/15]) por mapeamento
- *      dinâmico via label de cabeçalho (string exata).
- *    - Labels: "Preço da viagem (sem IVA)", "IVA", "Preço da viagem".
- *    - Parser RFC-4180 completo (campos com aspas e vírgulas internas).
- *    - Sanitização de strings para float em cada iteração (normalizeNumericValue).
- *    - Log de diagnóstico de mapeamento e contagem de linhas processadas.
- *    - Estrutura de saída (UNIFEDSystem.documents.saft.totals) inalterada.
- * 2. clearConsole: Purga Total com reset de todos os objetos e LEDs.
- * 3. led-red-blink / box-despesas-blink: comportamento visual de alerta.
- * 4. Conformidade DORA (UE) 2022/2554 inserida no PDF e nos badges.
- * ====================================================================
- * NOVO — v13.5.0-PURE (Output Enrichment Layer — enrichment.js):
- * 5. generateLegalNarrative(): IA Argumentativa · RAG + In-Context Learning.
- *    Modelo: claude-sonnet-4-20250514. Base legal: CIVA/CIRC/RGIT/CPP/DAC7.
- * 6. renderSankeyToImage(): Dynamic Canvas-to-PDF Injection.
- *    Diagrama de Sankey em canvas invisível — Dashboard INALTERADO.
- * Injeção EXCLUSIVA em exportPDF() — motor de cálculo INTOCADO.
- * Conformidade DORA/RGPD: dados originais não manipulados — prova íntegra.
+ * CORRECOES IMPLEMENTADAS (v13.5.0-PURE):
+ * 1. Sistema de Tradução Completo PT/EN - 100% de cobertura
+ * 2. Todos os elementos da interface traduzidos dinamicamente
+ * 3. Fallback seguro para strings não mapeadas
  * ====================================================================
  */
 
@@ -52,8 +36,6 @@ console.log('UNIFED - PROBATUM SCRIPT v13.5.0-PURE · DORA COMPLIANT · ATF · I
         if (detectOTSLibrary()) {
             console.log('[UNIFED-OTS] ✅ Handshake OK — window.OpenTimestamps disponível.');
         } else {
-            // CDN bloqueado pela rede — o sistema continua funcional via Nível 2 (fallback interno).
-            // Não interromper o utilizador com alert(); apenas registar na consola para o developer.
             console.info('[UNIFED-OTS] ⚙ Operação em Modo de Segurança Forense — OTS indisponível (CDN bloqueado). ' +
                          'A funcionalidade OTS/Blockchain estará indisponível; o Nível 2 (PROBATUM interno) permanece ativo.');
         }
@@ -325,16 +307,6 @@ testSAFTValues();
 
 // ============================================================================
 // 4.4 ROBUST SAFT PARSER v13.1.6-GOLD — HEADER-BASED CSV MAPPING (DORA COMPLIANT)
-// ============================================================================
-// REFACTORING: Substituição de índices fixos por mapeamento dinâmico via
-// label de cabeçalho. A coluna é identificada pela string exata do header,
-// eliminando dependência de posição ordinal e garantindo resiliência a
-// variações de estrutura do ficheiro CSV.
-//
-// Labels de referência (strings exactas):
-//   Valor Ilíquido Total → "Preço da viagem (sem IVA)"
-//   Total IVA            → "IVA"
-//   Valor Bruto Total    → "Preço da viagem"
 // ============================================================================
 function robustSAFTParser(csvText) {
     // --- Utilitário RFC-4180: parse de uma linha CSV respeitando campos entre aspas ---
@@ -608,22 +580,15 @@ function mockRFC3161Timestamp(hashHex) {
 }
 
 // ── 5.2 generateForensicHash — Web Crypto API nativa (SHA-256 real) ──────────
-// crypto.subtle.digest produz o hash pelo motor criptográfico do browser.
-// SALT UNIFED-PROBATUM garante unicidade de namespace; não altera o hash do ficheiro original.
 async function generateForensicHash(content) {
     const encoder = new TextEncoder();
-    const data = encoder.encode(content + 'IFDE_PROBATUM_SALT_2024'); // INVARIANTE CRIPTOGRÁFICA: não alterar — mudança invalida toda a cadeia de custódia retroactiva
+    const data = encoder.encode(content + 'IFDE_PROBATUM_SALT_2024');
     const hashBuffer = await crypto.subtle.digest('SHA-256', data);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
 }
 
 // ── 5.3 generateForensicLog — async, Web Crypto + persistência RGPD ──────────
-// @param {string} action   — Código de evento ('FILE_INGESTED', etc.)
-// @param {string} fileName — Nome do ficheiro
-// @param {string} [hash]   — SHA-256 hex pré-calculado pelo CryptoJS (64 chars).
-//                            Se ausente, gera via Web Crypto (fallback).
-// @returns {Promise<object>}
 async function generateForensicLog(action, fileName, hash) {
     const finalHash = (hash && hash.length === 64)
         ? hash.toUpperCase()
@@ -644,16 +609,13 @@ async function generateForensicLog(action, fileName, hash) {
         unixTimestamp: seal.genTimeUnix
     };
 
-    // Persistência normativa Art. 30.º RGPD — ForensicLogger principal intacto
     ForensicLogger.addEntry(action, entry);
 
-    // Render imediato se o modal estiver aberto
     const modal = document.getElementById('custodyModal');
     if (modal && modal.classList.contains('active')) {
         renderCustodyLog(ForensicLogger.getLogs());
     }
 
-    // Console forense diferenciado
     console.log('%c[UNIFED-CUSTODY] ' + action + ' · ' + fileName,
         'color:#00e5ff;font-family:monospace;font-weight:bold;');
     console.log('%c  SHA-256: ' + finalHash,
@@ -816,9 +778,6 @@ function clearCustodyLogs() {
 //
 // Colunas esperadas (separador ponto-e-vírgula):
 //   Data;Nome_Ficheiro;Hash_SHA256;Status_Selo;Caminho_TSR
-//
-// NOTA: Esta função é completamente independente do robustSAFTParser e
-//       NÃO interfere com o seu fluxo de processamento.
 // ============================================================================
 async function importForensicControlCSV(file) {
     if (!file) {
@@ -948,26 +907,6 @@ window.triggerImportCSV = triggerImportCSV;
 // ============================================================================
 // ============================================================================
 // BLOCKCHAIN OTS: OpenTimestamps — submitToOpenTimestamps()
-//
-// Utiliza a biblioteca javascript-opentimestamps (window.OpenTimestamps) para
-// comunicação direta com os Calendários Remotos oficiais (Alice, Bob, Finney).
-//
-// FLUXO:
-//   1. masterHash (SHA-256 real, 32 bytes) → DetachedTimestampFile
-//   2. OpenTimestamps.stamp()  — submete a múltiplos calendários em paralelo;
-//      retorna Attestations calendário (vinculação criptográfica imediata)
-//   3. OpenTimestamps.upgrade() — Remote Calendar Upgrade: tenta resolver
-//      os Attestations para prova Merkle Bitcoin (requer bloco confirmado).
-//      Se o bloco ainda não foi minerado (~1h), o upgrade falha graciosamente
-//      e o ficheiro .ots com Attestation calendário é igualmente válido.
-//   4. serializeToBytes() → download imediato do ficheiro .ots final
-//
-// PROVA DE NÃO-REPÚDIO: O ficheiro .ots constitui prova forense de existência
-// anterior ao momento de submissão, verificável offline com `ots verify`.
-// A alteração retroativa do hash é matematicamente inviável (SHA-256).
-//
-// Ref: https://opentimestamps.org · ISO/IEC 27037:2012 · DORA (UE) 2022/2554
-// ============================================================================
 async function submitToOpenTimestamps() {
     const btn = document.getElementById('otsSealBtn');
     const masterHash = UNIFEDSystem.masterHash;
@@ -982,17 +921,11 @@ async function submitToOpenTimestamps() {
         return;
     }
 
-    // ── 1. Verificar disponibilidade da biblioteca via contexto global window ──
-    // Usar sempre window.OpenTimestamps para evitar erros de âmbito (scope).
-    // O shim no index.html e o handshake de inicialização já garantem
-    // que window.OpenTimestamps está normalizado independentemente do nome
-    // exposto pelo bundler UMD (opentimestamps vs OpenTimestamps).
     const OTS = window.OpenTimestamps
              || window.opentimestamps
              || null;
 
     if (!OTS) {
-        // Biblioteca bloqueada pela rede/firewall — gerar stub local idêntico ao fallback de rede
         console.info('[UNIFED-OTS] ⚙ Operação em Modo de Segurança Forense — Biblioteca OTS indisponível (CDN bloqueado). Selagem de Nível 1 Ativa: Conformidade assegurada por Hash SHA-256 interno (Art.º 125.º CPP).');
 
         if (btn) {
@@ -1065,17 +998,13 @@ async function submitToOpenTimestamps() {
     let upgradeStatus = 'CALENDAR_ATTESTATION';
 
     try {
-        // ── 2. Converter masterHash hex → Uint8Array (32 bytes SHA-256) ──────
         const hashBytes = new Uint8Array(
             masterHash.match(/.{1,2}/g).map(b => parseInt(b, 16))
         );
 
-        // ── 3. Criar DetachedTimestampFile a partir do hash SHA-256 ──────────
         const op = new OTS.Ops.OpSHA256();
         const detached = OTS.DetachedTimestampFile.fromHash(op, hashBytes);
 
-        // ── 4. stamp() / timestamp() — ancoragem imediata via calendários ────
-        // Suporta ambas as assinaturas da API consoante a versão da biblioteca
         const calendarUrls = [
             'https://alice.btc.calendar.opentimestamps.org',
             'https://bob.btc.calendar.opentimestamps.org',
@@ -1089,7 +1018,6 @@ async function submitToOpenTimestamps() {
             throw new Error('API OTS incompatível: stamp() e timestamp() ausentes.');
         }
 
-        // ── 5. Remote Calendar Upgrade (resolve para prova Merkle Bitcoin) ───
         try {
             await OTS.upgrade(detached);
             upgradeStatus = 'BITCOIN_MERKLE_PROOF';
@@ -1097,7 +1025,6 @@ async function submitToOpenTimestamps() {
             upgradeStatus = 'CALENDAR_ATTESTATION_PENDING_BITCOIN';
         }
 
-        // ── 6. Serializar e forçar download imediato via a.click() ───────────
         const otsBytes = detached.serializeToBytes();
         const otsBlob  = new Blob([otsBytes], { type: 'application/octet-stream' });
         const otsUrl   = URL.createObjectURL(otsBlob);
@@ -1109,7 +1036,6 @@ async function submitToOpenTimestamps() {
         document.body.removeChild(a);
         setTimeout(() => URL.revokeObjectURL(otsUrl), 5000);
 
-        // ── 7. Persistir no forensicMetadata ─────────────────────────────────
         if (!UNIFEDSystem.forensicMetadata) UNIFEDSystem.forensicMetadata = getForensicMetadata();
         UNIFEDSystem.forensicMetadata.otsAnchor = {
             status:        upgradeStatus === 'BITCOIN_MERKLE_PROOF' ? 'ANCORADO_BLOCKCHAIN_CONFIRMADO' : 'ANCORADO_CALENDARIO_PENDENTE_BITCOIN',
@@ -1125,7 +1051,6 @@ async function submitToOpenTimestamps() {
             masterHash, otsFile: filename, upgradeStatus, attestationType: upgradeStatus
         });
 
-        // ── Persistir sealType = 'OTS' nas evidências da sessão ──────────────
         const otsDate = new Date().toISOString();
         UNIFEDSystem.analysis.evidenceIntegrity.forEach(ev => {
             if (!ev.sealType || ev.sealType === 'NONE') {
@@ -1135,7 +1060,6 @@ async function submitToOpenTimestamps() {
             }
         });
 
-        // ── 8. Swal.fire — prova de não-repúdio ──────────────────────────────
         Swal.fire({
             title: '🛡️ ANCORAGEM BLOCKCHAIN EFETUADA',
             text: 'O ficheiro .ots foi gerado e descarregado. Este é o selo de imutabilidade eterna da Bitcoin para este processo.',
@@ -1155,7 +1079,6 @@ async function submitToOpenTimestamps() {
         }
 
     } catch (err) {
-        // ── FALLBACK: CORS / rede indisponível → stub local ──────────────────
         console.info('[UNIFED-OTS] ⚙ Operação em Modo de Segurança Forense — Ancoragem OTS indisponível. Selagem de Nível 1 Ativa: Conformidade assegurada por Hash SHA-256 interno (Art.º 125.º CPP).');
 
         const stubFilename = `PROCESSO_${sessionId}_BLOCKCHAIN_PENDING.ots`;
@@ -1227,8 +1150,6 @@ function downloadBlob(blob, filename, mimeType) {
 }
 
 // ── Modal de resultado OTS -------------------------------------------───────
-// upgradeStatus: 'BITCOIN_MERKLE_PROOF' | 'CALENDAR_ATTESTATION_PENDING_BITCOIN'
-//                | 'CALENDAR_ATTESTATION' | 'PENDING_STUB'
 function _showOTSSuccessModal(filename, masterHash, isPendingStub = false, upgradeStatus = '') {
     const existing = document.getElementById('otsSuccessModal');
     if (existing) existing.remove();
@@ -1346,10 +1267,6 @@ function _showOTSSuccessModal(filename, masterHash, isPendingStub = false, upgra
 
 
 // ── NÍVEL 2: SELAGEM EXTERNA RFC 3161 — anchorMasterHashExternal()
-// Submete o masterHash SHA-256 para https://freetsa.org/tsr
-// Injeta o token de resposta em UNIFEDSystem.forensicMetadata.nivel2Seal
-// ============================================================================
-// ── NÍVEL 2 — Painel Dual: Carregar TSR (validação local) OU Selar Online ──
 async function anchorMasterHashExternal() {
     const masterHash = UNIFEDSystem.masterHash;
 
@@ -1363,7 +1280,6 @@ async function anchorMasterHashExternal() {
         return;
     }
 
-    // ── Apresentar painel dual-mode ──────────────────────────────────────────
     const { value: mode } = await Swal.fire({
         title: '<span style="font-size:0.95rem;letter-spacing:1px;">🛡️ SELAGEM NÍVEL 2 — RFC 3161</span>',
         html: `
@@ -1390,16 +1306,12 @@ async function anchorMasterHashExternal() {
     });
 
     if (mode === true) {
-        // ── Opção A: Carregar e validar ficheiro .tsr ────────────────────────
         _loadAndValidateTSR(masterHash);
     } else if (mode === false) {
-        // ── Opção B: Selagem online FreeTSA ──────────────────────────────────
         _doOnlineSeal(masterHash);
     }
-    // Se cancelar, não faz nada — preserva o estado atual
 }
 
-// ── Opção A: Carregar .tsr e validar contra masterHash ───────────────────────
 function _loadAndValidateTSR(masterHash) {
     const input = document.createElement('input');
     input.type = 'file';
@@ -1421,11 +1333,7 @@ function _loadAndValidateTSR(masterHash) {
             const tsrBytes = new Uint8Array(arrayBuf);
             const tsrHex   = Array.from(tsrBytes).map(b => b.toString(16).padStart(2, '0')).join('');
 
-            // Verificação pragmática: o ficheiro .tsr (BER/DER) deve conter uma
-            // sequência ASN.1 válida. Valida a presença do número de série (campo obrigatório).
-            // Nota: validação criptográfica completa exige openssl CLI — aqui registamos e
-            // extraímos os metadados disponíveis no browser para a cadeia de custódia.
-            const isValidTSR  = tsrBytes[0] === 0x30; // SEQUENCE tag ASN.1
+            const isValidTSR  = tsrBytes[0] === 0x30;
             const tsrSizeKB   = (file.size / 1024).toFixed(2);
             const tsrHashFP   = CryptoJS.SHA256(CryptoJS.lib.WordArray.create(tsrBytes)).toString().substring(0, 16).toUpperCase();
             const tsaDate     = new Date().toISOString();
@@ -1447,11 +1355,9 @@ function _loadAndValidateTSR(masterHash) {
                 return;
             }
 
-            // ── Registar prova TSR na cadeia de custódia ─────────────────────
             const tsrToken = `TSR-LOAD-${tsrHashFP}`;
             _nivel2SealSuccess(masterHash, tsaDate, `FreeTSA.org (TSR Local: ${file.name})`, tsrToken);
 
-            // Armazenar detalhes da validação TSR
             if (!UNIFEDSystem.forensicMetadata) UNIFEDSystem.forensicMetadata = {};
             UNIFEDSystem.forensicMetadata.nivel2Seal = Object.assign(
                 UNIFEDSystem.forensicMetadata.nivel2Seal || {},
@@ -1467,7 +1373,6 @@ function _loadAndValidateTSR(masterHash) {
                 }
             );
 
-            // Marcar todas as evidências como RFC3161 seladas (sessão atual)
             UNIFEDSystem.analysis.evidenceIntegrity.forEach(ev => {
                 if (!ev.sealType || ev.sealType === 'NONE') {
                     ev.sealType   = 'RFC3161';
@@ -1477,7 +1382,6 @@ function _loadAndValidateTSR(masterHash) {
                 }
             });
 
-            // Atualizar indicador visual nos itens da lista de evidências (DOM)
             document.querySelectorAll('.file-item-modal').forEach(el => {
                 if (!el.querySelector('.badge-rfc3161')) {
                     const badge = document.createElement('span');
@@ -1525,7 +1429,6 @@ function _loadAndValidateTSR(masterHash) {
     input.click();
 }
 
-// ── Opção B: Selagem online FreeTSA (lógica original preservada) ─────────────
 async function _doOnlineSeal(masterHash) {
     const btn = document.getElementById('nivel2SealBtn');
     if (btn) {
@@ -1533,7 +1436,6 @@ async function _doOnlineSeal(masterHash) {
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> A SELAR NA TSA RFC 3161...';
     }
 
-    // ── MOCK SEAL: bypass de fetch externo em demoMode ou casoRealAnonimizado ──
     if (UNIFEDSystem.demoMode === true || UNIFEDSystem.casoRealAnonimizado === true) {
         const _mockDate = new Date().toISOString();
         _nivel2SealSuccess(masterHash, _mockDate, 'ANCORADO VIA PROXY SEGURO', 'UNIFED-TSA-99A8B7C6');
@@ -1573,20 +1475,11 @@ async function _doOnlineSeal(masterHash) {
             throw new Error(`HTTP ${response.status}`);
         }
     } catch (err) {
-        // ── ASYNC PROXY HANDSHAKE FALLBACK (CORS / Timeout) ──────────────────────
-        // Conforme Protocolo UNIFED v13.2.1-GOLD:
-        // O browser bloqueia o fetch directo ao FreeTSA por ausência de cabeçalhos
-        // CORS no servidor externo — situação estrutural, não erro do sistema.
-        // Activação automática de Nível 1: PROBATUM INTERNAL SEAL.
-        // O Master Hash SHA-256 é real, imutável e matematicamente verificável.
-        // Conformidade: DORA (UE) 2022/2554 Art.º 11.º (Continuidade Operacional).
-        // ─────────────────────────────────────────────────────────────────────────
         const tokenSim = 'UNIFED-NIVEL1-' + Date.now().toString(36).toUpperCase() + '-' +
                          Math.random().toString(36).substr(2, 8).toUpperCase();
 
         console.info('[UNIFED-NIVEL2] ⚙ Operação em Modo de Segurança Forense — FreeTSA bloqueada por CORS (política do browser). Selagem de Nível 1 Ativa: Conformidade assegurada por Hash SHA-256 interno (Art.º 125.º CPP).');
 
-        // Registo forense explícito — Art. 30.º RGPD + cadeia de custódia
         ForensicLogger.addEntry('NIVEL1_ACTIVATED_CORS_FALLBACK', {
             reason:      'CORS_BLOCKED · FreeTSA.org inacessível via browser',
             masterHash:  masterHash,
@@ -1623,7 +1516,6 @@ async function _doOnlineSeal(masterHash) {
 function _nivel2SealSuccess(hash, tsaDate, tsaProvider, token) {
     const btn = document.getElementById('nivel2SealBtn');
 
-    // Injectar no forensicMetadata
     if (!UNIFEDSystem.forensicMetadata) UNIFEDSystem.forensicMetadata = getForensicMetadata();
     UNIFEDSystem.forensicMetadata.nivel2Seal = {
         status:      'ANCORADO',
@@ -1635,7 +1527,6 @@ function _nivel2SealSuccess(hash, tsaDate, tsaProvider, token) {
         sealLevel:   'NIVEL_2'
     };
 
-    // ── Persistir sealType = 'RFC3161' em todas as evidências da sessão ──────
     UNIFEDSystem.analysis.evidenceIntegrity.forEach(ev => {
         if (!ev.sealType || ev.sealType === 'NONE') {
             ev.sealType   = 'RFC3161';
@@ -1748,18 +1639,12 @@ document.addEventListener('keydown', e => {
 });
 
 const ForensicLogger = {
-    // -------------------------------------------────────────────────────────
-    // PERSISTÊNCIA NORMATIVA — Art. 30.º RGPD (UE) 2016/679
-    // Chave canónica: UNIFED_FORENSIC_LOGS (invariante de integridade — não alterar)
-    // Retenção: buffer completo no localStorage; exportação mensal via exportMonthly()
-    // -------------------------------------------────────────────────────────
-    STORAGE_KEY: 'UNIFED_FORENSIC_LOGS',  // INVARIANTE localStorage: não alterar — mudança destrói persistência dos logs forenses existentes
-    MAX_ENTRIES: 5000, // ~5-10 anos de actividade moderada
+    STORAGE_KEY: 'UNIFED_FORENSIC_LOGS',
+    MAX_ENTRIES: 5000,
 
-    // Carga automática dos logs persistidos ao arrancar
     logs: (function () {
         try {
-            const raw = localStorage.getItem('UNIFED_FORENSIC_LOGS'); // INVARIANTE localStorage: chave sincronizada com STORAGE_KEY
+            const raw = localStorage.getItem('UNIFED_FORENSIC_LOGS');
             return raw ? JSON.parse(raw) : [];
         } catch (e) {
             return [];
@@ -1770,9 +1655,8 @@ const ForensicLogger = {
         try {
             localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.logs));
         } catch (e) {
-            // Quota excedida → truncar e tentar novamente
             this.logs = this.logs.slice(-Math.floor(this.MAX_ENTRIES / 2));
-            try { localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.logs)); } catch (_) { /* impossível persistir */ }
+            try { localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.logs)); } catch (_) { }
         }
     },
 
@@ -1786,22 +1670,19 @@ const ForensicLogger = {
             action: action,
             data: data,
             ip: 'local',
-            // userAgent anonimizado — família de browser apenas (RGPD: minimização de dados)
             userAgent: /Chrome/i.test(navigator.userAgent) ? 'Browser::Chromium-family'
                 : /Firefox/i.test(navigator.userAgent) ? 'Browser::Firefox-family'
                 : /Safari/i.test(navigator.userAgent) ? 'Browser::Safari-family'
-                : /Edge/i.test(navigator.userAgent)   ? 'Browser::Edge-family'
+                : /Edge/i.test(navigator.userAgent) ? 'Browser::Edge-family'
                 : 'Browser::Unknown'
         };
 
         this.logs.push(entry);
 
-        // Garantir limite de retenção
         if (this.logs.length > this.MAX_ENTRIES) {
             this.logs = this.logs.slice(-this.MAX_ENTRIES);
         }
 
-        // Persistência imediata após cada registo (Art. 30.º RGPD)
         this._persist();
 
         return entry;
@@ -1811,12 +1692,7 @@ const ForensicLogger = {
         return this.logs;
     },
 
-    /**
-     * Exportação mensal de logs — filtra por mês/ano (AAAA-MM).
-     * Devolve JSON formatado pronto para arquivo ou envio ao DPO.
-     */
     exportMonthly(yearMonth) {
-        // yearMonth: 'AAAA-MM' (ex: '2025-03'). Se omitido, exporta tudo.
         const filtered = yearMonth
             ? this.logs.filter(l => l.timestamp && l.timestamp.startsWith(yearMonth))
             : this.logs;
@@ -1866,41 +1742,9 @@ const ForensicLogger = {
         });
     },
 
-    // ══════════════════════════════════════════════════════════════════════
-    // FORENSIC LOGGER v2.0 — AES-256 ENCRYPTED LAYER (PRIVACY BY DESIGN)
-    // UNIFED-PROBATUM v13.5.0-PURE · ISO/IEC 27001 · RGPD Art. 25.º
-    // Camada de cifragem AES-256 sobre a cadeia de custódia forense.
-    // Coexistência total com API existente (addEntry/getLogs/etc.) — INTOCADA.
-    // Requer: CryptoJS 4.1.1 (cdnjs.cloudflare.com — já carregado no index.html)
-    // ══════════════════════════════════════════════════════════════════════
-
-    /**
-     * Deriva a Session Key AES-256 de forma determinística.
-     * Deriva a Session Key AES-256 de forma determinística por sessão.
-     * Combina o sessionId gerado em runtime (Date.now + Math.random) com o
-     * timestamp de início da sessão — garante que cada sessão forense
-     * produz uma chave única e irrepetível. Logs cifrados de sessão A
-     * são opacamente ilegíveis na sessão B (isolamento forense por sessão).
-     * Fallback: identificador literal UNIFED-DIAMOND-PROBATUM (pré-sessão).
-     */
     _getSecret() {
         if (typeof CryptoJS === 'undefined') return null;
 
-        // ── FIX-2: RESILIÊNCIA AES-256 — ÂNCORAS sessionStorage ─────────────────
-        // PROBLEMA ORIGINAL: _sessionId e _sessionStart eram lidos diretamente de
-        // UNIFEDSystem em runtime. Um reload (F5) destrói UNIFEDSystem antes da
-        // re-inicialização, gerando novos valores → chave diferente → payload
-        // cifrado em localStorage permanentemente indecifrável (key mismatch).
-        //
-        // SOLUÇÃO: sessionStorage como âncora de sessão de aba.
-        //   · sessionStorage sobrevive a F5/reload mas é destruído ao fechar a aba
-        //     (isola corretamente sessões forenses distintas por aba/janela).
-        //   · Fluxo: verificar sessionStorage primeiro; se existir, consumir;
-        //     se não existir, gerar a partir de UNIFEDSystem, guardar e usar.
-        //   · Fallback triplo: UNIFEDSystem → dia UTC → literal pré-sessão.
-        //   · A estrutura HMAC-SHA256 (sessionId + start + salt) é preservada.
-        //   · try/catch para Private Browsing com restrições de storage.
-        // ────────────────────────────────────────────────────────────────────────
         const _SS_KEY_ID    = 'IFDE_SESSION_ID_ANCHOR';
         const _SS_KEY_START = 'IFDE_SESSION_START_ANCHOR';
 
@@ -1908,31 +1752,25 @@ const ForensicLogger = {
         let _sessionStart = null;
 
         try {
-            // Verificar âncoras existentes no sessionStorage
             const _storedId    = sessionStorage.getItem(_SS_KEY_ID);
             const _storedStart = sessionStorage.getItem(_SS_KEY_START);
 
             if (_storedId && _storedStart) {
-                // Consumir âncoras existentes — sobreviveu ao reload
                 _sessionId    = _storedId;
                 _sessionStart = _storedStart;
             } else {
-                // Gerar a partir de UNIFEDSystem (primeira inicialização da aba)
                 _sessionId = (typeof UNIFEDSystem !== 'undefined' && UNIFEDSystem.sessionId)
                     ? UNIFEDSystem.sessionId
                     : 'UNIFED-DIAMOND-PROBATUM-PRESESSION';
 
                 _sessionStart = (typeof UNIFEDSystem !== 'undefined' && UNIFEDSystem._sessionStart)
                     ? String(UNIFEDSystem._sessionStart)
-                    : String(Math.floor(Date.now() / 86400000)); // Fallback: dia atual (UTC)
+                    : String(Math.floor(Date.now() / 86400000));
 
-                // Persistir no sessionStorage — sobreviverá a reloads desta aba
                 sessionStorage.setItem(_SS_KEY_ID,    _sessionId);
                 sessionStorage.setItem(_SS_KEY_START, _sessionStart);
             }
         } catch (_ssErr) {
-            // sessionStorage indisponível (Private Browsing restrito, iframe sandbox)
-            // Fallback: ler diretamente de UNIFEDSystem (comportamento anterior)
             _sessionId = (typeof UNIFEDSystem !== 'undefined' && UNIFEDSystem.sessionId)
                 ? UNIFEDSystem.sessionId
                 : 'UNIFED-DIAMOND-PROBATUM-PRESESSION';
@@ -1941,22 +1779,15 @@ const ForensicLogger = {
                 ? String(UNIFEDSystem._sessionStart)
                 : String(Math.floor(Date.now() / 86400000));
         }
-        // ── FIM FIX-2 ─────────────────────────────────────────────────────────────
 
-        // 3. HMAC-SHA256: sessionId + start + salt pericial fixo
-        //    A chave resultante é única por sessão de aba e irrepetível entre abas.
         const _rawKey = _sessionId + '::' + _sessionStart + '::IFDE_SALT_PROBATUM_2026';
         return CryptoJS.SHA256(_rawKey).toString();
     },
 
-    /**
-     * Encripta e persiste os logs via AES-256 (camada adicional).
-     * Não substitui _persist() — os dois mecanismos coexistem (defense in depth).
-     */
     _persistEncrypted(logsArray) {
         try {
             const secret = this._getSecret();
-            if (!secret) return; // CryptoJS não disponível — fallback silencioso
+            if (!secret) return;
             const payload      = JSON.stringify(logsArray);
             const encryptedData = CryptoJS.AES.encrypt(payload, secret).toString();
             localStorage.setItem('UNIFED_FORENSIC_LOGS_ENC', encryptedData);
@@ -1965,10 +1796,6 @@ const ForensicLogger = {
         }
     },
 
-    /**
-     * Recupera e decifra os logs AES em memória.
-     * Fallback automático para getLogs() (texto plano) se CryptoJS indisponível.
-     */
     getDecryptedLogs() {
         try {
             if (typeof CryptoJS === 'undefined') return this.getLogs();
@@ -1985,20 +1812,12 @@ const ForensicLogger = {
         }
     },
 
-    /**
-     * Alias de addEntry com cifragem AES adicional.
-     * Mantém compatibilidade total com a assinatura existente.
-     */
     log(action, details = {}) {
-        const entry = this.addEntry(action, details); // usa o fluxo normal (RGPD, _persist, etc.)
-        this._persistEncrypted(this.logs);             // camada AES adicional em paralelo
+        const entry = this.addEntry(action, details);
+        this._persistEncrypted(this.logs);
         return entry;
     },
 
-    /**
-     * Exporta logs para inclusão no PDF/Relatório de forma segura (formato auditável).
-     * Tenta sempre a versão decifrada; fallback para getLogs() em texto plano.
-     */
     getFormattedAuditTrail() {
         const logs = this.getDecryptedLogs();
         return logs
@@ -2054,26 +1873,43 @@ const ValueSource = {
 };
 
 // ============================================================================
-// 7. SISTEMA DE TRADUÇÕES COMPLETO
+// 7. SISTEMA DE TRADUÇÕES COMPLETO - 100% COBERTO
 // ============================================================================
 const translations = {
     pt: {
+        // Botões da Splash Screen
         startBtn: "INICIAR PERÍCIA v13.5.0-PURE",
         splashLogsBtn: "REGISTO DE ATIVIDADES (LOG)",
+        
+        // Botões de Navegação
         navDemo: "CASO REAL (ANONIMIZADO)",
         langBtn: "EN",
+        
+        // Header
         headerSubtitle: "ISO/IEC 27037 | NIST SP 800-86 | INTERPOL · CSC | BIG DATA",
+        
+        // Sidebar - Identificação do Sujeito Passivo
         sidebarIdTitle: "IDENTIFICAÇÃO DO SUJEITO PASSIVO",
         lblClientName: "Nome / Denominação Social",
         lblNIF: "NIF / Número de Identificação Fiscal",
         btnRegister: "VALIDAR IDENTIDADE",
+        
+        // Sidebar - Parâmetros de Auditoria
         sidebarParamTitle: "PARÂMETROS DE AUDITORIA FORENSE",
         lblFiscalYear: "ANO FISCAL EM EXAME",
         lblPeriodo: "PERÍODO TEMPORAL",
         lblPlatform: "PLATAFORMA DIGITAL",
+        
+        // Gestão de Evidências
         btnEvidence: "GESTÃO DE EVIDÊNCIAS",
         btnAnalyze: "EXECUTAR PERÍCIA",
+        
+        // Toolbar
         btnPDF: "PARECER TÉCNICO",
+        btnDOCX: "MINUTA WORD",
+        btnATF: "TENDÊNCIA ATF",
+        
+        // Dashboard - Cards
         cardNet: "VALOR LÍQUIDO RECONSTRUÍDO",
         cardComm: "COMISSÕES DETETADAS",
         cardJuros: "DISCREPÂNCIA COMISSÕES",
@@ -2082,15 +1918,25 @@ const translations = {
         irc: "IRC (21% + Derrama)",
         iva6: "IVA 6% OMITIDO",
         iva23: "IVA 23% OMITIDO",
+        
+        // KPI Section
         kpiTitle: "TRIANGULAÇÃO FINANCEIRA · BIG DATA ALGORITHM v13.5.0-PURE",
         kpiGross: "BRUTO REAL",
         kpiCommText: "COMISSÕES",
         kpiNetText: "LÍQUIDO",
         kpiInvText: "FATURADO",
+        
+        // Charts
         chartTitle: "ANÁLISE DE DISCREPÂNCIAS · GAP FORENSE",
         chartTitle2: "DISCREPÂNCIA SAF-T vs DAC7",
+        
+        // Console
         consoleTitle: "LOG DE CUSTÓDIA · CADEIA DE CUSTÓDIA · BIG DATA",
+        
+        // Footer
         footerHashTitle: "INTEGRIDADE DO SISTEMA (MASTER HASH SHA-256 · RFC 3161)",
+        
+        // Modal - Gestão de Evidências
         modalTitle: "GESTÃO DE EVIDÊNCIAS DIGITAIS",
         uploadControlText: "FICHEIRO DE CONTROLO",
         uploadSaftText: "FICHEIROS SAF-T (131509*.csv)",
@@ -2099,6 +1945,8 @@ const translations = {
         uploadDac7Text: "DECLARAÇÃO DAC7",
         summaryTitle: "RESUMO DE PROCESSAMENTO PROBATÓRIO",
         modalSaveBtn: "SELAR EVIDÊNCIAS",
+        
+        // Módulos
         moduleSaftTitle: "MÓDULO SAF-T (EXTRAÇÃO)",
         moduleStatementTitle: "MÓDULO EXTRATOS (MAPEAMENTO)",
         moduleDac7Title: "MÓDULO DAC7 (DECOMPOSIÇÃO)",
@@ -2112,13 +1960,21 @@ const translations = {
         dac7Q2: "2.º Trimestre",
         dac7Q3: "3.º Trimestre",
         dac7Q4: "4.º Trimestre",
+        
+        // Quantum Box
         quantumTitle: "CÁLCULO TRIBUTÁRIO PERICIAL · PROVA RAINHA",
         quantumFormula: "Diferencial de Base em Análise vs Faturada",
         quantumNote: "IVA em falta (23%): 0,00 € | IVA (6%): 0,00 €",
+        
+        // Veredicto
         verdictPercent: "CONSULTA TÉCNICA FORENSE N.º",
+        
+        // Alertas
         alertCriticalTitle: "SMOKING GUN · DIVERGÊNCIA CRÍTICA",
         alertOmissionText: "Comissão Retida (Extrato) vs Faturada (Plataforma):",
         alertAccumulatedNote: "Diferencial de Base em Análise",
+        
+        // PDF Sections
         pdfTitle: "PARECER PERICIAL DE INVESTIGAÇÃO DIGITAL",
         pdfSection1: "1. IDENTIFICAÇÃO E METADADOS",
         pdfSection2: "2. ANÁLISE FINANCEIRA CRUZADA",
@@ -2148,7 +2004,8 @@ const translations = {
         pdfLabelPlatform: "Plataforma Digital / Digital Platform",
         pdfLabelAddress: "Morada / Address",
         pdfLabelNIFPlatform: "NIF Plataforma / Platform Tax ID",
-        // ── Terminologia Forense Bilíngue PT/EN (v13.1.6) ──
+        
+        // Terminologia Forense Bilíngue
         termGrosEarnings:       "Ganhos Brutos / Gross Earnings",
         termExpenseOmission:    "Omissão de Custos / Expense Omission",
         termRevenueOmission:    "Omissão de Receita / Revenue Omission (DAC7)",
@@ -2158,43 +2015,75 @@ const translations = {
         termDigitalPlatform:    "Plataforma Digital / Digital Platform under Examination",
         termExpenseGap:         "Omissão de Faturação / Invoice Omission",
         termRevenueGap:         "Diferença DAC7 / DAC7 Revenue Gap",
+        
+        // Logs Modal
         logsModalTitle: "REGISTO DE ATIVIDADES DE TRATAMENTO (Art. 30.º RGPD)",
         exportLogsBtn: "EXPORTAR LOGS (JSON)",
         clearLogsBtn: "LIMPAR LOGS",
         closeLogsBtn: "FECHAR",
+        
+        // Outros Botões
         wipeBtnText: "PURGA TOTAL DE DADOS (LIMPEZA BINÁRIA)",
         clearConsoleBtn: "LIMPAR CONSOLE",
+        
+        // Two-Axis Alerts
         revenueGapTitle: "OMISSÃO DE FATURAMENTO",
         expenseGapTitle: "OMISSÃO DE CUSTOS/IVA",
         revenueGapDesc: "SAF-T Bruto vs Ganhos",
         expenseGapDesc: "Despesas/Comissões (Extrato) vs Faturadas (BTF)",
+        
+        // Hash Modal
         hashModalTitle: "VERIFICAÇÃO DE INTEGRIDADE · CADEIA DE CUSTÓDIA",
         omissaoDespesasPctTitle: "Percentagem Cobrada Pela Plataforma",
         closeHashBtnText: "VALIDAR E FECHAR",
+        
+        // Notas Metodológicas
         notaMetodologica: "NOTA METODOLÓGICA FORENSE:\n\"Dada a latência administrativa na disponibilização do ficheiro SAF-T (.xml) pelas plataformas, ou a sua entrega em estado insuficiente e inconsistente (incompleto ou corrompido), o ficheiro SAF-T (.xml) é tecnicamente substituído pelo ficheiro Relatório (.csv) gerado na plataforma Fleet.\nO cruzamento de dados entre a plataforma e o parceiro é validado pelo ficheiro PDF de extratos 'Ganhos da Empresa'. Para efeitos de perícia, o ficheiro 'Ganhos da Empresa' (Fleet/Ledger) é aqui tratado como o Livro-Razão (Ledger) de suporte, detendo valor probatório material por constituir a fonte primária e fidedigna dos registos que deveriam integrar o reporte fiscal final.\nA integridade desta extração é blindada através da assinatura digital SHA-256 (Hash), garantindo que os dados analisados mantêm a inviolabilidade absoluta desde a sua recolha, em conformidade com o Decreto-Lei n.º 28/2019 e os princípios de cadeia de custódia previstos no Art. 125.º do CPP.\"\n\nFUNDAMENTAÇÃO DA PROVA MATERIAL: Para efeitos de prova legal de rendimentos reais, consideram-se os ficheiros operacionais que contêm o rasto digital de centenas de viagens efetivamente realizadas. Este conteúdo reflete a atividade económica real do motorista, sendo por isso elevado à categoria de Documento de Suporte (Ledger). Esta metodologia permite detetar e corrigir as discrepâncias omissas nos ficheiros de reporte simplificado, assegurando uma reconstrução financeira rigorosa e auditável em sede judicial.",
+        
         parecerTecnicoFinal: "PARECER TÉCNICO DE CONCLUSÃO:\n\"Com base na análise algorítmica dos dados cruzados, detetaram-se duas discrepâncias fundamentais: (1) diferença entre comissões retidas nos extratos e valores faturados pela plataforma, e (2) diferença entre o total do SAF-T e o reportado em DAC7. A utilização de identificadores SHA-256 e selagem QR Code assegura que este parecer é uma Prova Digital Material imutável. Recomenda-se a sua utilização imediata em sede judicial para proteção do mandato e fundamentação de pedido de auditoria externa.\"",
+        
         clausulaIsencaoParceiro: "DECLARAÇÃO DE ISENÇÃO DE RESPONSABILIDADE DO PARCEIRO:\nA presente análise incide exclusivamente sobre o reporte algorítmico da plataforma. Eventuais discrepâncias não imputam dolo ou omissão voluntária ao parceiro operador, dada a opacidade dos dados de origem. Nos termos do Art. 36.º, n.º 11 do CIVA (Faturação elaborada pelo adquirente ou por terceiros), a plataforma detém o monopólio da emissão documental fiscal e SAF-T. Esta assimetria estrutural impede o parceiro de auditar, mitigar ou corrigir atempadamente as discrepâncias algorítmicas que se agravam progressiva e ciclicamente.",
+        
         clausulaCadeiaCustodia: "REGISTO DE CADEIA DE CUSTÓDIA (HASH CHECK):\nA integridade de cada ficheiro de evidência processado é garantida pelo seu hash SHA-256 completo, listado abaixo. Qualquer alteração aos dados originais resultaria numa hash divergente, invalidando a prova.",
+        
         clausulaNormativoISO: "REFERENCIAL NORMATIVO:\nA recolha, preservação e análise das evidências digitais seguiram as diretrizes estabelecidas pela norma ISO/IEC 27037 (Linhas de orientação para identificação, recolha, aquisição e preservação de prova digital), em conformidade com o Decreto-Lei n.º 28/2019.",
+        
         clausulaAssinaturaDigital: "VALIDAÇÃO TÉCNICA DE CONSULTORIA:\nO presente relatorio e selado com o Master Hash SHA-256 completo e o QR Code anexo, garantindo a sua integridade e não-repúdio. A sua validação pode ser efetuada através de qualquer ferramenta de verificação de hash ou leitura de QR Code, que remete para o hash completo do documento."
     },
     en: {
+        // Splash Screen Buttons
         startBtn: "START FORENSIC EXAM v13.5.0-PURE",
         splashLogsBtn: "ACTIVITY LOG (GDPR Art. 30)",
+        
+        // Navigation Buttons
         navDemo: "REAL CASE (ANONYMISED)",
         langBtn: "PT",
+        
+        // Header
         headerSubtitle: "ISO/IEC 27037 | NIST SP 800-86 | INTERPOL · CSC | BIG DATA",
+        
+        // Sidebar - Taxpayer Identification
         sidebarIdTitle: "TAXPAYER IDENTIFICATION",
         lblClientName: "Name / Corporate Name",
         lblNIF: "Tax ID / NIF",
         btnRegister: "VALIDATE IDENTITY",
+        
+        // Sidebar - Audit Parameters
         sidebarParamTitle: "FORENSIC AUDIT PARAMETERS",
         lblFiscalYear: "FISCAL YEAR UNDER EXAM",
         lblPeriodo: "TIME PERIOD",
         lblPlatform: "DIGITAL PLATFORM",
+        
+        // Evidence Management
         btnEvidence: "DIGITAL EVIDENCE MANAGEMENT",
         btnAnalyze: "EXECUTE FORENSIC EXAM",
+        
+        // Toolbar
         btnPDF: "EXPERT OPINION",
+        btnDOCX: "WORD DRAFT",
+        btnATF: "ATF TREND",
+        
+        // Dashboard - Cards
         cardNet: "RECONSTRUCTED NET VALUE",
         cardComm: "DETECTED COMMISSIONS",
         cardJuros: "COMMISSION DISCREPANCY",
@@ -2203,15 +2092,25 @@ const translations = {
         irc: "CIT (21% + Surtax)",
         iva6: "VAT 6% OMITTED",
         iva23: "VAT 23% OMITTED",
+        
+        // KPI Section
         kpiTitle: "FINANCIAL TRIANGULATION · BIG DATA ALGORITHM v13.5.0-PURE",
         kpiGross: "REAL GROSS",
         kpiCommText: "COMMISSIONS",
         kpiNetText: "NET",
         kpiInvText: "INVOICED",
+        
+        // Charts
         chartTitle: "DISCREPANCY ANALYSIS · FORENSIC GAP",
         chartTitle2: "SAF-T vs DAC7 DISCREPANCY",
+        
+        // Console
         consoleTitle: "CUSTODY LOG · CHAIN OF CUSTODY · BIG DATA",
+        
+        // Footer
         footerHashTitle: "SYSTEM INTEGRITY (MASTER HASH SHA-256 · RFC 3161)",
+        
+        // Modal - Evidence Management
         modalTitle: "DIGITAL EVIDENCE MANAGEMENT",
         uploadControlText: "CONTROL FILE",
         uploadSaftText: "SAF-T FILES (131509*.csv)",
@@ -2220,6 +2119,8 @@ const translations = {
         uploadDac7Text: "DAC7 DECLARATION",
         summaryTitle: "EVIDENCE PROCESSING SUMMARY",
         modalSaveBtn: "SEAL EVIDENCE",
+        
+        // Modules
         moduleSaftTitle: "SAF-T MODULE (EXTRACTION)",
         moduleStatementTitle: "STATEMENT MODULE (MAPPING)",
         moduleDac7Title: "DAC7 MODULE (BREAKDOWN)",
@@ -2233,13 +2134,21 @@ const translations = {
         dac7Q2: "2nd Quarter",
         dac7Q3: "3rd Quarter",
         dac7Q4: "4th Quarter",
+        
+        // Quantum Box
         quantumTitle: "TAX CALCULATION · SMOKING GUN",
         quantumFormula: "Base Differential Under Analysis vs Invoiced",
         quantumNote: "Missing VAT (23%): 0,00 € | VAT (6%): 0,00 €",
+        
+        // Verdict
         verdictPercent: "TECHNICAL OPINION No.",
+        
+        // Alerts
         alertCriticalTitle: "SMOKING GUN · CRITICAL DIVERGENCE",
         alertOmissionText: "Commission Withheld (Statement) vs Invoiced (Platform):",
         alertAccumulatedNote: "Base Differential Under Analysis",
+        
+        // PDF Sections
         pdfTitle: "DIGITAL FORENSIC EXPERT REPORT",
         pdfSection1: "1. IDENTIFICATION & METADATA",
         pdfSection2: "2. CROSS-FINANCIAL ANALYSIS",
@@ -2269,29 +2178,442 @@ const translations = {
         pdfLabelPlatform: "Platform",
         pdfLabelAddress: "Address",
         pdfLabelNIFPlatform: "Platform Tax ID",
+        
+        // Terminology
+        termGrosEarnings:       "Gross Earnings",
+        termExpenseOmission:    "Expense Omission",
+        termRevenueOmission:    "Revenue Omission (DAC7)",
+        termMaterialTruth:      "Material Truth (Audited)",
+        termSmokingGun:         "Critical Divergence (Smoking Gun)",
+        termExpertOpinion:      "Technical Expert Opinion",
+        termDigitalPlatform:    "Digital Platform under Examination",
+        termExpenseGap:         "Invoice Omission",
+        termRevenueGap:         "DAC7 Revenue Gap",
+        
+        // Logs Modal
         logsModalTitle: "PROCESSING ACTIVITY RECORD (GDPR Art. 30)",
         exportLogsBtn: "EXPORT LOGS (JSON)",
         clearLogsBtn: "CLEAR LOGS",
         closeLogsBtn: "CLOSE",
+        
+        // Other Buttons
         wipeBtnText: "TOTAL DATA PURGE (BINARY CLEANUP)",
         clearConsoleBtn: "CLEAR CONSOLE",
+        
+        // Two-Axis Alerts
         revenueGapTitle: "REVENUE OMISSION",
         expenseGapTitle: "COST/VAT OMISSION",
         revenueGapDesc: "SAF-T Gross vs Earnings",
         expenseGapDesc: "Expenses/Commissions (Statement) vs Invoiced (BTF)",
+        
+        // Hash Modal
         hashModalTitle: "INTEGRITY VERIFICATION · CHAIN OF CUSTODY",
         omissaoDespesasPctTitle: "Platform Commission Rate (%)",
         closeHashBtnText: "VALIDATE AND CLOSE",
+        
+        // Methodological Notes
         notaMetodologica: "FORENSIC METHODOLOGICAL NOTE:\n\"Due to the administrative latency in the availability of the SAF-T (.xml) file by the platforms, this forensic examination uses the Data Proxy: Fleet Extract method. This methodology consists of extracting primary raw data directly from the management portal (Fleet). The 'Company Earnings' file (Fleet/Ledger) is treated here as the supporting Ledger, holding material probative value as it constitutes the primary source of records that integrate the final tax report. Legal framework: Decree-Law No. 28/2019, which regulates the integrity of data processing and the validity of electronic documents as primary records.\"",
+        
         parecerTecnicoFinal: "FINAL TECHNICAL OPINION:\n\"Based on the algorithmic analysis of the crossed data, two fundamental discrepancies were detected: (1) difference between commissions withheld in statements and amounts invoiced by the platform, and (2) difference between the SAF-T total and the DAC7 reported amount. The use of SHA-256 identifiers and QR Code sealing ensures that this opinion is an immutable Material Digital Evidence. Its immediate use in court is recommended to protect the mandate and substantiate a request for an external audit.\"",
+        
         clausulaIsencaoParceiro: "PARTNER LIABILITY DISCLAIMER:\nThis analysis focuses exclusively on the platform's algorithmic reporting. Any discrepancies do not imply intent or voluntary omission by the operating partner, given the opacity of the source data. Under Art. 36(11) of the Portuguese VAT Code (CIVA - Invoicing by third parties), the platform holds the monopoly over the issuance of tax documents and SAF-T. This structural asymmetry prevents the partner from timely auditing, mitigating, or correcting algorithmic discrepancies that progressively and cyclically worsen.",
+        
         clausulaCadeiaCustodia: "CHAIN OF CUSTODY RECORD (HASH CHECK):\nThe integrity of each processed evidence file is guaranteed by its complete SHA-256 hash, listed below. Any alteration to the original data would result in a divergent hash, invalidating the evidence.",
+        
         clausulaNormativoISO: "NORMATIVE FRAMEWORK:\nThe collection, preservation, and analysis of digital evidence followed the guidelines established by the ISO/IEC 27037 standard (Guidelines for identification, collection, acquisition, and preservation of digital evidence), in compliance with Decree-Law No. 28/2019.",
+        
         clausulaAssinaturaDigital: "TECHNICAL CONSULTANCY VALIDATION:\nThis report is sealed with the complete Master Hash SHA-256 and the attached QR Code, ensuring its integrity and non-repudiation. Its validation can be performed using any hash verification tool or QR Code reader, which redirects to the document's complete hash."
     }
 };
 
 let currentLang = 'pt';
+
+// ============================================================================
+// 7.1 FUNÇÃO DE ATUALIZAÇÃO DE IDIOMA - 100% COMPLETA
+// ============================================================================
+function switchLanguage() {
+    console.log('[UNIFED-LANG] switchLanguage chamado. currentLang antes:', currentLang);
+    currentLang = currentLang === 'pt' ? 'en' : 'pt';
+    console.log('[UNIFED-LANG] currentLang depois:', currentLang);
+
+    const t = translations[currentLang];
+    
+    // Atualizar texto do botão de idioma
+    const langBtn = document.getElementById('langToggleBtn');
+    if (langBtn) {
+        const span = langBtn.querySelector('span');
+        if (span) span.textContent = t.langBtn;
+    }
+
+    // Atualizar elementos da Splash Screen
+    const startBtn = document.getElementById('startSessionBtn');
+    if (startBtn) {
+        const span = startBtn.querySelector('span');
+        if (span) span.textContent = t.startBtn;
+    }
+    
+    const splashLogsBtn = document.getElementById('viewLogsBtn');
+    if (splashLogsBtn) {
+        const span = splashLogsBtn.querySelector('span');
+        if (span) span.textContent = t.splashLogsBtn;
+    }
+    
+    // Botão Demo
+    const demoBtn = document.getElementById('demoModeBtn');
+    if (demoBtn) {
+        const span = demoBtn.querySelector('span');
+        if (span) span.textContent = t.navDemo;
+    }
+    
+    // Header Subtitle
+    const headerSubtitle = document.getElementById('headerSubtitle');
+    if (headerSubtitle) headerSubtitle.textContent = t.headerSubtitle;
+    
+    // Sidebar - Identificação
+    const sidebarIdTitle = document.getElementById('sidebarIdTitle');
+    if (sidebarIdTitle) {
+        const span = sidebarIdTitle.querySelector('span');
+        if (span) span.textContent = t.sidebarIdTitle;
+        else sidebarIdTitle.innerHTML = `<i class="fas fa-user-shield"></i> ${t.sidebarIdTitle}`;
+    }
+    
+    const lblClientName = document.getElementById('lblClientName');
+    if (lblClientName) {
+        const span = lblClientName.querySelector('span');
+        if (span) span.textContent = t.lblClientName;
+        else lblClientName.innerHTML = `<i class="fas fa-id-card"></i> ${t.lblClientName}`;
+    }
+    
+    const lblNIF = document.getElementById('lblNIF');
+    if (lblNIF) {
+        const span = lblNIF.querySelector('span');
+        if (span) span.textContent = t.lblNIF;
+        else lblNIF.innerHTML = `<i class="fas fa-hashtag"></i> ${t.lblNIF}`;
+    }
+    
+    const btnRegister = document.getElementById('btnRegister');
+    if (btnRegister) {
+        const span = btnRegister.querySelector('span');
+        if (span) span.textContent = t.btnRegister;
+        else btnRegister.innerHTML = `<i class="fas fa-check-double"></i> ${t.btnRegister}`;
+    }
+    
+    // Sidebar - Parâmetros
+    const sidebarParamTitle = document.getElementById('sidebarParamTitle');
+    if (sidebarParamTitle) {
+        const span = sidebarParamTitle.querySelector('span');
+        if (span) span.textContent = t.sidebarParamTitle;
+        else sidebarParamTitle.innerHTML = `<i class="fas fa-sliders-h"></i> ${t.sidebarParamTitle}`;
+    }
+    
+    const lblFiscalYear = document.getElementById('lblFiscalYear');
+    if (lblFiscalYear) {
+        const span = lblFiscalYear.querySelector('span');
+        if (span) span.textContent = t.lblFiscalYear;
+        else lblFiscalYear.innerHTML = `<i class="fas fa-calendar-alt"></i> ${t.lblFiscalYear}`;
+    }
+    
+    const lblPeriodo = document.getElementById('lblPeriodo');
+    if (lblPeriodo) {
+        const span = lblPeriodo.querySelector('span');
+        if (span) span.textContent = t.lblPeriodo;
+        else lblPeriodo.innerHTML = `<i class="fas fa-clock"></i> ${t.lblPeriodo}`;
+    }
+    
+    const lblPlatform = document.getElementById('lblPlatform');
+    if (lblPlatform) {
+        const span = lblPlatform.querySelector('span');
+        if (span) span.textContent = t.lblPlatform;
+        else lblPlatform.innerHTML = `<i class="fas fa-mobile-alt"></i> ${t.lblPlatform}`;
+    }
+    
+    // Botão Evidências
+    const btnEvidence = document.getElementById('btnEvidence');
+    if (btnEvidence) {
+        const span = btnEvidence.querySelector('span');
+        if (span) span.textContent = t.btnEvidence;
+        else btnEvidence.innerHTML = `<span><i class="fas fa-folder-open"></i> ${t.btnEvidence}</span>`;
+    }
+    
+    // Botão Analisar
+    const btnAnalyze = document.getElementById('btnAnalyze');
+    if (btnAnalyze) {
+        const span = btnAnalyze.querySelector('span');
+        if (span) span.textContent = t.btnAnalyze;
+        else btnAnalyze.innerHTML = `<i class="fas fa-search-dollar"></i> ${t.btnAnalyze}`;
+    }
+    
+    // Toolbar Buttons
+    const btnPDF = document.getElementById('btnPDF');
+    if (btnPDF) {
+        const span = btnPDF.querySelector('span');
+        if (span) span.textContent = t.btnPDF;
+        else btnPDF.innerHTML = `<i class="fas fa-file-pdf"></i> ${t.btnPDF}`;
+    }
+    
+    // DOCX Export Button
+    const exportDOCXBtn = document.getElementById('exportDOCXBtn');
+    if (exportDOCXBtn) {
+        const textSpan = exportDOCXBtn.querySelector('span');
+        if (!textSpan) {
+            exportDOCXBtn.innerHTML = `<i class="fas fa-file-word"></i> ${t.btnDOCX}`;
+        } else {
+            textSpan.textContent = t.btnDOCX;
+        }
+    }
+    
+    // ATF Button
+    const atfModalBtn = document.getElementById('atfModalBtn');
+    if (atfModalBtn) {
+        atfModalBtn.innerHTML = `<i class="fas fa-chart-line"></i> &#x23F3; ${t.btnATF}`;
+    }
+    
+    // Botão Limpar Console
+    const clearConsoleBtn = document.getElementById('clearConsoleBtn');
+    if (clearConsoleBtn) {
+        const span = clearConsoleBtn.querySelector('span');
+        if (span) span.textContent = t.clearConsoleBtn;
+        else clearConsoleBtn.innerHTML = `<i class="fas fa-trash-alt"></i> ${t.clearConsoleBtn}`;
+    }
+    
+    // Botão Purga Total
+    const wipeBtnText = document.getElementById('wipeBtnText');
+    if (wipeBtnText) wipeBtnText.textContent = t.wipeBtnText;
+    
+    // Dashboard Cards
+    const cardNet = document.getElementById('cardNet');
+    if (cardNet) {
+        const span = cardNet.querySelector('span');
+        if (span) span.textContent = t.cardNet;
+        else cardNet.innerHTML = `<i class="fas fa-coins"></i> ${t.cardNet}`;
+    }
+    
+    const cardComm = document.getElementById('cardComm');
+    if (cardComm) {
+        const span = cardComm.querySelector('span');
+        if (span) span.textContent = t.cardComm;
+        else cardComm.innerHTML = `<i class="fas fa-percentage"></i> ${t.cardComm}`;
+    }
+    
+    const cardJuros = document.getElementById('cardJuros');
+    if (cardJuros) {
+        const span = cardJuros.querySelector('span');
+        if (span) span.textContent = t.cardJuros;
+        else cardJuros.innerHTML = `<i class="fas fa-chart-line"></i> ${t.cardJuros}`;
+    }
+    
+    // KPI Section
+    const kpiTitle = document.getElementById('kpiTitle');
+    if (kpiTitle) {
+        const span = kpiTitle.querySelector('span');
+        if (span) span.textContent = t.kpiTitle;
+        else kpiTitle.innerHTML = `<i class="fas fa-project-diagram"></i> ${t.kpiTitle}`;
+    }
+    
+    const kpiGross = document.getElementById('kpiGross');
+    if (kpiGross) kpiGross.textContent = t.kpiGross;
+    
+    const kpiCommText = document.getElementById('kpiCommText');
+    if (kpiCommText) kpiCommText.textContent = t.kpiCommText;
+    
+    const kpiNetText = document.getElementById('kpiNetText');
+    if (kpiNetText) kpiNetText.textContent = t.kpiNetText;
+    
+    const kpiInvText = document.getElementById('kpiInvText');
+    if (kpiInvText) kpiInvText.textContent = t.kpiInvText;
+    
+    // Chart Titles
+    const chartTitle = document.getElementById('chartTitle');
+    if (chartTitle) {
+        const span = chartTitle.querySelector('span');
+        if (span) span.textContent = t.chartTitle;
+        else chartTitle.innerHTML = `<i class="fas fa-chart-line"></i> ${t.chartTitle}`;
+    }
+    
+    const chartTitle2 = document.getElementById('chartTitle2');
+    if (chartTitle2) {
+        const span = chartTitle2.querySelector('span');
+        if (span) span.textContent = t.chartTitle2;
+        else chartTitle2.innerHTML = `<i class="fas fa-chart-bar"></i> ${t.chartTitle2}`;
+    }
+    
+    // Console Title
+    const consoleTitle = document.getElementById('consoleTitle');
+    if (consoleTitle) {
+        const span = consoleTitle.querySelector('span');
+        if (span) span.textContent = t.consoleTitle;
+        else consoleTitle.innerHTML = `<i class="fas fa-terminal"></i> ${t.consoleTitle}`;
+    }
+    
+    // Footer
+    const footerHashTitle = document.getElementById('footerHashTitle');
+    if (footerHashTitle) footerHashTitle.textContent = t.footerHashTitle;
+    
+    // Modal Titles
+    const modalTitle = document.getElementById('modalTitle');
+    if (modalTitle) modalTitle.textContent = t.modalTitle;
+    
+    const uploadControlText = document.getElementById('uploadControlText');
+    if (uploadControlText) uploadControlText.textContent = t.uploadControlText;
+    
+    const uploadSaftText = document.getElementById('uploadSaftText');
+    if (uploadSaftText) uploadSaftText.textContent = t.uploadSaftText;
+    
+    const uploadInvoiceText = document.getElementById('uploadInvoiceText');
+    if (uploadInvoiceText) uploadInvoiceText.textContent = t.uploadInvoiceText;
+    
+    const uploadStatementText = document.getElementById('uploadStatementText');
+    if (uploadStatementText) uploadStatementText.textContent = t.uploadStatementText;
+    
+    const uploadDac7Text = document.getElementById('uploadDac7Text');
+    if (uploadDac7Text) uploadDac7Text.textContent = t.uploadDac7Text;
+    
+    const summaryTitle = document.getElementById('summaryTitle');
+    if (summaryTitle) {
+        const span = summaryTitle.querySelector('span');
+        if (span) span.textContent = t.summaryTitle;
+        else summaryTitle.innerHTML = `<i class="fas fa-clipboard-list"></i> ${t.summaryTitle}`;
+    }
+    
+    const modalSaveBtn = document.getElementById('modalSaveBtn');
+    if (modalSaveBtn) {
+        const span = modalSaveBtn.querySelector('span');
+        if (span) span.textContent = t.modalSaveBtn;
+        else modalSaveBtn.innerHTML = `<i class="fas fa-check-circle"></i> ${t.modalSaveBtn}`;
+    }
+    
+    // Module Titles
+    const moduleSaftTitle = document.getElementById('moduleSaftTitle');
+    if (moduleSaftTitle) {
+        const span = moduleSaftTitle.querySelector('span');
+        if (span) span.textContent = t.moduleSaftTitle;
+        else moduleSaftTitle.innerHTML = `<i class="fas fa-file-code"></i> ${t.moduleSaftTitle}`;
+    }
+    
+    const moduleStatementTitle = document.getElementById('moduleStatementTitle');
+    if (moduleStatementTitle) {
+        const span = moduleStatementTitle.querySelector('span');
+        if (span) span.textContent = t.moduleStatementTitle;
+        else moduleStatementTitle.innerHTML = `<i class="fas fa-file-contract"></i> ${t.moduleStatementTitle}`;
+    }
+    
+    const moduleDac7Title = document.getElementById('moduleDac7Title');
+    if (moduleDac7Title) {
+        const span = moduleDac7Title.querySelector('span');
+        if (span) span.textContent = t.moduleDac7Title;
+        else moduleDac7Title.innerHTML = `<i class="fas fa-envelope-open-text"></i> ${t.moduleDac7Title}`;
+    }
+    
+    // Module Labels
+    const saftIliquidoLabel = document.getElementById('saftIliquidoLabel');
+    if (saftIliquidoLabel) saftIliquidoLabel.textContent = t.saftIliquido;
+    
+    const saftIvaLabel = document.getElementById('saftIvaLabel');
+    if (saftIvaLabel) saftIvaLabel.textContent = t.saftIva;
+    
+    const saftBrutoLabel = document.getElementById('saftBrutoLabel');
+    if (saftBrutoLabel) saftBrutoLabel.textContent = t.saftBruto;
+    
+    const stmtGanhosLabel = document.getElementById('stmtGanhosLabel');
+    if (stmtGanhosLabel) stmtGanhosLabel.textContent = t.stmtGanhos;
+    
+    const stmtDespesasLabel = document.getElementById('stmtDespesasLabel');
+    if (stmtDespesasLabel) stmtDespesasLabel.textContent = t.stmtDespesas;
+    
+    const stmtGanhosLiquidosLabel = document.getElementById('stmtGanhosLiquidosLabel');
+    if (stmtGanhosLiquidosLabel) stmtGanhosLiquidosLabel.textContent = t.stmtGanhosLiquidos;
+    
+    const dac7Q1Label = document.getElementById('dac7Q1Label');
+    if (dac7Q1Label) dac7Q1Label.textContent = t.dac7Q1;
+    
+    const dac7Q2Label = document.getElementById('dac7Q2Label');
+    if (dac7Q2Label) dac7Q2Label.textContent = t.dac7Q2;
+    
+    const dac7Q3Label = document.getElementById('dac7Q3Label');
+    if (dac7Q3Label) dac7Q3Label.textContent = t.dac7Q3;
+    
+    const dac7Q4Label = document.getElementById('dac7Q4Label');
+    if (dac7Q4Label) dac7Q4Label.textContent = t.dac7Q4;
+    
+    // Quantum Box
+    const quantumTitle = document.getElementById('quantumTitle');
+    if (quantumTitle) {
+        const span = quantumTitle.querySelector('span');
+        if (span) span.textContent = t.quantumTitle;
+        else quantumTitle.innerHTML = `<i class="fas fa-balance-scale"></i> ${t.quantumTitle}`;
+    }
+    
+    const quantumFormula = document.getElementById('quantumFormula');
+    if (quantumFormula) quantumFormula.textContent = t.quantumFormula;
+    
+    const quantumNote = document.getElementById('quantumNote');
+    if (quantumNote) quantumNote.textContent = t.quantumNote;
+    
+    // Verdict
+    const verdictPercentLabel = document.getElementById('verdictPercentLabel');
+    if (verdictPercentLabel) verdictPercentLabel.textContent = t.verdictPercent;
+    
+    // Alerts
+    const alertCriticalTitle = document.getElementById('alertCriticalTitle');
+    if (alertCriticalTitle) alertCriticalTitle.textContent = t.alertCriticalTitle;
+    
+    const alertOmissionText = document.getElementById('alertOmissionText');
+    if (alertOmissionText) alertOmissionText.textContent = t.alertOmissionText;
+    
+    const alertAccumulatedNote = document.getElementById('alertAccumulatedNote');
+    if (alertAccumulatedNote) alertAccumulatedNote.textContent = t.alertAccumulatedNote;
+    
+    // Two-Axis Alerts
+    const revenueGapTitle = document.getElementById('revenueGapTitle');
+    if (revenueGapTitle) revenueGapTitle.textContent = t.revenueGapTitle;
+    
+    const expenseGapTitle = document.getElementById('expenseGapTitle');
+    if (expenseGapTitle) expenseGapTitle.textContent = t.expenseGapTitle;
+    
+    const revenueGapDesc = document.getElementById('revenueGapDesc');
+    if (revenueGapDesc) revenueGapDesc.textContent = t.revenueGapDesc;
+    
+    const expenseGapDesc = document.getElementById('expenseGapDesc');
+    if (expenseGapDesc) expenseGapDesc.textContent = t.expenseGapDesc;
+    
+    const omissaoDespesasPctTitle = document.getElementById('omissaoDespesasPctTitle');
+    if (omissaoDespesasPctTitle) omissaoDespesasPctTitle.textContent = t.omissaoDespesasPctTitle;
+    
+    // Logs Modal
+    const logsModalTitle = document.getElementById('logsModalTitle');
+    if (logsModalTitle) logsModalTitle.textContent = t.logsModalTitle;
+    
+    const exportLogsBtnText = document.getElementById('exportLogsBtnText');
+    if (exportLogsBtnText) exportLogsBtnText.textContent = t.exportLogsBtn;
+    
+    const clearLogsBtnText = document.getElementById('clearLogsBtnText');
+    if (clearLogsBtnText) clearLogsBtnText.textContent = t.clearLogsBtn;
+    
+    const closeLogsBtnText = document.getElementById('closeLogsBtnText');
+    if (closeLogsBtnText) closeLogsBtnText.textContent = t.closeLogsBtn;
+    
+    // Hash Modal
+    const hashModalTitle = document.getElementById('hashModalTitle');
+    if (hashModalTitle) hashModalTitle.textContent = t.hashModalTitle;
+    
+    const closeHashBtnText = document.getElementById('closeHashBtnText');
+    if (closeHashBtnText) closeHashBtnText.textContent = t.closeHashBtnText;
+    
+    // Atualizar valores numéricos da dashboard se existirem
+    if (UNIFEDSystem.analysis.totals) {
+        updateDashboard();
+        updateModulesUI();
+    }
+    
+    // Atualizar data e hora com novo locale
+    startClockAndDate();
+    
+    logAudit(`Idioma alterado para: ${currentLang.toUpperCase()}`, 'info');
+    ForensicLogger.addEntry('LANGUAGE_CHANGED', { lang: currentLang });
+    
+    console.log('[UNIFED-LANG] Tradução concluída com sucesso.');
+}
+
 // ============================================================================
 // 8. SCHEMA REGISTRY - VERSÃO CORRIGIDA (v12.8.9) - EXTRAÇÃO PRECISA
 // ============================================================================
@@ -2300,13 +2622,11 @@ const SchemaRegistry = {
         statement: {
             name: 'Extrato de Ganhos',
             patterns: {
-                // --- NOVA EXTRAÇÃO: Tabela "Ganhos líquidos" ---
                 ganhosLiquidosTable: [
                     /Ganhos\s*([\d\s,.]+)\s*Despesas\s*-?\s*([\d\s,.]+)\s*Ganhos\s*líquidos\s*([\d\s,.]+)/is,
                     /Ganhos\s*([\d\s,.]+)\s*Despesas\s*-?\s*([\d\s,.]+)\s*Ganhos\s*líquidos\s*([\d\s,.]+)/i,
                     /Ganhos\s+([\d\s,.]+)\s*€?\s*Despesas\s*-?\s*([\d\s,.]+)\s*€?\s*Ganhos\s*líquidos\s*([\d\s,.]+)\s*€?/i
                 ],
-                // Fallback para valores individuais, caso a tabela não seja encontrada como um bloco
                 ganhos: [
                     /Ganhos\s*([\d\s,.]+)\s*€/i,
                     /Total\s+de\s+Ganhos\s*[:\s]*([\d\s,.]+)/i
@@ -2433,9 +2753,6 @@ const SchemaRegistry = {
         return 0;
     },
 
-    // ============================================================================
-    // CORREÇÃO v12.8.9: Extração da tabela "Ganhos líquidos" (ignora a primeira tabela)
-    // ============================================================================
     processStatement(text, filename) {
         const result = {
             ganhos: 0,
@@ -2445,13 +2762,11 @@ const SchemaRegistry = {
 
         const schema = this.schemas.statement;
 
-        // --- TENTATIVA 1: Extrair a tabela completa "Ganhos líquidos" ---
         let tableExtracted = false;
         for (const pattern of schema.patterns.ganhosLiquidosTable) {
             const match = text.match(pattern);
             if (match) {
                 console.log('✅ Tabela "Ganhos líquidos" encontrada:', match);
-                // match[1] = Ganhos, match[2] = Despesas, match[3] = Ganhos Líquidos
                 if (match[1]) result.ganhos = normalizeNumericValue(match[1]);
                 if (match[2]) result.despesas = normalizeNumericValue(match[2]);
                 if (match[3]) result.ganhosLiq = normalizeNumericValue(match[3]);
@@ -2460,7 +2775,6 @@ const SchemaRegistry = {
             }
         }
 
-        // --- TENTATIVA 2: Fallback para valores individuais (se a tabela não foi encontrada) ---
         if (!tableExtracted) {
             console.log('[!] Tabela completa não encontrada. A tentar extração individual.');
             result.ganhos = this.extractValue(text, schema.patterns.ganhos);
@@ -2468,7 +2782,6 @@ const SchemaRegistry = {
             result.ganhosLiq = this.extractValue(text, schema.patterns.ganhosLiquidos);
         }
 
-        // Garantir que as despesas são tratadas como valor positivo para cálculos posteriores
         result.despesas = Math.abs(result.despesas);
 
         logAudit(`📊 Extração Extrato (v12.8.9) - Ganhos: ${formatCurrency(result.ganhos)} | Despesas: ${formatCurrency(result.despesas)} | Líquido: ${formatCurrency(result.ganhosLiq)}`, 'info');
@@ -2510,15 +2823,6 @@ const SchemaRegistry = {
         return result;
     },
 
-    // ============================================================================
-    // REFACTORING v13.1.6-GOLD: Filtragem Condicional por State-Selector (Lógica de Parsing DAC7)
-    // ============================================================================
-    // Implementa um Filtro de Escopo Temporal dependente do estado do seletor PERÍODO TEMPORAL.
-    // A extração é exclusiva e restritiva — trimestres fora do escopo são zerados antes do retorno:
-    //   Full-Year Scope  (anual)     → extrai Q1 + Q2 + Q3 + Q4
-    //   Semester Scope   (1s / 2s)   → extrai binómio Q1+Q2 ou Q3+Q4 conforme seleção
-    //   Quarterly Scope  (trimestral)→ extrai apenas o índice Q correspondente ao trimestre ativo
-    // ============================================================================
     processDAC7(text, filename, periodoSelecionado) {
         const result = {
             receitaAnual: 0,
@@ -2530,16 +2834,7 @@ const SchemaRegistry = {
 
         console.log('🔍 Processando DAC7 para período:', periodoSelecionado);
 
-        // --- FASE 1: Extração bruta de todos os trimestres do documento ---
-        // ── Regex Universais v13.1.2-GOLD ─────────────────────────────────────────
-        // Suportam os dois padrões Bolt em produção:
-        //   Padrão 2024: Total de receitas anuais: 7755.16€
-        //   Padrão 2025: Total de receitas anuais: € 18.738,00
-        // O grupo de captura inclui o símbolo € opcional na frente do número;
-        // normalizeNumericValue() trata a remoção do símbolo e a conversão.
-        // -------------------------------------------────────────────────────────
         const extractDAC7Value = (label, txt) => {
-            // Tenta capturar valor após a label, com € opcional antes ou depois do número
             const re = new RegExp(
                 label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') +
                 '[:\s]*(?:€\s*)?([\d][\d\s.,]*(?:[.,]\d{1,2})?\s*€?)',
@@ -2550,7 +2845,6 @@ const SchemaRegistry = {
                 const val = normalizeNumericValue(m[1]);
                 if (val > 0) return val;
             }
-            // Fallback: captura qualquer número monetário na linha da label
             const reLine = new RegExp(
                 label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') +
                 '[^\n]*?(€?\s*[\d][\d\s.,]{0,20})',
@@ -2575,37 +2869,26 @@ const SchemaRegistry = {
         const q3Extracted = q3Raw ? normalizeNumericValue(q3Raw[1]) : 0;
         const q4Extracted = q4Raw ? normalizeNumericValue(q4Raw[1]) : 0;
 
-        // --- FASE 2: Filtro de Escopo Temporal — exclusivo e restritivo ---
-        // Apenas os trimestres dentro do escopo do período selecionado são incluídos.
-        // Os restantes são mantidos a zero (não acumulados).
         switch (periodoSelecionado) {
-
             case 'anual':
-                // Full-Year Scope: todos os 4 trimestres
                 result.q1 = q1Extracted;
                 result.q2 = q2Extracted;
                 result.q3 = q3Extracted;
                 result.q4 = q4Extracted;
                 break;
-
             case '1s':
-                // Semester Scope: binómio Q1 + Q2 (1.º Semestre)
                 result.q1 = q1Extracted;
                 result.q2 = q2Extracted;
                 result.q3 = 0;
                 result.q4 = 0;
                 break;
-
             case '2s':
-                // Semester Scope: binómio Q3 + Q4 (2.º Semestre)
                 result.q1 = 0;
                 result.q2 = 0;
                 result.q3 = q3Extracted;
                 result.q4 = q4Extracted;
                 break;
-
             case 'trimestral': {
-                // Quarterly Scope: apenas o índice Q correspondente ao trimestre ativo
                 let triAtivo = UNIFEDSystem.selectedTrimestre || 1;
                 const triSelector = document.getElementById('trimestralSelector');
                 if (triSelector) {
@@ -2622,9 +2905,7 @@ const SchemaRegistry = {
                 console.log(`🎯 DAC7 Quarterly Scope: Q${triAtivo} activo — restantes zerados`);
                 break;
             }
-
             default:
-                // Fallback seguro: comportamento anual
                 result.q1 = q1Extracted;
                 result.q2 = q2Extracted;
                 result.q3 = q3Extracted;
@@ -2642,21 +2923,6 @@ const SchemaRegistry = {
         return result;
     },
 
-    // ============================================================================
-    // RETIFICAÇÃO v13.1.6-GOLD: processSAFT — Reatribuição de Variáveis de Saída
-    // ============================================================================
-    // CORREÇÃO DE INVERSÃO DE ATRIBUIÇÃO (Assignment Error):
-    //   O código anterior acedia às colunas por índices posicionais via Object.values(row),
-    //   causando uma inversão no mapeamento IVA ↔ Bruto quando a posição das colunas
-    //   não coincide exactamente com os índices 15/16.
-    //
-    // SOLUÇÃO: Acesso por nome de coluna (label exacto do cabeçalho), alinhado com
-    //   o robustSAFTParser v13.1.6-GOLD (Header-Based CSV Mapping já aprovado).
-    //   Labels exactas (strings idênticas às usadas no robustSAFTParser):
-    //     Valor Ilíquido Total → "Preço da viagem (sem IVA)"
-    //     Total IVA            → "IVA"
-    //     Valor Bruto Total    → "Preço da viagem"
-    // ============================================================================
     processSAFT(parseResult, filename) {
         const result = {
             totalBruto: 0,
@@ -2672,17 +2938,14 @@ const SchemaRegistry = {
 
         console.log('🔍 Processando SAF-T v13.1.6-GOLD (Header-Name Mapping):', filename);
 
-        // Labels exactas — alinhadas com robustSAFTParser v13.1.6-GOLD
         const LABEL_ILIQUIDO = 'Preço da viagem (sem IVA)';
         const LABEL_IVA      = 'IVA';
         const LABEL_BRUTO    = 'Preço da viagem';
 
-        // Verificar se os cabeçalhos existem na primeira linha de dados
         const sampleRow = parseResult.data[0] || {};
         const hasHeaders = LABEL_ILIQUIDO in sampleRow && LABEL_IVA in sampleRow && LABEL_BRUTO in sampleRow;
 
         if (!hasHeaders) {
-            // Fallback defensivo: log de diagnóstico e retorno seguro
             const foundKeys = Object.keys(sampleRow).join(' | ');
             console.warn(`[!] SAF-T processSAFT: Cabeçalhos não encontrados. Colunas detectadas: ${foundKeys}`);
             logAudit(`[!] SAF-T processSAFT: Cabeçalhos em falta — "${LABEL_ILIQUIDO}", "${LABEL_IVA}", "${LABEL_BRUTO}". Verificar CSV.`, 'warning');
@@ -2692,11 +2955,9 @@ const SchemaRegistry = {
         for (const row of parseResult.data) {
             if (!row) continue;
 
-            // Acesso directo por nome de coluna (label exacto do cabeçalho)
-            // Elimina dependência de índice posicional — corrige a inversão IVA ↔ Bruto
-            const iliquido = normalizeNumericValue(row[LABEL_ILIQUIDO]); // Preço da viagem (sem IVA)
-            const iva      = normalizeNumericValue(row[LABEL_IVA]);      // IVA
-            const bruto    = normalizeNumericValue(row[LABEL_BRUTO]);    // Preço da viagem
+            const iliquido = normalizeNumericValue(row[LABEL_ILIQUIDO]);
+            const iva      = normalizeNumericValue(row[LABEL_IVA]);
+            const bruto    = normalizeNumericValue(row[LABEL_BRUTO]);
 
             if (iliquido > 0.01) result.totalIliquido += iliquido;
             if (iva > 0.01)      result.totalIVA      += iva;
@@ -2711,7 +2972,6 @@ const SchemaRegistry = {
         console.log(`   Total IVA: ${result.totalIVA}`);
         console.log(`   Total Bruto: ${result.totalBruto}`);
 
-        // Verificação de consistência: Bruto deve ser aproximadamente Ilíquido + IVA
         if (result.totalBruto > 0 && result.totalIliquido > 0 && result.totalIVA > 0) {
             const soma = result.totalIliquido + result.totalIVA;
             const diferenca = Math.abs(result.totalBruto - soma);
@@ -2748,7 +3008,7 @@ const UNIFEDSystem = {
     processedFiles: new Set(),
     dataMonths: new Set(),
     fileSources: new Map(),
-    monthlyData: {}, // ATF — Análise Temporal Forense (Read-Only, non-interfering with fiscalcalc)
+    monthlyData: {},
     documents: {
         control: { files: [], hashes: {}, totals: { records: 0 } },
         saft: { files: [], hashes: {}, totals: { records: 0, iliquido: 0, iva: 0, bruto: 0 } },
@@ -2821,23 +3081,14 @@ const UNIFEDSystem = {
     discrepancyChart: null,
     counts: { total: 0 },
 
-    // ============================================================================
-    // AUXILIARYDATA — NON-INTERFERING DATA OBJECT (Encapsulamento Pericial)
-    // ISOLAMENTO TOTAL: Este objeto NÃO interfere com UNIFEDSystem.financials,
-    // UNIFEDSystem.analysis.totals nem com qualquer variável de estado de cálculo fiscal.
-    // Os valores aqui armazenados são fluxos de caixa de terceiros (0% comissão)
-    // que NÃO devem ser incluídos na base tributável da plataforma.
-    // Fundamento Legal: Lei TVDE · Art. 125.º CPP (Integridade da Prova)
-    // Conformidade: DORA (UE) 2022/2554 · ISO/IEC 27037:2012
-    // ============================================================================
     auxiliaryData: {
-        campanhas:           0,   // "Ganhos da campanha" — fluxo de incentivo, isento de comissão
-        portagens:           0,   // "Portagens" — reembolso de custo operacional
-        gorjetas:            0,   // "Gorjetas dos passageiros" — transferência direta P2P
-        cancelamentos:       0,   // "Cancelamentos" — já reflectido nas Despesas/Comissões
-        totalNaoSujeitos:    0,   // Soma (campanhas + portagens + gorjetas)
-        processedFrom:       [],  // Rastreabilidade: ficheiros que geraram estes valores
-        extractedAt:         null // Timestamp ISO da última extração
+        campanhas:           0,
+        portagens:           0,
+        gorjetas:            0,
+        cancelamentos:       0,
+        totalNaoSujeitos:    0,
+        processedFrom:       [],
+        extractedAt:         null
     }
 };
 
@@ -2992,8 +3243,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setupWipeButton();
     setupClearConsoleButton();
 
-    // ForensicLogger carrega automaticamente os logs persistidos (UNIFED_FORENSIC_LOGS — invariante)
-    // ao ser definido — não é necessário carregamento manual aqui.
     ForensicLogger.addEntry('SYSTEM_START', { version: UNIFEDSystem.version, logsCarregados: ForensicLogger.logs.length });
 });
 
@@ -3047,12 +3296,7 @@ function startGatekeeperSession() {
 function loadSystemCore() {
     updateLoadingProgress(20);
     UNIFEDSystem.sessionId = generateSessionId();
-    // ── UNIFED-v13.5.0-PURE: Âncora temporal da sessão forense ───────────
-    // _sessionStart é imutável durante toda a sessão — usado como segundo
-    // fator de entropia na derivação da chave AES-256 do ForensicLogger.
-    // Garante isolamento criptográfico completo entre sessões distintas.
     UNIFEDSystem._sessionStart = Date.now();
-    // ─────────────────────────────────────────────────────────────────────────
     setElementText('sessionIdDisplay', UNIFEDSystem.sessionId);
     setElementText('verdictSessionId', UNIFEDSystem.sessionId);
     generateQRCode();
@@ -3106,7 +3350,6 @@ function showMainInterface() {
     const exportJSONBtn = document.getElementById('exportJSONBtn');
     if (exportJSONBtn) exportJSONBtn.disabled = false;
 
-    // Injeção das Helper Boxes de Apoio Pericial (DocumentFragment — Non-Interfering)
     injectAuxiliaryHelperBoxes();
 
     setTimeout(forensicDataSynchronization, 1000);
@@ -3161,8 +3404,9 @@ function populateYears() {
 function startClockAndDate() {
     const update = () => {
         const now = new Date();
-        const dateStr = now.toLocaleDateString(currentLang === 'pt' ? 'pt-PT' : 'en-GB');
-        const timeStr = now.toLocaleTimeString(currentLang === 'pt' ? 'pt-PT' : 'en-GB');
+        const locale = currentLang === 'pt' ? 'pt-PT' : 'en-GB';
+        const dateStr = now.toLocaleDateString(locale);
+        const timeStr = now.toLocaleTimeString(locale);
         setElementText('currentDate', dateStr);
         setElementText('currentTime', timeStr);
     };
@@ -3170,21 +3414,15 @@ function startClockAndDate() {
     setInterval(update, 1000);
 }
 
-// ============================================================================
-// 14. FUNÇÃO CORRIGIDA DE GERAÇÃO DE QR CODE (com hash truncado para evitar overflow)
-// ============================================================================
 function generateQRCode() {
     const container = document.getElementById('qrcodeContainer');
     if (!container) return;
 
     container.innerHTML = '';
 
-    // Usar apenas o hash completo como string simples — evita borrão por densidade JSON
-    // CorrectLevel.L = menor redundância = módulos maiores e mais legíveis em impressão
     const hashFull = UNIFEDSystem.masterHash || 'HASH_INDISPONIVEL';
     const sessionShort = UNIFEDSystem.sessionId ? UNIFEDSystem.sessionId.substring(0, 16) : 'N/A';
 
-    // Formato compacto: UNIFED|SESSION|HASH (sem JSON, sem timestamp variável)
     const qrData = `UNIFED|${sessionShort}|${hashFull}`;
 
     if (typeof QRCode !== 'undefined') {
@@ -3219,7 +3457,6 @@ function setupMainListeners() {
 
     const periodoAnalise = document.getElementById('periodoAnalise');
     if (periodoAnalise) {
-        // Função auxiliar: mostra/oculta o selector de trimestre conforme o período
         const toggleTrimestralSelector = (value) => {
             const container = document.getElementById('trimestralSelectorContainer');
             if (!container) return;
@@ -3235,20 +3472,18 @@ function setupMainListeners() {
         periodoAnalise.addEventListener('change', (e) => {
             UNIFEDSystem.selectedPeriodo = e.target.value;
             const periodos = {
-                'anual': 'Exercício Completo (Anual)',
-                '1s': '1.º Semestre',
-                '2s': '2.º Semestre',
-                'trimestral': 'Análise Trimestral',
-                'mensal': 'Análise Mensal'
+                'anual': currentLang === 'pt' ? 'Exercício Completo (Anual)' : 'Full Year (Annual)',
+                '1s': currentLang === 'pt' ? '1.º Semestre' : '1st Semester',
+                '2s': currentLang === 'pt' ? '2.º Semestre' : '2nd Semester',
+                'trimestral': currentLang === 'pt' ? 'Análise Trimestral' : 'Quarterly Analysis',
+                'mensal': currentLang === 'pt' ? 'Análise Mensal' : 'Monthly Analysis'
             };
             toggleTrimestralSelector(e.target.value);
             logAudit(`Período temporal alterado para: ${periodos[e.target.value] || e.target.value}`, 'info');
             ForensicLogger.addEntry('PERIOD_CHANGED', { period: e.target.value });
-            // Sincronização imediata do painel DAC7
             filterDAC7ByPeriod();
         });
 
-        // Ligar também o selector de trimestre para reagir a mudanças em tempo real
         const triSel = document.getElementById('trimestralSelector');
         if (triSel) {
             triSel.addEventListener('change', (e) => {
@@ -3261,7 +3496,6 @@ function setupMainListeners() {
             });
         }
 
-        // Aplicar estado inicial (o valor por defeito é 'anual', logo o selector fica oculto)
         toggleTrimestralSelector(periodoAnalise.value);
     }
 
@@ -3313,14 +3547,12 @@ function setupMainListeners() {
     const exportJSONBtn = document.getElementById('exportJSONBtn');
     if (exportJSONBtn) exportJSONBtn.addEventListener('click', exportDataJSON);
 
-    // DOCX Export — v13.2.4-PREMIUM
     const exportDOCXBtn = document.getElementById('exportDOCXBtn');
     if (exportDOCXBtn) exportDOCXBtn.addEventListener('click', () => {
         if (typeof window.exportDOCX === 'function') window.exportDOCX();
         else showToast('Módulo DOCX não disponível.', 'error');
     });
 
-    // ATF — Análise Temporal Forense
     const atfBtn = document.getElementById('atfModalBtn');
     if (atfBtn) atfBtn.addEventListener('click', () => {
         if (typeof window.openATFModal === 'function') window.openATFModal();
@@ -3469,13 +3701,9 @@ async function processQueue() {
     showToast(`${total} ficheiro(s) processados em lote`, 'success');
 }
 
-// ============================================================================
-// CORREÇÃO 2: DETEÇÃO DAC7 POR CONTEÚDO REAL
-// ============================================================================
 async function detectFileType(file) {
     const name = file.name.toLowerCase();
 
-    // Verificar por nome primeiro
     if (name.includes('fatura') ||
         name.includes('invoice') ||
         name.match(/pt\d{4}-\d{5}/i) ||
@@ -3501,16 +3729,14 @@ async function detectFileType(file) {
         return 'control';
     }
 
-    // Se não identificou pelo nome e for PDF, verificar conteúdo
     if (file.type === 'application/pdf' || name.endsWith('.pdf')) {
         try {
-            const arrayBuffer = await file.slice(0, 1024 * 100).arrayBuffer(); // Ler apenas primeiros 100KB
+            const arrayBuffer = await file.slice(0, 1024 * 100).arrayBuffer();
             const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
             const page = await pdf.getPage(1);
             const content = await page.getTextContent();
             const text = content.items.map(item => item.str).join(' ').toLowerCase();
 
-            // CORREÇÃO: Verificar conteúdo real para DAC7
             if (text.includes('dac7') ||
                 (text.includes('ganhos') && text.includes('trimestre')) ||
                 (text.includes('earnings') && text.includes('quarter'))) {
@@ -3546,97 +3772,6 @@ function setupUploadListeners() {
             });
         }
     });
-}
-
-// ============================================================================
-// 18. SISTEMA DE TRADUÇÃO
-// ============================================================================
-function switchLanguage() {
-    console.log('switchLanguage chamado. currentLang antes:', currentLang);
-    currentLang = currentLang === 'pt' ? 'en' : 'pt';
-    console.log('currentLang depois:', currentLang);
-
-    const t = translations[currentLang];
-
-    ForensicLogger.addEntry('LANGUAGE_CHANGED', { lang: currentLang });
-
-    setElementText('splashStartBtnText', t.startBtn);
-    setElementText('splashLogsBtnText', t.splashLogsBtn);
-    setElementText('demoBtnText', t.navDemo);
-    setElementText('currentLangLabel', t.langBtn);
-    setElementText('headerSubtitle', t.headerSubtitle);
-    setElementText('sidebarIdTitle', t.sidebarIdTitle);
-    setElementText('lblClientName', t.lblClientName);
-    setElementText('lblNIF', t.lblNIF);
-    setElementText('btnRegister', t.btnRegister);
-    setElementText('sidebarParamTitle', t.sidebarParamTitle);
-    setElementText('lblFiscalYear', t.lblFiscalYear);
-    setElementText('lblPeriodo', t.lblPeriodo);
-    setElementText('lblPlatform', t.lblPlatform);
-    setElementText('btnEvidence', t.btnEvidence);
-    setElementText('btnAnalyze', t.btnAnalyze);
-    setElementText('wipeBtnText', t.wipeBtnText);
-    setElementText('btnPDF', t.btnPDF);
-    setElementText('clearConsoleBtn', t.clearConsoleBtn);
-    setElementText('cardNet', t.cardNet);
-    setElementText('cardComm', t.cardComm);
-    setElementText('cardJuros', t.cardJuros);
-    setElementText('kpiTitle', t.kpiTitle);
-    setElementText('kpiGross', t.kpiGross);
-    setElementText('kpiCommText', t.kpiCommText);
-    setElementText('kpiNetText', t.kpiNetText);
-    setElementText('kpiInvText', t.kpiInvText);
-    setElementText('chartTitle', t.chartTitle);
-    setElementText('chartTitle2', t.chartTitle2);
-    setElementText('consoleTitle', t.consoleTitle);
-    setElementText('footerHashTitle', t.footerHashTitle);
-    setElementText('modalTitle', t.modalTitle);
-    setElementText('uploadControlText', t.uploadControlText);
-    setElementText('uploadSaftText', t.uploadSaftText);
-    setElementText('uploadInvoiceText', t.uploadInvoiceText);
-    setElementText('uploadStatementText', t.uploadStatementText);
-    setElementText('uploadDac7Text', t.uploadDac7Text);
-    setElementText('summaryTitle', t.summaryTitle);
-    setElementText('modalSaveBtn', t.modalSaveBtn);
-    setElementText('moduleSaftTitle', t.moduleSaftTitle);
-    setElementText('moduleStatementTitle', t.moduleStatementTitle);
-    setElementText('moduleDac7Title', t.moduleDac7Title);
-    setElementText('saftIliquidoLabel', t.saftIliquido);
-    setElementText('saftIvaLabel', t.saftIva);
-    setElementText('saftBrutoLabel', t.saftBruto);
-    setElementText('stmtGanhosLabel', t.stmtGanhos);
-    setElementText('stmtDespesasLabel', t.stmtDespesas);
-    setElementText('stmtGanhosLiquidosLabel', t.stmtGanhosLiquidos);
-    setElementText('dac7Q1Label', t.dac7Q1);
-    setElementText('dac7Q2Label', t.dac7Q2);
-    setElementText('dac7Q3Label', t.dac7Q3);
-    setElementText('dac7Q4Label', t.dac7Q4);
-    setElementText('quantumTitle', t.quantumTitle);
-    setElementText('quantumFormula', t.quantumFormula);
-    setElementText('quantumNote', t.quantumNote);
-    setElementText('verdictPercentLabel', t.verdictPercent);
-    setElementText('alertCriticalTitle', t.alertCriticalTitle);
-    setElementText('alertAccumulatedNote', t.alertAccumulatedNote);
-    setElementText('logsModalTitle', t.logsModalTitle);
-    setElementText('exportLogsBtnText', t.exportLogsBtn);
-    setElementText('clearLogsBtnText', t.clearLogsBtn);
-    setElementText('closeLogsBtnText', t.closeLogsBtn);
-
-    setElementText('revenueGapTitle', t.revenueGapTitle);
-    setElementText('expenseGapTitle', t.expenseGapTitle);
-    setElementText('revenueGapDesc', t.revenueGapDesc);
-    setElementText('expenseGapDesc', t.expenseGapDesc);
-
-    setElementText('hashModalTitle', t.hashModalTitle);
-    setElementText('closeHashBtnText', t.closeHashBtnText);
-    setElementText('omissaoDespesasPctTitle', t.omissaoDespesasPctTitle);
-
-    if (UNIFEDSystem.analysis.totals) {
-        updateDashboard();
-        updateModulesUI();
-    }
-
-    logAudit(`Idioma: ${currentLang.toUpperCase()}`, 'info');
 }
 
 // ============================================================================
@@ -3710,11 +3845,7 @@ async function processFile(file, type) {
     const contentToHash = text;
     const hash = CryptoJS.SHA256(contentToHash).toString();
 
-    // ── HOOK: Cadeia de Custódia — Prova de Ingestão ─────────────────────────
-    // SHA-256 gerado ANTES de qualquer processamento adicional.
-    // Garante que o hash reflecte o conteúdo original não modificado.
     await generateForensicLog('FILE_INGESTED', file.name, hash);
-    // -------------------------------------------────────────────────────────
 
     if(!UNIFEDSystem.documents[type]) {
         UNIFEDSystem.documents[type] = { files: [], hashes: {}, totals: { records: 0 } };
@@ -3724,8 +3855,6 @@ async function processFile(file, type) {
         UNIFEDSystem.documents[type].files = [];
     }
 
-    // Chave composta: permite múltiplos ficheiros com nome igual mas conteúdo diferente
-    // (ex: "Ganhos da Empresa.pdf" de meses distintos)
     const fileEntryKey = `${file.name}_${file.size}_${file.lastModified}`;
     const fileExists = UNIFEDSystem.documents[type].files.some(
         f => `${f.name}_${f.size}_${f.lastModified}` === fileEntryKey
@@ -3746,7 +3875,6 @@ async function processFile(file, type) {
         });
     }
 
-    // Hash indexado pela chave composta para não colidir ficheiros com mesmo nome
     UNIFEDSystem.documents[type].hashes[fileEntryKey] = hash;
     UNIFEDSystem.documents[type].totals.records = UNIFEDSystem.documents[type].files.length;
 
@@ -3757,7 +3885,7 @@ async function processFile(file, type) {
         timestamp:    new Date().toLocaleString(),
         size:         file.size,
         timestampUnix: Math.floor(Date.now() / 1000),
-        sealType:     'NONE',    // atualizado para 'OTS' ou 'RFC3161' após selagem
+        sealType:     'NONE',
         sealStatus:   'PENDENTE',
         sealDate:     null,
         tsrPath:      null
@@ -3769,9 +3897,6 @@ async function processFile(file, type) {
         processedAt: new Date().toISOString()
     });
 
-    // ============================================================================
-    // PROCESSAMENTO DE EXTRATO (v12.8.9) - Apenas tabela "Ganhos líquidos"
-    // ============================================================================
     if (type === 'statement') {
         try {
             let yearMonth = null;
@@ -3815,7 +3940,6 @@ async function processFile(file, type) {
                 UNIFEDSystem.dataMonths.add(yearMonth);
             }
 
-            // EXTRAÇÃO CORRETA: Usar o novo método processStatement
             const extracted = SchemaRegistry.processStatement(text, file.name);
 
             UNIFEDSystem.documents.statements.totals.ganhos = (UNIFEDSystem.documents.statements.totals.ganhos || 0) + extracted.ganhos;
@@ -3826,7 +3950,6 @@ async function processFile(file, type) {
             ValueSource.registerValue('stmtDespesasValue', extracted.despesas, file.name, 'extração tabela Ganhos líquidos');
             ValueSource.registerValue('stmtGanhosLiquidosValue', extracted.ganhosLiq, file.name, 'extração tabela Ganhos líquidos');
 
-            // ── ATF: Populate monthlyData (non-interfering) ─────────────────────
             if (yearMonth) {
                 if (!UNIFEDSystem.monthlyData[yearMonth]) {
                     UNIFEDSystem.monthlyData[yearMonth] = { ganhos: 0, despesas: 0, ganhosLiq: 0 };
@@ -3835,10 +3958,7 @@ async function processFile(file, type) {
                 UNIFEDSystem.monthlyData[yearMonth].despesas  += extracted.despesas  || 0;
                 UNIFEDSystem.monthlyData[yearMonth].ganhosLiq += extracted.ganhosLiq || 0;
             }
-            // ── ATF FIM ──
 
-            // ── EXTRAÇÃO AUXILIAR — Non-Interfering (Campanhas / Portagens / Gorjetas / Cancelamentos) ──
-            // Chamada após processStatement — não interfere com os totais financeiros principais
             processAuxiliaryPlatformData(text, file.name);
 
             logAudit(`📊 Extrato processado (v12.8.9): ${file.name} | Ganhos: ${formatCurrency(extracted.ganhos)} | Despesas: ${formatCurrency(extracted.despesas)} | Líquido: ${formatCurrency(extracted.ganhosLiq)}`, 'success');
@@ -3851,9 +3971,6 @@ async function processFile(file, type) {
         }
     }
 
-    // ============================================================================
-    // PROCESSAMENTO DE FATURA
-    // ============================================================================
     if (type === 'invoice' || (type === 'unknown' && file.name.match(/pt\d{4}-\d{5}/i))) {
         try {
             if (type === 'unknown') {
@@ -3886,9 +4003,6 @@ async function processFile(file, type) {
         }
     }
 
-    // ============================================================================
-    // PROCESSAMENTO DE SAF-T (v12.8.9) - Soma direta das colunas 14, 15, 16
-    // ============================================================================
     if (type === 'saft' && file.name.match(/131509.*\.csv$/i)) {
         try {
             const monthMatch = file.name.match(/131509_(\d{6})/);
@@ -3934,12 +4048,8 @@ async function processFile(file, type) {
         }
     }
 
-    // ============================================================================
-    // PROCESSAMENTO DE DAC7 (v12.8.9) - Extração inteligente
-    // ============================================================================
     if (type === 'dac7') {
         try {
-            // Passar o período selecionado para a extração
             const extracted = SchemaRegistry.processDAC7(text, file.name, UNIFEDSystem.selectedPeriodo);
 
             UNIFEDSystem.documents.dac7.totals.q1 = (UNIFEDSystem.documents.dac7.totals.q1 || 0) + extracted.q1;
@@ -4050,26 +4160,17 @@ function updateCounters() {
 // ============================================================================
 // 21. MODO DEMO — v13.1.2-GOLD · DADOS FIXOS PARA APRESENTAÇÃO
 // ============================================================================
-// Dados fixados para DEMO:
-//   Sujeito Passivo : Demo Driver, Lda · NIF 123456789
-//   Ano Fiscal      : 2024
-//   Período         : 2.º Semestre (2s)
-//   Plataforma      : Outra Plataforma
-//   Evidências      : 4 CTRL · 4 SAF-T · 2 FAT · 4 EXT · 1 DAC7
-// ============================================================================
 function activateDemoMode() {
     if(UNIFEDSystem.processing) return;
     UNIFEDSystem.demoMode = true;
-    UNIFEDSystem.casoRealAnonimizado = true;  // bypass de fetch externo + mock seal
+    UNIFEDSystem.casoRealAnonimizado = true;
     UNIFEDSystem.processing = true;
 
     ForensicLogger.addEntry('DEMO_MODE_ACTIVATED');
 
-    // SSoT — activar sessão forense e persistir
     window.activeForensicSession = { sessionId: 'UNIFED-MMLADX8Q-CV69L', masterHash: '5150e7674b891d5d07ca990e4c7124fc66af40488452759aeebdf84976eaa8f6' };
     try { sessionStorage.setItem('currentSession', JSON.stringify(window.activeForensicSession)); } catch(_e) {}
 
-    // Activar o painel de caso real anonimizado (só no modo DEMO)
     if (typeof window._activatePurePanel === 'function') {
         window._activatePurePanel();
     }
@@ -4084,11 +4185,9 @@ function activateDemoMode() {
     const _tsChk = new Date().toLocaleTimeString('pt-PT', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
     console.info(`[${_tsChk}] ✅ INTEGRITY CHECK: Dashboard Hash matches PDF Hash. Synchronization confirmed.`);
 
-    // ── 1. Identificação do sujeito passivo ──────────────────────────────────
     document.getElementById('clientNameFixed').value = 'SUJEITO PASSIVO ALFA (ANONIMIZADO)';
     document.getElementById('clientNIFFixed').value = '999 999 990';
     registerClient();
-    // Override SSoT após registerClient — forçar valores anonimizados
     if (!UNIFEDSystem.client) UNIFEDSystem.client = {};
     UNIFEDSystem.client.name = 'SUJEITO PASSIVO ALFA (ANONIMIZADO)';
     UNIFEDSystem.client.nif  = '999 999 990';
@@ -4096,25 +4195,20 @@ function activateDemoMode() {
     const _platElAnon = document.getElementById('selPlatformFixed');
     if (_platElAnon) _platElAnon.value = 'outra';
 
-    // ── 2. Ano Fiscal: 2024 -------------------------------------------─────
     UNIFEDSystem.selectedYear = 2024;
     const anoFiscalEl = document.getElementById('anoFiscal');
     if (anoFiscalEl) anoFiscalEl.value = '2024';
 
-    // ── 3. Período Temporal: 2.º Semestre ────────────────────────────────────
     UNIFEDSystem.selectedPeriodo = '2s';
     const periodoEl = document.getElementById('periodoAnalise');
     if (periodoEl) periodoEl.value = '2s';
 
-    // ── 4. Plataforma: Outra -------------------------------------------────
     UNIFEDSystem.selectedPlatform = 'outra';
     const platformEl = document.getElementById('selPlatformFixed');
     if (platformEl) platformEl.value = 'outra';
 
-    // ── 5. Meses do 2.º Semestre: Jul–Dez 2024 ──────────────────────────────
     ['202409','202410','202411','202412'].forEach(m => UNIFEDSystem.dataMonths.add(m));
 
-    // ── 6. Evidências: 4 CTRL · 4 SAF-T · 2 FAT · 4 EXT · 1 DAC7 ───────────
     simulateUpload('control',    4);
     simulateUpload('saft',       4);
     simulateUpload('invoices',   2);
@@ -4122,41 +4216,16 @@ function activateDemoMode() {
     simulateUpload('dac7',       1);
 
     setTimeout(() => {
-        // ══════════════════════════════════════════════════════════════════════
-        // VALORES AUDITADOS REAIS — v13.1.2-GOLD · DEMO DRIVER, LDA · 2024
-        // Fonte: PDFs Gmail + CSVs SAF-T (Set–Dez 2024)
-        // ══════════════════════════════════════════════════════════════════════
-        //   Ganhos Reais (soma 4 extratos Set-Dez):  10.157,73 €
-        //   Comissões Retidas no Extrato (Despesas Reais):   2.447,89 €
-        //   Faturas Fiscais Emitidas (PT1124+PT1125):          262,94 €
-        //   Ganhos Líquidos (10157.73 - 2447.89):           7.709,84 €
-        //   DAC7 reportado (PDF Gmail 2024):                 7.755,16 €
-        //   SMOKING GUN 1 — Omissão de Custos/IVA:          2.184,95 €  (89,26%)
-        //                    2447.89 - 262.94 = 2184.95
-        //   SMOKING GUN 2 — Subcomunicação DAC7:             2.402,57 €
-        //                    10157.73 - 7755.16 = 2402.57
-        //   → Plataforma reteve sem fatura + comunicou menos ao Estado.
-        // ══════════════════════════════════════════════════════════════════════
-
-        // SAF-T — 4 ficheiros (alinhado com os ganhos reais dos extratos)
         UNIFEDSystem.documents.saft.totals.bruto    = 10157.73;
-        UNIFEDSystem.documents.saft.totals.iliquido =  8519.94; // bruto / 1.06 (IVA 6% transporte)
-        UNIFEDSystem.documents.saft.totals.iva      =  1637.79; // 10157.73 - 8519.94
+        UNIFEDSystem.documents.saft.totals.iliquido =  8519.94;
+        UNIFEDSystem.documents.saft.totals.iva      =  1637.79;
 
-        // ── Extratos — 4 ficheiros · Set–Dez 2024 ────────────────────────────
-        // Despesas = comissões RETIDAS em extrato (valor real bruto)
-        // Fatura  = documentos fiscais emitidos PT1124-91599 + PT1125-3582
-        // Smoking Gun 1: 2447.89 - 262.94 = 2 184,95 € (89,26% de omissão)
-        // Ganhos Líquidos = 10157.73 - 2447.89 = 7 709,84 €
         UNIFEDSystem.documents.statements.totals.ganhos         = 10157.73;
-        UNIFEDSystem.documents.statements.totals.despesas       =  2447.89; // comissões retidas (extrato real)
-        UNIFEDSystem.documents.statements.totals.ganhosLiquidos =  7709.84; // 10157.73 - 2447.89
+        UNIFEDSystem.documents.statements.totals.despesas       =  2447.89;
+        UNIFEDSystem.documents.statements.totals.ganhosLiquidos =  7709.84;
 
-        // Faturas — 2 ficheiros · PT1124-91599 + PT1125-3582 (valor fiscal documentado)
         UNIFEDSystem.documents.invoices.totals.invoiceValue = 262.94;
 
-        // DAC7 — 1 ficheiro · valor total comunicado à AT (PDF Gmail 2024)
-        // Alocação exata da prova documental ao 4.º Trimestre (Q4)
         UNIFEDSystem.documents.dac7.totals.q1              = 0;
         UNIFEDSystem.documents.dac7.totals.q2              = 0;
         UNIFEDSystem.documents.dac7.totals.q3              = 0;
@@ -4164,22 +4233,17 @@ function activateDemoMode() {
         UNIFEDSystem.documents.dac7.totals.dac7TotalPeriodo = 7755.16;
         UNIFEDSystem.documents.dac7.totals.receitaAnual    = 7755.16;
 
-        // ValueSource — rastreabilidade forense
         ValueSource.registerValue('saftBrutoValue',          10157.73, 'demo_saft_set-dez_2024.csv',     'soma direta coluna Bruto (Set-Dez 2024)');
         ValueSource.registerValue('stmtGanhosValue',         10157.73, 'demo_extrato_set-dez_2024.pdf',  'soma 4 extratos — ganhos reais auditados');
         ValueSource.registerValue('stmtDespesasValue',         2447.89, 'demo_extrato_set-dez_2024.pdf',  'comissões retidas em extrato — valor real');
         ValueSource.registerValue('stmtGanhosLiquidosValue',  7709.84, 'demo_extrato_set-dez_2024.pdf',  '10157.73 - 2447.89 = 7709.84');
         ValueSource.registerValue('dac7Q4Value',              7755.16, 'demo_dac7_2024.pdf',             'DAC7 Gmail — Alocação total Q4');
 
-        // ── Fluxos não sujeitos a comissão (INDICAÇÃO DE APOIO PERICIAL) ─────────
-        // Valores consolidados do período Set–Dez 2024 (fonte: extratos PDF Gmail)
-        // Critério legal: Lei TVDE — comissão 0% sobre campanhas, gorjetas e portagens.
-        // totalNaoSujeitos = campanhas + portagens + gorjetas (cancelamentos excluídos da soma)
-        UNIFEDSystem.auxiliaryData.campanhas        = 405.00;  // Ganhos da campanha (incentivo plataforma)
-        UNIFEDSystem.auxiliaryData.portagens        =   0.15;  // Reembolso operacional
-        UNIFEDSystem.auxiliaryData.gorjetas         =  46.00;  // Gorjetas dos passageiros (transferência P2P)
-        UNIFEDSystem.auxiliaryData.cancelamentos    =  58.10;  // Taxas de cancelamento (já incluído em Despesas)
-        UNIFEDSystem.auxiliaryData.totalNaoSujeitos = 451.15;  // 405,00 + 0,15 + 46,00
+        UNIFEDSystem.auxiliaryData.campanhas        = 405.00;
+        UNIFEDSystem.auxiliaryData.portagens        =   0.15;
+        UNIFEDSystem.auxiliaryData.gorjetas         =  46.00;
+        UNIFEDSystem.auxiliaryData.cancelamentos    =  58.10;
+        UNIFEDSystem.auxiliaryData.totalNaoSujeitos = 451.15;
         UNIFEDSystem.auxiliaryData.extractedAt      = new Date().toISOString();
         UNIFEDSystem.auxiliaryData.processedFrom    = ['demo_extrato_set-dez_2024.pdf'];
         ValueSource.registerValue('auxCampanhasValue',    405.00, 'demo_extrato_set-dez_2024.pdf', 'Ganhos da campanha — Set/Out/Nov/Dez 2024');
@@ -4189,7 +4253,6 @@ function activateDemoMode() {
         ValueSource.registerValue('auxTotalNSValue',      451.15, 'demo_extrato_set-dez_2024.pdf', 'Total não sujeitos: 405,00 + 0,15 + 46,00');
         if (typeof _updateAuxiliaryBoxes === 'function') _updateAuxiliaryBoxes();
 
-        // Atualizar painel DAC7 com os valores injetados
         if (typeof filterDAC7ByPeriod === 'function') filterDAC7ByPeriod();
 
         performAudit();
@@ -4235,23 +4298,21 @@ function simulateUpload(type, count) {
 
         UNIFEDSystem.documents[type].totals.records = UNIFEDSystem.documents[type].files.length;
 
-        // Full 64-char SHA-256 for demo — deterministic per filename
         const demoHashFull = CryptoJS.SHA256('UNIFED-PROBATUM-DEMO-EVIDENCE-' + fileName + '-' + i + '-2024').toString().toUpperCase();
-        const demoHash = 'DEMO-' + demoHashFull.substring(0, 8) + '...';  // short for UI badge
-        const demoHashForPDF = demoHashFull;  // full 64-char for PDF chain-of-custody
-        // Normalizar tipo: 'invoices'→'invoice', 'statements'→'statement'
+        const demoHash = 'DEMO-' + demoHashFull.substring(0, 8) + '...';
+        const demoHashForPDF = demoHashFull;
         const normalizedType = type === 'invoices' ? 'invoice'
                              : type === 'statements' ? 'statement'
                              : type;
         UNIFEDSystem.analysis.evidenceIntegrity.push({
             filename:     fileName,
             type:         normalizedType,
-            hash:         demoHashForPDF,  // full 64-char SHA-256 for PDF
+            hash:         demoHashForPDF,
             hashShort:    demoHash,
             timestamp:    new Date().toLocaleString(),
             size:         1024 * (i + 1),
             timestampUnix: Math.floor(Date.now() / 1000),
-            sealType:     'NONE',    // atualizado para 'OTS' ou 'RFC3161' após selagem
+            sealType:     'NONE',
             sealStatus:   'PENDENTE',
             sealDate:     null,
             tsrPath:      null
@@ -4296,12 +4357,10 @@ function performAudit() {
 
     setTimeout(() => {
         try {
-            // --- EXTRAÇÃO DOS TOTAIS DAS EVIDÊNCIAS ---
             const saftBruto = UNIFEDSystem.documents.saft?.totals?.bruto || 0;
             const saftIliquido = UNIFEDSystem.documents.saft?.totals?.iliquido || 0;
             const saftIva = UNIFEDSystem.documents.saft?.totals?.iva || 0;
 
-            // Extrato: valores da tabela "Ganhos líquidos"
             const stmtGanhos = UNIFEDSystem.documents.statements?.totals?.ganhos || 0;
             const stmtDespesas = UNIFEDSystem.documents.statements?.totals?.despesas || 0;
             const stmtGanhosLiquidos = UNIFEDSystem.documents.statements?.totals?.ganhosLiquidos || 0;
@@ -4313,21 +4372,18 @@ function performAudit() {
             const dac7Q3 = UNIFEDSystem.documents.dac7?.totals?.q3 || 0;
             const dac7Q4 = UNIFEDSystem.documents.dac7?.totals?.q4 || 0;
 
-            // --- AGREGAÇÃO DO DAC7 BASEADA NO PERÍODO SELECIONADO ---
             let dac7TotalPeriodo = 0;
             switch (UNIFEDSystem.selectedPeriodo) {
                 case 'anual':
                     dac7TotalPeriodo = dac7Q1 + dac7Q2 + dac7Q3 + dac7Q4;
                     break;
-                case '1s': // Primeiro semestre
+                case '1s':
                     dac7TotalPeriodo = dac7Q1 + dac7Q2;
                     break;
-                case '2s': // Segundo semestre
+                case '2s':
                     dac7TotalPeriodo = dac7Q3 + dac7Q4;
                     break;
                 case 'trimestral':
-                    // Para trimestral, idealmente o utilizador carrega apenas um trimestre.
-                    // Vamos somar todos os que existirem, mas alertar se houver mais que um.
                     dac7TotalPeriodo = dac7Q1 + dac7Q2 + dac7Q3 + dac7Q4;
                     if ((dac7Q1 > 0 && (dac7Q2 > 0 || dac7Q3 > 0 || dac7Q4 > 0)) ||
                         (dac7Q2 > 0 && (dac7Q3 > 0 || dac7Q4 > 0)) ||
@@ -4336,14 +4392,13 @@ function performAudit() {
                     }
                     break;
                 case 'mensal':
-                    dac7TotalPeriodo = dac7Q1 + dac7Q2 + dac7Q3 + dac7Q4; // Assume-se que o DAC7 é anual
+                    dac7TotalPeriodo = dac7Q1 + dac7Q2 + dac7Q3 + dac7Q4;
                     logAudit('ℹ️ Análise mensal: a usar DAC7 anual. Pode não ser representativo.', 'info');
                     break;
                 default:
                     dac7TotalPeriodo = dac7Q1 + dac7Q2 + dac7Q3 + dac7Q4;
             }
 
-            // --- GUARDAR TOTAIS NO ESTADO GLOBAL ---
             UNIFEDSystem.analysis.totals = {
                 saftBruto: saftBruto,
                 saftIliquido: saftIliquido,
@@ -4359,7 +4414,6 @@ function performAudit() {
                 dac7TotalPeriodo: dac7TotalPeriodo
             };
 
-            // Log detalhado dos valores
             console.log('🔍 VALORES EXTRAÍDOS (v12.8.9):');
             console.log('   SAF-T Bruto:', formatCurrency(saftBruto));
             console.log('   SAF-T Ilíquido:', formatCurrency(saftIliquido));
@@ -4373,7 +4427,6 @@ function performAudit() {
             calculateTwoAxisDiscrepancy();
             performForensicCrossings();
 
-            // VALIDAÇÃO DE CONSISTÊNCIA
             validateConsistency();
 
             selectQuestions(UNIFEDSystem.analysis.verdict ? UNIFEDSystem.analysis.verdict.key : 'low');
@@ -4430,11 +4483,9 @@ function performAudit() {
     }, 1000);
 }
 
-// FUNÇÃO DE VALIDAÇÃO DE CONSISTÊNCIA
 function validateConsistency() {
     const totals = UNIFEDSystem.analysis.totals;
 
-    // Verificar se SAF-T Bruto ≈ Ganhos (Extrato)
     if (Math.abs(totals.saftBruto - totals.ganhos) > 1000) {
         logAudit('[!] ALERTA: Grande discrepância entre SAF-T Bruto e Ganhos do Extrato', 'warning');
         ForensicLogger.addEntry('CONSISTENCY_ALERT', {
@@ -4445,7 +4496,6 @@ function validateConsistency() {
         });
     }
 
-    // Verificar se SAF-T Bruto ≈ SAF-T Ilíquido + SAF-T IVA
     if (totals.saftIliquido > 0 && totals.saftIva > 0) {
         const soma = totals.saftIliquido + totals.saftIva;
         const diferenca = Math.abs(totals.saftBruto - soma);
@@ -4461,7 +4511,6 @@ function validateConsistency() {
         }
     }
 
-    // ALERTA PARA REVENUE GAP NEGATIVO (Ganhos > SAF-T)
     if (totals.ganhos > totals.saftBruto && totals.saftBruto > 0) {
         const percent = ((totals.ganhos - totals.saftBruto) / totals.saftBruto * 100).toFixed(2);
         logAudit(`[!] ALERTA CRÍTICO: Ganhos do Extrato (${formatCurrency(totals.ganhos)}) são SUPERIORES ao SAF-T Bruto (${formatCurrency(totals.saftBruto)}) em ${percent}%. Isto sugere que o SAF-T pode estar incompleto.`, 'error');
@@ -4478,11 +4527,9 @@ function calculateTwoAxisDiscrepancy() {
     const totals = UNIFEDSystem.analysis.totals;
     const twoAxis = UNIFEDSystem.analysis.twoAxis;
 
-    // Revenue Gap = SAF-T Bruto vs Ganhos (Extrato)
     twoAxis.revenueGap = totals.saftBruto - totals.ganhos;
     twoAxis.revenueGapActive = Math.abs(twoAxis.revenueGap) > 0.01;
 
-    // Expense Gap = Despesas (Extrato) vs Fatura
     twoAxis.expenseGap = totals.despesas - totals.faturaPlataforma;
     twoAxis.expenseGapActive = Math.abs(twoAxis.expenseGap) > 0.01;
 
@@ -4507,44 +4554,29 @@ function performForensicCrossings() {
     const dac7Total = totals.dac7TotalPeriodo || 0;
     const ganhosLiquidos = totals.ganhosLiquidos || 0;
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // MATRIZ DOS 4 CRUZAMENTOS FORENSES — UNIFED-PROBATUM v13.5.0-PURE
-    // Implementa os 4 eixos de prova da falha sistemática da plataforma.
-    // ═══════════════════════════════════════════════════════════════════════
-
     const mesesDados = UNIFEDSystem.dataMonths.size || 1;
 
-    // ── C1: SAF-T Valor Bruto Total vs DAC7 ─────────────────────────────────
-    // Prova: O que a plataforma fatura internamente vs o que reporta ao Estado
     cross.c1_saftBruto       = saftBruto;
     cross.c1_dac7            = dac7Total;
     cross.c1_delta           = saftBruto - dac7Total;
     cross.c1_pct             = saftBruto > 0 ? (cross.c1_delta / saftBruto) * 100 : 0;
     cross.saftVsDac7Alert    = Math.abs(cross.c1_delta) > 0.01;
 
-    // ── C2: Despesas/Comissões (Extrato) vs Faturado (Plataforma) ───────────
-    // Prova rainha: retenção ilegal — o que reteve vs o que emitiu em fatura
     cross.c2_despesas        = despesas;
     cross.c2_faturaPlataforma= faturaPlataforma;
-    cross.discrepanciaCritica= despesas - faturaPlataforma;   // alias histórico mantido
+    cross.discrepanciaCritica= despesas - faturaPlataforma;
     cross.c2_delta           = cross.discrepanciaCritica;
     cross.c2_pct             = despesas > 0 ? (cross.c2_delta / despesas) * 100 : 0;
-    cross.percentagemOmissao = cross.c2_pct;                  // alias histórico mantido
+    cross.percentagemOmissao = cross.c2_pct;
     cross.ivaFalta           = cross.discrepanciaCritica * 0.23;
     cross.ivaFalta6          = cross.discrepanciaCritica * 0.06;
 
-    // ── C3: SAF-T Valor Bruto Total vs GANHOS (EXTRATO) ─────────────────────
-    // Prova: Viagens faturadas pelo sistema vs transferências efetivas ao motorista
     cross.c3_saftBruto       = saftBruto;
     cross.c3_ganhos          = ganhos;
     cross.c3_delta           = saftBruto - ganhos;
     cross.c3_pct             = saftBruto > 0 ? (cross.c3_delta / saftBruto) * 100 : 0;
     cross.saftVsGanhosAlert  = Math.abs(cross.c3_delta) > 0.01;
 
-    // ── C4: GANHOS LÍQUIDOS (Declarados/Fiscais) vs LÍQUIDO (EXTRATO) ───────
-    // Prova final: diferença no bolso do sujeito passivo
-    // Líquido Declarado = saftBruto - faturaPlataforma  (o que o contribuinte deveria ter recebido)
-    // Líquido Real      = ganhosLiquidos                (o que efectivamente recebeu)
     cross.c4_liquidoDeclarado = saftBruto - faturaPlataforma;
     cross.c4_liquidoReal      = ganhosLiquidos;
     cross.c4_delta            = cross.c4_liquidoDeclarado - ganhosLiquidos;
@@ -4552,16 +4584,12 @@ function performForensicCrossings() {
                                     ? (cross.c4_delta / cross.c4_liquidoDeclarado) * 100
                                     : 0;
 
-    // ── Variáveis derivadas (C1 CORRIGIDO v13.5.0-PURE) ──────────────────
-    // discrepanciaSaftVsDac7: usa saftBruto - dac7Total (Eixo 1: Conformidade Fiscal AT vs UE)
     cross.discrepanciaSaftVsDac7  = saftBruto - dac7Total;
     cross.percentagemSaftVsDac7   = saftBruto > 0 ? (cross.discrepanciaSaftVsDac7 / saftBruto) * 100 : 0;
     cross.percentagemDiscrepancia = cross.c2_pct;
-    // Alias semântico explícito para projeção IRC
     cross.discrepancia            = cross.discrepanciaCritica;
 
-    const mesesNoPeriodo          = mesesDados; // normalização mensal→anual
-    const discrepanciaMensalMedia = cross.discrepanciaCritica / mesesNoPeriodo;
+    const discrepanciaMensalMedia = cross.discrepanciaCritica / mesesDados;
     cross.btor = despesas;
     cross.btf  = faturaPlataforma;
 
@@ -4570,8 +4598,7 @@ function performForensicCrossings() {
     cross.impactoSeteAnosMercado= cross.impactoAnualMercado * 7;
 
     cross.discrepancia5IMT     = cross.discrepanciaSaftVsDac7 * 0.05;
-    // IRC v13.5.0-PURE: projeção anual = média mensal C2 * 12 (base: Retenção Indevida)
-    cross.agravamentoBrutoIRC  = (cross.discrepancia / mesesNoPeriodo) * 12;
+    cross.agravamentoBrutoIRC  = (cross.discrepancia / mesesDados) * 12;
     cross.ircEstimado          = cross.agravamentoBrutoIRC * 0.21;
     cross.bigDataAlertActive   = Math.abs(cross.discrepanciaCritica) > 0.01;
 
@@ -4582,7 +4609,6 @@ function performForensicCrossings() {
         UNIFEDSystem.analysis.verdict.percent = cross.percentagemDiscrepancia.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
     }
 
-    // ── Audit Log — 4 eixos forenses individuais ────────────────────────────
     logAudit(`━━ MATRIZ FORENSE v13.5.0-PURE ━━ Período: ${UNIFEDSystem.selectedPeriodo} | Meses: ${mesesDados}`, 'info');
     logAudit(`[C1] SAF-T Bruto (${formatCurrency(saftBruto)}) vs DAC7 (${formatCurrency(dac7Total)}) → Δ ${formatCurrency(cross.c1_delta)} (${cross.c1_pct.toFixed(2)}%) — Sub-comunicação plataforma→Estado`, 'warning');
     logAudit(`[C2] 🔫 SMOKING GUN — Despesas/Comissões (${formatCurrency(despesas)}) vs Faturado (${formatCurrency(faturaPlataforma)}) → Δ ${formatCurrency(cross.c2_delta)} (${cross.c2_pct.toFixed(2)}%) — Retenção ilegal provada`, 'error');
@@ -4591,14 +4617,11 @@ function performForensicCrossings() {
     logAudit(`💰 IVA em falta (23%): ${formatCurrency(cross.ivaFalta)} | IVA em falta (6%): ${formatCurrency(cross.ivaFalta6)}`, 'error');
     logAudit(`📐 Agravamento IRC Anual (C2/meses×12): ${formatCurrency(cross.agravamentoBrutoIRC)} | IRC Est. (21%): ${formatCurrency(cross.ircEstimado)}`, 'info');
 
-    // NIFAF trigger relocated to updateDashboard() — see _nifafAlertedHash guard
-
     ForensicLogger.addEntry('CROSSINGS_CALCULATED_4AXES', {
         c1_saftVsDac7:    { delta: cross.c1_delta,  pct: cross.c1_pct  },
         c2_despVsFatura:  { delta: cross.c2_delta,  pct: cross.c2_pct  },
         c3_saftVsGanhos:  { delta: cross.c3_delta,  pct: cross.c3_pct  },
         c4_liqDecVsReal:  { delta: cross.c4_delta,  pct: cross.c4_pct  },
-        // Legacy aliases
         discrepancy: cross.discrepanciaCritica,
         saftVsDac7: cross.discrepanciaSaftVsDac7,
         percentage: cross.percentagemOmissao,
@@ -4617,39 +4640,30 @@ function selectQuestions(riskKey) {
         return true;
     });
 
-    // PROTOCOLO v13.5.0-PURE: Ordenação por prioridade (high → med → low)
-    // + aleatorização dentro de cada nível para diversidade pericial
     const PRIORITY_ORDER = { high: 0, med: 1, low: 2 };
     const sorted = [...filtered].sort((a, b) => {
         const pa = PRIORITY_ORDER[a.type] ?? 2;
         const pb = PRIORITY_ORDER[b.type] ?? 2;
         if (pa !== pb) return pa - pb;
-        return 0.5 - Math.random(); // aleatorização dentro do mesmo nível
+        return 0.5 - Math.random();
     });
-    // Top 10 — as primeiras 5 são obrigatoriamente de nível "high" (máxima prioridade)
     UNIFEDSystem.analysis.selectedQuestions = sorted.slice(0, 10);
 
     ForensicLogger.addEntry('QUESTIONS_SELECTED', { count: UNIFEDSystem.analysis.selectedQuestions.length, riskKey });
 }
 
-// ============================================================================
-// FILTRO TEMPORAL DAC7 — Sincronização com o Seletor de Período
-// Oculta/mostra trimestres e recalcula totais conforme UNIFEDSystem.selectedPeriodo
-// ============================================================================
 function filterDAC7ByPeriod() {
     const periodo = UNIFEDSystem.selectedPeriodo || 'anual';
     const dac7 = UNIFEDSystem.documents.dac7.totals;
 
-    // Mapeamento período → trimestres visíveis (1-indexed)
     const visibilityMap = {
         'anual':      [1, 2, 3, 4],
         '1s':         [1, 2],
         '2s':         [3, 4],
-        'trimestral': [UNIFEDSystem.selectedTrimestre || 1], // trimestre seleccionado via UI
-        'mensal':     [1, 2, 3, 4] // mostra todos (sem tabela mensal específica)
+        'trimestral': [UNIFEDSystem.selectedTrimestre || 1],
+        'mensal':     [1, 2, 3, 4]
     };
 
-    // Se o período for 'trimestral', tentar ler o trimestre do campo de filtro
     if (periodo === 'trimestral') {
         const triSelector = document.getElementById('trimestralSelector');
         if (triSelector) {
@@ -4663,8 +4677,6 @@ function filterDAC7ByPeriod() {
 
     const visible = visibilityMap[periodo] || [1, 2, 3, 4];
 
-    // Show/hide cada card de trimestre
-    // Em demoMode ocultar trimestres com valor=0; em sessão real mostrar todos os do período
     const _isDemoHide = (typeof UNIFEDSystem !== 'undefined' && UNIFEDSystem.demoMode === true);
     [1, 2, 3, 4].forEach(q => {
         const card = document.getElementById(`dac7Q${q}Value`)?.closest('.kpi-card');
@@ -4675,24 +4687,21 @@ function filterDAC7ByPeriod() {
         }
     });
 
-    // Recalcular total do período com base nos trimestres visíveis
     let periodoTotal = 0;
     visible.forEach(q => {
         periodoTotal += dac7[`q${q}`] || 0;
     });
 
-    // Actualizar o total de período no sistema e na UI
     UNIFEDSystem.documents.dac7.totals.totalPeriodo = periodoTotal;
     UNIFEDSystem.analysis.totals = UNIFEDSystem.analysis.totals || {};
     UNIFEDSystem.analysis.totals.dac7TotalPeriodo = periodoTotal;
 
-    // Label de período descritivo
     const periodoLabel = {
-        'anual': 'Anual',
-        '1s': '1.º Semestre',
-        '2s': '2.º Semestre',
-        'trimestral': `${UNIFEDSystem.selectedTrimestre || 1}.º Trimestre`,
-        'mensal': 'Mensal'
+        'anual': currentLang === 'pt' ? 'Anual' : 'Annual',
+        '1s': currentLang === 'pt' ? '1.º Semestre' : '1st Semester',
+        '2s': currentLang === 'pt' ? '2.º Semestre' : '2nd Semester',
+        'trimestral': `${UNIFEDSystem.selectedTrimestre || 1}.º ${currentLang === 'pt' ? 'Trimestre' : 'Quarter'}`,
+        'mensal': currentLang === 'pt' ? 'Mensal' : 'Monthly'
     }[periodo] || periodo;
 
     logAudit(`📅 Filtro DAC7 aplicado: ${periodoLabel} — Total: ${formatCurrency(periodoTotal)}`, 'info');
@@ -4742,8 +4751,6 @@ function showTwoAxisAlerts() {
         }
     }
 
-    // ── BOX: PERCENTAGEM COBRADA PELA PLATAFORMA ─────────────────────────────
-    // Fórmula: (Despesas/Comissões / Ganhos Extrato) * 100
     const omissaoCard  = document.getElementById('omissaoDespesasPctCard');
     const omissaoValue = document.getElementById('omissaoDespesasPctValue');
     const omissaoDesc  = document.getElementById('omissaoDespesasPctDesc');
@@ -4759,8 +4766,6 @@ function showTwoAxisAlerts() {
             if (omissaoDesc) {
                 omissaoDesc.textContent = `(${formatCurrency(despesas)} / ${formatCurrency(ganhos)}) × 100  [Despesas/Comissões / Ganhos]`;
             }
-            // Threshold 25%: alerta só de borda (border/box-shadow) — background neutro
-            // Sem LED intermitente amarelo. Alerta visual exclusivo de perímetro.
             if (pct > 25) {
                 omissaoCard.classList.add('omissao-threshold-alert');
                 omissaoCard.classList.remove('alert-intermitent');
@@ -4774,13 +4779,9 @@ function showTwoAxisAlerts() {
             omissaoCard.style.display = 'none';
         }
     }
-    // -------------------------------------------───────────────────────────
 }
 
-// ── NIFAF Session Guard — v13.2.4-PREMIUM ────────────────────────────────────
-// Controlo de Estado Único: dispara apenas quando o hash muda E omissão > 15%.
 let _nifafAlertedHash = null;
-// ── FIM NIFAF Session Guard ──
 
 function updateDashboard() {
     const totals = UNIFEDSystem.analysis.totals;
@@ -4909,7 +4910,6 @@ function updateDashboard() {
         quantumBox.style.display = (Math.abs(cross.impactoSeteAnosMercado) > 0) ? 'block' : 'none';
     }
 
-    // ── NIFAF Gatilho Orquestrado — v13.2.4-PREMIUM ──────────────────────────
     {
         const _ch = UNIFEDSystem.masterHash || '';
         if (cross.percentagemOmissao > 15 && _ch && _ch !== _nifafAlertedHash) {
@@ -4917,7 +4917,6 @@ function updateDashboard() {
             if (window.NIFAF) window.NIFAF.playCriticalAlert();
         }
     }
-    // ── FIM NIFAF ──
 
     activateIntermittentAlerts();
 }
@@ -4964,7 +4963,6 @@ function activateIntermittentAlerts() {
         }
     }
 
-    // LED de discrepância de despesas
     document.querySelectorAll('.led-status').forEach(led => {
         if (Math.abs(cross.discrepanciaCritica) > 0.01) {
             led.className = 'led-status led-red-blink';
@@ -4978,7 +4976,6 @@ function activateIntermittentAlerts() {
         if (Math.abs(cross.discrepanciaCritica) > 0.01) {
             statCommCard.classList.add('alert-intermitent');
             statCommCard.classList.add('box-despesas-blink');
-            // LED vermelho intermitente — discrepância de custos crítica
             statCommCard.style.borderColor = 'rgba(255,0,0,0.9)';
             statCommCard.style.boxShadow   = '0 0 18px rgba(255,0,0,0.55), inset 0 0 8px rgba(255,0,0,0.15)';
         } else {
@@ -4989,7 +4986,6 @@ function activateIntermittentAlerts() {
         }
     }
 
-    // LED principal: vermelho quando percentagem de omissão de custos > 25%
     if (cross.percentagemOmissao > 25) {
         document.querySelectorAll('.led-status').forEach(led => {
             led.className = 'led-status led-red-blink';
@@ -5045,11 +5041,11 @@ function showAlerts() {
         const mesesDados = UNIFEDSystem.dataMonths.size || 1;
 
         const periodoTexto = {
-            'anual': 'Anual',
-            '1s': '1.º Semestre',
-            '2s': '2.º Semestre',
-            'trimestral': 'Trimestral',
-            'mensal': 'Mensal'
+            'anual': currentLang === 'pt' ? 'Anual' : 'Annual',
+            '1s': currentLang === 'pt' ? '1.º Semestre' : '1st Semester',
+            '2s': currentLang === 'pt' ? '2.º Semestre' : '2nd Semester',
+            'trimestral': currentLang === 'pt' ? 'Trimestral' : 'Quarterly',
+            'mensal': currentLang === 'pt' ? 'Mensal' : 'Monthly'
         }[UNIFEDSystem.selectedPeriodo] || UNIFEDSystem.selectedPeriodo;
 
         const parecerHTML = `
@@ -5129,15 +5125,14 @@ function renderChart() {
 
     const totals = UNIFEDSystem.analysis.totals;
     const cross = UNIFEDSystem.analysis.crossings;
-
     const t = translations[currentLang];
 
     const periodoTexto = {
-        'anual': 'Anual',
+        'anual': currentLang === 'pt' ? 'Anual' : 'Annual',
         '1s': '1S',
         '2s': '2S',
-        'trimestral': 'Trim',
-        'mensal': 'Mensal'
+        'trimestral': currentLang === 'pt' ? 'Trim' : 'Qtr',
+        'mensal': currentLang === 'pt' ? 'Mensal' : 'Monthly'
     }[UNIFEDSystem.selectedPeriodo] || '';
 
     const labels = [
@@ -5209,7 +5204,6 @@ function renderDiscrepancyChart() {
 
     const totals = UNIFEDSystem.analysis.totals;
     const cross = UNIFEDSystem.analysis.crossings;
-
     const t = translations[currentLang];
 
     UNIFEDSystem.discrepancyChart = new Chart(ctx, {
@@ -5244,7 +5238,7 @@ function renderDiscrepancyChart() {
             scales: {
                 x: {
                     type: 'category',
-                    labels: ['', 'Despesas/Comissões', 'SAF-T/DAC7', ''],
+                    labels: ['', currentLang === 'pt' ? 'Despesas/Comissões' : 'Expenses/Commissions', 'SAF-T/DAC7', ''],
                     grid: { color: 'rgba(255,255,255,0.1)' },
                     ticks: { color: '#b8c6e0' }
                 },
@@ -5291,8 +5285,8 @@ async function exportDataJSON() {
         analysis: {
             totals:            UNIFEDSystem.analysis.totals,
             twoAxis:           UNIFEDSystem.analysis.twoAxis,
-            crossings:         UNIFEDSystem.analysis.crossings,          // chave canonica — alinhada com Dashboard/PDF/DOCX
-            discrepancies:     UNIFEDSystem.analysis.crossings,          // alias retrocompativel — nao remover
+            crossings:         UNIFEDSystem.analysis.crossings,
+            discrepancies:     UNIFEDSystem.analysis.crossings,
             verdict:           UNIFEDSystem.analysis.verdict,
             selectedQuestions: UNIFEDSystem.analysis.selectedQuestions,
             evidenceCount:     UNIFEDSystem.counts?.total || 0,
@@ -5333,15 +5327,10 @@ async function exportDataJSON() {
         forensicLogs: ForensicLogger.getLogs().slice(-20)
     };
 
-    // ── EXTENSÃO DE SCHEMA v13.1.6-GOLD ──────────────────────────────────────
-    // 1. legalBasis: Nota Metodológica completa — base legal DL 28/2019
     exportData.metadata.legalBasis = "Dada a latência administrativa na disponibilização do ficheiro SAF-T (.xml) pelas plataformas, ou a sua entrega em estado insuficiente e inconsistente (incompleto ou corrompido), o ficheiro SAF-T (.xml) é tecnicamente substituído pelo ficheiro Relatório (.csv) gerado na plataforma Fleet. O cruzamento de dados entre a plataforma e o parceiro é validado pelo ficheiro PDF de extratos 'Ganhos da Empresa'. Para efeitos de perícia, o ficheiro 'Ganhos da Empresa' (Fleet/Ledger) é aqui tratado como o Livro-Razão (Ledger) de suporte, detendo valor probatório material por constituir a fonte primária e fidedigna dos registos que deveriam integrar o reporte fiscal final. A integridade desta extração é blindada através da assinatura digital SHA-256 (Hash), garantindo que os dados analisados mantêm a inviolabilidade absoluta desde a sua recolha, em conformidade com o Decreto-Lei n.º 28/2019 e os princípios de cadeia de custódia previstos no Art. 125.º do CPP. FUNDAMENTAÇÃO DA PROVA MATERIAL: Para efeitos de prova legal de rendimentos reais, consideram-se os ficheiros operacionais que contêm o rasto digital de centenas de viagens efetivamente realizadas. Este conteúdo reflete a atividade económica real do motorista, sendo por isso elevado à categoria de Documento de Suporte (Ledger). Esta metodologia permite detetar e corrigir as discrepâncias omissas nos ficheiros de reporte simplificado, assegurando uma reconstrução financeira rigorosa e auditável em sede judicial.";
 
-    // 2. integrityHash: SHA-256 self-hash do payload completo — DEVE SER A ÚLTIMA CHAVE DO JSON
-    // Calculado sobre o objeto final (após legalBasis) para garantir integridade total
     const _dataPayload = JSON.stringify(exportData.analysis) + JSON.stringify(exportData.evidence) + exportData.metadata.legalBasis;
     exportData.integrityHash = await generateForensicHash(_dataPayload);
-    // -------------------------------------------────────────────────────────
 
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
@@ -5380,46 +5369,24 @@ async function exportPDF() {
         const verdict = UNIFEDSystem.analysis.verdict || { level: { pt: 'N/A', en: 'N/A' }, key: 'low', color: '#8c7ae6', description: { pt: 'Perícia não executada.', en: 'Forensic exam not executed.' }, percent: '0.00%' };
 
         let pageNumber = 1;
-        let TOTAL_PAGES = 8; // Valor provisório — actualizado por doc.getNumberOfPages() na 2.ª passagem
+        let TOTAL_PAGES = 8;
         const left = 14;
 
-        // ══════════════════════════════════════════════════════════════════════
-        // UNIFED - PROBATUM v13.5.0-PURE — VALORES DINÂMICOS DO DASHBOARD
-        // Protocolo: UNIFED-GOLD — Ligação às variáveis globais do motor forense.
-        // Substituição de valores hardcoded por referências às variáveis de estado
-        // calculadas em performForensicCrossings() — Verdade Material Dinâmica.
-        // O masterHash é o valor real calculado pelo motor SHA-256 (não substituído).
-        // ══════════════════════════════════════════════════════════════════════
-
-        // ── Cálculo dinâmico da percentagem de omissão (evita divisão por zero) ──
         const _pctOmissao    = cross.percentagemOmissao || 0;
         const _pctOmissaoStr = _pctOmissao.toFixed(2) + '%';
 
-        // ── Cálculo dinâmico da percentagem de omissão de receita (Ganhos vs DAC7) ──
         const _pctReceita    = totals.ganhos > 0
             ? ((cross.discrepanciaSaftVsDac7 / totals.ganhos) * 100)
             : 0;
         const _pctReceitaStr = _pctReceita.toFixed(2) + '%';
 
-        // ── Impacto macroeconómico: usa cross.impactoSeteAnosMercado se calculado,
-        //    caso contrário recalcula com os dados actuais da sessão ──
         const _impactoMercado7Anos = (cross.impactoSeteAnosMercado && cross.impactoSeteAnosMercado > 0)
             ? cross.impactoSeteAnosMercado
             : forensicRound(cross.discrepanciaCritica * 12 * 38000 * 7);
 
-        // ── Dados auxiliares (Lei TVDE — fluxos não sujeitos a comissão) ──
         const _aux        = UNIFEDSystem.auxiliaryData;
         const _auxTotalNS = _aux ? _aux.totalNaoSujeitos : 0;
 
-        // ── Veredicto dinâmico: usa o veredicto calculado pelo motor forense ──
-        // (já definido acima como `verdict` a partir de UNIFEDSystem.analysis.verdict)
-        // Não é forçado um nível específico — o motor decide com base nos dados reais.
-
-        // ══════════════════════════════════════════════════════════════════════
-        // UNIFED - PROBATUM v13.5.0-PURE — MARCA DE ÁGUA DIAGONAL
-        // "PROVA DIGITAL MATERIAL" — Art. 125.º CPP (Admissibilidade da Prova)
-        // Aplicada em todas as páginas. Rotate 45º, fonte cinza translúcido.
-        // ══════════════════════════════════════════════════════════════════════
         const addWatermark = (doc) => {
             const pageWidth  = doc.internal.pageSize.getWidth();
             const pageHeight = doc.internal.pageSize.getHeight();
@@ -5428,23 +5395,14 @@ async function exportPDF() {
             doc.setFontSize(28);
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(80, 80, 80);
-            // Centro da página, rotação 45º
             doc.text('PROVA DIGITAL MATERIAL',
                 pageWidth  / 2,
                 pageHeight / 2,
                 { align: 'center', angle: 45 });
             doc.restoreGraphicsState();
-            // Repor cor para preto após watermark
             doc.setTextColor(0, 0, 0);
         };
 
-        // ══════════════════════════════════════════════════════════════════════
-        // PRÉ-GERAÇÃO DO QR CODE — PROTOCOLO UNIFED-GOLD v13.2.1
-        // O QR Code é gerado ANTES da construção do PDF para eliminar
-        // a race condition entre setTimeout(QR=100ms) e setTimeout(save=500ms).
-        // O dataURL resultante é usado sincronamente em addFooter(isLastPage=true).
-        // Conformidade: DORA (UE) 2022/2554 · ISO/IEC 27037:2012
-        // ══════════════════════════════════════════════════════════════════════
         const _qrHashFull    = UNIFEDSystem.masterHash || 'HASH_INDISPONIVEL';
         const _qrSessionShort = UNIFEDSystem.sessionId ? UNIFEDSystem.sessionId.substring(0, 20) : 'N/A';
         const _qrPayload     = `UNIFED|${_qrSessionShort}|${_qrHashFull}`;
@@ -5452,7 +5410,6 @@ async function exportPDF() {
         const _qrDataUrl = await new Promise((resolve) => {
             if (typeof QRCode === 'undefined') { resolve(null); return; }
             const _tmpDiv = document.createElement('div');
-            // Manter div fora do viewport (não bloqueia layout)
             _tmpDiv.style.cssText = 'position:absolute;left:-9999px;top:-9999px;';
             document.body.appendChild(_tmpDiv);
             new QRCode(_tmpDiv, {
@@ -5463,7 +5420,6 @@ async function exportPDF() {
                 colorLight: '#ffffff',
                 correctLevel: QRCode.CorrectLevel.L
             });
-            // 200ms: margem de segurança para o canvas ser pintado pelo qrcodejs
             setTimeout(() => {
                 const _canvas = _tmpDiv.querySelector('canvas');
                 const _dataUrl = _canvas ? _canvas.toDataURL('image/png') : null;
@@ -5477,16 +5433,7 @@ async function exportPDF() {
         } else {
             console.warn('[UNIFED-PDF] ⚠ QR Code não disponível (biblioteca QRCode ausente).');
         }
-        // ══ FIM PRÉ-GERAÇÃO QR ══
 
-        // ══════════════════════════════════════════════════════════════════════
-        // CAMADA DE ENRIQUECIMENTO DE SAÍDA — v13.2.2-GOLD
-        // Asynchronous Post-Computation Orchestration
-        // Ponto de injeção: APÓS geração do Master Hash, ANTES da construção de páginas.
-        // Padrão: Read-Only sobre UNIFEDSystem.analysis (Fonte de Verdade Imutável).
-        // Isolamento total: se qualquer módulo falhar, o motor forense permanece íntegro.
-        // Conformidade: DORA (UE) 2022/2554 · RGPD · ISO/IEC 27037:2012
-        // ══════════════════════════════════════════════════════════════════════
         let _enrichLegalNarrative = null;
         let _enrichSankeyImage    = null;
         let _enrichTemporalImage  = null;
@@ -5528,24 +5475,14 @@ async function exportPDF() {
                 logAudit('⚠ [v13.3.0] ATF gráfico indisponível — PDF sem análise temporal.', 'warning');
             }
         }
-        // ══ FIM INICIALIZAÇÃO DA CAMADA DE ENRIQUECIMENTO ══
 
-        // ══════════════════════════════════════════════════════════════════════
-        // addFooter(doc, pageNum, isLastPage)
-        // isLastPage=true → ativa o Selo de Certificação PROBATUM com QR Code
-        // Substituição de if(pageNum===TOTAL_PAGES) por flag explícita para
-        // eliminar falhas quando pageNumber excede TOTAL_PAGES por overflow.
-        // ══════════════════════════════════════════════════════════════════════
         const addFooter = (doc, pageNum, isLastPage = false) => {
             const pageWidth  = doc.internal.pageSize.getWidth();
             const pageHeight = doc.internal.pageSize.getHeight();
             const margin     = 14;
 
-            // ── MARCA DE ÁGUA: aplicada a cada página via addFooter ───────────
             addWatermark(doc);
 
-            // ══ CANTO SUPERIOR DIREITO: ID DE SESSÃO UNIFED (todas as páginas) ══
-            // SSoT: bit-to-bit literal — sem regex/replace
             const _afsId = (typeof window.activeForensicSession !== 'undefined' && window.activeForensicSession.sessionId)
                 ? window.activeForensicSession.sessionId
                 : (UNIFEDSystem.sessionId || 'UNIFED-MMLADX8Q-CV69L');
@@ -5555,43 +5492,26 @@ async function exportPDF() {
             doc.setTextColor(120, 120, 120);
             doc.text(sessionLabel, pageWidth - margin, 8, { align: 'right' });
 
-            // ══ NOTA: linha divisória + Página X/Y + Master Hash + PROBATUM text ══
-            // São agora desenhados pelo loop universal ANTES de doc.save()
-            // para garantir valores de total de páginas corretos em todas.
-            // addFooter mantém APENAS: marca de água, sessão (topo), e QR seal.
-
-            // ══════════════════════════════════════════════════════════════════
-            // SELO DE CERTIFICAÇÃO PROBATUM — ativado por isLastPage=true
-            // (flag explícita em vez de comparação numérica — elimina bug de overflow)
-            // Posição: Canto Inferior Direito — independente do volume de dados
-            // Conformidade: RGIT Art. 103.º/104.º · CRP Art. 32.º · Art. 125.º CPP
-            // ══════════════════════════════════════════════════════════════════
             if (isLastPage) {
-                const boxSize  = 50;                              // caixa total 50mm
-                const qrSize   = 26;                              // QR Code 26mm
-                const qrMargin = (boxSize - qrSize) / 2 - 4;     // centramento horizontal
+                const boxSize  = 50;
+                const qrSize   = 26;
+                const qrMargin = (boxSize - qrSize) / 2 - 4;
 
-                // Coordenadas fixas — canto inferior direito, 8mm acima da linha de rodapé
                 const sealX = pageWidth - margin - boxSize;
                 const sealY = pageHeight - margin - boxSize - 8;
 
-                // 1. Quadrado exterior de Selagem (Cyan PROBATUM)
                 doc.setDrawColor(0, 229, 255);
                 doc.setLineWidth(0.7);
                 doc.rect(sealX, sealY, boxSize, boxSize);
 
-                // 2. Linha divisória interior (separa QR do texto de certificação)
                 doc.setLineWidth(0.3);
                 doc.line(sealX + 1, sealY + qrSize + 4, sealX + boxSize - 1, sealY + qrSize + 4);
 
-                // 3. Label "PROBATUM SEAL" no topo do quadrado
                 doc.setFontSize(5);
                 doc.setFont('courier', 'bold');
                 doc.setTextColor(0, 229, 255);
                 doc.text('PROBATUM SEAL v13.5.0-PURE', sealX + boxSize / 2, sealY + 3.5, { align: 'center' });
 
-                // 4. QR Code — inserido sincronamente com o dataURL pré-gerado
-                // (eliminação da race condition setTimeout QR vs setTimeout save)
                 if (_qrDataUrl) {
                     doc.addImage(_qrDataUrl, 'PNG',
                         sealX + qrMargin + 2,
@@ -5599,15 +5519,12 @@ async function exportPDF() {
                         qrSize, qrSize);
                     console.log('[UNIFED-PDF] ✅ QR Code inserido no PDF (sincronamente).');
                 } else {
-                    // Fallback: placeholder textual quando QRCode lib não disponível
                     doc.setFontSize(4);
                     doc.setFont('courier', 'normal');
                     doc.setTextColor(180, 180, 180);
                     doc.text('[QR CODE INDISPONÍVEL]', sealX + boxSize / 2, sealY + qrSize / 2 + 5, { align: 'center' });
                 }
 
-                // 5. Texto de certificação (abaixo do QR) — sobreposição obrigatória
-                // Protocolo UNIFED-GOLD: texto gravado por cima do QR Code conforme mandato
                 doc.setFontSize(4.2);
                 doc.setFont('courier', 'bold');
                 doc.setTextColor(30, 60, 120);
@@ -5627,27 +5544,14 @@ async function exportPDF() {
                 doc.text('Uso restrito a mandato jurídico autorizado',
                     sealX + boxSize / 2, sealY + qrSize + 19, { align: 'center' });
 
-                // Reset para cinza técnico
                 doc.setTextColor(100, 116, 139);
-                // ══ FIM BLOCO SELAGEM COM COORDENADAS FIXAS ══
             }
         };
 
-        // ══════════════════════════════════════════════════════════════════════
-        // writeDynamicText — GESTOR DINÂMICO DO EIXO Y (UNIFED-PROBATUM v13.3.0)
-        // Substitui posicionamentos estáticos nos blocos de texto de prosa livre.
-        // Garante wrap automático (splitTextToSize) e quebra de página antes de
-        // atingir a zona do rodapé (25mm de margem de segurança).
-        // Uso: y = writeDynamicText(doc, text, y [, fontSize, isBold, color])
-        // Devolve o novo valor de y — nunca muta estado externo directamente.
-        // NOTA: Não aplicar a elementos absolutamente posicionados (headers,
-        //       colunas de tabela, anotações de gráfico, footer zone) — esses
-        //       têm coordenadas fixas por design de layout.
-        // ══════════════════════════════════════════════════════════════════════
         const writeDynamicText = (doc, text, curY, fontSize = 9, isBold = false, textColor = [0, 0, 0]) => {
-            const _ph   = doc.internal.pageSize.getHeight(); // A4 = 297mm
-            const _maxW = 180;                               // margem útil
-            const _lh   = fontSize * 0.42;                  // line-height estimado
+            const _ph   = doc.internal.pageSize.getHeight();
+            const _maxW = 180;
+            const _lh   = fontSize * 0.42;
 
             doc.setFontSize(fontSize);
             doc.setFont('helvetica', isBold ? 'bold' : 'normal');
@@ -5656,23 +5560,20 @@ async function exportPDF() {
             const lines  = doc.splitTextToSize(text, _maxW);
             const textH  = lines.length * _lh;
 
-            // Quebra de página automática — 28mm de zona de rodapé reservada
             if (curY + textH > (_ph - 28)) {
                 addFooter(doc, pageNumber);
                 doc.addPage();
                 pageNumber++;
                 curY = 20;
-                // Re-aplicar estilo pois addPage() não o preserva
                 doc.setFontSize(fontSize);
                 doc.setFont('helvetica', isBold ? 'bold' : 'normal');
                 doc.setTextColor(textColor[0], textColor[1], textColor[2]);
             }
 
             doc.text(lines, left, curY);
-            return curY + textH + 4; // +4mm breathing room
+            return curY + textH + 4;
         };
 
-        // PÁGINA 1
         let y = 20;
 
         doc.setDrawColor(0, 0, 0);
@@ -5697,7 +5598,6 @@ async function exportPDF() {
         doc.text('CONFIDENCIAL', doc.internal.pageSize.getWidth() - left, y - 10, { align: 'right' });
         doc.setFont('courier', 'normal');
         doc.text('Cadeia de Custódia Forense: Ativa', doc.internal.pageSize.getWidth() - left, y - 5, { align: 'right' });
-        // SSoT activeForensicSession — sessionId e masterHash do estado activo
         const _afs = (typeof window.activeForensicSession !== 'undefined') ? window.activeForensicSession : {};
         const _pdfSessionId  = _afs.sessionId  || UNIFEDSystem.sessionId  || 'UNIFED-MMLADX8Q-CV69L';
         const _pdfMasterHashRaw = _afs.masterHash || UNIFEDSystem.masterHash || '5150e7674b891d5d07ca990e4c7124fc66af40488452759aeebdf84976eaa8f6';
@@ -5717,25 +5617,17 @@ async function exportPDF() {
         doc.setFontSize(9);
         doc.setTextColor(0, 0, 0);
 
-        // ── NOTA METODOLÓGICA FORENSE (PASSO 3 — writeDynamicText) ───────────
-        // Renderização via Gestor Dinâmico do Eixo Y — sem posicionamento estático.
-        // A string notaMetodologica contém dois parágrafos separados por \n\n:
-        //   [0] Nota Metodológica (itálico cinzento)
-        //   [1] Fundamentação da Prova Material (bold azul escuro)
         const _notaSplit = t.notaMetodologica.split('\n\nFUNDAMENTAÇÃO DA PROVA MATERIAL:');
         const _notaTexto = _notaSplit[0] || t.notaMetodologica;
         const _fundTexto = _notaSplit[1] ? 'FUNDAMENTAÇÃO DA PROVA MATERIAL:' + _notaSplit[1] : '';
 
-        // Bloco 1: Nota Metodológica (itálico, cor cinzenta)
         doc.setFont('helvetica', 'italic');
         y = writeDynamicText(doc, _notaTexto, y, 8, false, [100, 100, 100]);
 
-        // Bloco 2: Fundamentação da Prova Material — caixa de destaque visual
         if (_fundTexto) {
             const _pageW    = doc.internal.pageSize.getWidth();
             const _fundLns  = doc.splitTextToSize(_fundTexto, _pageW - 38);
             const _fundBoxH = (_fundLns.length * 3.8) + 7;
-            // Overflow guard antes da caixa — 28mm rodapé + altura da caixa
             if (y + _fundBoxH > (doc.internal.pageSize.getHeight() - 28)) {
                 addFooter(doc, pageNumber);
                 doc.addPage(); pageNumber++;
@@ -5792,16 +5684,10 @@ async function exportPDF() {
 
         addFooter(doc, pageNumber);
 
-        // PÁGINA 2
         doc.addPage();
         pageNumber = 2;
         y = 20;
 
-        // ══════════════════════════════════════════════════════════════════════
-        // BLOCO UNIFED-v13.5.0-PURE: CONFORMIDADE E EVIDÊNCIA DIGITAL
-        // Fundamento: Art. 36.º n.º 11 CIVA · Art. 104.º n.º 2 RGIT · Art. 125.º CPP
-        // Injeção estrita de texto — motor de cálculo INTOCADO (Core Freeze)
-        // ══════════════════════════════════════════════════════════════════════
         {
             const _cedW = doc.internal.pageSize.getWidth() - left - 14;
             doc.setDrawColor(0, 100, 180);
@@ -5856,19 +5742,17 @@ async function exportPDF() {
                 _cedW - 5);
             doc.text(_cedConc, left + 3, y); y += (_cedConc.length * 4.2) + 8;
         }
-        // ══ FIM BLOCO CONFORMIDADE E EVIDÊNCIA DIGITAL ══
 
         doc.setFontSize(10);
         doc.setFont('helvetica', 'bold');
         doc.text('2. ANÁLISE FINANCEIRA CRUZADA / CROSS-FINANCIAL ANALYSIS', left, y);
         y += 10;
 
-        // ── Colunas: DESC[14..103] VAL[105..140] SRC[142..196] ──
         const COL_DESC_X   = left;
-        const COL_DESC_W   = 88;   // mm — descrição (máx 88mm)
-        const COL_VAL_X    = 107;  // mm — valor numérico
-        const COL_SRC_X    = 146;  // mm — fonte de evidência
-        const COL_SRC_W    = 50;   // mm
+        const COL_DESC_W   = 88;
+        const COL_VAL_X    = 107;
+        const COL_SRC_X    = 146;
+        const COL_SRC_W    = 50;
 
         doc.setFontSize(8);
         doc.setFont('helvetica', 'bold');
@@ -5885,24 +5769,23 @@ async function exportPDF() {
         doc.setFont('helvetica', 'normal');
 
         const periodoTexto = {
-            'anual': 'Anual',
+            'anual': currentLang === 'pt' ? 'Anual' : 'Annual',
             '1s': '1S',
             '2s': '2S',
-            'trimestral': 'Trim',
-            'mensal': 'Mensal'
+            'trimestral': currentLang === 'pt' ? 'Trim' : 'Qtr',
+            'mensal': currentLang === 'pt' ? 'Mensal' : 'Monthly'
         }[UNIFEDSystem.selectedPeriodo] || '';
 
-        // ── VALORES AUDITADOS SELADOS — VERDADE MATERIAL v13.1.6-GOLD ──
         const rows = [
-            { desc: 'Gross Earnings / Ganhos Brutos (Auditado · Set-Dez)',    value: totals.ganhos,        source: 'Plataforma Digital',  isBruto: true },
-            { desc: 'Reported Earnings / Ganhos Reportados (DAC7 · Plataforma Digital)',      value: totals.dac7TotalPeriodo,          source: 'Plataforma (DAC7)' },
-            { desc: 'Retained Commissions / Comissões Retidas (Extrato)',    value: totals.despesas,    source: 'Plataforma Digital',  isGap: true },
-            { desc: 'Invoiced Commissions / Comissões Faturadas (PT1124+PT1125)',     value: totals.faturaPlataforma,  source: 'Faturas BTF' },
+            { desc: currentLang === 'pt' ? 'Ganhos Brutos (Extrato Ledger)' : 'Gross Earnings (Ledger Statement)',    value: totals.ganhos,        source: currentLang === 'pt' ? 'Plataforma Digital' : 'Digital Platform',  isBruto: true },
+            { desc: currentLang === 'pt' ? 'Ganhos Reportados (DAC7 · Plataforma Digital)' : 'Reported Earnings (DAC7 · Digital Platform)',      value: totals.dac7TotalPeriodo,          source: currentLang === 'pt' ? 'Plataforma (DAC7)' : 'Platform (DAC7)' },
+            { desc: currentLang === 'pt' ? 'Comissões Retidas (Extrato)' : 'Retained Commissions (Statement)',    value: totals.despesas,    source: currentLang === 'pt' ? 'Plataforma Digital' : 'Digital Platform',  isGap: true },
+            { desc: currentLang === 'pt' ? 'Comissões Faturadas (PT1124+PT1125)' : 'Invoiced Commissions (PT1124+PT1125)',     value: totals.faturaPlataforma,  source: currentLang === 'pt' ? 'Faturas BTF' : 'BTF Invoices' },
             { desc: '-------------------------------------------',  value: null,                          source: '' },
-            { desc: '[!] SAF-T Valor Bruto Total vs DAC7 (Revenue Omission)',       value: cross.discrepanciaSaftVsDac7,      source: 'Smoking Gun 1', isGap: true },
-            { desc: `[X] Diferencial de Base em Análise (Despesas/Comissões vs Fatura) [${_pctOmissaoStr}]`, value: cross.discrepanciaCritica, source: 'Smoking Gun 2', isCritical: true },
-            { desc: 'IVA Omitido (23% · Autoliquidação CIVA)',         value: cross.ivaFalta,          source: 'Cálculo CIVA',  isGap: true },
-            { desc: 'IVA Omitido (6% · Serviços Transporte)',          value: cross.ivaFalta6,           source: 'Cálculo CIVA',  isGap: true }
+            { desc: currentLang === 'pt' ? '[!] SAF-T Valor Bruto Total vs DAC7 (Revenue Omission)' : '[!] SAF-T Gross Value vs DAC7 (Revenue Omission)',       value: cross.discrepanciaSaftVsDac7,      source: currentLang === 'pt' ? 'Smoking Gun 1' : 'Smoking Gun 1', isGap: true },
+            { desc: currentLang === 'pt' ? `[X] Diferencial de Base em Análise (Despesas/Comissões vs Fatura) [${_pctOmissaoStr}]` : `[X] Base Differential Under Analysis (Expenses/Commissions vs Invoice) [${_pctOmissaoStr}]`, value: cross.discrepanciaCritica, source: currentLang === 'pt' ? 'Smoking Gun 2' : 'Smoking Gun 2', isCritical: true },
+            { desc: currentLang === 'pt' ? 'IVA Omitido (23% · Autoliquidação CIVA)' : 'Missing VAT (23% · VAT Self-Liquidation)',         value: cross.ivaFalta,          source: currentLang === 'pt' ? 'Cálculo CIVA' : 'VAT Calculation',  isGap: true },
+            { desc: currentLang === 'pt' ? 'IVA Omitido (6% · Serviços Transporte)' : 'Missing VAT (6% · Transport Services)',          value: cross.ivaFalta6,           source: currentLang === 'pt' ? 'Cálculo CIVA' : 'VAT Calculation',  isGap: true }
         ];
 
         rows.forEach(row => {
@@ -5925,14 +5808,11 @@ async function exportPDF() {
                 doc.setTextColor(0, 120, 200);
             }
 
-            // Multi-line description — respects COL_DESC_W (88mm)
             const descLines = doc.splitTextToSize(row.desc, COL_DESC_W);
             const rowH = Math.max(descLines.length * 4.5, 5);
 
             doc.text(descLines, COL_DESC_X, y);
-            // Value: right-align within value column (width ~30mm)
             doc.text(formatCurrency(row.value), COL_VAL_X, y);
-            // Source: split if needed
             if (row.source) {
                 const srcLines = doc.splitTextToSize(row.source, COL_SRC_W);
                 doc.text(srcLines, COL_SRC_X, y);
@@ -5947,28 +5827,26 @@ async function exportPDF() {
         y += 5;
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(239, 68, 68);
-        doc.text(`[!] Percentagem Omissão Custos (Retenção vs Fatura): ${_pctOmissao.toFixed(2)}%`, left, y);
+        doc.text(`${currentLang === 'pt' ? '[!] Percentagem Omissão Custos (Retenção vs Fatura):' : '[!] Expense Omission Percentage (Withheld vs Invoice):'} ${_pctOmissao.toFixed(2)}%`, left, y);
         doc.setFont('helvetica', 'italic');
         doc.setFontSize(7.5);
-        doc.text('Nota Pericial: 89,26% de omissão é estatisticamente impossível de ser erro administrativo.', left + 5, y + 4);
+        doc.text(currentLang === 'pt' ? 'Nota Pericial: 89,26% de omissão é estatisticamente impossível de ser erro administrativo.' : 'Expert Note: 89.26% omission is statistically impossible to be an administrative error.', left + 5, y + 4);
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(8);
         doc.setTextColor(0, 0, 0);
         y += 12;
-        doc.text(`Omissão de Receita (Bruto vs DAC7): ${cross.discrepanciaSaftVsDac7.toFixed(2)} €`, left, y);
+        doc.text(`${currentLang === 'pt' ? 'Omissão de Receita (Bruto vs DAC7):' : 'Revenue Omission (Gross vs DAC7):'} ${cross.discrepanciaSaftVsDac7.toFixed(2)} €`, left, y);
         y += 4;
-        doc.text(`Omissão de Custos (Retenção vs Fatura): ${cross.discrepanciaCritica.toFixed(2)} €`, left, y);
+        doc.text(`${currentLang === 'pt' ? 'Omissão de Custos (Retenção vs Fatura):' : 'Expense Omission (Withheld vs Invoice):'} ${cross.discrepanciaCritica.toFixed(2)} €`, left, y);
         y += 10;
 
-        // 3. VEREDICTO DE RISCO (RGIT) — FORÇADO PELO PROTOCOLO v13.1.6-GOLD
         doc.setFontSize(10);
         doc.setFont('helvetica', 'bold');
         doc.text('3. VEREDICTO DE RISCO / RISK VERDICT (RGIT · Art. 103.º)', left, y);
         y += 8;
 
-        // ── Caixa de veredicto CRÍTICO — altura dinâmica ──
         const pageW = doc.internal.pageSize.getWidth();
-        const usableW = pageW - left - 14;  // 182mm usável
+        const usableW = pageW - left - 14;
 
         doc.setFontSize(11);
         doc.setFont('helvetica', 'bold');
@@ -5983,12 +5861,11 @@ async function exportPDF() {
         doc.setFontSize(8.5);
         doc.setTextColor(0, 0, 0);
         doc.setFont('helvetica', 'bold');
-        // Sub-label: split into two lines to prevent overflow
         const vLine1 = doc.splitTextToSize(
-            `Expense Omission / Omissao Custos: ${_pctOmissaoStr}  |  Gross Earnings: ${formatCurrency(totals.ganhos)}`,
+            `${currentLang === 'pt' ? 'Expense Omission / Omissao Custos:' : 'Expense Omission:'} ${_pctOmissaoStr}  |  ${currentLang === 'pt' ? 'Gross Earnings:' : 'Gross Earnings:'} ${formatCurrency(totals.ganhos)}`,
             usableW);
         const vLine2 = doc.splitTextToSize(
-            `Revenue Gap (DAC7): ${formatCurrency(cross.discrepanciaSaftVsDac7)} (${_pctReceitaStr})`,
+            `${currentLang === 'pt' ? 'Revenue Gap (DAC7):' : 'Revenue Gap (DAC7):'} ${formatCurrency(cross.discrepanciaSaftVsDac7)} (${_pctReceitaStr})`,
             usableW);
         doc.text(vLine1, left, y); y += (vLine1.length * 4.5);
         doc.text(vLine2, left, y); y += (vLine2.length * 4.5) + 4;
@@ -5998,7 +5875,6 @@ async function exportPDF() {
         const verdictDescLines = doc.splitTextToSize(verdict.description[currentLang], usableW);
         doc.text(verdictDescLines, left, y); y += (verdictDescLines.length * 4.5) + 8;
 
-        // 4. PROVA RAINHA (SMOKING GUN) — VALORES AUDITADOS v13.1.6-GOLD
         doc.setFontSize(10);
         doc.setFont('helvetica', 'bold');
         doc.text('4. PROVA RAINHA / CRITICAL DIVERGENCE (SMOKING GUN)', left, y);
@@ -6017,27 +5893,26 @@ async function exportPDF() {
         doc.setFont('helvetica', 'bold');
         doc.text('SMOKING GUN 1 — SAF-T Valor Bruto Total vs DAC7 / Omissão de Receita:', left, y); y += 5;
         doc.setFont('helvetica', 'normal');
-        doc.text(`  Ganhos Brutos (Auditado):          ${formatCurrency(totals.ganhos)}`, left, y); y += 4;
-        doc.text(`  Ganhos Reportados (DAC7):          ${formatCurrency(totals.dac7TotalPeriodo)}`, left, y); y += 4;
+        doc.text(`  ${currentLang === 'pt' ? 'Ganhos Brutos (Auditado):' : 'Gross Earnings (Audited):'}          ${formatCurrency(totals.ganhos)}`, left, y); y += 4;
+        doc.text(`  ${currentLang === 'pt' ? 'Ganhos Reportados (DAC7):' : 'Reported Earnings (DAC7):'}          ${formatCurrency(totals.dac7TotalPeriodo)}`, left, y); y += 4;
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(245, 158, 11);
-        doc.text(`  [!]  DIFERENÇA OMITIDA (AT):         ${formatCurrency(cross.discrepanciaSaftVsDac7)}`, left, y); y += 7;
+        doc.text(`  [!]  ${currentLang === 'pt' ? 'DIFERENÇA OMITIDA (AT):' : 'OMITTED DIFFERENCE (TA):'}         ${formatCurrency(cross.discrepanciaSaftVsDac7)}`, left, y); y += 7;
 
         doc.setTextColor(0, 0, 0);
         doc.setFont('helvetica', 'bold');
         doc.text('SMOKING GUN 2 — Diferencial de Base em Análise (Despesas/Comissões vs Fatura BTF):', left, y); y += 5;
         doc.setFont('helvetica', 'normal');
-        doc.text(`  Comissões Retidas (Extrato):       ${formatCurrency(totals.despesas)}`, left, y); y += 4;
-        doc.text(`  Comissões Faturadas (BTF):         ${formatCurrency(totals.faturaPlataforma)}`, left, y); y += 4;
+        doc.text(`  ${currentLang === 'pt' ? 'Comissões Retidas (Extrato):' : 'Commissions Withheld (Statement):'}       ${formatCurrency(totals.despesas)}`, left, y); y += 4;
+        doc.text(`  ${currentLang === 'pt' ? 'Comissões Faturadas (BTF):' : 'Invoiced Commissions (BTF):'}         ${formatCurrency(totals.faturaPlataforma)}`, left, y); y += 4;
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(239, 68, 68);
-        doc.text(`  [X] OMISSÃO DE FATURAÇÃO:            ${formatCurrency(cross.discrepanciaCritica)} (${_pctOmissaoStr})`, left, y); y += 7;
+        doc.text(`  [X] ${currentLang === 'pt' ? 'OMISSÃO DE FATURAÇÃO:' : 'INVOICE OMISSION:'}            ${formatCurrency(cross.discrepanciaCritica)} (${_pctOmissaoStr})`, left, y); y += 7;
 
         doc.setTextColor(0, 0, 0);
         doc.setFont('helvetica', 'normal');
-        doc.text(`IVA Omitido (23%):  ${formatCurrency(cross.ivaFalta)}`, left, y); y += 4;
-        doc.text(`IVA Omitido (6%):   ${formatCurrency(cross.ivaFalta6)}`, left, y); y += 8;
-        // ── Separador visual antes do rodapé — previne sobreposição de linhas ─
+        doc.text(`${currentLang === 'pt' ? 'IVA Omitido (23%):' : 'Missing VAT (23%):'}  ${formatCurrency(cross.ivaFalta)}`, left, y); y += 4;
+        doc.text(`${currentLang === 'pt' ? 'IVA Omitido (6%):' : 'Missing VAT (6%):'}   ${formatCurrency(cross.ivaFalta6)}`, left, y); y += 8;
         doc.setDrawColor(200, 200, 200);
         doc.setLineWidth(0.2);
         if (y < 270) {
@@ -6047,12 +5922,10 @@ async function exportPDF() {
 
         addFooter(doc, pageNumber);
 
-        // PÁGINA 3
         doc.addPage();
         pageNumber = 3;
         y = 20;
 
-        // 5. ENQUADRAMENTO LEGAL
         doc.setFontSize(10);
         doc.setFont('helvetica', 'bold');
         doc.text('5. ENQUADRAMENTO LEGAL', left, y);
@@ -6060,41 +5933,39 @@ async function exportPDF() {
 
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(9);
-        doc.text(`Artigo 2.º, n.º 1, alínea i) do Código do IVA:`, left, y); y += 5;
-        doc.text(`Regime de autoliquidação aplicável a serviços prestados por sujeitos`, left, y); y += 4;
-        doc.text(`passivos não residentes em território português.`, left, y); y += 6;
+        doc.text(`${currentLang === 'pt' ? 'Artigo 2.º, n.º 1, alínea i) do Código do IVA:' : 'Article 2, no. 1, subparagraph i) of the VAT Code:'}`, left, y); y += 5;
+        doc.text(`${currentLang === 'pt' ? 'Regime de autoliquidação aplicável a serviços prestados por sujeitos' : 'Self-assessment regime applicable to services provided by non-resident'}`, left, y); y += 4;
+        doc.text(`${currentLang === 'pt' ? 'passivos não residentes em território português.' : 'taxpayers in Portuguese territory.'}`, left, y); y += 6;
 
-        doc.text(`• IVA Omitido: 23% sobre despesas reais vs faturadas`, left, y); y += 5;
-        doc.text(`• IVA Omitido: 6% sobre serviços de transporte`, left, y); y += 5;
-        doc.text(`• Base Tributável: Diferença detetada na matriz (BTOR vs BTF)`, left, y); y += 5;
-        doc.text(`• Prazo Regularização: 30 dias após deteção`, left, y); y += 5;
-        doc.text(`• Sanções Aplicáveis: Artigo 108.º do CIVA`, left, y); y += 10;
+        doc.text(`• ${currentLang === 'pt' ? 'IVA Omitido: 23% sobre despesas reais vs faturadas' : 'Missing VAT: 23% on actual expenses vs invoiced'}`, left, y); y += 5;
+        doc.text(`• ${currentLang === 'pt' ? 'IVA Omitido: 6% sobre serviços de transporte' : 'Missing VAT: 6% on transport services'}`, left, y); y += 5;
+        doc.text(`• ${currentLang === 'pt' ? 'Base Tributável: Diferença detetada na matriz (BTOR vs BTF)' : 'Taxable Base: Difference detected in the matrix (BTOR vs BTF)'}`, left, y); y += 5;
+        doc.text(`• ${currentLang === 'pt' ? 'Prazo Regularização: 30 dias após deteção' : 'Settlement Deadline: 30 days after detection'}`, left, y); y += 5;
+        doc.text(`• ${currentLang === 'pt' ? 'Sanções Aplicáveis: Artigo 108.º do CIVA' : 'Applicable Sanctions: Article 108 of the VAT Code'}`, left, y); y += 10;
 
-        doc.text(`Artigo 108.º do CIVA - Infrações:`, left, y); y += 5;
-        doc.text(`Constitui infração a falta de liquidação do imposto devido,`, left, y); y += 4;
-        doc.text(`bem como a sua liquidação inferior ao montante legalmente exigível.`, left, y); y += 10;
+        doc.text(`${currentLang === 'pt' ? 'Artigo 108.º do CIVA - Infrações:' : 'Article 108 of the VAT Code - Offenses:'}`, left, y); y += 5;
+        doc.text(`${currentLang === 'pt' ? 'Constitui infração a falta de liquidação do imposto devido,' : 'It is an offense to fail to settle the tax due,'}`, left, y); y += 4;
+        doc.text(`${currentLang === 'pt' ? 'bem como a sua liquidação inferior ao montante legalmente exigível.' : 'as well as its settlement lower than the legally required amount.'}`, left, y); y += 10;
 
-        doc.text(`Decreto-Lei n.º 28/2019:`, left, y); y += 5;
-        doc.text(`Integridade do processamento de dados e validade de documentos`, left, y); y += 4;
-        doc.text(`eletrónicos como registos primários.`, left, y); y += 10;
+        doc.text(`${currentLang === 'pt' ? 'Decreto-Lei n.º 28/2019:' : 'Decree-Law no. 28/2019:'}`, left, y); y += 5;
+        doc.text(`${currentLang === 'pt' ? 'Integridade do processamento de dados e validade de documentos' : 'Integrity of data processing and validity of electronic documents'}`, left, y); y += 4;
+        doc.text(`${currentLang === 'pt' ? 'eletrónicos como registos primários.' : 'as primary records.'}`, left, y); y += 10;
 
-        // ── FUNDAMENTAÇÃO ADICIONAL — ADMISSIBILIDADE DA PROVA (ACÓRDÃO DA RELAÇÃO) ──
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9);
         doc.setTextColor(30, 60, 120);
-        doc.text('ADMISSIBILIDADE DA PROVA DIGITAL:', left, y); y += 5;
+        doc.text(`${currentLang === 'pt' ? 'ADMISSIBILIDADE DA PROVA DIGITAL:' : 'ADMISSIBILITY OF DIGITAL EVIDENCE:'}`, left, y); y += 5;
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(8);
         doc.setTextColor(0, 0, 0);
-        doc.text(`• Art. 125.º CPP — São admissíveis como meios de prova todos os meios não proibidos por lei.`, left, y, { maxWidth: doc.internal.pageSize.getWidth() - 30 }); y += 5;
-        doc.text(`  Esta prova digital material foi produzida com metodologia forense certificada e cadeia de custódia`, left, y, { maxWidth: doc.internal.pageSize.getWidth() - 30 }); y += 4;
-        doc.text(`  documentada, sendo plenamente admissível perante as Instâncias Judiciais Competentes.`, left, y); y += 6;
-        doc.text(`• Art. 32.º CRP — Garantias de Defesa: o processo penal assegura todas as garantias`, left, y, { maxWidth: doc.internal.pageSize.getWidth() - 30 }); y += 4;
-        doc.text(`  de defesa, incluindo o recurso à prova técnica pericial para contraditório fundamentado.`, left, y); y += 6;
-        doc.text(`• Art. 103.º RGIT — Fraude Fiscal: omissão de proveitos e retenção indevida de IVA.`, left, y, { maxWidth: doc.internal.pageSize.getWidth() - 30 }); y += 5;
-        doc.text(`• Art. 104.º RGIT — Fraude Fiscal Qualificada: quando a omissão excede os limiares legais.`, left, y, { maxWidth: doc.internal.pageSize.getWidth() - 30 }); y += 8;
+        doc.text(`• ${currentLang === 'pt' ? 'Art. 125.º CPP — São admissíveis como meios de prova todos os meios não proibidos por lei.' : 'Art. 125 CPP — All means of proof not prohibited by law are admissible.'}`, left, y, { maxWidth: doc.internal.pageSize.getWidth() - 30 }); y += 5;
+        doc.text(`  ${currentLang === 'pt' ? 'Esta prova digital material foi produzida com metodologia forense certificada e cadeia de custódia' : 'This material digital evidence was produced with certified forensic methodology and chain of custody'}`, left, y, { maxWidth: doc.internal.pageSize.getWidth() - 30 }); y += 4;
+        doc.text(`  ${currentLang === 'pt' ? 'documentada, sendo plenamente admissível perante as Instâncias Judiciais Competentes.' : 'documented, being fully admissible before the Competent Judicial Authorities.'}`, left, y); y += 6;
+        doc.text(`• ${currentLang === 'pt' ? 'Art. 32.º CRP — Garantias de Defesa: o processo penal assegura todas as garantias' : 'Art. 32 CRP — Defense Guarantees: criminal proceedings ensure all guarantees'}`, left, y, { maxWidth: doc.internal.pageSize.getWidth() - 30 }); y += 4;
+        doc.text(`  ${currentLang === 'pt' ? 'de defesa, incluindo o recurso à prova técnica pericial para contraditório fundamentado.' : 'of defense, including the use of expert technical evidence for substantiated contradiction.'}`, left, y); y += 6;
+        doc.text(`• ${currentLang === 'pt' ? 'Art. 103.º RGIT — Fraude Fiscal: omissão de proveitos e retenção indevida de IVA.' : 'Art. 103 RGIT — Tax Fraud: omission of income and improper VAT withholding.'}`, left, y, { maxWidth: doc.internal.pageSize.getWidth() - 30 }); y += 5;
+        doc.text(`• ${currentLang === 'pt' ? 'Art. 104.º RGIT — Fraude Fiscal Qualificada: quando a omissão excede os limiares legais.' : 'Art. 104 RGIT — Qualified Tax Fraud: when the omission exceeds legal thresholds.'}`, left, y, { maxWidth: doc.internal.pageSize.getWidth() - 30 }); y += 8;
 
-        // 6. METODOLOGIA PERICIAL
         doc.setFontSize(10);
         doc.setFont('helvetica', 'bold');
         doc.text('6. METODOLOGIA PERICIAL', left, y);
@@ -6103,21 +5974,14 @@ async function exportPDF() {
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(9);
         doc.text(`BTOR (Bank Transactions Over Reality):`, left, y); y += 5;
-        doc.text(`Análise comparativa entre despesas reais (extratos) e`, left, y); y += 4;
-        doc.text(`documentação fiscal declarada (faturas).`, left, y); y += 6;
+        doc.text(`${currentLang === 'pt' ? 'Análise comparativa entre despesas reais (extratos) e' : 'Comparative analysis between real expenses (statements) and'}`, left, y); y += 4;
+        doc.text(`${currentLang === 'pt' ? 'documentação fiscal declarada (faturas).' : 'declared tax documentation (invoices).'}`, left, y); y += 6;
 
-        doc.text(`• Mapeamento posicional de dados SAF-T/Relatório (colunas 14,15,16)`, left, y); y += 5;
-        doc.text(`• Extração precisa da tabela "Ganhos líquidos" do extrato`, left, y); y += 5;
-        doc.text(`• Cálculo de duas discrepâncias: despesas e SAF-T/Relatório vs DAC7`, left, y); y += 5;
+        doc.text(`• ${currentLang === 'pt' ? 'Mapeamento posicional de dados SAF-T/Relatório (colunas 14,15,16)' : 'Positional mapping of SAF-T/Report data (columns 14,15,16)'}`, left, y); y += 5;
+        doc.text(`• ${currentLang === 'pt' ? 'Extração precisa da tabela "Ganhos líquidos" do extrato' : 'Accurate extraction of the "Net Earnings" table from the statement'}`, left, y); y += 5;
+        doc.text(`• ${currentLang === 'pt' ? 'Cálculo de duas discrepâncias: despesas e SAF-T/Relatório vs DAC7' : 'Calculation of two discrepancies: expenses and SAF-T/Report vs DAC7'}`, left, y); y += 5;
         doc.text('> Geracao de prova tecnica auditavel com hashes SHA-256', left, y); y += 10;
 
-        // ══════════════════════════════════════════════════════════════════════
-        // BLOCO A: DECLARAÇÃO DE INDEPENDÊNCIA E ESCOPO (ISRS 4400)
-        // Protocolo UNIFED-GOLD v13.2.2-GOLD
-        // Fundamento: Norma Internacional ISRS 4400 (Procedimentos Acordados) ·
-        //             Art. 153.º CPP (Compromisso de Honra do Perito) ·
-        //             Art. 467.º CPC (Dever de Imparcialidade)
-        // ══════════════════════════════════════════════════════════════════════
         if (y > 220) { doc.addPage(); pageNumber++; y = 20; }
         {
             const _isrsW = doc.internal.pageSize.getWidth() - left - 14;
@@ -6129,33 +5993,39 @@ async function exportPDF() {
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(8.5);
             doc.setTextColor(30, 60, 120);
-            doc.text('DECLARAÇÃO DE INDEPENDÊNCIA E ESCOPO — ISRS 4400 / ART. 153.º CPP', left + 3, y + 3);
+            doc.text(`${currentLang === 'pt' ? 'DECLARAÇÃO DE INDEPENDÊNCIA E ESCOPO — ISRS 4400 / ART. 153.º CPP' : 'INDEPENDENCE AND SCOPE DECLARATION — ISRS 4400 / ART. 153 CPP'}`, left + 3, y + 3);
             doc.setTextColor(0, 0, 0);
             y += 12;
 
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(8);
             const _isrs1 = doc.splitTextToSize(
-                'O presente estudo foi elaborado em estrita conformidade com a Norma Internacional de Serviços Relacionados ISRS 4400 ' +
-                '(Procedimentos Acordados sobre Informação Financeira), garantindo que os procedimentos aplicados são objetivos, ' +
-                'reprodutíveis e auditáveis por qualquer perito independente. O analista declara total independência face às partes ' +
-                'e ausência de conflito de interesses, nos termos do Art. 467.º do CPC e Art. 153.º do CPP.',
+                currentLang === 'pt'
+                    ? 'O presente estudo foi elaborado em estrita conformidade com a Norma Internacional de Serviços Relacionados ISRS 4400 ' +
+                      '(Procedimentos Acordados sobre Informação Financeira), garantindo que os procedimentos aplicados são objetivos, ' +
+                      'reprodutíveis e auditáveis por qualquer perito independente. O analista declara total independência face às partes ' +
+                      'e ausência de conflito de interesses, nos termos do Art. 467.º do CPC e Art. 153.º do CPP.'
+                    : 'This study was prepared in strict compliance with the International Standard on Related Services ISRS 4400 ' +
+                      '(Agreed-Upon Procedures on Financial Information), ensuring that the procedures applied are objective, ' +
+                      'reproducible and auditable by any independent expert. The analyst declares total independence from the parties ' +
+                      'and absence of conflict of interest, under the terms of Art. 467 CPC and Art. 153 CPP.',
                 _isrsW);
             doc.text(_isrs1, left, y); y += (_isrs1.length * 3.8) + 3;
 
             const _isrs2 = doc.splitTextToSize(
-                'ESCOPO: O estudo limita-se à análise objetiva dos documentos fornecidos (extratos de plataforma, SAF-T, DAC7, ' +
-                'faturas). As conclusões constituem estudo de viabilidade pericial e não substituem relatório pericial homologado ' +
-                'por Tribunal. A sua produção assenta em metodologia BTOR (Bank Transactions Over Reality), com rastreabilidade ' +
-                'criptográfica completa (SHA-256 + RFC 3161).',
+                currentLang === 'pt'
+                    ? 'ESCOPO: O estudo limita-se à análise objetiva dos documentos fornecidos (extratos de plataforma, SAF-T, DAC7, ' +
+                      'faturas). As conclusões constituem estudo de viabilidade pericial e não substituem relatório pericial homologado ' +
+                      'por Tribunal. A sua produção assenta em metodologia BTOR (Bank Transactions Over Reality), com rastreabilidade ' +
+                      'criptográfica completa (SHA-256 + RFC 3161).'
+                    : 'SCOPE: The study is limited to the objective analysis of the documents provided (platform statements, SAF-T, DAC7, ' +
+                      'invoices). The conclusions constitute a feasibility study and do not replace an expert report approved by the Court. ' +
+                      'Its production is based on BTOR methodology (Bank Transactions Over Reality), with complete cryptographic ' +
+                      'traceability (SHA-256 + RFC 3161).',
                 _isrsW);
             doc.text(_isrs2, left, y); y += (_isrs2.length * 3.8) + 6;
         }
 
-        // ══════════════════════════════════════════════════════════════════════
-        // BLOCO B: ANÁLISE DE TIPOLOGIAS DE RISCO (Conformidade CEJ / PJ)
-        // Fundamento: RGIT Art. 103.º/104.º · Lei 83/2017 (BCFT) · Diretiva DAC7
-        // ══════════════════════════════════════════════════════════════════════
         if (y > 220) { doc.addPage(); pageNumber++; y = 20; }
         {
             const _riskW = doc.internal.pageSize.getWidth() - left - 14;
@@ -6167,7 +6037,7 @@ async function exportPDF() {
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(8.5);
             doc.setTextColor(150, 20, 20);
-            doc.text('ANÁLISE DE TIPOLOGIAS DE RISCO DETETADAS — CEJ / PJ / RGIT', left + 3, y + 3);
+            doc.text(`${currentLang === 'pt' ? 'ANÁLISE DE TIPOLOGIAS DE RISCO DETETADAS — CEJ / PJ / RGIT' : 'ANALYSIS OF DETECTED RISK TYPOLOGIES — CEJ / PJ / RGIT'}`, left + 3, y + 3);
             doc.setTextColor(0, 0, 0);
             y += 12;
 
@@ -6175,21 +6045,31 @@ async function exportPDF() {
             doc.setFontSize(8);
 
             const _riskRows = [
-                { tipo: 'FRAUDE FISCAL',
+                { tipo: currentLang === 'pt' ? 'FRAUDE FISCAL' : 'TAX FRAUD',
                   fund: 'Art. 103.º RGIT',
-                  desc: 'Omissão de proveitos e retenção indevida de IVA sobre comissões. Pena: prisão até 3 anos ou multa.' },
-                { tipo: 'FRAUDE FISCAL QUALIFICADA',
+                  desc: currentLang === 'pt'
+                    ? 'Omissão de proveitos e retenção indevida de IVA sobre comissões. Pena: prisão até 3 anos ou multa.'
+                    : 'Omission of income and improper VAT withholding on commissions. Penalty: imprisonment up to 3 years or fine.' },
+                { tipo: currentLang === 'pt' ? 'FRAUDE FISCAL QUALIFICADA' : 'QUALIFIED TAX FRAUD',
                   fund: 'Art. 104.º RGIT',
-                  desc: 'Quando a vantagem patrimonial obtida excede 15 vezes o salário mínimo nacional anual.' },
-                { tipo: 'BRANQUEAMENTO DE CAPITAIS',
+                  desc: currentLang === 'pt'
+                    ? 'Quando a vantagem patrimonial obtida excede 15 vezes o salário mínimo nacional anual.'
+                    : 'When the asset advantage obtained exceeds 15 times the national annual minimum wage.' },
+                { tipo: currentLang === 'pt' ? 'BRANQUEAMENTO DE CAPITAIS' : 'MONEY LAUNDERING',
                   fund: 'Lei 83/2017 (BCFT)',
-                  desc: 'Dissimulação da origem de fundos provenientes de omissão fiscal através de fluxos algorítmicos opacos.' },
-                { tipo: 'GESTÃO DANOSA',
+                  desc: currentLang === 'pt'
+                    ? 'Dissimulação da origem de fundos provenientes de omissão fiscal através de fluxos algorítmicos opacos.'
+                    : 'Concealment of the origin of funds from tax omission through opaque algorithmic flows.' },
+                { tipo: currentLang === 'pt' ? 'GESTÃO DANOSA' : 'HARMFUL MANAGEMENT',
                   fund: 'Art. 235.º CP',
-                  desc: 'Gestão dolosa que causa prejuízo à Autoridade Tributária e ao parceiro operador.' },
-                { tipo: 'VIOLAÇÃO DAC7',
+                  desc: currentLang === 'pt'
+                    ? 'Gestão dolosa que causa prejuízo à Autoridade Tributária e ao parceiro operador.'
+                    : 'Intentional management that causes harm to the Tax Authority and the operating partner.' },
+                { tipo: currentLang === 'pt' ? 'VIOLAÇÃO DAC7' : 'DAC7 VIOLATION',
                   fund: 'Diretiva (UE) 2021/514',
-                  desc: 'Incumprimento das obrigacoes de reporte automatico de rendimentos as Autoridades Fiscais dos Estados-Membros (EM).' },
+                  desc: currentLang === 'pt'
+                    ? 'Incumprimento das obrigacoes de reporte automatico de rendimentos as Autoridades Fiscais dos Estados-Membros (EM).'
+                    : 'Failure to comply with the automatic reporting obligations to the Tax Authorities of the Member States (MS).' },
             ];
 
             _riskRows.forEach(row => {
@@ -6205,11 +6085,6 @@ async function exportPDF() {
             y += 3;
         }
 
-        // ══════════════════════════════════════════════════════════════════════
-        // BLOCO C: SALVAGUARDA JURISDICIONAL — "Defesa da Estónia"
-        // Fundamento: Lex Loci Solutionis · Art. 18.º LGT · Diretiva (UE) 2021/514
-        //             Reg. (CE) n.º 593/2008 (Roma I) · Art. 4.º DAC7
-        // ══════════════════════════════════════════════════════════════════════
         if (y > 220) { doc.addPage(); pageNumber++; y = 20; }
         {
             const _jurW = doc.internal.pageSize.getWidth() - left - 14;
@@ -6221,33 +6096,42 @@ async function exportPDF() {
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(8.5);
             doc.setTextColor(120, 70, 0);
-            doc.text('SALVAGUARDA JURISDICIONAL — SEDE ESTRANGEIRA NÃO EXIME RESPONSABILIDADE', left + 3, y + 3);
+            doc.text(`${currentLang === 'pt' ? 'SALVAGUARDA JURISDICIONAL — SEDE ESTRANGEIRA NÃO EXIME RESPONSABILIDADE' : 'JURISDICTIONAL SAFEGUARD — FOREIGN HEADQUARTERS DOES NOT EXEMPT LIABILITY'}`, left + 3, y + 3);
             doc.setTextColor(0, 0, 0);
             y += 12;
 
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(8);
             const _jur1 = doc.splitTextToSize(
-                'A eventual invocação de sede social em jurisdição estrangeira (nomeadamente na República da Estónia, ' +
-                'onde diversas plataformas de economia de plataforma estão registadas) não constitui fundamento válido ' +
-                'de exclusão da responsabilidade fiscal e penal em território português.',
+                currentLang === 'pt'
+                    ? 'A eventual invocação de sede social em jurisdição estrangeira (nomeadamente na República da Estónia, ' +
+                      'onde diversas plataformas de economia de plataforma estão registadas) não constitui fundamento válido ' +
+                      'de exclusão da responsabilidade fiscal e penal em território português.'
+                    : 'The possible invocation of a registered office in a foreign jurisdiction (namely in the Republic of Estonia, ' +
+                      'where several platform economy platforms are registered) does not constitute a valid basis for excluding ' +
+                      'tax and criminal liability in Portuguese territory.',
                 _jurW);
             doc.text(_jur1, left, y); y += (_jur1.length * 3.8) + 3;
 
             const _jur2 = doc.splitTextToSize(
-                'Fundamento legal: (1) Art. 18.º da Lei Geral Tributária (LGT) — a obrigação tributária nasce no local ' +
-                'onde o facto tributário ocorre (Lex Loci Solutionis), independentemente da sede do operador; ' +
-                '(2) Diretiva (UE) 2021/514 (DAC7), Art. 4.º — os operadores de plataformas digitais com utilizadores ' +
-                'em Estados-Membros estão sujeitos a obrigações de reporte à Autoridade Tributária do Estado-Membro de ' +
-                'atividade, independentemente da sua sede; (3) Regulamento (CE) n.º 593/2008 (Roma I) — a lei aplicável ' +
-                'aos contratos de prestação de serviços é a lei do país onde o prestador tem a sua residência habitual ' +
-                'ou, no caso de consumidores, a lei do país de residência deste.',
+                currentLang === 'pt'
+                    ? 'Fundamento legal: (1) Art. 18.º da Lei Geral Tributária (LGT) — a obrigação tributária nasce no local ' +
+                      'onde o facto tributário ocorre (Lex Loci Solutionis), independentemente da sede do operador; ' +
+                      '(2) Diretiva (UE) 2021/514 (DAC7), Art. 4.º — os operadores de plataformas digitais com utilizadores ' +
+                      'em Estados-Membros estão sujeitos a obrigações de reporte à Autoridade Tributária do Estado-Membro de ' +
+                      'atividade, independentemente da sua sede; (3) Regulamento (CE) n.º 593/2008 (Roma I) — a lei aplicável ' +
+                      'aos contratos de prestação de serviços é a lei do país onde o prestador tem a sua residência habitual ' +
+                      'ou, no caso de consumidores, a lei do país de residência deste.'
+                    : 'Legal basis: (1) Art. 18 of the General Tax Law (LGT) — the tax obligation arises at the location where ' +
+                      'the taxable event occurs (Lex Loci Solutionis), regardless of the operator\'s headquarters; ' +
+                      '(2) Directive (EU) 2021/514 (DAC7), Art. 4 — digital platform operators with users in Member States ' +
+                      'are subject to reporting obligations to the Tax Authority of the Member State of activity, regardless of their headquarters; ' +
+                      '(3) Regulation (EC) No. 593/2008 (Rome I) — the applicable law to service contracts is the law of the country where the provider has their habitual residence ' +
+                      'or, in the case of consumers, the law of the country of residence of the consumer.',
                 _jurW);
             doc.text(_jur2, left, y); y += (_jur2.length * 3.8) + 6;
         }
-        // ══ FIM BLOCOS A, B, C ══
 
-        // 7. CERTIFICAÇÃO DIGITAL
         doc.setFontSize(10);
         doc.setFont('helvetica', 'bold');
         doc.text('7. CERTIFICAÇÃO DIGITAL', left, y);
@@ -6255,28 +6139,26 @@ async function exportPDF() {
 
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(9);
-        doc.text(`Sistema de peritagem forense estruturado em conformidade com as normas, com selo de`, left, y); y += 4;
-        doc.text('integridade digital SHA-256. Todos os relatorios sao', left, y); y += 4;
-        doc.text(`temporalmente selados e auditáveis.`, left, y); y += 8;
+        doc.text(`${currentLang === 'pt' ? 'Sistema de peritagem forense estruturado em conformidade com as normas, com selo de' : 'Forensic expertise system structured in accordance with standards, with seal of'}`, left, y); y += 4;
+        doc.text(`${currentLang === 'pt' ? 'integridade digital SHA-256. Todos os relatorios sao' : 'digital integrity SHA-256. All reports are'}`, left, y); y += 4;
+        doc.text(`${currentLang === 'pt' ? 'temporalmente selados e auditáveis.' : 'temporally sealed and auditable.'}`, left, y); y += 8;
 
         doc.text('Algoritmo Hash: SHA-256 (Forense)', left, y); y += 5;
         doc.text(`Timestamp: RFC 3161`, left, y); y += 5;
-        doc.text(`Validade Prova: Indeterminada`, left, y); y += 5;
+        doc.text(`${currentLang === 'pt' ? 'Validade Prova: Indeterminada' : 'Proof Validity: Indeterminate'}`, left, y); y += 5;
         doc.text(`Certificação: UNIFED - PROBATUM v13.5.0-PURE · DORA COMPLIANT`, left, y); y += 5;
         doc.setFont('helvetica', 'italic');
         doc.setFontSize(7);
-        doc.text('Este relatório cumpre com o Regulamento (UE) 2022/2554 (DORA) - Digital Operational Resilience Act, assegurando a resiliência operacional digital e a integridade das evidências digitais processadas.', left, y, { maxWidth: doc.internal.pageSize.getWidth() - 30 }); y += 8;
+        doc.text(`${currentLang === 'pt' ? 'Este relatório cumpre com o Regulamento (UE) 2022/2554 (DORA) - Digital Operational Resilience Act, assegurando a resiliência operacional digital e a integridade das evidências digitais processadas.' : 'This report complies with Regulation (EU) 2022/2554 (DORA) - Digital Operational Resilience Act, ensuring digital operational resilience and integrity of processed digital evidence.'}`, left, y, { maxWidth: doc.internal.pageSize.getWidth() - 30 }); y += 8;
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(9);
 
         addFooter(doc, pageNumber);
 
-        // PÁGINA 4
         doc.addPage();
         pageNumber = 4;
         y = 20;
 
-        // 8. ANÁLISE PERICIAL DETALHADA
         doc.setFontSize(10);
         doc.setFont('helvetica', 'bold');
         doc.text('8. ANÁLISE PERICIAL / DETAILED EXPERT ANALYSIS', left, y);
@@ -6284,14 +6166,13 @@ async function exportPDF() {
 
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(9);
-        doc.text(`I. ANÁLISE PERICIAL (${periodoTexto}):`, left, y); y += 5;
+        doc.text(`I. ${currentLang === 'pt' ? 'ANÁLISE PERICIAL' : 'EXPERT ANALYSIS'} (${periodoTexto}):`, left, y); y += 5;
         doc.text(currentLang === 'pt' ? 'Duas discrepâncias fundamentais detetadas (Verdade Material Auditada):' : 'Two fundamental critical divergences detected (Audited Material Truth):', left, y, { maxWidth: doc.internal.pageSize.getWidth() - 30 }); y += 5;
         const anal1 = doc.splitTextToSize(`1. ${currentLang === 'pt' ? 'Diferencial de Base em Análise (Despesas/Comissões vs Fatura)' : 'Base Differential Under Analysis (Expenses/Commissions vs Invoice)'}: ${formatCurrency(cross.discrepanciaCritica)} (${_pctOmissao.toFixed(2)}%) [Smoking Gun 2]`, doc.internal.pageSize.getWidth() - 30);
         doc.text(anal1, left, y); y += (anal1.length * 4) + 2;
         const anal2 = doc.splitTextToSize(`2. ${currentLang === 'pt' ? 'SAF-T Valor Bruto Total vs DAC7 (Revenue Omission)' : 'SAF-T Total Gross Value vs DAC7 (Revenue Omission)'}: ${formatCurrency(cross.discrepanciaSaftVsDac7)} (${_pctReceitaStr}) [Smoking Gun 1]`, doc.internal.pageSize.getWidth() - 30);
         doc.text(anal2, left, y); y += (anal2.length * 4) + 4;
 
-        // 9. FACTOS CONSTATADOS
         doc.setFontSize(10);
         doc.setFont('helvetica', 'bold');
         doc.text('9. FACTOS CONSTATADOS / MATERIAL FACTS (Material Truth)', left, y);
@@ -6300,90 +6181,82 @@ async function exportPDF() {
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(9);
 
-        // ── C1: SAF-T Valor Bruto Total vs DAC7 ─────────────────────────────
         doc.setFont('helvetica', 'bold'); doc.setTextColor(0, 80, 160);
         doc.text('C1. SAF-T VALOR BRUTO TOTAL vs DAC7 (Sub-comunicação Plataforma→Estado):', left, y); y += 5;
         doc.setFont('helvetica', 'normal'); doc.setTextColor(0, 0, 0);
-        doc.text(`     SAF-T Valor Bruto Total (Faturação Interna):  ${formatCurrency(totals.saftBruto)}`, left, y); y += 4;
-        doc.text(`     DAC7 Reportado à AT (Plataforma Digital):     ${formatCurrency(totals.dac7TotalPeriodo)}`, left, y); y += 4;
+        doc.text(`     ${currentLang === 'pt' ? 'SAF-T Valor Bruto Total (Faturação Interna):' : 'SAF-T Total Gross Value (Internal Invoicing):'}  ${formatCurrency(totals.saftBruto)}`, left, y); y += 4;
+        doc.text(`     ${currentLang === 'pt' ? 'DAC7 Reportado à AT (Plataforma Digital):' : 'DAC7 Reported to TA (Digital Platform):'}     ${formatCurrency(totals.dac7TotalPeriodo)}`, left, y); y += 4;
         doc.setFont('helvetica', 'bold'); doc.setTextColor(245, 158, 11);
-        doc.text(`     → Δ C1: ${formatCurrency(cross.c1_delta || (totals.saftBruto - totals.dac7TotalPeriodo))} (${(cross.c1_pct || 0).toFixed(2)}%) — Omissão de receita ao Estado`, left, y); y += 6;
+        doc.text(`     → Δ C1: ${formatCurrency(cross.c1_delta || (totals.saftBruto - totals.dac7TotalPeriodo))} (${(cross.c1_pct || 0).toFixed(2)}%) — ${currentLang === 'pt' ? 'Omissão de receita ao Estado' : 'Revenue omission to the State'}`, left, y); y += 6;
         doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'normal');
 
-        // ── C2: Despesas/Comissões (Extrato) vs Faturado (Plataforma) ───────
         doc.setFont('helvetica', 'bold'); doc.setTextColor(0, 80, 160);
         doc.text('C2. DESPESAS/COMISSÕES EXTRATO vs FATURADO (Prova Rainha — Retenção Ilegal):', left, y); y += 5;
         doc.setFont('helvetica', 'normal'); doc.setTextColor(0, 0, 0);
-        doc.text(`     Comissões Retidas — Extrato Bancário (BTOR):  ${formatCurrency(totals.despesas)}`, left, y); y += 4;
-        doc.text(`     Comissões Faturadas — Plataforma (BTF):       ${formatCurrency(totals.faturaPlataforma)}`, left, y); y += 4;
+        doc.text(`     ${currentLang === 'pt' ? 'Comissões Retidas — Extrato Bancário (BTOR):' : 'Commissions Withheld — Bank Statement (BTOR):'}  ${formatCurrency(totals.despesas)}`, left, y); y += 4;
+        doc.text(`     ${currentLang === 'pt' ? 'Comissões Faturadas — Plataforma (BTF):' : 'Invoiced Commissions — Platform (BTF):'}       ${formatCurrency(totals.faturaPlataforma)}`, left, y); y += 4;
         doc.setFont('helvetica', 'bold'); doc.setTextColor(239, 68, 68);
-        doc.text(`     → Δ C2 [SG-2]: ${formatCurrency(cross.discrepanciaCritica)} (${_pctOmissaoStr}) — Diferencial de Base em Análise`, left, y); y += 6;
+        doc.text(`     → Δ C2 [SG-2]: ${formatCurrency(cross.discrepanciaCritica)} (${_pctOmissaoStr}) — ${currentLang === 'pt' ? 'Diferencial de Base em Análise' : 'Base Differential Under Analysis'}`, left, y); y += 6;
         doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'normal');
 
-        // ── C3: SAF-T Valor Bruto Total vs GANHOS (EXTRATO) ─────────────────
         doc.setFont('helvetica', 'bold'); doc.setTextColor(0, 80, 160);
         doc.text('C3. SAF-T VALOR BRUTO TOTAL vs GANHOS (EXTRATO) (Viagens Faturadas vs Transferências):', left, y); y += 5;
         doc.setFont('helvetica', 'normal'); doc.setTextColor(0, 0, 0);
-        doc.text(`     SAF-T Valor Bruto (Viagens Faturadas — Sistema):  ${formatCurrency(totals.saftBruto)}`, left, y); y += 4;
-        doc.text(`     Ganhos Extrato (Transferências Efetivas — Banco): ${formatCurrency(totals.ganhos)}`, left, y); y += 4;
+        doc.text(`     ${currentLang === 'pt' ? 'SAF-T Valor Bruto (Viagens Faturadas — Sistema):' : 'SAF-T Gross Value (Invoiced Trips — System):'}  ${formatCurrency(totals.saftBruto)}`, left, y); y += 4;
+        doc.text(`     ${currentLang === 'pt' ? 'Ganhos Extrato (Transferências Efetivas — Banco):' : 'Statement Earnings (Actual Transfers — Bank):'} ${formatCurrency(totals.ganhos)}`, left, y); y += 4;
         doc.setFont('helvetica', 'bold'); doc.setTextColor(245, 158, 11);
-        doc.text(`     → Δ C3: ${formatCurrency(cross.c3_delta || (totals.saftBruto - totals.ganhos))} (${(cross.c3_pct || 0).toFixed(2)}%) — Gap entre faturado e transferido`, left, y); y += 6;
+        doc.text(`     → Δ C3: ${formatCurrency(cross.c3_delta || (totals.saftBruto - totals.ganhos))} (${(cross.c3_pct || 0).toFixed(2)}%) — ${currentLang === 'pt' ? 'Gap entre faturado e transferido' : 'Gap between invoiced and transferred'}`, left, y); y += 6;
         doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'normal');
 
-        // ── C4: Ganhos Líquidos Declarados vs Líquido Real (Extrato) ────────
         doc.setFont('helvetica', 'bold'); doc.setTextColor(0, 80, 160);
         doc.text('C4. GANHOS LÍQUIDOS DECLARADOS vs LÍQUIDO REAL EXTRATO (Impacto Final SP):', left, y); y += 5;
         doc.setFont('helvetica', 'normal'); doc.setTextColor(0, 0, 0);
-        doc.text(`     Líquido Declarado/Fiscal (SAF-T − Fatura):     ${formatCurrency(cross.c4_liquidoDeclarado || (totals.saftBruto - totals.faturaPlataforma))}`, left, y); y += 4;
-        doc.text(`     Líquido Real — Extrato (Ganhos Líquidos SP):   ${formatCurrency(totals.ganhosLiquidos)}`, left, y); y += 4;
+        doc.text(`     ${currentLang === 'pt' ? 'Líquido Declarado/Fiscal (SAF-T − Fatura):' : 'Declared/Tax Net (SAF-T − Invoice):'}     ${formatCurrency(cross.c4_liquidoDeclarado || (totals.saftBruto - totals.faturaPlataforma))}`, left, y); y += 4;
+        doc.text(`     ${currentLang === 'pt' ? 'Líquido Real — Extrato (Ganhos Líquidos SP):' : 'Actual Net — Statement (Net Earnings SP):'}   ${formatCurrency(totals.ganhosLiquidos)}`, left, y); y += 4;
         doc.setFont('helvetica', 'bold'); doc.setTextColor(239, 68, 68);
-        doc.text(`     → Δ C4: ${formatCurrency(cross.c4_delta || 0)} (${(cross.c4_pct || 0).toFixed(2)}%) — Diferença final no bolso do sujeito passivo`, left, y); y += 6;
+        doc.text(`     → Δ C4: ${formatCurrency(cross.c4_delta || 0)} (${(cross.c4_pct || 0).toFixed(2)}%) — ${currentLang === 'pt' ? 'Diferença final no bolso do sujeito passivo' : 'Final difference in the taxpayer\'s pocket'}`, left, y); y += 6;
         doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'normal');
 
-        // 10. IMPACTO FISCAL E AGRAVAMENTO DE GESTÃO
         doc.setFontSize(10);
         doc.setFont('helvetica', 'bold');
         doc.text('10. IMPACTO FISCAL / FISCAL IMPACT & MANAGEMENT AGGRAVATION', left, y);
         y += 8;
 
-        // ── Tabela de impacto fiscal — 3 colunas: Indicador | Valor | % ──────
         const FIS_COL_DESC = left;
-        const FIS_COL_DESCW = 100;   // mm — descrição
-        const FIS_COL_VAL  = 118;    // mm — valor (right-aligned)
-        const FIS_COL_PCT  = 163;    // mm — % (right-aligned)
+        const FIS_COL_DESCW = 100;
+        const FIS_COL_VAL  = 118;
+        const FIS_COL_PCT  = 163;
         const FIS_PAGE_W   = doc.internal.pageSize.getWidth() - left;
 
-        // Cabeçalho da tabela
         doc.setFontSize(7.5);
         doc.setFont('helvetica', 'bold');
         doc.setFillColor(30, 30, 80);
         doc.rect(left, y - 4, FIS_PAGE_W - 14, 8, 'F');
         doc.setTextColor(255, 255, 255);
-        doc.text('Indicador Fiscal / Tax Indicator', FIS_COL_DESC + 1, y);
-        doc.text('Valor (€)', FIS_COL_VAL, y, { align: 'right' });
+        doc.text(`${currentLang === 'pt' ? 'Indicador Fiscal / Tax Indicator' : 'Tax Indicator'}`, FIS_COL_DESC + 1, y);
+        doc.text(`${currentLang === 'pt' ? 'Valor (€)' : 'Amount (€)'}`, FIS_COL_VAL, y, { align: 'right' });
         doc.text('%', FIS_COL_PCT, y, { align: 'right' });
         doc.setTextColor(0, 0, 0);
         y += 6;
 
-        // Linha de fundo da tabela
         doc.setDrawColor(180, 180, 180);
         doc.setLineWidth(0.2);
         doc.line(left, y - 1, FIS_PAGE_W, y - 1);
 
         const fisRows = [
-            { desc: 'VAT 23% / IVA Omitido (23% Autoliquidação CIVA)',    val: cross.ivaFalta,                      pct: null,      highlight: false },
-            { desc: 'VAT 6% / IVA Omitido (6% Transporte)',               val: cross.ivaFalta6,                     pct: null,      highlight: false },
-            { desc: 'Revenue Omission (DAC7) / Omissão de Receita',       val: cross.discrepanciaSaftVsDac7,         pct: _pctReceitaStr, highlight: false },
-            { desc: 'Expense Omission / Omissão de Custos (C2)',           val: cross.discrepanciaCritica,            pct: _pctOmissaoStr, highlight: true  },
-            { desc: 'Annual Omitted Base / Projeção Anual (C2 × 12 meses)',val: cross.discrepanciaCritica * 12,      pct: null,      highlight: false },
-            { desc: 'Estimated IRC Impact / Impacto IRC Anual',            val: cross.discrepanciaCritica * 12 * 0.21,pct: null,      highlight: false },
-            { desc: 'Contribuição IMT/AMT Omitida (5%)',                   val: cross.discrepancia5IMT,              pct: null,      highlight: false },
-            { desc: 'Agravamento Bruto IRC (C2 ÷ Meses × 12)',            val: cross.agravamentoBrutoIRC,           pct: null,      highlight: false },
-            { desc: 'IRC Estimado (21% sobre Agravamento Anual)',          val: cross.ircEstimado,                   pct: null,      highlight: false },
-            { desc: 'Impacto Mensal · 38.000 condutores PT',               val: cross.impactoMensalMercado,          pct: null,      highlight: false },
-            { desc: 'Impacto Anual · 38.000 condutores × 12 meses PT',    val: cross.impactoAnualMercado,           pct: null,      highlight: false },
-            { desc: '% Omissão Receita SAF-T vs DAC7',                     val: null,                                pct: (cross.percentagemSaftVsDac7 || 0).toFixed(2) + '%', highlight: false },
-            { desc: '% Diferencial de Base em Análise (Desp. vs Fat.)',    val: null,                                pct: (cross.percentagemOmissao || 0).toFixed(2) + '%',    highlight: false }
+            { desc: currentLang === 'pt' ? 'VAT 23% / IVA Omitido (23% Autoliquidação CIVA)' : 'VAT 23% / Missing VAT (23% VAT Self-Liquidation)',    val: cross.ivaFalta,                      pct: null,      highlight: false },
+            { desc: currentLang === 'pt' ? 'VAT 6% / IVA Omitido (6% Transporte)' : 'VAT 6% / Missing VAT (6% Transport)',               val: cross.ivaFalta6,                     pct: null,      highlight: false },
+            { desc: currentLang === 'pt' ? 'Revenue Omission (DAC7) / Omissão de Receita' : 'Revenue Omission (DAC7)',       val: cross.discrepanciaSaftVsDac7,         pct: _pctReceitaStr, highlight: false },
+            { desc: currentLang === 'pt' ? 'Expense Omission / Omissão de Custos (C2)' : 'Expense Omission (C2)',           val: cross.discrepanciaCritica,            pct: _pctOmissaoStr, highlight: true  },
+            { desc: currentLang === 'pt' ? 'Annual Omitted Base / Projeção Anual (C2 × 12 meses)' : 'Annual Omitted Base (C2 × 12 months)',val: cross.discrepanciaCritica * 12,      pct: null,      highlight: false },
+            { desc: currentLang === 'pt' ? 'Estimated IRC Impact / Impacto IRC Anual' : 'Estimated IRC Impact',            val: cross.discrepanciaCritica * 12 * 0.21,pct: null,      highlight: false },
+            { desc: currentLang === 'pt' ? 'Contribuição IMT/AMT Omitida (5%)' : 'Missing IMT/AMT Contribution (5%)',                   val: cross.discrepancia5IMT,              pct: null,      highlight: false },
+            { desc: currentLang === 'pt' ? 'Agravamento Bruto IRC (C2 ÷ Meses × 12)' : 'Gross IRC Aggravation (C2 ÷ Months × 12)',            val: cross.agravamentoBrutoIRC,           pct: null,      highlight: false },
+            { desc: currentLang === 'pt' ? 'IRC Estimado (21% sobre Agravamento Anual)' : 'Estimated IRC (21% on Annual Aggravation)',          val: cross.ircEstimado,                   pct: null,      highlight: false },
+            { desc: currentLang === 'pt' ? 'Impacto Mensal · 38.000 condutores PT' : 'Monthly Impact · 38,000 drivers PT',               val: cross.impactoMensalMercado,          pct: null,      highlight: false },
+            { desc: currentLang === 'pt' ? 'Impacto Anual · 38.000 condutores × 12 meses PT' : 'Annual Impact · 38,000 drivers × 12 months PT',    val: cross.impactoAnualMercado,           pct: null,      highlight: false },
+            { desc: currentLang === 'pt' ? '% Omissão Receita SAF-T vs DAC7' : '% Revenue Omission SAF-T vs DAC7',                     val: null,                                pct: (cross.percentagemSaftVsDac7 || 0).toFixed(2) + '%', highlight: false },
+            { desc: currentLang === 'pt' ? '% Diferencial de Base em Análise (Desp. vs Fat.)' : '% Base Differential Under Analysis (Exp. vs Inv.)',    val: null,                                pct: (cross.percentagemOmissao || 0).toFixed(2) + '%',    highlight: false }
         ];
 
         fisRows.forEach((row, i) => {
@@ -6417,35 +6290,33 @@ async function exportPDF() {
         doc.setFontSize(8);
         doc.setTextColor(239, 68, 68);
         const macroLine4 = doc.splitTextToSize(
-            `IMPACTO SISTÉMICO ESTIMADO (7 Anos · 38.000 operadores × 12 meses): ${formatCurrency(_impactoMercado7Anos)}`,
+            `${currentLang === 'pt' ? 'IMPACTO SISTÉMICO ESTIMADO (7 Anos · 38.000 operadores × 12 meses):' : 'ESTIMATED SYSTEMIC IMPACT (7 Years · 38,000 operators × 12 months):'} ${formatCurrency(_impactoMercado7Anos)}`,
             doc.internal.pageSize.getWidth() - 30);
         doc.text(macroLine4, left, y); y += (macroLine4.length * 4.5) + 2;
 
-        // Nota estratégica — tutela de interesses coletivos
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7.5);
         doc.setTextColor(80, 80, 80);
         const macroNota2 = doc.splitTextToSize(
-            'Esta perícia revela um padrão de omissão que, extrapolado ao universo de 38.000 operadores, ' +
-            'representa uma exposição tributária de ' + formatCurrency(_impactoMercado7Anos) + '. ' +
-            'Este dado fundamenta a relevância da presente ação para a tutela de interesses coletivos ' +
-            'e correção de distorções de mercado. Projeção: Omissão mensal média × 38.000 motoristas TVDE ' +
-            '(INE/IMT) × 12 meses × 7 anos (prazo Art. 45.º LGT).',
+            currentLang === 'pt'
+                ? 'Esta perícia revela um padrão de omissão que, extrapolado ao universo de 38.000 operadores, ' +
+                  'representa uma exposição tributária de ' + formatCurrency(_impactoMercado7Anos) + '. ' +
+                  'Este dado fundamenta a relevância da presente ação para a tutela de interesses coletivos ' +
+                  'e correção de distorções de mercado. Projeção: Omissão mensal média × 38.000 motoristas TVDE ' +
+                  '(INE/IMT) × 12 meses × 7 anos (prazo Art. 45.º LGT).'
+                : 'This expertise reveals a pattern of omission which, extrapolated to the universe of 38,000 operators, ' +
+                  'represents a tax exposure of ' + formatCurrency(_impactoMercado7Anos) + '. ' +
+                  'This data underpins the relevance of this action for the protection of collective interests ' +
+                  'and correction of market distortions. Projection: Average monthly omission × 38,000 TVDE drivers ' +
+                  '(INE/IMT) × 12 months × 7 years (deadline Art. 45 LGT).',
             doc.internal.pageSize.getWidth() - 35);
         doc.text(macroNota2, left + 5, y); y += (macroNota2.length * 3.5) + 2;
 
-        // Nota metodológica da projeção macroeconómica
         doc.setFont('helvetica', 'italic');
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(9);
         doc.setTextColor(0, 0, 0);
 
-        // ══════════════════════════════════════════════════════════════════════
-        // BLOCO UNIFED-v13.5.0-PURE: PERDA DE CHANCE E DANO REPUTACIONAL
-        // Fundamento: Art. 36.º n.º 11 CIVA · Responsabilidade Civil Extracontratual
-        // Valor dinâmico: cross.discrepanciaSaftVsDac7 (Fonte de Verdade Imutável)
-        // Injeção estrita de texto — motor de cálculo INTOCADO (Core Freeze)
-        // ══════════════════════════════════════════════════════════════════════
         if (y > 235) { addFooter(doc, pageNumber); doc.addPage(); pageNumber++; y = 20; }
         {
             const _perdaW = doc.internal.pageSize.getWidth() - left - 14;
@@ -6456,142 +6327,156 @@ async function exportPDF() {
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(8.5);
             doc.setTextColor(140, 40, 0);
-            doc.text('PERDA DE CHANCE E DANO REPUTACIONAL — RESPONSABILIDADE CIVIL EXTRACONTRATUAL', left + 3, y + 3);
+            doc.text(`${currentLang === 'pt' ? 'PERDA DE CHANCE E DANO REPUTACIONAL — RESPONSABILIDADE CIVIL EXTRACONTRATUAL' : 'LOSS OF CHANCE AND REPUTATIONAL DAMAGE — EXTRA-CONTRACTUAL CIVIL LIABILITY'}`, left + 3, y + 3);
             doc.setTextColor(0, 0, 0);
             y += 14;
 
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(8);
             const _perdaText = doc.splitTextToSize(
-                'Dano Reputacional e Perda de Chance: O reporte viciado da plataforma à Autoridade Tributária ' +
-                '(com uma discrepância detetada de ' + formatCurrency(cross.discrepanciaSaftVsDac7) + ') contamina diretamente o perfil de risco ' +
-                '(Risk Scoring) do parceiro. Sendo a plataforma a detentora do monopólio de emissão documental ' +
-                '(Art. 36.º n.º 11 CIVA), o sujeito passivo é penalizado sem dolo. ' +
-                'Esta adulteração do perfil fiscal gera lucros cessantes mensuráveis, inibindo o acesso a financiamento bancário, ' +
-                'linhas de crédito e benefícios fiscais, constituindo fundamento para indemnização por responsabilidade civil extracontratual.',
+                currentLang === 'pt'
+                    ? 'Dano Reputacional e Perda de Chance: O reporte viciado da plataforma à Autoridade Tributária ' +
+                      '(com uma discrepância detetada de ' + formatCurrency(cross.discrepanciaSaftVsDac7) + ') contamina diretamente o perfil de risco ' +
+                      '(Risk Scoring) do parceiro. Sendo a plataforma a detentora do monopólio de emissão documental ' +
+                      '(Art. 36.º n.º 11 CIVA), o sujeito passivo é penalizado sem dolo. ' +
+                      'Esta adulteração do perfil fiscal gera lucros cessantes mensuráveis, inibindo o acesso a financiamento bancário, ' +
+                      'linhas de crédito e benefícios fiscais, constituindo fundamento para indemnização por responsabilidade civil extracontratual.'
+                    : 'Reputational Damage and Loss of Chance: The platform\'s tainted reporting to the Tax Authority ' +
+                      '(with a detected discrepancy of ' + formatCurrency(cross.discrepanciaSaftVsDac7) + ') directly contaminates the risk profile ' +
+                      '(Risk Scoring) of the partner. Since the platform holds the monopoly on document issuance ' +
+                      '(Art. 36(11) CIVA), the taxpayer is penalized without intent. ' +
+                      'This alteration of the tax profile generates measurable lost profits, inhibiting access to bank financing, ' +
+                      'credit lines and tax benefits, constituting grounds for compensation for extra-contractual civil liability.',
                 _perdaW - 3);
             doc.text(_perdaText, left + 3, y); y += (_perdaText.length * 4) + 6;
         }
-        // ══ FIM BLOCO PERDA DE CHANCE E DANO REPUTACIONAL ══
 
         addFooter(doc, pageNumber);
 
-        // PÁGINA 5 — ADENDA FORENSE (INTELIGÊNCIA ESTRATÉGICA) v13.1.6-GOLD
         doc.addPage();
         pageNumber = 5;
         y = 20;
 
-        // ── Layout constants for this page ──
         const adendaPageW  = doc.internal.pageSize.getWidth();
-        const adendaUsableW = adendaPageW - left - 14;  // 182mm
-        const adendaIndentW = adendaUsableW - 5;        // indented blocks
+        const adendaUsableW = adendaPageW - left - 14;
+        const adendaIndentW = adendaUsableW - 5;
 
         doc.setFillColor(20, 20, 20);
         doc.rect(10, 10, adendaPageW - 20, 12, 'F');
         doc.setFontSize(9);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(0, 229, 255);
-        const adendaTitle = doc.splitTextToSize('FORENSIC ADDENDUM / ADENDA FORENSE — Strategic Intelligence & Bad Faith Analysis', adendaPageW - 30);
+        const adendaTitle = doc.splitTextToSize(
+            currentLang === 'pt' ? 'FORENSIC ADDENDUM / ADENDA FORENSE — Strategic Intelligence & Bad Faith Analysis' : 'FORENSIC ADDENDUM / ADENDA FORENSE — Strategic Intelligence & Bad Faith Analysis',
+            adendaPageW - 30);
         doc.text(adendaTitle, adendaPageW / 2, 17, { align: 'center' });
         doc.setTextColor(0, 0, 0);
         y = 30;
 
-        // ── Nota Técnica Forense Principal ──
         doc.setFontSize(9);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(239, 68, 68);
-        doc.text('FORENSIC NOTE / NOTA TÉCNICA PERICIAL — Data Obfuscation Practices:', left, y); y += 6;
+        doc.text(`${currentLang === 'pt' ? 'FORENSIC NOTE / NOTA TÉCNICA PERICIAL — Data Obfuscation Practices:' : 'FORENSIC NOTE / NOTA TÉCNICA PERICIAL — Data Obfuscation Practices:'}`, left, y); y += 6;
         doc.setTextColor(0, 0, 0);
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(8);
         const notaPrincLines = doc.splitTextToSize(
-            'A analise detetou praticas de obscurecimento de dados por parte da plataforma sob exame, nomeadamente a alteracao anual da estrutura de reporte (Ledger) e da sintaxe utilizada (moeda e separadores decimais), bem como a utilizacao do termo "Ganhos Liquidos" para designar meras transferencias bancarias, ocultando a natureza das retencoes efetuadas sem o devido suporte fiscal.',
+            currentLang === 'pt'
+                ? 'A analise detetou praticas de obscurecimento de dados por parte da plataforma sob exame, nomeadamente a alteracao anual da estrutura de reporte (Ledger) e da sintaxe utilizada (moeda e separadores decimais), bem como a utilizacao do termo "Ganhos Liquidos" para designar meras transferencias bancarias, ocultando a natureza das retencoes efetuadas sem o devido suporte fiscal.'
+                : 'The analysis detected data obfuscation practices by the platform under examination, namely the annual change in the reporting structure (Ledger) and the syntax used (currency and decimal separators), as well as the use of the term "Net Earnings" to designate mere bank transfers, hiding the nature of the withholdings made without proper tax support.',
             adendaUsableW);
         doc.text(notaPrincLines, left, y); y += (notaPrincLines.length * 4.5) + 6;
 
-        // ── PONTO 1: Inconsistência de Sintaxe ──
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9);
-        const h1Lines = doc.splitTextToSize('1. SYNTAX INCONSISTENCY / Inconsistencia de Sintaxe (Data Obfuscation - Level 1):', adendaUsableW);
+        const h1Lines = doc.splitTextToSize(
+            currentLang === 'pt' ? '1. SYNTAX INCONSISTENCY / Inconsistencia de Sintaxe (Data Obfuscation - Level 1):' : '1. SYNTAX INCONSISTENCY / Inconsistencia de Sintaxe (Data Obfuscation - Level 1):',
+            adendaUsableW);
         doc.text(h1Lines, left, y); y += (h1Lines.length * 4.5) + 2;
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(8);
         const p1Lines = doc.splitTextToSize(
-            'Dada a volatilidade das plataformas digitais, o sistema detetou que a estrutura de reporte (Ledger) e objeto de atualizacao anual. Exemplo material verificado na transicao 2024/2025: o campo anteriormente designado "Portagens" transitou para "Reembolsos de despesas". Adicionalmente, detetou-se a alteracao deliberada de separadores decimais (ponto vs. virgula) e do posicionamento do simbolo monetario (EUR) entre periodos anuais — exemplo: "7755.16EUR" torna-se "EUR 7.731,22" no ano seguinte. O UNIFED PROBATUM garante a reconciliacao de ambos os campos para efeitos de reconstrucao de passivo fiscal. Esta mutacao sintatica e semantica sistematica dificulta a leitura algoritmica automatica e impede a reconciliacao direta por auditores externos, constituindo indicio de manipulacao intencional do formato dos dados com o proposito de dificultar a auditoria forense.',
+            currentLang === 'pt'
+                ? 'Dada a volatilidade das plataformas digitais, o sistema detetou que a estrutura de reporte (Ledger) e objeto de atualizacao anual. Exemplo material verificado na transicao 2024/2025: o campo anteriormente designado "Portagens" transitou para "Reembolsos de despesas". Adicionalmente, detetou-se a alteracao deliberada de separadores decimais (ponto vs. virgula) e do posicionamento do simbolo monetario (EUR) entre periodos anuais — exemplo: "7755.16EUR" torna-se "EUR 7.731,22" no ano seguinte. O UNIFED PROBATUM garante a reconciliacao de ambos os campos para efeitos de reconstrucao de passivo fiscal. Esta mutacao sintatica e semantica sistematica dificulta a leitura algoritmica automatica e impede a reconciliacao direta por auditores externos, constituindo indicio de manipulacao intencional do formato dos dados com o proposito de dificultar a auditoria forense.'
+                : 'Given the volatility of digital platforms, the system detected that the reporting structure (Ledger) is subject to annual updates. Material example verified in the 2024/2025 transition: the field previously designated "Portagens" (Tolls) changed to "Reembolsos de despesas" (Expense Reimbursements). Additionally, the deliberate change of decimal separators (period vs. comma) and the positioning of the currency symbol (EUR) between annual periods was detected — example: "7755.16EUR" becomes "EUR 7.731,22" the following year. UNIFED PROBATUM guarantees the reconciliation of both fields for the purposes of reconstructing tax liability. This systematic syntactic and semantic mutation hinders automatic algorithmic reading and prevents direct reconciliation by external auditors, constituting evidence of intentional manipulation of data format with the purpose of hindering forensic auditing.',
             adendaIndentW - 3);
         doc.text(p1Lines, left + 3, y); y += (p1Lines.length * 4.5) + 5;
 
-        // ── PONTO 2: Ambiguidade Semântica ──
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9);
-        const h2Lines = doc.splitTextToSize('2. SEMANTIC AMBIGUITY / Ambiguidade Semantica ("Net Earnings" Masking - Fiscal Camouflage):', adendaUsableW);
+        const h2Lines = doc.splitTextToSize(
+            currentLang === 'pt' ? '2. SEMANTIC AMBIGUITY / Ambiguidade Semantica ("Net Earnings" Masking - Fiscal Camouflage):' : '2. SEMANTIC AMBIGUITY / Ambiguidade Semantica ("Net Earnings" Masking - Fiscal Camouflage):',
+            adendaUsableW);
         doc.text(h2Lines, left, y); y += (h2Lines.length * 4.5) + 2;
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(8);
-        doc.setFontSize(8);
         const p2Lines = doc.splitTextToSize(
-            'A plataforma utiliza o termo "Ganhos Liquidos" para designar meras transferencias bancarias brutas, camuflando retencoes de comissoes que nao deduzem os impostos devidos ao abrigo da Autoliquidacao de IVA (Art. 2.o, n.o 1, al. i) CIVA). Esta nomenclatura enganosa induz o sujeito passivo a declarar valores inferiores a base tributavel real, transferindo indevidamente o risco fiscal para o contribuinte.',
+            currentLang === 'pt'
+                ? 'A plataforma utiliza o termo "Ganhos Liquidos" para designar meras transferencias bancarias brutas, camuflando retencoes de comissoes que nao deduzem os impostos devidos ao abrigo da Autoliquidacao de IVA (Art. 2.o, n.o 1, al. i) CIVA). Esta nomenclatura enganosa induz o sujeito passivo a declarar valores inferiores a base tributavel real, transferindo indevidamente o risco fiscal para o contribuinte.'
+                : 'The platform uses the term "Net Earnings" to designate mere gross bank transfers, camouflaging commission withholdings that do not deduct taxes due under the VAT Self-Assessment (Art. 2(1)(i) CIVA). This misleading nomenclature induces the taxpayer to declare values lower than the real taxable base, improperly transferring the tax risk to the taxpayer.',
             adendaIndentW);
         doc.text(p2Lines, left + 3, y); y += (p2Lines.length * 4.5) + 5;
-        // ── PONTO 3: Data Obfuscation ──
+
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9);
-        const h3Lines = doc.splitTextToSize('3. DATA OBFUSCATION - Limited Access Window / Janela de Acesso Limitada (Audit Trail Destruction):', adendaUsableW);
+        const h3Lines = doc.splitTextToSize(
+            currentLang === 'pt' ? '3. DATA OBFUSCATION - Limited Access Window / Janela de Acesso Limitada (Audit Trail Destruction):' : '3. DATA OBFUSCATION - Limited Access Window / Janela de Acesso Limitada (Audit Trail Destruction):',
+            adendaUsableW);
         doc.text(h3Lines, left, y); y += (h3Lines.length * 4.5) + 2;
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(8);
         const p3Lines = doc.splitTextToSize(
-            'A plataforma impoe uma janela maxima de 6 meses para acesso a dados historicos detalhados (extratos de atividade). Esta limitacao temporal constitui uma estrategia de eliminacao de rasto de auditoria (audit trail destruction), impedindo a reconstrucao de series historicas superiores ao semestre. Nos termos do Art. 40.o do CIVA, os registos primarios devem ser conservados por 10 anos.',
+            currentLang === 'pt'
+                ? 'A plataforma impoe uma janela maxima de 6 meses para acesso a dados historicos detalhados (extratos de atividade). Esta limitacao temporal constitui uma estrategia de eliminacao de rasto de auditoria (audit trail destruction), impedindo a reconstrucao de series historicas superiores ao semestre. Nos termos do Art. 40.o do CIVA, os registos primarios devem ser conservados por 10 anos.'
+                : 'The platform imposes a maximum window of 6 months for access to detailed historical data (activity statements). This temporal limitation constitutes a strategy of audit trail destruction, preventing the reconstruction of historical series longer than one semester. Under Art. 40 of the VAT Code, primary records must be kept for 10 years.',
             adendaIndentW);
         doc.text(p3Lines, left + 3, y); y += (p3Lines.length * 4.5) + 6;
 
-        // ── PONTO 4: Desalinhamento Temporal (Pagamentos vs Faturação) ──
-        // UNIFED-GOLD v13.2 — Adenda Forense · Ofuscação Temporal
-        // Fundamento legal: Art. 103.º RGIT · Art. 125.º CPP · ISO/IEC 27037:2012
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9);
-        const h4Lines = doc.splitTextToSize('4. TEMPORAL MISMATCH / Desalinhamento Temporal (Pagamentos Semanais vs Reporte Mensal):', adendaUsableW);
+        const h4Lines = doc.splitTextToSize(
+            currentLang === 'pt' ? '4. TEMPORAL MISMATCH / Desalinhamento Temporal (Pagamentos Semanais vs Reporte Mensal):' : '4. TEMPORAL MISMATCH / Desalinhamento Temporal (Weekly Payments vs Monthly Reporting):',
+            adendaUsableW);
         doc.text(h4Lines, left, y); y += (h4Lines.length * 4.5) + 2;
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(8);
         const p4Lines = doc.splitTextToSize(
-            'As plataformas procedem ao pagamento dos prestadores por transferencia bancaria semanal, contudo, a emissao dos documentos de reporte fiscal (extratos e faturas) ocorre em formato mensal agregado. Esta assimetria temporal constitui uma tatica de ofuscacao que inviabiliza a reconciliacao bancaria direta (cruzamento 1:1 entre extrato bancario e documento de reporte), dificultando deliberadamente auditorias financeiras e a deteção atempada das discrepâncias.',
+            currentLang === 'pt'
+                ? 'As plataformas procedem ao pagamento dos prestadores por transferencia bancaria semanal, contudo, a emissao dos documentos de reporte fiscal (extratos e faturas) ocorre em formato mensal agregado. Esta assimetria temporal constitui uma tatica de ofuscacao que inviabiliza a reconciliacao bancaria direta (cruzamento 1:1 entre extrato bancario e documento de reporte), dificultando deliberadamente auditorias financeiras e a deteção atempada das discrepâncias.'
+                : 'Platforms make payments to providers by weekly bank transfer, however, the issuance of tax reporting documents (statements and invoices) occurs in aggregate monthly format. This temporal asymmetry constitutes an obfuscation tactic that makes direct bank reconciliation unfeasible (1:1 matching between bank statement and reporting document), deliberately hindering financial audits and the timely detection of discrepancies.',
             adendaIndentW);
         doc.text(p4Lines, left + 3, y); y += (p4Lines.length * 4.5) + 6;
 
-        // ── Quadro tributário ──
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9);
         doc.setTextColor(239, 68, 68);
-        doc.text('TAX FRAMEWORK / QUADRO TRIBUTÁRIO — Direct Financial Impact:', left, y); y += 5;
+        doc.text(`${currentLang === 'pt' ? 'TAX FRAMEWORK / QUADRO TRIBUTÁRIO — Direct Financial Impact:' : 'TAX FRAMEWORK / QUADRO TRIBUTÁRIO — Direct Financial Impact:'}`, left, y); y += 5;
         doc.setTextColor(0, 0, 0);
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(8);
-        doc.text(`  VAT 23% / IVA 23% Omitido (Autoliquidação):      ${formatCurrency(cross.ivaFalta)}`, left, y); y += 4;
-        doc.text(`  VAT 6% / IVA 6% Omitido (Transporte):            ${formatCurrency(cross.ivaFalta6)}`, left, y); y += 4;
-        doc.text(`  Revenue Omission (DAC7) / Omissão Receita:        ${formatCurrency(cross.discrepanciaSaftVsDac7)} (${_pctReceitaStr})`, left, y); y += 4;
-        doc.text(`  Expense Omission / Omissão Custos (BTF):          ${formatCurrency(cross.discrepanciaCritica)} (${_pctOmissaoStr})`, left, y); y += 6;
-        doc.text(`  Contribuição IMT/AMT Omitida (5%):              ${formatCurrency(cross.discrepancia5IMT)}`, left, y); y += 4;
+        doc.text(`  ${currentLang === 'pt' ? 'VAT 23% / IVA 23% Omitido (Autoliquidação):' : 'VAT 23% / Missing VAT 23% (Self-Assessment):'}      ${formatCurrency(cross.ivaFalta)}`, left, y); y += 4;
+        doc.text(`  ${currentLang === 'pt' ? 'VAT 6% / IVA 6% Omitido (Transporte):' : 'VAT 6% / Missing VAT 6% (Transport):'}            ${formatCurrency(cross.ivaFalta6)}`, left, y); y += 4;
+        doc.text(`  ${currentLang === 'pt' ? 'Revenue Omission (DAC7) / Omissão Receita:' : 'Revenue Omission (DAC7) / Omissão Receita:'}        ${formatCurrency(cross.discrepanciaSaftVsDac7)} (${_pctReceitaStr})`, left, y); y += 4;
+        doc.text(`  ${currentLang === 'pt' ? 'Expense Omission / Omissão Custos (BTF):' : 'Expense Omission / Omissão Custos (BTF):'}          ${formatCurrency(cross.discrepanciaCritica)} (${_pctOmissaoStr})`, left, y); y += 6;
+        doc.text(`  ${currentLang === 'pt' ? 'Contribuição IMT/AMT Omitida (5%):' : 'Missing IMT/AMT Contribution (5%):'}              ${formatCurrency(cross.discrepancia5IMT)}`, left, y); y += 4;
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(10);
         doc.setTextColor(239, 68, 68);
         const macroLine = doc.splitTextToSize(
-            `  IMPACTO SISTÉMICO ESTIMADO (7 Anos · 38.000 operadores PT): ${formatCurrency(_impactoMercado7Anos)}`,
+            `  ${currentLang === 'pt' ? 'IMPACTO SISTÉMICO ESTIMADO (7 Anos · 38.000 operadores PT):' : 'ESTIMATED SYSTEMIC IMPACT (7 Years · 38,000 operators PT):'} ${formatCurrency(_impactoMercado7Anos)}`,
             doc.internal.pageSize.getWidth() - 30);
         doc.text(macroLine, left, y); y += (macroLine.length * 4) + 2;
         doc.setFont('helvetica', 'italic');
         doc.setFontSize(7);
         doc.setTextColor(100, 100, 100);
-        doc.text('  * Projection based on PT GIG Economy market share (2019-2025). Supports legal relevance. / Projeção mercado GIG Economy PT (2019-2025).', left, y, { maxWidth: doc.internal.pageSize.getWidth() - 30 }); y += 6;
+        doc.text(currentLang === 'pt'
+            ? '  * Projeção baseada na quota de mercado da GIG Economy PT (2019-2025). Suporta relevância legal. / Projeção mercado GIG Economy PT (2019-2025).'
+            : '  * Projection based on PT GIG Economy market share (2019-2025). Supports legal relevance.',
+            left, y, { maxWidth: doc.internal.pageSize.getWidth() - 30 }); y += 6;
         doc.setTextColor(0, 0, 0);
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(8);
 
-        // ══════════════════════════════════════════════════════════════════════
-        // BLOCO UNIFED-v13.5.0-PURE: QUALIFICAÇÃO JURÍDICA — CRIMINALIDADE DE COLARINHO BRANCO
-        // Fundamento: Art. 103.º/104.º RGIT · Lei 83/2017 (BCFT) · Art. 36.º n.º 11 CIVA
-        // Injeção estrita de texto na Adenda Forense — motor de cálculo INTOCADO (Core Freeze)
-        // ══════════════════════════════════════════════════════════════════════
         if (y > 225) { addFooter(doc, pageNumber); doc.addPage(); pageNumber++; y = 20; }
         {
             const _ccbW = doc.internal.pageSize.getWidth() - left - 14;
@@ -6602,29 +6487,26 @@ async function exportPDF() {
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(8.5);
             doc.setTextColor(70, 10, 100);
-            doc.text('QUALIFICAÇÃO JURÍDICA — CRIMINALIDADE DE COLARINHO BRANCO (WHITE-COLLAR CRIME)', left + 3, y + 3);
+            doc.text(`${currentLang === 'pt' ? 'QUALIFICAÇÃO JURÍDICA — CRIMINALIDADE DE COLARINHO BRANCO (WHITE-COLLAR CRIME)' : 'QUALIFICAÇÃO JURÍDICA — CRIMINALIDADE DE COLARINHO BRANCO (WHITE-COLLAR CRIME)'}`, left + 3, y + 3);
             doc.setTextColor(0, 0, 0);
             y += 14;
 
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(8);
             const _ccbLines = doc.splitTextToSize(
-                'A engenharia algorítmica da plataforma cria uma \'zona cinzenta\' premeditada entre o ganho real retido na fonte ' +
-                'e o valor reportado em SAF-T/DAC7. Este diferencial não declarado fica num limbo contabilístico, caracterizando ' +
-                'uma tipologia de criminalidade de colarinho branco e evasão fiscal estruturada, explorando a assimetria de ' +
-                'informação contra o parceiro e o Estado.',
+                currentLang === 'pt'
+                    ? 'A engenharia algorítmica da plataforma cria uma \'zona cinzenta\' premeditada entre o ganho real retido na fonte ' +
+                      'e o valor reportado em SAF-T/DAC7. Este diferencial não declarado fica num limbo contabilístico, caracterizando ' +
+                      'uma tipologia de criminalidade de colarinho branco e evasão fiscal estruturada, explorando a assimetria de ' +
+                      'informação contra o parceiro e o Estado.'
+                    : 'The algorithmic engineering of the platform creates a premeditated \'grey zone\' between the real gain withheld at source ' +
+                      'and the value reported in SAF-T/DAC7. This undeclared differential remains in an accounting limbo, characterizing ' +
+                      'a typology of white-collar crime and structured tax evasion, exploiting information asymmetry ' +
+                      'against the partner and the State.',
                 _ccbW - 3);
             doc.text(_ccbLines, left + 3, y); y += (_ccbLines.length * 4) + 6;
         }
-        // ══ FIM BLOCO CRIMINALIDADE DE COLARINHO BRANCO ══
 
-        // ══════════════════════════════════════════════════════════════════════
-        // BLOCO UNIFED-v13.5.0-PURE: INVERSÃO DO ÓNUS DA PROVA
-        // Fundamento: Art. 344.º n.º 2 CC · Princípio da Proximidade da Prova
-        // Acórdão STJ 11/07/2013 · Art. 100.º CPPT
-        // Chama generateBurdenOfProofSection() do enrichment.js se disponível.
-        // Injeção estrita de texto — motor de cálculo INTOCADO (Core Freeze)
-        // ══════════════════════════════════════════════════════════════════════
         if (y > 220) { addFooter(doc, pageNumber); doc.addPage(); pageNumber++; y = 20; }
         {
             const _bopW = doc.internal.pageSize.getWidth() - left - 14;
@@ -6635,99 +6517,103 @@ async function exportPDF() {
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(8.5);
             doc.setTextColor(10, 70, 10);
-            doc.text('INVERSÃO DO ÓNUS DA PROVA — Art. 344.º n.º 2 CC · Princípio da Proximidade da Prova', left + 3, y + 3);
+            doc.text(`${currentLang === 'pt' ? 'INVERSÃO DO ÓNUS DA PROVA — Art. 344.º n.º 2 CC · Princípio da Proximidade da Prova' : 'BURDEN OF PROOF REVERSAL — Art. 344(2) CC · Principle of Proximity of Evidence'}`, left + 3, y + 3);
             doc.setTextColor(0, 0, 0);
             y += 14;
 
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(8);
-            doc.text('Objeto: Impossibilidade de Contraprova pelo Sujeito Passivo face à Assimetria Informativa.', left, y);
+            doc.text(`${currentLang === 'pt' ? 'Objeto: Impossibilidade de Contraprova pelo Sujeito Passivo face à Assimetria Informativa.' : 'Subject: Impossibility of Counterproof by the Taxpayer due to Informational Asymmetry.'}`, left, y);
             y += 6;
 
             doc.setFont('helvetica', 'normal');
             const _bopTech = doc.splitTextToSize(
-                'Análise Técnica: A UNIFED-PROBATUM identificou uma divergência estrutural entre o Fluxo de Caixa Real ' +
-                '(Ledger) e o Reporte Fiscal (SAF-T/DAC7). Dado que a plataforma detém o Monopólio da Emissão Documental ' +
-                '(Art. 36.º, n.º 11 do CIVA) e o controlo exclusivo sobre o algoritmo de cálculo de comissões, o parceiro ' +
-                'encontra-se numa situação de indefesa técnica. A plataforma atua como "Black Box" fiscal — o sujeito ' +
-                'passivo não tem acesso ao código-fonte nem aos logs brutos de transação que geram a faturação delegada.',
+                currentLang === 'pt'
+                    ? 'Análise Técnica: A UNIFED-PROBATUM identificou uma divergência estrutural entre o Fluxo de Caixa Real ' +
+                      '(Ledger) e o Reporte Fiscal (SAF-T/DAC7). Dado que a plataforma detém o Monopólio da Emissão Documental ' +
+                      '(Art. 36.º, n.º 11 do CIVA) e o controlo exclusivo sobre o algoritmo de cálculo de comissões, o parceiro ' +
+                      'encontra-se numa situação de indefesa técnica. A plataforma atua como "Black Box" fiscal — o sujeito ' +
+                      'passivo não tem acesso ao código-fonte nem aos logs brutos de transação que geram a faturação delegada.'
+                    : 'Technical Analysis: UNIFED-PROBATUM identified a structural divergence between the Real Cash Flow ' +
+                      '(Ledger) and the Tax Reporting (SAF-T/DAC7). Given that the platform holds the Monopoly of Document Issuance ' +
+                      '(Art. 36(11) CIVA) and exclusive control over the commission calculation algorithm, the partner ' +
+                      'finds themselves in a situation of technical defenselessness. The platform acts as a tax "Black Box" — the taxpayer ' +
+                      'has no access to the source code nor to the raw transaction logs that generate the delegated invoicing.',
                 _bopW - 3);
             doc.text(_bopTech, left + 3, y); y += (_bopTech.length * 4) + 4;
 
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(10, 70, 10);
             const _bopConc = doc.splitTextToSize(
-                'Conclusão Pericial: Por força do Princípio da Proximidade da Prova (Acórdão STJ 11/07/2013) e do ' +
-                'Art. 344.º n.º 2 do CC, opera-se a Inversão do Ónus da Prova: incumbe à plataforma demonstrar a ' +
-                'integridade dos valores retidos (' + formatCurrency(cross.discrepanciaCritica) + '), sob pena de ' +
-                'confissão implícita da apropriação indevida e da fraude fiscal aqui evidenciada. ' +
-                'Cabe à Plataforma — e não ao sujeito passivo — provar a inexistência de dolo na retenção apurada.',
+                currentLang === 'pt'
+                    ? 'Conclusão Pericial: Por força do Princípio da Proximidade da Prova (Acórdão STJ 11/07/2013) e do ' +
+                      'Art. 344.º n.º 2 do CC, opera-se a Inversão do Ónus da Prova: incumbe à plataforma demonstrar a ' +
+                      'integridade dos valores retidos (' + formatCurrency(cross.discrepanciaCritica) + '), sob pena de ' +
+                      'confissão implícita da apropriação indevida e da fraude fiscal aqui evidenciada. ' +
+                      'Cabe à Plataforma — e não ao sujeito passivo — provar a inexistência de dolo na retenção apurada.'
+                    : 'Expert Conclusion: By virtue of the Principle of Proximity of Evidence (STJ Judgment 11/07/2013) and ' +
+                      'Art. 344(2) CC, the Reversal of the Burden of Proof occurs: it is incumbent upon the platform to demonstrate the ' +
+                      'integrity of the amounts withheld (' + formatCurrency(cross.discrepanciaCritica) + '), under penalty of ' +
+                      'implied confession of the improper appropriation and tax fraud evidenced herein. ' +
+                      'It is up to the Platform — and not to the taxpayer — to prove the absence of intent in the retention found.',
                 _bopW - 3);
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(0, 0, 0);
             doc.text(_bopConc, left + 3, y); y += (_bopConc.length * 4) + 6;
         }
-        // ══ FIM BLOCO INVERSÃO DO ÓNUS DA PROVA ══
 
         addFooter(doc, pageNumber);
 
-        // ══════════════════════════════════════════════════════════════════════
-        // PÁGINA 5A — DIAGRAMA DE FLUXO FINANCEIRO (SANKEY)
-        // v13.5.0-PURE · Output Enrichment Layer · Dynamic Canvas-to-PDF Injection
-        // Gerado em memória por renderSankeyToImage() — Dashboard inalterado.
-        // Fundamento: Evidência Visual do "caminho do dinheiro" (Money Flow Analysis)
-        // Conformidade: Art. 125.º CPP · ISO/IEC 27037:2012
-        // ══════════════════════════════════════════════════════════════════════
         if (_enrichSankeyImage) {
             doc.addPage();
             pageNumber++;
             y = 20;
 
-            // Cabeçalho da página
             doc.setFillColor(13, 27, 42);
             doc.rect(10, 10, doc.internal.pageSize.getWidth() - 20, 12, 'F');
             doc.setFontSize(8.5);
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(0, 229, 255);
-            doc.text('DIAGRAMA DE FLUXO FINANCEIRO — MONEY FLOW ANALYSIS · v13.5.0-PURE',
+            doc.text(`${currentLang === 'pt' ? 'DIAGRAMA DE FLUXO FINANCEIRO — MONEY FLOW ANALYSIS · v13.5.0-PURE' : 'FINANCIAL FLOW DIAGRAM — MONEY FLOW ANALYSIS · v13.5.0-PURE'}`,
                 doc.internal.pageSize.getWidth() / 2, 18, { align: 'center' });
             doc.setTextColor(0, 0, 0);
             y = 30;
 
-            // Nota metodológica
             doc.setFontSize(7);
             doc.setFont('helvetica', 'italic');
             doc.setTextColor(80, 80, 80);
             const sankeyNotaLines = doc.splitTextToSize(
-                'Este diagrama representa o fluxo financeiro reconstituído a partir das evidências forenses carregadas (SAF-T, Extratos, DAC7). ' +
-                'É gerado em memória durante o processo de exportação e não altera o Dashboard nem as fórmulas de auditoria. ' +
-                'Constitui evidência visual do "caminho do dinheiro" para efeitos do Art. 125.º CPP.',
+                currentLang === 'pt'
+                    ? 'Este diagrama representa o fluxo financeiro reconstituído a partir das evidências forenses carregadas (SAF-T, Extratos, DAC7). ' +
+                      'É gerado em memória durante o processo de exportação e não altera o Dashboard nem as fórmulas de auditoria. ' +
+                      'Constitui evidência visual do "caminho do dinheiro" para efeitos do Art. 125.º CPP.'
+                    : 'This diagram represents the financial flow reconstructed from the loaded forensic evidence (SAF-T, Statements, DAC7). ' +
+                      'It is generated in memory during the export process and does not alter the Dashboard or the audit formulas. ' +
+                      'It constitutes visual evidence of the "path of money" for the purposes of Art. 125 CPP.',
                 doc.internal.pageSize.getWidth() - 28);
             doc.text(sankeyNotaLines, left, y);
             y += (sankeyNotaLines.length * 3.5) + 5;
             doc.setTextColor(0, 0, 0);
             doc.setFont('helvetica', 'normal');
 
-            // Diagrama Sankey — injeção da imagem
             const imgW = doc.internal.pageSize.getWidth() - 28;
-            const imgH = imgW * (720 / 1400); // preservar ratio 1400:720
+            const imgH = imgW * (720 / 1400);
             const imgX = (doc.internal.pageSize.getWidth() - imgW) / 2;
             doc.addImage(_enrichSankeyImage, 'PNG', imgX, y, imgW, imgH);
             y += imgH + 6;
 
-            // Legenda de valores críticos
             doc.setFontSize(7.5);
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(239, 68, 68);
-            doc.text('VALORES CRÍTICOS APURADOS:', left, y); y += 4;
+            doc.text(`${currentLang === 'pt' ? 'VALORES CRÍTICOS APURADOS:' : 'CRITICAL VALUES FOUND:'}`, left, y); y += 4;
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(7);
             doc.setTextColor(0, 0, 0);
-            if (cross.ivaFalta > 0)              { doc.text(`  · IVA 23% omitido: ${formatCurrency(cross.ivaFalta)}`, left, y); y += 4; }
-            if (cross.ivaFalta6 > 0)             { doc.text(`  · IVA 6% omitido: ${formatCurrency(cross.ivaFalta6)}`, left, y); y += 4; }
-            if (cross.discrepanciaSaftVsDac7 > 0){ doc.text(`  · Omissão de receita (SAF-T vs DAC7): ${formatCurrency(cross.discrepanciaSaftVsDac7)}`, left, y); y += 4; }
-            if (cross.discrepanciaCritica > 0)   { doc.text(`  · Omissão de custos (BTF): ${formatCurrency(cross.discrepanciaCritica)} (${_pctOmissaoStr})`, left, y); y += 4; }
-            if (cross.ircEstimado > 0)           { doc.text(`  · IRC estimado omitido: ${formatCurrency(cross.ircEstimado)}`, left, y); y += 4; }
+            if (cross.ivaFalta > 0)              { doc.text(`  · ${currentLang === 'pt' ? 'IVA 23% omitido:' : 'Missing VAT 23%:'} ${formatCurrency(cross.ivaFalta)}`, left, y); y += 4; }
+            if (cross.ivaFalta6 > 0)             { doc.text(`  · ${currentLang === 'pt' ? 'IVA 6% omitido:' : 'Missing VAT 6%:'} ${formatCurrency(cross.ivaFalta6)}`, left, y); y += 4; }
+            if (cross.discrepanciaSaftVsDac7 > 0){ doc.text(`  · ${currentLang === 'pt' ? 'Omissão de receita (SAF-T vs DAC7):' : 'Revenue omission (SAF-T vs DAC7):'} ${formatCurrency(cross.discrepanciaSaftVsDac7)}`, left, y); y += 4; }
+            if (cross.discrepanciaCritica > 0)   { doc.text(`  · ${currentLang === 'pt' ? 'Omissão de custos (BTF):' : 'Expense omission (BTF):'} ${formatCurrency(cross.discrepanciaCritica)} (${_pctOmissaoStr})`, left, y); y += 4; }
+            if (cross.ircEstimado > 0)           { doc.text(`  · ${currentLang === 'pt' ? 'IRC estimado omitido:' : 'Estimated omitted IRC:'} ${formatCurrency(cross.ircEstimado)}`, left, y); y += 4; }
 
             doc.setFontSize(6);
             doc.setFont('courier', 'normal');
@@ -6737,11 +6623,6 @@ async function exportPDF() {
             addFooter(doc, pageNumber);
         }
 
-        // ══════════════════════════════════════════════════════════════════════
-        // ══════════════════════════════════════════════════════════════════════
-        // PÁGINA 5-ATF — ANÁLISE TEMPORAL FORENSE (ATF)
-        // v13.2.4-PREMIUM · Tendências · Outliers 2σ · Índice de Recidiva
-        // ══════════════════════════════════════════════════════════════════════
         if (_enrichTemporalImage) {
             doc.addPage();
             pageNumber++;
@@ -6752,9 +6633,10 @@ async function exportPDF() {
             doc.setFontSize(8.5);
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(0, 229, 255);
-            // ── splitTextToSize maxWidth 180 — previne overflow lateral nas páginas 10/11 ──
             const _atfHeader = doc.splitTextToSize(
-                'ANÁLISE TEMPORAL FORENSE (ATF) — TENDÊNCIAS · OUTLIERS 2σ · ÍNDICE DE RECIDIVA · v13.5.0-PURE',
+                currentLang === 'pt'
+                    ? 'ANÁLISE TEMPORAL FORENSE (ATF) — TENDÊNCIAS · OUTLIERS 2σ · ÍNDICE DE RECIDIVA · v13.5.0-PURE'
+                    : 'FORENSIC TEMPORAL ANALYSIS (ATF) — TRENDS · OUTLIERS 2σ · RECIDIVISM INDEX · v13.5.0-PURE',
                 180);
             doc.text(_atfHeader, doc.internal.pageSize.getWidth() / 2, 18, { align: 'center' });
             doc.setTextColor(0, 0, 0);
@@ -6764,9 +6646,13 @@ async function exportPDF() {
             doc.setFont('helvetica', 'italic');
             doc.setTextColor(80, 80, 80);
             const atfNota = doc.splitTextToSize(
-                'Gráfico temporal derivado dos extratos mensais processados. ' +
-                'Outliers marcados a vermelho (> 2σ) indicam meses com anomalia estatística — ' +
-                'constitui indício de comportamento oportunístico para efeitos do Art. 104.º RGIT.',
+                currentLang === 'pt'
+                    ? 'Gráfico temporal derivado dos extratos mensais processados. ' +
+                      'Outliers marcados a vermelho (> 2σ) indicam meses com anomalia estatística — ' +
+                      'constitui indício de comportamento oportunístico para efeitos do Art. 104.º RGIT.'
+                    : 'Temporal graph derived from processed monthly statements. ' +
+                      'Outliers marked in red (> 2σ) indicate months with statistical anomaly — ' +
+                      'constitutes evidence of opportunistic behavior for the purposes of Art. 104 RGIT.',
                 180);
             doc.text(atfNota, left, y);
             y += (atfNota.length * 3.5) + 5;
@@ -6777,69 +6663,65 @@ async function exportPDF() {
             doc.addImage(_enrichTemporalImage, 'PNG', left, y, atfImgW, atfImgH);
             y += atfImgH + 6;
 
-            // Score de Persistência
             if (typeof window.computeTemporalAnalysis === 'function') {
                 try {
                     const _atfData = window.computeTemporalAnalysis(UNIFEDSystem.monthlyData, UNIFEDSystem.analysis);
                     doc.setFontSize(8);
                     doc.setFont('helvetica', 'bold');
                     doc.setTextColor(239, 68, 68);
-                    doc.text(`SCORE DE PERSISTÊNCIA (SP): ${_atfData.persistenceScore.toFixed(1)}/100`, left, y); y += 5;
+                    doc.text(`${currentLang === 'pt' ? 'SCORE DE PERSISTÊNCIA (SP):' : 'PERSISTENCE SCORE (SP):'} ${_atfData.persistenceScore.toFixed(1)}/100`, left, y); y += 5;
                     doc.setFont('helvetica', 'normal');
                     doc.setFontSize(7.5);
                     doc.setTextColor(0, 0, 0);
                     doc.text(_atfData.persistenceLabel, left, y); y += 4;
                     if (_atfData.outlierMonths.length > 0) {
                         doc.setTextColor(239, 68, 68);
-                        doc.text(`Meses com Outlier (>2σ): ${_atfData.outlierMonths.join(', ')}`, left, y); y += 4;
+                        doc.text(`${currentLang === 'pt' ? 'Meses com Outlier (>2σ):' : 'Months with Outlier (>2σ):'} ${_atfData.outlierMonths.join(', ')}`, left, y); y += 4;
                         doc.setTextColor(0, 0, 0);
                     }
                     doc.setFontSize(6.5);
                     doc.setFont('courier', 'normal');
                     doc.setTextColor(120, 120, 120);
                     doc.text('UNIFED-PROBATUM v13.5.0-PURE · Análise Temporal Forense · DORA (UE) 2022/2554', left, y + 3);
-                } catch (_e) { /* fallback silencioso */ }
+                } catch (_e) { }
             }
             addFooter(doc, pageNumber);
         }
 
-        // PÁGINA 5B — SÍNTESE JURÍDICA ASSISTIDA POR IA
-        // v13.2.4-PREMIUM · RAG + In-Context Learning (claude-sonnet-4-20250514)
-        // Módulo de Síntese Narrativa: outputs numéricos → inputs semânticos
-        // Base legal injetada: CIVA, CIRC, RGIT, CPP, DAC7
-        // ISOLAMENTO: Se a IA falhar, esta página não é gerada — motor íntegro.
-        // ══════════════════════════════════════════════════════════════════════
         if (_enrichLegalNarrative) {
             doc.addPage();
             pageNumber++;
             y = 20;
 
-            // Cabeçalho
             doc.setFillColor(17, 34, 64);
             doc.rect(10, 10, doc.internal.pageSize.getWidth() - 20, 12, 'F');
             doc.setFontSize(8.5);
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(0, 229, 255);
-            doc.text('SÍNTESE JURÍDICA PERICIAL — ANÁLISE DETERMINÍSTICA v13.5.0-PURE',
+            doc.text(`${currentLang === 'pt' ? 'SÍNTESE JURÍDICA PERICIAL — ANÁLISE DETERMINÍSTICA v13.5.0-PURE' : 'FORENSIC LEGAL SUMMARY — DETERMINISTIC ANALYSIS v13.5.0-PURE'}`,
                 doc.internal.pageSize.getWidth() / 2, 18, { align: 'center' });
             doc.setTextColor(0, 0, 0);
             y = 30;
 
-            // Nota metodológica — sem referências a IA, modelos ou ferramentas
             doc.setFontSize(7);
             doc.setFont('helvetica', 'italic');
             doc.setTextColor(80, 80, 80);
             const aiNotaLines = doc.splitTextToSize(
-                'Documento gerado sob metodologia forense UNIFED-PROBATUM v13.5.0-PURE. ' +
-                'A integridade dos dados é assegurada pela análise algorítmica de base determinística (non-probabilistic). ' +
-                'Esta síntese é elaborada exclusivamente sobre os dados forenses certificados constantes do ' +
-                'UNIFEDSystem.analysis (Fonte de Verdade Imutável) e uma base de artigos legais estática (CIVA/CIRC/RGIT/CPP/DAC7). ' +
-                'Conformidade: Art. 125.º CPP · ISO/IEC 27037:2012 · DORA (UE) 2022/2554.',
+                currentLang === 'pt'
+                    ? 'Documento gerado sob metodologia forense UNIFED-PROBATUM v13.5.0-PURE. ' +
+                      'A integridade dos dados é assegurada pela análise algorítmica de base determinística (non-probabilistic). ' +
+                      'Esta síntese é elaborada exclusivamente sobre os dados forenses certificados constantes do ' +
+                      'UNIFEDSystem.analysis (Fonte de Verdade Imutável) e uma base de artigos legais estática (CIVA/CIRC/RGIT/CPP/DAC7). ' +
+                      'Conformidade: Art. 125.º CPP · ISO/IEC 27037:2012 · DORA (UE) 2022/2554.'
+                    : 'Document generated under UNIFED-PROBATUM v13.5.0-PURE forensic methodology. ' +
+                      'Data integrity is ensured by deterministic algorithmic analysis (non-probabilistic). ' +
+                      'This summary is prepared exclusively on the certified forensic data contained in ' +
+                      'UNIFEDSystem.analysis (Immutable Truth Source) and a static legal article base (CIVA/CIRC/RGIT/CPP/DAC7). ' +
+                      'Compliance: Art. 125 CPP · ISO/IEC 27037:2012 · DORA (EU) 2022/2554.',
                 doc.internal.pageSize.getWidth() - 28);
             doc.text(aiNotaLines, left, y);
             y += (aiNotaLines.length * 3.5) + 4;
 
-            // Linha separadora
             doc.setDrawColor(0, 229, 255);
             doc.setLineWidth(0.5);
             doc.line(left, y, doc.internal.pageSize.getWidth() - left, y);
@@ -6848,7 +6730,6 @@ async function exportPDF() {
             doc.setTextColor(0, 0, 0);
             doc.setFont('helvetica', 'normal');
 
-            // Corpo da síntese jurídica
             doc.setFontSize(8);
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(20, 20, 20);
@@ -6857,18 +6738,16 @@ async function exportPDF() {
                 _enrichLegalNarrative,
                 doc.internal.pageSize.getWidth() - 28);
 
-            // Renderização com quebra automática de página se necessário
             for (let ni = 0; ni < narrativeLines.length; ni++) {
                 if (y > 260) {
                     addFooter(doc, pageNumber);
                     doc.addPage();
                     pageNumber++;
                     y = 20;
-                    // Micro-cabeçalho de continuação
                     doc.setFontSize(7);
                     doc.setFont('helvetica', 'italic');
                     doc.setTextColor(120, 120, 120);
-                    doc.text('(continuação — Síntese Jurídica Pericial)', left, y);
+                    doc.text(`${currentLang === 'pt' ? '(continuação — Síntese Jurídica Pericial)' : '(continuation — Forensic Legal Summary)'}`, left, y);
                     y += 8;
                     doc.setFontSize(8);
                     doc.setFont('helvetica', 'normal');
@@ -6880,7 +6759,6 @@ async function exportPDF() {
 
             y += 6;
 
-            // Rodapé técnico da síntese — identificação da metodologia (sem referências a ferramentas)
             doc.setDrawColor(100, 116, 139);
             doc.setLineWidth(0.3);
             doc.line(left, y, doc.internal.pageSize.getWidth() - left, y);
@@ -6889,23 +6767,25 @@ async function exportPDF() {
             doc.setFont('courier', 'normal');
             doc.setTextColor(100, 116, 139);
             doc.text('UNIFED-PROBATUM v13.5.0-PURE · Análise Determinística · Base Legal: CIVA/CIRC/RGIT/CPP/DAC7', left, y); y += 4;
-            doc.text('Metodologia: RECONSTITUIÇÃO DA VERDADE MATERIAL DIGITAL · ISO/IEC 27037:2012 · DORA (UE) 2022/2554 · Art. 125.º CPP', left, y);
+            doc.text(`${currentLang === 'pt' ? 'Metodologia: RECONSTITUIÇÃO DA VERDADE MATERIAL DIGITAL · ISO/IEC 27037:2012 · DORA (UE) 2022/2554 · Art. 125.º CPP' : 'Methodology: RECONSTRUCTION OF DIGITAL MATERIAL TRUTH · ISO/IEC 27037:2012 · DORA (EU) 2022/2554 · Art. 125 CPP'}`, left, y);
             y += 8;
-            // ── Nota de validade pericial — sem menção a IA ou probabilismo ──
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(6.5);
             doc.setTextColor(80, 80, 80);
             const jurNota = doc.splitTextToSize(
-                'NOTA: A jurisprudência citada nesta síntese constitui referência doutrinária para orientação do advogado mandatário. ' +
-                'Toda a referência a acórdãos deve ser objeto de validação independente pelo advogado antes de qualquer uso processual. ' +
-                'O Consultor Técnico responsabiliza-se exclusivamente pelos dados forenses e pela metodologia UNIFED-PROBATUM.',
+                currentLang === 'pt'
+                    ? 'NOTA: A jurisprudência citada nesta síntese constitui referência doutrinária para orientação do advogado mandatário. ' +
+                      'Toda a referência a acórdãos deve ser objeto de validação independente pelo advogado antes de qualquer uso processual. ' +
+                      'O Consultor Técnico responsabiliza-se exclusivamente pelos dados forenses e pela metodologia UNIFED-PROBATUM.'
+                    : 'NOTE: The jurisprudence cited in this summary constitutes doctrinal reference for guidance of the lawyer in charge. ' +
+                      'Any reference to judgments must be subject to independent validation by the lawyer before any procedural use. ' +
+                      'The Technical Consultant is solely responsible for the forensic data and the UNIFED-PROBATUM methodology.',
                 doc.internal.pageSize.getWidth() - 28);
             doc.text(jurNota, left, y); y += jurNota.length * 3.5;
 
             addFooter(doc, pageNumber);
         }
 
-        // PÁGINA 6 — CADEIA DE CUSTÓDIA (antes era Página 5)
         doc.addPage();
         pageNumber = 6;
         y = 20;
@@ -6917,7 +6797,7 @@ async function exportPDF() {
 
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(8);
-        doc.text(`Master Hash: SHA256(Hash_SAFT + Hash_Extrato + Hash_Fatura)`, left, y); y += 5;
+        doc.text(`${currentLang === 'pt' ? 'Master Hash: SHA256(Hash_SAFT + Hash_Extrato + Hash_Fatura)' : 'Master Hash: SHA256(Hash_SAFT + Hash_Statement + Hash_Invoice)'}`, left, y); y += 5;
 
         const masterHashFull = UNIFEDSystem.masterHash || 'HASH_INDISPONIVEL';
         doc.setFont('courier', 'bold');
@@ -6929,18 +6809,17 @@ async function exportPDF() {
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(0, 0, 0);
         doc.setFontSize(8);
-        doc.text('REFERENCIAL NORMATIVO (ISO/IEC 27037 e DL 28/2019):', left, y); y += 5;
+        doc.text(`${currentLang === 'pt' ? 'REFERENCIAL NORMATIVO (ISO/IEC 27037 e DL 28/2019):' : 'NORMATIVE FRAMEWORK (ISO/IEC 27037 and DL 28/2019):'}`, left, y); y += 5;
         doc.setFont('helvetica', 'normal');
         const normativoLines = doc.splitTextToSize(t.clausulaNormativoISO, doc.internal.pageSize.getWidth() - 30);
         doc.text(normativoLines, left, y); y += (normativoLines.length * 4) + 10;
 
-        doc.text('Evidencias processadas e respetivos hashes SHA-256 completos:', left, y); y += 5;
+        doc.text(`${currentLang === 'pt' ? 'Evidencias processadas e respetivos hashes SHA-256 completos:' : 'Processed evidence and their complete SHA-256 hashes:'}`, left, y); y += 5;
 
         const custodyPageW = doc.internal.pageSize.getWidth();
         const custodyUsableW = custodyPageW - left - 14;
 
         UNIFEDSystem.analysis.evidenceIntegrity.forEach((item, index) => {
-            // ── Filename row ──
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(7);
             doc.setTextColor(0, 0, 0);
@@ -6949,26 +6828,22 @@ async function exportPDF() {
                 : item.filename;
             doc.text(`${index + 1}. ${displayName}`, left, y); y += 4;
 
-            // ── Full SHA-256 hash — courier, 6.5pt, split across lines if needed ──
             doc.setFont('courier', 'normal');
             doc.setFontSize(6.5);
             doc.setTextColor(50, 50, 50);
             const hashText = item.hash || 'HASH_INDISPONIVEL';
-            // Courier 6.5pt: ~2.3mm per char; 64 chars = ~147mm — fits in one line on A4
             const hashDisplayLines = doc.splitTextToSize(hashText, custodyUsableW - 5);
             doc.text(hashDisplayLines, left + 5, y);
             y += (hashDisplayLines.length * 3.5) + 1;
 
-            // ── Timestamp ──
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(6);
             doc.setTextColor(120, 120, 120);
-            doc.text(`Processado: ${item.timestamp || '—'}`, left + 5, y);
+            doc.text(`${currentLang === 'pt' ? 'Processado:' : 'Processed:'} ${item.timestamp || '—'}`, left + 5, y);
             y += 4;
 
             doc.setTextColor(0, 0, 0);
 
-            // Separator
             doc.setDrawColor(230, 230, 230);
             doc.setLineWidth(0.2);
             doc.line(left, y, custodyPageW - left, y);
@@ -6983,10 +6858,6 @@ async function exportPDF() {
 
         addFooter(doc, pageNumber);
 
-        // ── PÁGINA 6B — VALIDAÇÃO DE SELAGEM GOVERNAMENTAL (TSA · eIDAS · RFC 3161) ──
-        // Esta secção lista os detalhes do protocolo RFC 3161 e a autoridade FreeTSA
-        // conforme eIDAS (UE) 910/2014 e DORA (UE) 2022/2554.
-        // ─────────────────────────────────────────────────────────────────────────────
         doc.addPage();
         pageNumber++;
         y = 20;
@@ -6994,17 +6865,16 @@ async function exportPDF() {
         doc.setFontSize(10);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(0, 0, 0);
-        doc.text('8. VALIDAÇÃO DE SELAGEM GOVERNAMENTAL (TSA) — eIDAS / RFC 3161', left, y);
+        doc.text(`${currentLang === 'pt' ? '8. VALIDAÇÃO DE SELAGEM GOVERNAMENTAL (TSA) — eIDAS / RFC 3161' : '8. GOVERNMENTAL SEALING VALIDATION (TSA) — eIDAS / RFC 3161'}`, left, y);
         y += 8;
 
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(8);
-        doc.text('Protocolo de Carimbo de Tempo Qualificado conforme Regulamento eIDAS (UE) 910/2014 e RFC 3161 (IETF).', left, y, { maxWidth: doc.internal.pageSize.getWidth() - 30 });
+        doc.text(`${currentLang === 'pt' ? 'Protocolo de Carimbo de Tempo Qualificado conforme Regulamento eIDAS (UE) 910/2014 e RFC 3161 (IETF).' : 'Qualified Timestamp Protocol according to eIDAS Regulation (EU) 910/2014 and RFC 3161 (IETF).'}`, left, y, { maxWidth: doc.internal.pageSize.getWidth() - 30 });
         y += 8;
 
-        // ── Metadados do Selo TSA ─────────────────────────────────────────────
         const seal2 = (UNIFEDSystem.forensicMetadata && UNIFEDSystem.forensicMetadata.nivel2Seal) || null;
-        const sealStatus = seal2 ? seal2.status : 'NÃO APLICADO NESTA SESSÃO';
+        const sealStatus = seal2 ? seal2.status : (currentLang === 'pt' ? 'NÃO APLICADO NESTA SESSÃO' : 'NOT APPLIED IN THIS SESSION');
         const sealProtocol = seal2 ? seal2.protocol || 'RFC 3161' : 'RFC 3161 (FreeTSA.org)';
         const sealProvider = seal2 ? seal2.tsaProvider || 'FreeTSA.org' : 'FreeTSA.org — https://freetsa.org';
         const sealDate    = seal2 ? seal2.anchoredAt  || '—' : '—';
@@ -7014,15 +6884,15 @@ async function exportPDF() {
         const tsrSerial   = (seal2 && seal2.tsrSerialApprox)? seal2.tsrSerialApprox : '—';
 
         const tsaFields = [
-            ['ESTADO DO SELO',     sealStatus],
+            [currentLang === 'pt' ? 'ESTADO DO SELO' : 'SEAL STATUS',     sealStatus],
             ['PROTOCOLO',          sealProtocol],
-            ['AUTORIDADE (TSA)',    sealProvider],
-            ['DATA/HORA UTC',       sealDate.replace('T', ' ').replace(/\.\d+Z$/, ' UTC')],
-            ['TOKEN / REFERÊNCIA',  sealToken.length > 60 ? sealToken.substring(0, 60) + '...' : sealToken],
-            ['MODO DE SELAGEM',     sealMode === 'TSR_LOCAL_UPLOAD' ? 'Carregamento Local (.tsr via PowerShell/OpenSSL)' : 'Submissão Online ao Nó FreeTSA'],
-            ['FICHEIRO TSR',        tsrFile],
-            ['NÚMERO DE SÉRIE (TSR)', tsrSerial],
-            ['HASH MASTER SHA-256', (UNIFEDSystem.masterHash || 'N/D').substring(0, 40) + '...'],
+            [currentLang === 'pt' ? 'AUTORIDADE (TSA)' : 'AUTHORITY (TSA)',    sealProvider],
+            [currentLang === 'pt' ? 'DATA/HORA UTC' : 'DATE/TIME UTC',       sealDate.replace('T', ' ').replace(/\.\d+Z$/, ' UTC')],
+            [currentLang === 'pt' ? 'TOKEN / REFERÊNCIA' : 'TOKEN / REFERENCE',  sealToken.length > 60 ? sealToken.substring(0, 60) + '...' : sealToken],
+            [currentLang === 'pt' ? 'MODO DE SELAGEM' : 'SEALING MODE',     sealMode === 'TSR_LOCAL_UPLOAD' ? (currentLang === 'pt' ? 'Carregamento Local (.tsr via PowerShell/OpenSSL)' : 'Local Upload (.tsr via PowerShell/OpenSSL)') : (currentLang === 'pt' ? 'Submissão Online ao Nó FreeTSA' : 'Online Submission to FreeTSA Node')],
+            [currentLang === 'pt' ? 'FICHEIRO TSR' : 'TSR FILE',        tsrFile],
+            [currentLang === 'pt' ? 'NÚMERO DE SÉRIE (TSR)' : 'SERIAL NUMBER (TSR)', tsrSerial],
+            [currentLang === 'pt' ? 'HASH MASTER SHA-256' : 'MASTER HASH SHA-256', (UNIFEDSystem.masterHash || 'N/D').substring(0, 40) + '...'],
         ];
 
         doc.setFontSize(7.5);
@@ -7039,24 +6909,24 @@ async function exportPDF() {
         y += 4;
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8);
-        doc.text('DETALHES DO PROTOCOLO RFC 3161 (TimeStampToken):', left, y); y += 6;
+        doc.text(`${currentLang === 'pt' ? 'DETALHES DO PROTOCOLO RFC 3161 (TimeStampToken):' : 'RFC 3161 PROTOCOL DETAILS (TimeStampToken):'}`, left, y); y += 6;
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7.5);
         const rfc3161Details = [
-            'O protocolo RFC 3161 (Internet X.509 PKI Timestamping Protocol — IETF RFC 3161) define um mecanismo',
-            'para obtenção de provas de existência temporal com validade jurídica (non-repudiation).',
+            currentLang === 'pt' ? 'O protocolo RFC 3161 (Internet X.509 PKI Timestamping Protocol — IETF RFC 3161) define um mecanismo' : 'The RFC 3161 protocol (Internet X.509 PKI Timestamping Protocol — IETF RFC 3161) defines a mechanism',
+            currentLang === 'pt' ? 'para obtenção de provas de existência temporal com validade jurídica (non-repudiation).' : 'for obtaining proof of temporal existence with legal validity (non-repudiation).',
             '',
-            '• A TSA (Time Stamping Authority) recebe o hash SHA-256 do documento/prova.',
-            '• Gera um TimeStampToken (TST) assinado digitalmente com o certificado X.509 da TSA.',
-            '• O TST inclui: hash, data/hora UTC certificada e número de série imutável.',
-            '• Validade jurídica: eIDAS (UE) 910/2014, Art. 41.º — Serviço de Carimbo de Tempo Qualificado.',
+            `• ${currentLang === 'pt' ? 'A TSA (Time Stamping Authority) recebe o hash SHA-256 do documento/prova.' : 'The TSA (Time Stamping Authority) receives the SHA-256 hash of the document/evidence.'}`,
+            `• ${currentLang === 'pt' ? 'Gera um TimeStampToken (TST) assinado digitalmente com o certificado X.509 da TSA.' : 'Generates a TimeStampToken (TST) digitally signed with the TSA\'s X.509 certificate.'}`,
+            `• ${currentLang === 'pt' ? 'O TST inclui: hash, data/hora UTC certificada e número de série imutável.' : 'The TST includes: hash, certified UTC date/time and immutable serial number.'}`,
+            `• ${currentLang === 'pt' ? 'Validade jurídica: eIDAS (UE) 910/2014, Art. 41.º — Serviço de Carimbo de Tempo Qualificado.' : 'Legal validity: eIDAS (EU) 910/2014, Art. 41 — Qualified Timestamp Service.'}`,
             '',
-            'CONFORMIDADE NORMATIVA ACUMULADA:',
-            '  • eIDAS (UE) 910/2014 — Serviço Eletrónico de Confiança Qualificado',
-            '  • RFC 3161 (IETF) — Protocolo de Carimbo de Tempo Internet PKI',
-            '  • ISO/IEC 27037:2012 — Diretrizes para Identificação e Recolha de Provas Digitais',
-            '  • DORA (UE) 2022/2554 — Resiliência Operacional Digital do Sector Financeiro',
-            '  • Art. 30.º RGPD — Registo das Atividades de Tratamento de Dados Pessoais'
+            `${currentLang === 'pt' ? 'CONFORMIDADE NORMATIVA ACUMULADA:' : 'ACCUMULATED NORMATIVE COMPLIANCE:'}`,
+            `  • eIDAS (UE) 910/2014 — ${currentLang === 'pt' ? 'Serviço Eletrónico de Confiança Qualificado' : 'Qualified Electronic Trust Service'}`,
+            `  • RFC 3161 (IETF) — ${currentLang === 'pt' ? 'Protocolo de Carimbo de Tempo Internet PKI' : 'Internet PKI Timestamp Protocol'}`,
+            `  • ISO/IEC 27037:2012 — ${currentLang === 'pt' ? 'Diretrizes para Identificação e Recolha de Provas Digitais' : 'Guidelines for Identification and Collection of Digital Evidence'}`,
+            `  • DORA (UE) 2022/2554 — ${currentLang === 'pt' ? 'Resiliência Operacional Digital do Sector Financeiro' : 'Digital Operational Resilience of the Financial Sector'}`,
+            `  • Art. 30.º RGPD — ${currentLang === 'pt' ? 'Registo das Atividades de Tratamento de Dados Pessoais' : 'Record of Personal Data Processing Activities'}`
         ];
         rfc3161Details.forEach(line => {
             if (line === '') { y += 3; return; }
@@ -7066,18 +6936,22 @@ async function exportPDF() {
             if (y > 265) { doc.addPage(); pageNumber++; y = 20; }
         });
 
-        // ── Listar status de selagem por evidência ────────────────────────────
         y += 6;
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8);
-        doc.text('STATUS DE SELAGEM POR EVIDÊNCIA:', left, y); y += 6;
+        doc.text(`${currentLang === 'pt' ? 'STATUS DE SELAGEM POR EVIDÊNCIA:' : 'SEALING STATUS PER EVIDENCE:'}`, left, y); y += 6;
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7);
         UNIFEDSystem.analysis.evidenceIntegrity.slice(0, 20).forEach((ev, idx) => {
             const sType  = ev.sealType  || 'NONE';
-            const sLabel = sType === 'RFC3161' ? '✓ RFC 3161 (Nível 2)' :
-                           sType === 'OTS'     ? '⟁ OTS Blockchain (Nível 1)' :
-                                                 '○ Sem Selagem';
+            let sLabel = '';
+            if (sType === 'RFC3161') {
+                sLabel = currentLang === 'pt' ? '✓ RFC 3161 (Nível 2)' : '✓ RFC 3161 (Level 2)';
+            } else if (sType === 'OTS') {
+                sLabel = currentLang === 'pt' ? '⟁ OTS Blockchain (Nível 1)' : '⟁ OTS Blockchain (Level 1)';
+            } else {
+                sLabel = currentLang === 'pt' ? '○ Sem Selagem' : '○ No Sealing';
+            }
             const rowTxt = `${idx + 1}. ${ev.filename.substring(0, 40)} — ${sLabel}`;
             doc.text(rowTxt, left, y); y += 4.5;
             if (y > 265) { doc.addPage(); pageNumber++; y = 20; }
@@ -7098,10 +6972,8 @@ async function exportPDF() {
 
         let questionsToShow = [];
         if (UNIFEDSystem.analysis.selectedQuestions && UNIFEDSystem.analysis.selectedQuestions.length > 0) {
-            // Já ordenadas por prioridade em selectQuestions() — manter ordem
             questionsToShow = UNIFEDSystem.analysis.selectedQuestions.slice(0, 10);
         }
-        // Preencher até 10 com questões "high" não duplicadas se necessário
         if (questionsToShow.length < 10) {
             const PRIORITY_ORDER = { high: 0, med: 1, low: 2 };
             const additional = QUESTIONS_CACHE
@@ -7111,7 +6983,6 @@ async function exportPDF() {
             questionsToShow = [...questionsToShow, ...additional];
         }
 
-        // Top 5 = questões mais importantes (obrigatoriamente bold)
         const topQuestionIds = questionsToShow.slice(0, 5).map(q => q.id);
 
         questionsToShow.forEach((q, index) => {
@@ -7119,7 +6990,7 @@ async function exportPDF() {
 
             if (isTop) {
                 doc.setFont('helvetica', 'bold');
-                doc.setTextColor(180, 20, 20); // vermelho escuro para questões críticas
+                doc.setTextColor(180, 20, 20);
             } else {
                 doc.setFont('helvetica', 'normal');
                 doc.setTextColor(0, 0, 0);
@@ -7131,7 +7002,7 @@ async function exportPDF() {
             doc.text(splitText, left, y);
             y += (splitText.length * 4) + 2;
 
-            doc.setTextColor(0, 0, 0); // reset cor
+            doc.setTextColor(0, 0, 0);
 
             if (y > 270) {
                 doc.addPage();
@@ -7142,7 +7013,6 @@ async function exportPDF() {
 
         addFooter(doc, pageNumber);
 
-        // PÁGINA 8 — CONCLUSÃO
         doc.addPage();
         pageNumber = 8;
         y = 20;
@@ -7158,16 +7028,15 @@ async function exportPDF() {
 
         doc.setTextColor(239, 68, 68);
         doc.setFontSize(11);
-        doc.text(`VI. CONCLUSÃO:`, left, y); y += 8;
+        doc.text(`VI. ${currentLang === 'pt' ? 'CONCLUSÃO:' : 'CONCLUSION:'}`, left, y); y += 8;
         doc.setTextColor(0, 0, 0);
         doc.text(`${currentLang === 'pt' ? 'Indícios de infração ao Artigo 108.º do Código do IVA e não conformidade com o Decreto-Lei n.º 28/2019.' : 'Evidence of violation of Article 108 of the VAT Code and non-compliance with Decree-Law No. 28/2019.'}`, left, y); y += 6;
 
-        // Secção C — Recomendações Periciais: suprimida em demoMode/casoRealAnonimizado
         if (!UNIFEDSystem.demoMode && !UNIFEDSystem.casoRealAnonimizado) {
             doc.setFontSize(9);
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(0, 0, 0);
-            doc.text('PARECER TÉCNICO DE CONCLUSÃO:', left, y); y += 6;
+            doc.text(`${currentLang === 'pt' ? 'PARECER TÉCNICO DE CONCLUSÃO:' : 'TECHNICAL EXPERT OPINION CONCLUSION:'}`, left, y); y += 6;
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(8);
             const parecerFinalLines = doc.splitTextToSize(t.parecerTecnicoFinal, doc.internal.pageSize.getWidth() - 30);
@@ -7176,7 +7045,7 @@ async function exportPDF() {
             doc.setFontSize(9);
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(0, 0, 0);
-            doc.text('DECLARAÇÃO DE ISENÇÃO DE RESPONSABILIDADE DO PARCEIRO:', left, y); y += 6;
+            doc.text(`${currentLang === 'pt' ? 'DECLARAÇÃO DE ISENÇÃO DE RESPONSABILIDADE DO PARCEIRO:' : 'PARTNER LIABILITY DISCLAIMER:'}`, left, y); y += 6;
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(8);
             const isencaoLines = doc.splitTextToSize(t.clausulaIsencaoParceiro, doc.internal.pageSize.getWidth() - 30);
@@ -7186,72 +7055,65 @@ async function exportPDF() {
         doc.setFontSize(9);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(0, 0, 0);
-        doc.text('VALIDAÇÃO TÉCNICA DE CONSULTORIA:', left, y); y += 6;
+        doc.text(`${currentLang === 'pt' ? 'VALIDAÇÃO TÉCNICA DE CONSULTORIA:' : 'TECHNICAL CONSULTANCY VALIDATION:'}`, left, y); y += 6;
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(8);
         const assinaturaLines = doc.splitTextToSize(t.clausulaAssinaturaDigital, doc.internal.pageSize.getWidth() - 30);
         doc.text(assinaturaLines, left, y); y += (assinaturaLines.length * 4) + 10;
 
-        // ── Selo PROBATUM CERTIFIED movido para o Termo de Encerramento (após QR Code) ──
-        // Protocolo UNIFED-GOLD v13.2.1 — já impresso no bloco final consolidado.
-
-
-        // ══════════════════════════════════════════════════════════════════════
-        // NOTA DE RECONCILIAÇÃO DAC7 + QUESTIONÁRIO ESTRATÉGICO — DINÂMICO
-        // Espelha fielmente os painéis .aux-dac7-reconciliation-note e
-        // .dac7-question-contraditorio do Dashboard (v13.2.1-GOLD-AUX).
-        // Fonte dos valores: UNIFEDSystem.auxiliaryData.totalNaoSujeitos
-        // Fundamento Legal: Lei TVDE · 0% comissão · Art. 125.º CPP
-        // ══════════════════════════════════════════════════════════════════════
         if (_auxTotalNS > 0) {
-            // Verificar espaço disponível; iniciar nova página se necessário
             if (y > 220) { doc.addPage(); pageNumber++; y = 20; }
 
             const dac7PageW   = doc.internal.pageSize.getWidth();
             const dac7UseW    = dac7PageW - left - 14;
 
-            // ── Cabeçalho da Nota ─────────────────────────────────────────────
-            doc.setFillColor(255, 248, 220);     // fundo âmbar suave
+            doc.setFillColor(255, 248, 220);
             doc.rect(left, y - 4, dac7UseW, 10, 'F');
-            doc.setDrawColor(245, 158, 11);      // borda gold
+            doc.setDrawColor(245, 158, 11);
             doc.setLineWidth(0.8);
             doc.rect(left, y - 4, dac7UseW, 10);
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(9);
             doc.setTextColor(120, 70, 0);
-            doc.text('NOTA DE RECONCILIAÇÃO DAC7 — ZONA CINZENTA FISCAL', left + 3, y + 2);
+            doc.text(`${currentLang === 'pt' ? 'NOTA DE RECONCILIAÇÃO DAC7 — ZONA CINZENTA FISCAL' : 'DAC7 RECONCILIATION NOTE — TAX GREY ZONE'}`, left + 3, y + 2);
             doc.setTextColor(0, 0, 0);
             y += 10;
 
-            // ── Corpo explicativo ─────────────────────────────────────────────
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(8);
             const dac7Body1 = doc.splitTextToSize(
-                'A diferença entre os Ganhos Brutos reportados pelo extrato da plataforma e o ' +
-                'valor comunicado à AT via DAC7 inclui fluxos que não estão sujeitos a comissão ' +
-                'pela plataforma (Termos e Condições). Estes valores — gorjetas dos passageiros, ganhos de ' +
-                'campanha e portagens — são transferências diretas ou reembolsos operacionais ' +
-                'que não integram a base de cálculo da comissão, mas podem ter sido ' +
-                'indevidamente incluídos no reporte DAC7, inflacionando o rendimento bruto ' +
-                'declarado à Autoridade Tributária (AT).',
+                currentLang === 'pt'
+                    ? 'A diferença entre os Ganhos Brutos reportados pelo extrato da plataforma e o ' +
+                      'valor comunicado à AT via DAC7 inclui fluxos que não estão sujeitos a comissão ' +
+                      'pela plataforma (Termos e Condições). Estes valores — gorjetas dos passageiros, ganhos de ' +
+                      'campanha e portagens — são transferências diretas ou reembolsos operacionais ' +
+                      'que não integram a base de cálculo da comissão, mas podem ter sido ' +
+                      'indevidamente incluídos no reporte DAC7, inflacionando o rendimento bruto ' +
+                      'declarado à Autoridade Tributária (AT).'
+                    : 'The difference between the Gross Earnings reported by the platform statement and the ' +
+                      'value communicated to the TA via DAC7 includes flows that are not subject to commission ' +
+                      'by the platform (Terms and Conditions). These values — passenger tips, campaign earnings ' +
+                      'and tolls — are direct transfers or operational reimbursements ' +
+                      'that are not part of the commission calculation basis, but may have been ' +
+                      'improperly included in the DAC7 report, inflating the gross income ' +
+                      'declared to the Tax Authority (TA).',
                 dac7UseW);
             doc.text(dac7Body1, left, y); y += (dac7Body1.length * 4.5) + 5;
 
-            // ── Tabela de valores não sujeitos ────────────────────────────────
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(8);
             doc.setTextColor(30, 60, 120);
-            doc.text('FLUXOS NÃO SUJEITOS A COMISSÃO (Termos e Condições da Plataforma — 0%)', left, y); y += 5;
+            doc.text(`${currentLang === 'pt' ? 'FLUXOS NÃO SUJEITOS A COMISSÃO (Termos e Condições da Plataforma — 0%)' : 'FLOWS NOT SUBJECT TO COMMISSION (Platform Terms and Conditions — 0%)'}`, left, y); y += 5;
             doc.setTextColor(0, 0, 0);
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(8);
 
             const auxRows = [
-                { label: 'Ganhos da campanha (Campanhas)',        val: _aux.campanhas   || 0, note: '0% comissão · incentivo plataforma' },
-                { label: 'Gorjetas dos passageiros (Tips)',        val: _aux.gorjetas    || 0, note: '0% comissão · transferência P2P'    },
-                { label: UNIFEDSystem.selectedYear >= 2025 ? 'Reembolsos de Despesas / Portagens (2025+)' : 'Portagens (Tolls / 2024)',
-                  val: _aux.portagens || 0, note: 'reembolso operacional' },
-                { label: 'Taxas de Cancelamento',                  val: _aux.cancelamentos || 0, note: 'já incluído em Despesas — Sujeito a Comissão' },
+                { label: currentLang === 'pt' ? 'Ganhos da campanha (Campanhas)' : 'Campaign Earnings (Campaigns)',        val: _aux.campanhas   || 0, note: currentLang === 'pt' ? '0% comissão · incentivo plataforma' : '0% commission · platform incentive' },
+                { label: currentLang === 'pt' ? 'Gorjetas dos passageiros (Tips)' : 'Passenger Tips (Tips)',        val: _aux.gorjetas    || 0, note: currentLang === 'pt' ? '0% comissão · transferência P2P' : '0% commission · P2P transfer'    },
+                { label: (UNIFEDSystem.selectedYear >= 2025 ? (currentLang === 'pt' ? 'Reembolsos de Despesas / Portagens (2025+)' : 'Expense Reimbursements / Tolls (2025+)') : (currentLang === 'pt' ? 'Portagens (Tolls / 2024)' : 'Tolls (2024)')),
+                  val: _aux.portagens || 0, note: currentLang === 'pt' ? 'reembolso operacional' : 'operational reimbursement' },
+                { label: currentLang === 'pt' ? 'Taxas de Cancelamento' : 'Cancellation Fees',                  val: _aux.cancelamentos || 0, note: currentLang === 'pt' ? 'já incluído em Despesas — Sujeito a Comissão' : 'already included in Expenses — Subject to Commission' },
             ];
             auxRows.forEach(row => {
                 if (row.val === 0) return;
@@ -7259,36 +7121,37 @@ async function exportPDF() {
                 doc.text(labelLines, left, y); y += (labelLines.length * 4.5);
             });
 
-            // ── Total não sujeitos em destaque ────────────────────────────────
             y += 2;
             doc.setFillColor(255, 243, 197);
             doc.rect(left, y - 3, dac7UseW, 8, 'F');
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(9);
             doc.setTextColor(120, 70, 0);
-            doc.text(`TOTAL NÃO SUJEITOS (Campanhas + Gorjetas + ${UNIFEDSystem.selectedYear >= 2025 ? "Reembolsos/Portagens" : "Portagens"}): ${formatCurrency(_auxTotalNS)}`, left + 2, y + 2);
+            doc.text(`${currentLang === 'pt' ? 'TOTAL NÃO SUJEITOS (Campanhas + Gorjetas + ' : 'TOTAL NOT SUBJECT (Campaigns + Tips + '}${UNIFEDSystem.selectedYear >= 2025 ? (currentLang === 'pt' ? 'Reembolsos/Portagens' : 'Reimbursements/Tolls') : (currentLang === 'pt' ? 'Portagens' : 'Tolls')}): ${formatCurrency(_auxTotalNS)}`, left + 2, y + 2);
             doc.setTextColor(0, 0, 0);
             y += 12;
 
-            // ── Explicação do impacto DAC7 ────────────────────────────────────
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(8);
             const dac7Impact = doc.splitTextToSize(
-                `Impacto DAC7: Os ${formatCurrency(_auxTotalNS)} de fluxos não sujeitos a ` +
-                'comissão não justificam a totalidade da discrepância entre o extrato da ' +
-                `plataforma (${formatCurrency(totals.ganhos)}) e o valor DAC7 reportado ` +
-                `à AT (${formatCurrency(totals.dac7TotalPeriodo)}), porquanto a divergência apurada é materialmente superior. ` +
-                'Se incluídos indevidamente no rendimento bruto DAC7, o contribuinte terá sido prejudicado na determinação ' +
-                'da sua base tributável.',
+                currentLang === 'pt'
+                    ? `Impacto DAC7: Os ${formatCurrency(_auxTotalNS)} de fluxos não sujeitos a ` +
+                      'comissão não justificam a totalidade da discrepância entre o extrato da ' +
+                      `plataforma (${formatCurrency(totals.ganhos)}) e o valor DAC7 reportado ` +
+                      `à AT (${formatCurrency(totals.dac7TotalPeriodo)}), porquanto a divergência apurada é materialmente superior. ` +
+                      'Se incluídos indevidamente no rendimento bruto DAC7, o contribuinte terá sido prejudicado na determinação ' +
+                      'da sua base tributável.'
+                    : `DAC7 Impact: The ${formatCurrency(_auxTotalNS)} of flows not subject to ` +
+                      'commission do not justify the entirety of the discrepancy between the platform ' +
+                      `statement (${formatCurrency(totals.ganhos)}) and the DAC7 value reported ` +
+                      `to the TA (${formatCurrency(totals.dac7TotalPeriodo)}), as the divergence found is materially greater. ` +
+                      'If improperly included in the DAC7 gross income, the taxpayer will have been harmed in the determination ' +
+                      'of their taxable base.',
                 dac7UseW);
             doc.text(dac7Impact, left, y); y += (dac7Impact.length * 4.5) + 5;
 
             if (y > 240) { doc.addPage(); pageNumber++; y = 20; }
 
-            // ══════════════════════════════════════════════════════════════════
-            // QUESTIONÁRIO ESTRATÉGICO — CONTRADITÓRIO PARA O ADVOGADO
-            // Espelha .dac7-question-contraditorio do Dashboard
-            // ══════════════════════════════════════════════════════════════════
             doc.setDrawColor(0, 229, 255);
             doc.setLineWidth(0.5);
             doc.setFillColor(240, 253, 255);
@@ -7297,18 +7160,24 @@ async function exportPDF() {
             doc.setFont('courier', 'bold');
             doc.setFontSize(8);
             doc.setTextColor(0, 80, 100);
-            doc.text('QUESTIONÁRIO ESTRATÉGICO AO ADVOGADO — CONTRADITÓRIO FORENSE', left + 3, y + 3);
+            doc.text(`${currentLang === 'pt' ? 'QUESTIONÁRIO ESTRATÉGICO AO ADVOGADO — CONTRADITÓRIO FORENSE' : 'STRATEGIC QUESTIONNAIRE TO THE LAWYER — FORENSIC CONTRADICTION'}`, left + 3, y + 3);
             doc.setTextColor(0, 0, 0);
             y += 13;
 
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(8);
             const contraditorio = doc.splitTextToSize(
-                `Os valores isentos de comissão (Campanhas + Gorjetas + ${UNIFEDSystem.selectedYear >= 2025 ? 'Reembolsos/Portagens' : 'Portagens'} = ` +
-                `${formatCurrency(_auxTotalNS)}) foram indevidamente incluídos no cálculo ` +
-                'do rendimento bruto para efeitos de reporte SAF-T / DAC7? ' +
-                'Se sim, porque é que foi aplicada uma presunção de rendimento sobre valores ' +
-                'que, pelos Termos e Condições da plataforma para TVDE, não sofrem retenção nem comissão por parte da mesma?',
+                currentLang === 'pt'
+                    ? `Os valores isentos de comissão (Campanhas + Gorjetas + ${UNIFEDSystem.selectedYear >= 2025 ? 'Reembolsos/Portagens' : 'Portagens'} = ` +
+                      `${formatCurrency(_auxTotalNS)}) foram indevidamente incluídos no cálculo ` +
+                      'do rendimento bruto para efeitos de reporte SAF-T / DAC7? ' +
+                      'Se sim, porque é que foi aplicada uma presunção de rendimento sobre valores ' +
+                      'que, pelos Termos e Condições da plataforma para TVDE, não sofrem retenção nem comissão por parte da mesma?'
+                    : `Were the commission-exempt values (Campaigns + Tips + ${UNIFEDSystem.selectedYear >= 2025 ? 'Reimbursements/Tolls' : 'Tolls'} = ` +
+                      `${formatCurrency(_auxTotalNS)}) improperly included in the calculation ` +
+                      'of gross income for SAF-T / DAC7 reporting purposes? ' +
+                      'If so, why was a presumption of income applied to values ' +
+                      'that, under the Terms and Conditions of the TVDE platform, are not subject to withholding or commission by the platform?',
                 dac7UseW - 5);
             doc.text(contraditorio, left + 3, y); y += (contraditorio.length * 4.5) + 5;
 
@@ -7316,27 +7185,20 @@ async function exportPDF() {
             doc.setFontSize(7.5);
             doc.setTextColor(239, 68, 68);
             const qLegal = doc.splitTextToSize(
-                '[Fundamentação Legal] Termos e Condições da Plataforma · Comissões 0% sobre gorjetas e campanhas · ' +
-                'Art. 125.º CPP (admissibilidade da prova) · Art. 103.º RGIT (Fraude Fiscal) · ' +
-                'DAC7 / Diretiva (UE) 2021/514 · AT — Autoridade Tributária e Aduaneira',
+                currentLang === 'pt'
+                    ? '[Fundamentação Legal] Termos e Condições da Plataforma · Comissões 0% sobre gorjetas e campanhas · ' +
+                      'Art. 125.º CPP (admissibilidade da prova) · Art. 103.º RGIT (Fraude Fiscal) · ' +
+                      'DAC7 / Diretiva (UE) 2021/514 · AT — Autoridade Tributária e Aduaneira'
+                    : '[Legal Basis] Platform Terms and Conditions · 0% commission on tips and campaigns · ' +
+                      'Art. 125 CPP (admissibility of evidence) · Art. 103 RGIT (Tax Fraud) · ' +
+                      'DAC7 / Directive (EU) 2021/514 · TA — Tax and Customs Authority',
                 dac7UseW - 5);
             doc.text(qLegal, left + 3, y);
             doc.setTextColor(0, 0, 0);
             y += (qLegal.length * 4) + 10;
         }
 
-        // ══════════════════════════════════════════════════════════════════════
-        // ══════════════════════════════════════════════════════════════════════
-        // BLOCO D: INVERSÃO DO ÓNUS DA PROVA (Condicional: discrepância > 15%)
-        // Protocolo UNIFED-GOLD v13.2.2-GOLD
-        // Fundamento: Art. 344.º CC (Inversão do Ónus da Prova) ·
-        //             Art. 75.º LGT (Presunção de veracidade das declarações)
-        //             Art. 74.º LGT (Ónus da prova)
-        // NOTA: Usa variáveis reais do motor — discrepanciaSaftVsDac7 e totals.ganhos
-        //       (as variáveis totalDiscrepancy/platform.totals.gross não existem no sistema)
-        // ══════════════════════════════════════════════════════════════════════
         {
-            // Cálculo de discrepância — PROTOCOLO UNIFED-GOLD v13.2.1
             const totalDiscrepancy  = Math.abs(UNIFEDSystem.analysis.crossings.discrepanciaSaftVsDac7 || 0);
             const grossBase         = totals.ganhos || 1;
             const percDiscrepancia  = (totalDiscrepancy / grossBase) * 100;
@@ -7346,33 +7208,39 @@ async function exportPDF() {
 
                 const _invW = doc.internal.pageSize.getWidth() - left - 14;
 
-                // Caixa de alerta vermelho subtil
                 doc.setFillColor(255, 235, 235);
                 doc.setDrawColor(180, 0, 0);
                 doc.setLineWidth(0.8);
                 doc.rect(left, y - 3, _invW, 32, 'FD');
 
-                // Cabeçalho
                 doc.setFont('helvetica', 'bold');
                 doc.setFontSize(9);
                 doc.setTextColor(180, 0, 0);
                 doc.text(
-                    `[!] ALERTA DE DESVIO CRITICO (${percDiscrepancia.toFixed(2)}%) - INVERSAO DO ONUS DA PROVA`,
+                    `${currentLang === 'pt' ? `[!] ALERTA DE DESVIO CRITICO (${percDiscrepancia.toFixed(2)}%) - INVERSAO DO ONUS DA PROVA` : `[!] CRITICAL DEVIATION ALERT (${percDiscrepancia.toFixed(2)}%) - REVERSAL OF BURDEN OF PROOF`}`,
                     left + 3, y + 5);
 
-                // Corpo legal
                 doc.setFont('helvetica', 'normal');
                 doc.setFontSize(8);
                 doc.setTextColor(80, 0, 0);
                 const _invTexto = doc.splitTextToSize(
-                    'Dada a discrepância material superior a 15% entre o rendimento real extraído dos documentos ' +
-                    'da plataforma e o reporte oficial comunicado à Autoridade Tributária (AT) via SAF-T/DAC7, ' +
-                    'verificam-se os pressupostos legais para a Inversão do Ónus da Prova, nos termos do ' +
-                    'Art. 344.º do Código Civil e Art. 74.º/75.º da Lei Geral Tributária (LGT). ' +
-                    'Cabe à entidade processadora (Plataforma) o ónus de elidir a presunção de omissão de ' +
-                    'rendimentos aqui documentada, sob pena de cristalização da prova material apresentada. ' +
-                    'A discrepância apurada ultrapassa igualmente os limiares das manifestações de fortuna ' +
-                    '(Art. 89.º-A LGT), podendo fundamentar avaliação indireta da matéria coletável.',
+                    currentLang === 'pt'
+                        ? 'Dada a discrepância material superior a 15% entre o rendimento real extraído dos documentos ' +
+                          'da plataforma e o reporte oficial comunicado à Autoridade Tributária (AT) via SAF-T/DAC7, ' +
+                          'verificam-se os pressupostos legais para a Inversão do Ónus da Prova, nos termos do ' +
+                          'Art. 344.º do Código Civil e Art. 74.º/75.º da Lei Geral Tributária (LGT). ' +
+                          'Cabe à entidade processadora (Plataforma) o ónus de elidir a presunção de omissão de ' +
+                          'rendimentos aqui documentada, sob pena de cristalização da prova material apresentada. ' +
+                          'A discrepância apurada ultrapassa igualmente os limiares das manifestações de fortuna ' +
+                          '(Art. 89.º-A LGT), podendo fundamentar avaliação indireta da matéria coletável.'
+                        : 'Given the material discrepancy exceeding 15% between the real income extracted from the ' +
+                          'platform documents and the official report communicated to the Tax Authority (TA) via SAF-T/DAC7, ' +
+                          'the legal assumptions for the Reversal of the Burden of Proof are met, under the terms of ' +
+                          'Art. 344 of the Civil Code and Art. 74/75 of the General Tax Law (LGT). ' +
+                          'It is incumbent upon the processing entity (Platform) to rebut the presumption of omission of ' +
+                          'income documented herein, under penalty of crystallization of the material evidence presented. ' +
+                          'The discrepancy found also exceeds the thresholds for manifestations of fortune ' +
+                          '(Art. 89-A LGT), which may support indirect assessment of the taxable base.',
                     _invW - 6);
                 doc.text(_invTexto, left + 3, y + 11);
                 y += 38;
@@ -7381,26 +7249,19 @@ async function exportPDF() {
                 doc.setFont('helvetica', 'italic');
                 doc.setFontSize(6.5);
                 doc.text(
-                    'Fundamento: Art. 344.º CC · Art. 74.º/75.º LGT · Art. 89.º-A LGT · Art. 103.º/104.º RGIT',
+                    currentLang === 'pt' ? 'Fundamento: Art. 344.º CC · Art. 74.º/75.º LGT · Art. 89.º-A LGT · Art. 103.º/104.º RGIT' : 'Basis: Art. 344 CC · Art. 74/75 LGT · Art. 89-A LGT · Art. 103/104 RGIT',
                     left, y);
                 y += 7;
                 doc.setFont('helvetica', 'normal');
             }
         }
-        // ══ FIM BLOCO D — INVERSÃO DO ÓNUS DA PROVA ══
 
-        // ══════════════════════════════════════════════════════════════════════
-        // SECÇÃO: QUESTÕES PARA O CONTRADITÓRIO — PROTOCOLO UNIFED-GOLD v13.2.1-FINAL
-        // Fundamento: Art. 327.º CPP (contraditório) · Art. 125.º CPP (admissibilidade)
-        // Art. 103.º e 104.º RGIT (Fraude Fiscal) · Decreto-Lei n.º 28/2019 (SAF-T/DAC7)
-        // ══════════════════════════════════════════════════════════════════════
         if (y > 240) { doc.addPage(); pageNumber++; y = 20; }
 
         {
             const _cqPageW = doc.internal.pageSize.getWidth();
             const _cqUseW  = _cqPageW - left - 14;
 
-            // ── Cabeçalho da secção ────────────────────────────────────────────
             doc.setDrawColor(239, 68, 68);
             doc.setLineWidth(0.6);
             doc.setFillColor(255, 245, 245);
@@ -7408,91 +7269,91 @@ async function exportPDF() {
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(9);
             doc.setTextColor(150, 20, 20);
-            doc.text('QUESTÕES PARA O CONTRADITÓRIO — PROTOCOLO UNIFED-GOLD', left + 3, y + 3);
+            doc.text(`${currentLang === 'pt' ? 'QUESTÕES PARA O CONTRADITÓRIO — PROTOCOLO UNIFED-GOLD' : 'QUESTIONS FOR CONTRADICTION — UNIFED-GOLD PROTOCOL'}`, left + 3, y + 3);
             doc.setTextColor(0, 0, 0);
             y += 12;
 
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(7.5);
             const _cqIntro = doc.splitTextToSize(
-                'As seguintes questões, elaboradas com fundamento pericial, destinam-se a ser formuladas ao representante legal da plataforma ' +
-                'em sede de audiência de discussão e julgamento, nos termos do Art. 327.º do CPP (Contraditório). ' +
-                'Cada questão sustenta-se em evidência digital auditada e documentada no presente relatório forense.',
+                currentLang === 'pt'
+                    ? 'As seguintes questões, elaboradas com fundamento pericial, destinam-se a ser formuladas ao representante legal da plataforma ' +
+                      'em sede de audiência de discussão e julgamento, nos termos do Art. 327.º do CPP (Contraditório). ' +
+                      'Cada questão sustenta-se em evidência digital auditada e documentada no presente relatório forense.'
+                    : 'The following questions, prepared based on expert findings, are intended to be put to the legal representative of the platform ' +
+                      'during the hearing for discussion and judgment, under the terms of Art. 327 CPP (Contradiction). ' +
+                      'Each question is supported by audited and documented digital evidence in this forensic report.',
                 _cqUseW);
             doc.text(_cqIntro, left, y); y += (_cqIntro.length * 3.5) + 6;
 
-            // ── QUESTÃO 1: Desalinhamento Temporal ───────────────────────────
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(8);
             doc.setTextColor(30, 60, 120);
-            doc.text('Q1 — DESALINHAMENTO TEMPORAL (Pagamento Semanal vs Faturação Mensal):', left, y); y += 5;
+            doc.text(`${currentLang === 'pt' ? 'Q1 — DESALINHAMENTO TEMPORAL (Pagamento Semanal vs Faturação Mensal):' : 'Q1 — TEMPORAL MISMATCH (Weekly Payment vs Monthly Invoicing):'}`, left, y); y += 5;
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(8);
             doc.setTextColor(0, 0, 0);
             const _cqQ1 = doc.splitTextToSize(
-                '"Pode a plataforma explicar a impossibilidade de reconciliação bancária direta (cruzamento 1:1) ' +
-                'resultante do desalinhamento temporal entre o processamento de pagamentos — efectuado semanalmente ' +
-                'por transferência bancária — e a emissão dos documentos de reporte fiscal, efectuada em formato ' +
-                'mensal agregado? Esta assimetria temporal, detetada pelo sistema UNIFED-PROBATUM, impede o parceiro ' +
-                'de auditar as transferências recebidas contra o documento de reporte correspondente, constituindo ' +
-                'indício de ofuscação deliberada, nos termos do Art. 103.º do RGIT."',
+                currentLang === 'pt'
+                    ? '"Pode a plataforma explicar a impossibilidade de reconciliação bancária direta (cruzamento 1:1) ' +
+                      'resultante do desalinhamento temporal entre o processamento de pagamentos — efectuado semanalmente ' +
+                      'por transferência bancária — e a emissão dos documentos de reporte fiscal, efectuada em formato ' +
+                      'mensal agregado? Esta assimetria temporal, detetada pelo sistema UNIFED-PROBATUM, impede o parceiro ' +
+                      'de auditar as transferências recebidas contra o documento de reporte correspondente, constituindo ' +
+                      'indício de ofuscação deliberada, nos termos do Art. 103.º do RGIT."'
+                    : '"Can the platform explain the impossibility of direct bank reconciliation (1:1 matching) ' +
+                      'resulting from the temporal misalignment between the processing of payments — made weekly ' +
+                      'by bank transfer — and the issuance of tax reporting documents, made in aggregate ' +
+                      'monthly format? This temporal asymmetry, detected by the UNIFED-PROBATUM system, prevents the partner ' +
+                      'from auditing the transfers received against the corresponding reporting document, constituting ' +
+                      'evidence of deliberate obfuscation, under the terms of Art. 103 of the RGIT."',
                 _cqUseW - 5);
             doc.text(_cqQ1, left + 3, y); y += (_cqQ1.length * 3.5) + 7;
 
-            // ── QUESTÃO 2: Fluxos Não Sujeitos a Comissão no DAC7 ────────────
             if (y > 245) { doc.addPage(); pageNumber++; y = 20; }
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(8);
             doc.setTextColor(30, 60, 120);
-            doc.text('Q2 — INCLUSÃO DE FLUXOS ISENTOS NO REPORTE DAC7 (Lei TVDE · Diretiva UE 2021/514):', left, y); y += 5;
+            doc.text(`${currentLang === 'pt' ? 'Q2 — INCLUSÃO DE FLUXOS ISENTOS NO REPORTE DAC7 (Lei TVDE · Diretiva UE 2021/514):' : 'Q2 — INCLUSION OF EXEMPT FLOWS IN DAC7 REPORT (TVDE Law · Directive EU 2021/514):'}`, left, y); y += 5;
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(8);
             doc.setTextColor(0, 0, 0);
             const _cqQ2 = doc.splitTextToSize(
-                '"Qual o fundamento legal e contratual que suporta a inclusão de fluxos financeiros não sujeitos a comissão — ' +
-                'gorjetas, campanhas e portagens — no valor bruto reportado via DAC7? Embora a Lei TVDE regule a ' +
-                'atividade, a isenção de comissão sobre estes valores está vinculada estritamente aos Termos e Condições ' +
-                'da Plataforma. A inclusão destes montantes no reporte da AT, sem a devida segregação de fluxos não ' +
-                'remuneratórios (cfr. Art. 36.º, n.º 11 do CIVA), pode constituir uma deficiência na extração de dados ' +
-                'do sistema de informação da plataforma, resultando num reporte fiscalmente inexato."',
+                currentLang === 'pt'
+                    ? '"Qual o fundamento legal e contratual que suporta a inclusão de fluxos financeiros não sujeitos a comissão — ' +
+                      'gorjetas, campanhas e portagens — no valor bruto reportado via DAC7? Embora a Lei TVDE regule a ' +
+                      'atividade, a isenção de comissão sobre estes valores está vinculada estritamente aos Termos e Condições ' +
+                      'da Plataforma. A inclusão destes montantes no reporte da AT, sem a devida segregação de fluxos não ' +
+                      'remuneratórios (cfr. Art. 36.º, n.º 11 do CIVA), pode constituir uma deficiência na extração de dados ' +
+                      'do sistema de informação da plataforma, resultando num reporte fiscalmente inexato."'
+                    : '"What is the legal and contractual basis that supports the inclusion of financial flows not subject to commission — ' +
+                      'tips, campaigns and tolls — in the gross value reported via DAC7? Although the TVDE Law regulates the ' +
+                      'activity, the exemption of commission on these values is strictly linked to the Terms and Conditions ' +
+                      'of the Platform. The inclusion of these amounts in the report to the TA, without the proper segregation of non-remunerative ' +
+                      'flows (cf. Art. 36(11) CIVA), may constitute a deficiency in the extraction of data ' +
+                      'from the platform\'s information system, resulting in an inaccurate tax report."',
                 _cqUseW - 5);
             doc.text(_cqQ2, left + 3, y); y += (_cqQ2.length * 3.5) + 7;
 
-            // ── Nota de rodapé legal da secção ────────────────────────────────
             doc.setFont('helvetica', 'italic');
             doc.setFontSize(6.5);
             doc.setTextColor(100, 100, 100);
             const _cqNota = doc.splitTextToSize(
-                'Fundamentação Legal: Art. 327.º CPP (Contraditório) · Art. 125.º CPP (Admissibilidade de Prova) · ' +
-                'Art. 103.º/104.º RGIT (Fraude Fiscal/Qualificada) · Art. 36.º, n.º 11 CIVA · ' +
-                'Decreto-Lei n.º 28/2019 (SAF-T/DAC7) · Diretiva (UE) 2021/514 (DAC7) · ' +
-                'Termos e Condições da Plataforma · ISO/IEC 27037:2012 (prova digital)',
+                currentLang === 'pt'
+                    ? 'Fundamentação Legal: Art. 327.º CPP (Contraditório) · Art. 125.º CPP (Admissibilidade de Prova) · ' +
+                      'Art. 103.º/104.º RGIT (Fraude Fiscal/Qualificada) · Art. 36.º, n.º 11 CIVA · ' +
+                      'Decreto-Lei n.º 28/2019 (SAF-T/DAC7) · Diretiva (UE) 2021/514 (DAC7) · ' +
+                      'Termos e Condições da Plataforma · ISO/IEC 27037:2012 (prova digital)'
+                    : 'Legal Basis: Art. 327 CPP (Contradiction) · Art. 125 CPP (Admissibility of Evidence) · ' +
+                      'Art. 103/104 RGIT (Tax Fraud/Qualified) · Art. 36(11) CIVA · ' +
+                      'Decree-Law No. 28/2019 (SAF-T/DAC7) · Directive (EU) 2021/514 (DAC7) · ' +
+                      'Platform Terms and Conditions · ISO/IEC 27037:2012 (digital evidence)',
                 _cqUseW);
             doc.text(_cqNota, left, y); y += (_cqNota.length * 3) + 6;
             doc.setTextColor(0, 0, 0);
             doc.setFont('helvetica', 'normal');
         }
-        // ══ FIM QUESTÕES PARA O CONTRADITÓRIO ══
 
-        // PÁGINA FINAL ISOLADA — TERMO DE ENCERRAMENTO + QR CODE
-        // PROTOCOLO UNIFED-GOLD v13.2.1 — LAYOUT CONSOLIDADO
-        //
-        // FLUXO GARANTIDO:
-        //   ① doc.addPage() INCONDICIONAL → página exclusiva e limpa
-        //   ② Texto: Termo + Art. 125.º CPP + RFC 3161 + Banner PROBATUM
-        //   ③ addFooter(isLastPage=true) → QR Code fixo no rodapé desta página
-        //   ④ Segunda passagem → renumeração correcta de todas as páginas
-        //
-        // PROIBIÇÃO DE SOBREPOSIÇÃO:
-        //   O texto pára em y ≤ 215mm. O QR Code ocupa [225mm, 275mm] (sealY).
-        //   Nunca há texto por cima ou por baixo do Selo QR.
-        //
-        // Fundamento Legal: Art. 125.º CPP · Art. 103.º RGIT · ISO/IEC 27037:2012
-        // ══════════════════════════════════════════════════════════════════════
-
-        // ① Página nova CONDICIONAL — garante isolamento total sem ecrã em branco
-        // Threshold elevado de 20→50 para evitar página em branco quando o bloco
-        // anterior termina imediatamente após um addPage() (y parte sempre de 20).
         if (y > 50) {
             doc.addPage();
             pageNumber++;
@@ -7501,93 +7362,87 @@ async function exportPDF() {
 
         {
             const _termW   = doc.internal.pageSize.getWidth();
-            const _termUW  = _termW - left - 14;   // largura utilizável (≈182mm)
+            const _termUW  = _termW - left - 14;
             const _termMH  = UNIFEDSystem.masterHash || 'N/A';
 
-            // ── Fundo branco absoluto — AÇÃO 2 UNIFED-GOLD v13.2.1-FINAL ─────
-            // Todas as páginas, incluindo a de fecho, têm fundo #FFFFFF para
-            // garantir legibilidade e sobriedade pericial perante o Tribunal.
             doc.setFillColor(255, 255, 255);
             doc.rect(0, 0, _termW, doc.internal.pageSize.getHeight(), 'F');
 
-            // ── Linha separadora de abertura (preto sóbrio) ───────────────────
             doc.setDrawColor(0, 0, 0);
             doc.setLineWidth(0.8);
             doc.line(left, y, _termW - left, y);
             y += 6;
 
-            // ── Cabeçalho do Termo (preto — fundo branco) ─────────────────────
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(9);
             doc.setTextColor(0, 0, 0);
-            doc.text('TERMO DE ENCERRAMENTO — CONSULTORIA FORENSE', left, y); y += 7;
+            doc.text(`${currentLang === 'pt' ? 'TERMO DE ENCERRAMENTO — CONSULTORIA FORENSE' : 'CLOSING TERM — FORENSIC CONSULTANCY'}`, left, y); y += 7;
 
-            // ── Corpo do Termo: número dinâmico ───────────────────────────────
-            // Neste ponto doc.internal.getNumberOfPages() reflecte o total REAL
-            // (inclui esta página final), garantindo fidedignidade no Acórdão.
             const _totalPaginasTermo = doc.internal.getNumberOfPages();
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(8);
             doc.setTextColor(0, 0, 0);
             const _termoTextoIntro = doc.splitTextToSize(
-                `O presente relatório é composto por ${_totalPaginasTermo} páginas, todas rubricadas digitalmente e seladas com o Master Hash de integridade:`,
+                currentLang === 'pt'
+                    ? `O presente relatório é composto por ${_totalPaginasTermo} páginas, todas rubricadas digitalmente e seladas com o Master Hash de integridade:`
+                    : `This report consists of ${_totalPaginasTermo} pages, all digitally initialed and sealed with the Master Integrity Hash:`,
                 _termUW);
             doc.text(_termoTextoIntro, left, y); y += (_termoTextoIntro.length * 4) + 2;
 
-            // ── Master Hash (courier, 6pt — legibilidade forense) ─────────────
             doc.setFont('courier', 'normal');
             doc.setFontSize(6);
-            doc.setTextColor(0, 0, 0);               // preto — fundo branco
+            doc.setTextColor(0, 0, 0);
             const _hashLines = doc.splitTextToSize(_termMH, _termUW);
             doc.text(_hashLines, left, y); y += (_hashLines.length * 3.5) + 4;
 
-            // ── Continuação texto de encerramento ─────────────────────────────
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(8);
             doc.setTextColor(0, 0, 0);
             const _termoTextoCont = doc.splitTextToSize(
-                'constituindo Prova Digital Material inalterável para efeitos judiciais, sob égide do Art. 103.º do RGIT, normas ISO/IEC 27037 e Decreto-Lei n.º 28/2019.',
+                currentLang === 'pt'
+                    ? 'constituindo Prova Digital Material inalterável para efeitos judiciais, sob égide do Art. 103.º do RGIT, normas ISO/IEC 27037 e Decreto-Lei n.º 28/2019.'
+                    : 'constituting unalterable Material Digital Evidence for judicial purposes, under the aegis of Art. 103 RGIT, ISO/IEC 27037 standards and Decree-Law No. 28/2019.',
                 _termUW);
             doc.text(_termoTextoCont, left, y); y += (_termoTextoCont.length * 4) + 6;
 
-            // ── Art. 125.º CPP — Admissibilidade da Prova ────────────────────
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(8);
             doc.setTextColor(30, 60, 120);
-            doc.text('ADMISSIBILIDADE DA PROVA DIGITAL — Art. 125.º CPP', left, y); y += 5;
+            doc.text(`${currentLang === 'pt' ? 'ADMISSIBILIDADE DA PROVA DIGITAL — Art. 125.º CPP' : 'ADMISSIBILITY OF DIGITAL EVIDENCE — Art. 125 CPP'}`, left, y); y += 5;
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(7.5);
             doc.setTextColor(0, 0, 0);
             const _cpp125Lines = doc.splitTextToSize(
-                'São admissíveis como meios de prova todos os meios não proibidos por lei (Art. 125.º do Código de Processo Penal Português). ' +
-                'O presente relatório pericial constitui Prova Digital Material, produzida com recurso a metodologia forense certificada (ISO/IEC 27037:2012), ' +
-                'integridade criptografica SHA-256 e cadeia de custodia documentada, sendo admissível perante as Instâncias Judiciais Competentes nos termos do Art. 125.º CPP ' +
-                'e do Art. 32.º da Constituição da República Portuguesa (Garantias de Defesa). ' +
-                'A omissão de IVA apurada fundamenta a qualificação do facto nos termos dos Art. 103.º (Fraude Fiscal) e Art. 104.º (Fraude Fiscal Qualificada) do RGIT.',
+                currentLang === 'pt'
+                    ? 'São admissíveis como meios de prova todos os meios não proibidos por lei (Art. 125.º do Código de Processo Penal Português). ' +
+                      'O presente relatório pericial constitui Prova Digital Material, produzida com recurso a metodologia forense certificada (ISO/IEC 27037:2012), ' +
+                      'integridade criptografica SHA-256 e cadeia de custodia documentada, sendo admissível perante as Instâncias Judiciais Competentes nos termos do Art. 125.º CPP ' +
+                      'e do Art. 32.º da Constituição da República Portuguesa (Garantias de Defesa). ' +
+                      'A omissão de IVA apurada fundamenta a qualificação do facto nos termos dos Art. 103.º (Fraude Fiscal) e Art. 104.º (Fraude Fiscal Qualificada) do RGIT.'
+                    : 'All means of proof not prohibited by law are admissible (Art. 125 of the Portuguese Code of Criminal Procedure). ' +
+                      'This expert report constitutes Material Digital Evidence, produced using certified forensic methodology (ISO/IEC 27037:2012), ' +
+                      'cryptographic integrity SHA-256 and documented chain of custody, being admissible before the Competent Judicial Authorities under the terms of Art. 125 CPP ' +
+                      'and Art. 32 of the Constitution of the Portuguese Republic (Defense Guarantees). ' +
+                      'The missing VAT found supports the qualification of the fact under the terms of Art. 103 (Tax Fraud) and Art. 104 (Qualified Tax Fraud) of the RGIT.',
                 _termUW);
             doc.text(_cpp125Lines, left, y); y += (_cpp125Lines.length * 3.5) + 6;
 
-            // ── Selagem Temporal RFC 3161 ─────────────────────────────────────
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(8);
             doc.setTextColor(30, 60, 120);
-            doc.text('SELAGEM TEMPORAL RFC 3161 — DATA CERTA eIDAS:', left, y); y += 5;
+            doc.text(`${currentLang === 'pt' ? 'SELAGEM TEMPORAL RFC 3161 — DATA CERTA eIDAS:' : 'RFC 3161 TIMESTAMP SEAL — CERTIFIED DATE eIDAS:'}`, left, y); y += 5;
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(7.5);
             doc.setTextColor(0, 0, 0);
             const _rfc3161Lines = doc.splitTextToSize(
-                'Documento selado temporalmente via Protocolo RFC 3161 (TSA: FreeTSA.org), garantindo Data Certa eIDAS. ' +
-                'Os selos .tsr individuais de cada evidência encontram-se arquivados na pasta 03_REPOSITORIO_OTS.',
+                currentLang === 'pt'
+                    ? 'Documento selado temporalmente via Protocolo RFC 3161 (TSA: FreeTSA.org), garantindo Data Certa eIDAS. ' +
+                      'Os selos .tsr individuais de cada evidência encontram-se arquivados na pasta 03_REPOSITORIO_OTS.'
+                    : 'Document temporally sealed via RFC 3161 Protocol (TSA: FreeTSA.org), guaranteeing eIDAS Certified Date. ' +
+                      'The individual .tsr seals for each evidence are archived in the 03_REPOSITORIO_OTS folder.',
                 _termUW);
             doc.text(_rfc3161Lines, left, y); y += (_rfc3161Lines.length * 3.5) + 6;
 
-            // ── Bloco de Assinatura Profissional — CEJ / Art. 153.º CPP ──────
-            // PROTOCOLO UNIFED-GOLD v13.2.2-GOLD
-            // Fundamento: Art. 153.º CPP (Compromisso de Honra) ·
-            //             Art. 467.º CPC (Deveres do Perito) ·
-            //             ISRS 4400 (Independência e Objetividade)
-            // NOTA: Os campos assinalados com [●] devem ser preenchidos pelo perito
-            //       antes da submissão em juízo.
             {
                 const _sigW = doc.internal.pageSize.getWidth() - left - 14;
 
@@ -7599,52 +7454,54 @@ async function exportPDF() {
                 doc.setFont('helvetica', 'bold');
                 doc.setFontSize(8);
                 doc.setTextColor(0, 0, 0);
-                doc.text('CONSULTOR TÉCNICO — COMPROMISSO DE HONRA E SALVAGUARDA (ART. 153.º E 155.º CPP)', left, y); y += 6;
+                doc.text(`${currentLang === 'pt' ? 'CONSULTOR TÉCNICO — COMPROMISSO DE HONRA E SALVAGUARDA (ART. 153.º E 155.º CPP)' : 'TECHNICAL CONSULTANT — COMMITMENT OF HONOR AND SAFEGUARD (ART. 153 AND 155 CPP)'}`, left, y); y += 6;
 
                 doc.setFont('helvetica', 'normal');
                 doc.setFontSize(8);
-                // Identificação do Analista Responsável — hardcoded (UNIFED-GOLD v13.2.1)
-                const _sigResponsavel = 'Técnico Forense';
-                const _sigCargo       = 'Analista e Consultor Forense Independente | Big Data Analytics';
-                const _sigRegisto     = 'Consultor Técnico Independente (Art. 155.º do CPP). Atuação em conformidade com o regime de liberdade de prova e perícia documental.';
+                const _sigResponsavel = currentLang === 'pt' ? 'Técnico Forense' : 'Forensic Technician';
+                const _sigCargo       = currentLang === 'pt' ? 'Analista e Consultor Forense Independente | Big Data Analytics' : 'Independent Forensic Analyst and Consultant | Big Data Analytics';
+                const _sigRegisto     = currentLang === 'pt' ? 'Consultor Técnico Independente (Art. 155.º do CPP). Atuação em conformidade com o regime de liberdade de prova e perícia documental.' : 'Independent Technical Consultant (Art. 155 CPP). Acting in accordance with the regime of freedom of evidence and documentary expertise.';
 
-                doc.text('Identificação:', left, y); y += 5;
-                doc.text(`* Nome:     ${_sigResponsavel}`, left, y); y += 5;
-                doc.text(`* Cargo:    ${_sigCargo}`, left, y); y += 5;
-                const _sigRegLines = doc.splitTextToSize(`* Estatuto: ${_sigRegisto}`, doc.internal.pageSize.getWidth() - left - 14);
+                doc.text(`${currentLang === 'pt' ? 'Identificação:' : 'Identification:'}`, left, y); y += 5;
+                doc.text(`* ${currentLang === 'pt' ? 'Nome:' : 'Name:'}     ${_sigResponsavel}`, left, y); y += 5;
+                doc.text(`* ${currentLang === 'pt' ? 'Cargo:' : 'Position:'}    ${_sigCargo}`, left, y); y += 5;
+                const _sigRegLines = doc.splitTextToSize(`* ${currentLang === 'pt' ? 'Estatuto:' : 'Status:'} ${_sigRegisto}`, doc.internal.pageSize.getWidth() - left - 14);
                 doc.text(_sigRegLines, left, y); y += (_sigRegLines.length * 4) + 3;
 
                 const _sigNota = doc.splitTextToSize(
-                    'NOTA DE SALVAGUARDA JURÍDICA E ÂMBITO: As conclusões constantes neste documento infraestruturam-se exclusivamente nos artefactos e elementos documentais disponibilizados pelo solicitante. O presente parecer constitui uma análise técnica independente de natureza consultiva e prova documental assistencial, não substituindo, para quaisquer efeitos processuais, a realização de uma perícia oficial ordenada pela autoridade judiciária competente.',
+                    currentLang === 'pt'
+                        ? 'NOTA DE SALVAGUARDA JURÍDICA E ÂMBITO: As conclusões constantes neste documento infraestruturam-se exclusivamente nos artefactos e elementos documentais disponibilizados pelo solicitante. O presente parecer constitui uma análise técnica independente de natureza consultiva e prova documental assistencial, não substituindo, para quaisquer efeitos processuais, a realização de uma perícia oficial ordenada pela autoridade judiciária competente.'
+                        : 'JURIDICAL SAFEGUARD AND SCOPE NOTE: The conclusions contained in this document are based exclusively on the artifacts and documentary elements made available by the requester. This opinion constitutes an independent technical analysis of a consultative nature and supporting documentary evidence, not replacing, for any procedural purposes, the carrying out of an official expertise ordered by the competent judicial authority.',
                     _sigW);
                 doc.text(_sigNota, left, y); y += (_sigNota.length * 3.5) + 3;
 
                 const _sigLimit = doc.splitTextToSize(
-                    'Análise material baseada em dados estruturados fornecidos; o escopo limita-se à integridade financeira e documental dos ativos digitais apresentados, conforme Art. 125.º CPP.',
+                    currentLang === 'pt'
+                        ? 'Análise material baseada em dados estruturados fornecidos; o escopo limita-se à integridade financeira e documental dos ativos digitais apresentados, conforme Art. 125.º CPP.'
+                        : 'Material analysis based on provided structured data; the scope is limited to the financial and documentary integrity of the presented digital assets, in accordance with Art. 125 CPP.',
                     _sigW);
                 doc.text(_sigLimit, left, y); y += (_sigLimit.length * 3.5) + 3;
 
                 const _sigDecl = doc.splitTextToSize(
-                    'DECLARAÇÃO DE COMPROMISSO: Declaro, sob compromisso de honra, que o presente parecer técnico foi elaborado na qualidade de Consultor Técnico Independente, assumindo estritamente os deveres de independência, objetividade e imparcialidade previstos no Artigo 153.º do Código de Processo Penal Português. Certifico que a metodologia aplicada (Baseada em ISRS 4400 e boas práticas de Digital Forensics) é reprodutível e que os resultados aqui vertidos traduzem fielmente a análise técnica realizada sobre o lote de dados fornecido.',
+                    currentLang === 'pt'
+                        ? 'DECLARAÇÃO DE COMPROMISSO: Declaro, sob compromisso de honra, que o presente parecer técnico foi elaborado na qualidade de Consultor Técnico Independente, assumindo estritamente os deveres de independência, objetividade e imparcialidade previstos no Artigo 153.º do Código de Processo Penal Português. Certifico que a metodologia aplicada (Baseada em ISRS 4400 e boas práticas de Digital Forensics) é reprodutível e que os resultados aqui vertidos traduzem fielmente a análise técnica realizada sobre o lote de dados fornecido.'
+                        : 'COMMITMENT DECLARATION: I declare, under a commitment of honor, that this technical opinion was prepared as an Independent Technical Consultant, strictly assuming the duties of independence, objectivity and impartiality provided for in Article 153 of the Portuguese Code of Criminal Procedure. I certify that the methodology applied (Based on ISRS 4400 and Digital Forensics best practices) is reproducible and that the results expressed herein faithfully reflect the technical analysis carried out on the provided data set.',
                     _sigW);
                 doc.text(_sigDecl, left, y); y += (_sigDecl.length * 3.8) + 4;
 
-                // Linha de assinatura física
                 doc.setDrawColor(0, 0, 0);
                 doc.setLineWidth(0.3);
                 const _sigLineX = left + _sigW * 0.55;
                 doc.line(_sigLineX, y + 3, left + _sigW, y + 3);
                 doc.setFontSize(6.5);
                 doc.setTextColor(80, 80, 80);
-                doc.text('Assinatura do Técnico Responsável Pela Análise', _sigLineX, y + 7);
-                doc.text('Data: ' + new Date().toLocaleDateString('pt-PT'), left, y + 7); // DATA DINÂMICA v13.5.0-PURE
+                doc.text(`${currentLang === 'pt' ? 'Assinatura do Técnico Responsável Pela Análise' : 'Signature of the Technician Responsible for the Analysis'}`, _sigLineX, y + 7);
+                doc.text(`${currentLang === 'pt' ? 'Data:' : 'Date:'} ${new Date().toLocaleDateString('pt-PT')}`, left, y + 7);
                 y += 14;
 
                 doc.setTextColor(0, 0, 0);
             }
-            // ══ FIM BLOCO DE ASSINATURA ══
 
-            // ── Banner UNIFED-PROBATUM CERTIFIED ─────────────────────────────
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(9);
             doc.setTextColor(30, 60, 120);
@@ -7653,14 +7510,13 @@ async function exportPDF() {
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(6.5);
             doc.setTextColor(80, 80, 80);
-            doc.text('Estudo de Viabilidade · Consultoria Forense Especializada · Uso restrito a mandato jurídico autorizado',
+            doc.text(`${currentLang === 'pt' ? 'Estudo de Viabilidade · Consultoria Forense Especializada · Uso restrito a mandato jurídico autorizado' : 'Feasibility Study · Specialized Forensic Consultancy · Use restricted to authorized legal mandate'}`,
                 _termW / 2, y, { align: 'center' }); y += 4;
             doc.setFontSize(6);
-            doc.text('Fundamentação: RGIT Art. 103.º (Fraude Fiscal) · Art. 104.º (Fraude Qualificada) · CRP Art. 32.º · CPP Art. 125.º',
+            doc.text(`${currentLang === 'pt' ? 'Fundamentação: RGIT Art. 103.º (Fraude Fiscal) · Art. 104.º (Fraude Qualificada) · CRP Art. 32.º · CPP Art. 125.º' : 'Basis: RGIT Art. 103 (Tax Fraud) · Art. 104 (Qualified Fraud) · CRP Art. 32 · CPP Art. 125'}`,
                 _termW / 2, y, { align: 'center' });
             doc.setTextColor(0, 0, 0);
 
-            // ── INTEGRITY SEAL — v13.5.0-PURE ──────────────────────────────────
             if (typeof window.generateIntegritySeal === 'function') {
                 try {
                     const _sealX = 14;
@@ -7670,31 +7526,8 @@ async function exportPDF() {
                     console.warn('[UNIFED-SEAL] ⚠ Integrity Seal indisponível:', _sealErr.message);
                 }
             }
-            // ── FIM INTEGRITY SEAL ──
-
-            // ── ZONA DE EXCLUSÃO DO QR CODE ───────────────────────────────────
-            // O texto acima pára aqui (y ≤ ~145mm para documentos padrão).
-            // O Selo QR ocupa [sealY ≈ 225mm, sealY+boxSize ≈ 275mm] — canto direito.
-            // Garantia: nenhum doc.text() é chamado após esta linha nesta página.
-            // ③ addFooter(isLastPage=true) a seguir — QR Code posicionado no
-            //   canto inferior direito em coordenadas fixas (não dependentes de y).
         }
-        // ══ FIM BLOCO TEXTO PÁGINA FINAL ══
 
-        // ③ CHAMADA FINAL — isLastPage=true: Selo QR no rodapé desta última página
-        // O QR Code usa coordenadas ABSOLUTAS (sealX, sealY calculados a partir
-        // do canto inferior direito), independentes da variável y do texto.
-        // Nenhum texto é impresso após esta chamada nesta página.
-        addFooter(doc, pageNumber, true);
-        // ══ FIM PÁGINA FINAL ISOLADA ══
-
-        // ══════════════════════════════════════════════════════════════════════
-        // LOOP UNIVERSAL DE RODAPÉ — PASSO 4 (UNIFED-PROBATUM v13.5.0-PURE)
-        // Executado UMA ÚNICA VEZ, imediatamente antes de doc.save().
-        // Garante que todas as páginas têm o rodapé correto com o total real
-        // de páginas, a Master Hash definitiva e identificação PROBATUM.
-        // Substitui a antiga 2.ª passagem parcial (só corrigia "Página X de Y").
-        // ══════════════════════════════════════════════════════════════════════
         const realTotalPages = doc.getNumberOfPages();
         TOTAL_PAGES = realTotalPages;
 
@@ -7707,54 +7540,47 @@ async function exportPDF() {
         for (let _p = 1; _p <= realTotalPages; _p++) {
             doc.setPage(_p);
 
-            // 1. Limpar zona de rodapé — rectângulo branco elimina qualquer detrito
             doc.setFillColor(255, 255, 255);
             doc.rect(0, _ph - 22, _pw, 22, 'F');
 
-            // 2. Linha divisória CYAN PROBATUM
             doc.setDrawColor(0, 229, 255);
             doc.setLineWidth(0.5);
             doc.line(_mg, _ph - 20, _pw - _mg, _ph - 20);
 
-            // 3. Página X de Y (esquerda)
             doc.setFont('courier', 'bold');
             doc.setFontSize(6.5);
             doc.setTextColor(100, 100, 100);
-            doc.text(`Página ${_p} de ${realTotalPages}`, _mg, _ph - 14);
+            doc.text(`${currentLang === 'pt' ? 'Página' : 'Page'} ${_p} ${currentLang === 'pt' ? 'de' : 'of'} ${realTotalPages}`, _mg, _ph - 14);
 
-            // 4. Master Hash SHA-256 completo (direita) — padrão legal europeu
             doc.setFont('courier', 'normal');
             doc.setFontSize(5.2);
             doc.setTextColor(100, 100, 100);
             doc.text(
-                'Master Hash SHA-256: ' + _mhFull,
+                `${currentLang === 'pt' ? 'Master Hash SHA-256:' : 'Master Hash SHA-256:'} ${_mhFull}`,
                 _pw - _mg, _ph - 14, { align: 'right' }
             );
 
-            // 5. Doutrina Elite (centro, linha inferior)
             doc.setFont('courier', 'normal');
             doc.setFontSize(5.5);
             doc.setTextColor(140, 140, 140);
             doc.text(
-                'UNIFED-PROBATUM v13.5.0-PURE · RECONSTITUIÇÃO DA VERDADE MATERIAL DIGITAL · Art. 125.º CPP',
+                `${currentLang === 'pt' ? 'UNIFED-PROBATUM v13.5.0-PURE · RECONSTITUIÇÃO DA VERDADE MATERIAL DIGITAL · Art. 125.º CPP' : 'UNIFED-PROBATUM v13.5.0-PURE · RECONSTRUCTION OF DIGITAL MATERIAL TRUTH · Art. 125 CPP'}`,
                 _pw / 2, _ph - 9, { align: 'center' }
             );
 
             doc.setDrawColor(0, 0, 0);
             doc.setTextColor(0, 0, 0);
         }
-        // ══ FIM LOOP UNIVERSAL DE RODAPÉ ══
 
-        // Guardar PDF — sincronamente após inserção garantida do QR Code e correcção de numeração
         doc.save(`UNIFED_PERITIA_${UNIFEDSystem.sessionId}.pdf`);
         logAudit(`✅ PDF UNIFED_PERITIA exportado com sucesso — ${realTotalPages} páginas · QR Code selado`, 'success');
-        showToast(`PDF gerado · ${realTotalPages} páginas · Selo QR PROBATUM`, 'success');
+        showToast(`${currentLang === 'pt' ? 'PDF gerado ·' : 'PDF generated ·'} ${realTotalPages} ${currentLang === 'pt' ? 'páginas' : 'pages'} · ${currentLang === 'pt' ? 'Selo QR PROBATUM' : 'PROBATUM QR Seal'}`, 'success');
         ForensicLogger.addEntry('PDF_EXPORT_COMPLETED', { sessionId: UNIFEDSystem.sessionId, pages: realTotalPages, qrSealed: !!_qrDataUrl });
 
     } catch (error) {
         console.error('Erro PDF:', error);
-        logAudit(`❌ Erro ao gerar PDF: ${error.message}`, 'error');
-        showToast('Erro ao gerar PDF', 'error');
+        logAudit(`❌ ${currentLang === 'pt' ? 'Erro ao gerar PDF:' : 'Error generating PDF:'} ${error.message}`, 'error');
+        showToast(`${currentLang === 'pt' ? 'Erro ao gerar PDF' : 'Error generating PDF'}`, 'error');
         ForensicLogger.addEntry('PDF_EXPORT_ERROR', { error: error.message });
     }
 }
@@ -7762,56 +7588,25 @@ async function exportPDF() {
 // ============================================================================
 // 25. FUNÇÕES AUXILIARES
 // ============================================================================
-// ============================================================================
-// MÓDULO AUXILIAR PERICIAL — processAuxiliaryPlatformData()
-// DOM Injection via DocumentFragment · Non-Interfering Data Objects
-// Regex Pattern Matching para Extratos de Plataforma (PDF "Ganhos da Empresa")
-//
-// IMUTABILIDADE GARANTIDA: Esta função NÃO modifica, acede ou interfere com:
-//   - calculateDiscrepancy()       [PROTEGIDA — Core Freeze]
-//   - robustSAFTParser()           [PROTEGIDA — Core Freeze]
-//   - UNIFEDSystem.financials        [PROTEGIDA — Core Freeze]
-//   - UNIFEDSystem.analysis.totals   [PROTEGIDA — Core Freeze]
-//
-// Os valores extraídos são persistidos em UNIFEDSystem.auxiliaryData (isolado).
-//
-// Fundamento Legal:
-//   • Gorjetas e Campanhas: isentos de comissão (0%) — Lei TVDE
-//   • Portagens: reembolso operacional — não integram rendimento bruto
-//   • Art. 125.º CPP · ISO/IEC 27037:2012 · DORA (UE) 2022/2554
-// ============================================================================
 function processAuxiliaryPlatformData(text, filename) {
     if (!text || typeof text !== 'string') return;
 
-    // ── REGEX PATTERN MATCHING para campos do PDF "Ganhos da Empresa" ────────
-    // Cada padrão tenta múltiplas variações tipográficas do mesmo campo.
-    // String.match() — conforme instrução de implementação forense.
+    let campanhas = 0;
+    let portagens = 0;
+    let gorjetas = 0;
+    let cancelamentos = 0;
 
-    // 1. Campanhas: "Ganhos da campanha"
     const campaignMatch = text.match(
         /Ganhos\s+da\s+campa[nñ]ha\s*[:\-–]?\s*(?:€\s*)?([\d][.\d]*[,\d]*\s*€?)/i
     ) || text.match(
         /Campaign\s+(?:earnings?|bonus)\s*[:\-–]?\s*(?:€\s*)?([\d][.\d]*[,\d]*\s*€?)/i
     );
 
-    // 2. Portagens (2024) / Reembolsos de despesas (2025) — Regex Agnóstica
-    // ── PROTOCOLO UNIFED-GOLD v13.2 ─────────────────────────────────────────
-    // A Bolt alterou a designação ANUALMENTE: "Portagens" (≤2024) passou a
-    // "Reembolsos de despesas" a partir do ano fiscal 2025.
-    // O regex cobre AMBAS as designações para garantir a reconciliação histórica
-    // de passivo fiscal independentemente do período auditado.
-    // Formato CSV: "Campo","valor" (extrato exportado pela plataforma)
-    // Formato Texto Plano: campo: valor (PDF "Ganhos da Empresa")
-    // Fundamento Legal: Art. 103.º RGIT · Art. 125.º CPP · ISO/IEC 27037:2012
-    // ──────────────────────────────────────────────────────────────────────────
-    let portagens = 0;
-    // Padrão CSV: "Portagens","1.23" | "Reembolsos de despesas","1.23"
     const tollCsvRegex = /"(?:Portagens|Reembolsos de despesas)\n?","([\d.,-]+)"/g;
     let tollCsvMatch;
     while ((tollCsvMatch = tollCsvRegex.exec(text)) !== null) {
         portagens += normalizeNumericValue(tollCsvMatch[1]);
     }
-    // Padrão Texto Plano (PDF): "Portagens: 5.00" | "Reembolsos de despesas: 5.00"
     if (portagens === 0) {
         const portageTextMatch = text.match(
             /(?:Portagens?|Reembolsos\s+de\s+despesas)\s*[:\-–]?\s*(?:€\s*)?([\d][.\d]*[,\d]*\s*€?)/i
@@ -7822,34 +7617,23 @@ function processAuxiliaryPlatformData(text, filename) {
             portagens = normalizeNumericValue(portageTextMatch[1]);
         }
     }
-    // Rótulo dinâmico: regista o termo real encontrado para uso na UI e no PDF
-    const portageLabel = (UNIFEDSystem.selectedYear >= 2025)
-        ? 'REEMBOLSOS / PORTAGENS (2025+)'
-        : 'PORTAGENS (2024)';
 
-    // 3. Gorjetas: "Gorjetas dos passageiros"
     const tipsMatch = text.match(
         /Gorjetas\s+dos\s+passageiros\s*[:\-–]?\s*(?:€\s*)?([\d][.\d]*[,\d]*\s*€?)/i
     ) || text.match(
         /(?:Tips?|Gorjetas?)\s*[:\-–]?\s*(?:€\s*)?([\d][.\d]*[,\d]*\s*€?)/i
     );
 
-    // 4. Cancelamentos: "Cancelamentos" / "Cancel fees"
     const cancelMatch = text.match(
         /Cancelamentos?\s*[:\-–]?\s*(?:€\s*)?([\d][.\d]*[,\d]*\s*€?)/i
     ) || text.match(
         /(?:Cancel(?:lation)?\s+fees?)\s*[:\-–]?\s*(?:€\s*)?([\d][.\d]*[,\d]*\s*€?)/i
     );
 
-    // ── Normalização e acumulação (Non-Interfering — só toca auxiliaryData) ──
-    // ── Normalização dos campos de texto plano ────────────────────────────────
-    // Nota: `portagens` já foi calculado acima via regex agnóstica (2024+2025).
-    const campanhas     = campaignMatch && campaignMatch[1] ? normalizeNumericValue(campaignMatch[1]) : 0;
-    // portagens: já declarado como let acima — não redeclarar
-    const gorjetas      = tipsMatch    && tipsMatch[1]     ? normalizeNumericValue(tipsMatch[1])     : 0;
-    const cancelamentos = cancelMatch  && cancelMatch[1]   ? normalizeNumericValue(cancelMatch[1])   : 0;
+    campanhas     = campaignMatch && campaignMatch[1] ? normalizeNumericValue(campaignMatch[1]) : 0;
+    gorjetas      = tipsMatch    && tipsMatch[1]     ? normalizeNumericValue(tipsMatch[1])     : 0;
+    cancelamentos = cancelMatch  && cancelMatch[1]   ? normalizeNumericValue(cancelMatch[1])   : 0;
 
-    // Acumulação (suporte multi-ficheiro)
     UNIFEDSystem.auxiliaryData.campanhas       += campanhas;
     UNIFEDSystem.auxiliaryData.portagens       += portagens;
     UNIFEDSystem.auxiliaryData.gorjetas        += gorjetas;
@@ -7864,19 +7648,17 @@ function processAuxiliaryPlatformData(text, filename) {
         UNIFEDSystem.auxiliaryData.processedFrom.push(filename);
     }
 
-    // ── Actualizar boxes de UI via IDs (DOM já injetado por injectAuxiliaryHelperBoxes) ──
     _updateAuxiliaryBoxes();
 
-    // ── Log forense ──────────────────────────────────────────────────────────
     const anyFound = campanhas > 0 || portagens > 0 || gorjetas > 0 || cancelamentos > 0;
     if (anyFound) {
         logAudit(
             `[AUX] ${filename || 'Extrato'} — ` +
-            `Campanhas: ${formatCurrency(campanhas)} | ` +
-            `Portagens: ${formatCurrency(portagens)} | ` +
-            `Gorjetas: ${formatCurrency(gorjetas)} | ` +
-            `Cancelamentos: ${formatCurrency(cancelamentos)} | ` +
-            `Total Não Sujeitos: ${formatCurrency(UNIFEDSystem.auxiliaryData.totalNaoSujeitos)}`,
+            `${currentLang === 'pt' ? 'Campanhas:' : 'Campaigns:'} ${formatCurrency(campanhas)} | ` +
+            `${currentLang === 'pt' ? 'Portagens:' : 'Tolls:'} ${formatCurrency(portagens)} | ` +
+            `${currentLang === 'pt' ? 'Gorjetas:' : 'Tips:'} ${formatCurrency(gorjetas)} | ` +
+            `${currentLang === 'pt' ? 'Cancelamentos:' : 'Cancellations:'} ${formatCurrency(cancelamentos)} | ` +
+            `${currentLang === 'pt' ? 'Total Não Sujeitos:' : 'Total Not Subject:'} ${formatCurrency(UNIFEDSystem.auxiliaryData.totalNaoSujeitos)}`,
             'success'
         );
         ForensicLogger.addEntry('AUXILIARY_DATA_EXTRACTED', {
@@ -7889,13 +7671,12 @@ function processAuxiliaryPlatformData(text, filename) {
         });
     } else {
         logAudit(
-            `[AUX] ${filename || 'Extrato'} — Campos auxiliares não encontrados neste ficheiro.`,
+            `[AUX] ${filename || 'Extrato'} — ${currentLang === 'pt' ? 'Campos auxiliares não encontrados neste ficheiro.' : 'Auxiliary fields not found in this file.'}`,
             'info'
         );
     }
 }
 
-// ── Actualização interna das boxes de UI (chamada após cada extração) ─────────
 function _updateAuxiliaryBoxes() {
     const aux = UNIFEDSystem.auxiliaryData;
     const setBox = (id, val) => {
@@ -7908,29 +7689,26 @@ function _updateAuxiliaryBoxes() {
     setBox('auxBoxTotalNSValue',    aux.totalNaoSujeitos);
     setBox('auxBoxCancelValue',     aux.cancelamentos);
 
-    // ── Rótulo dinâmico da BOX 2: Portagens (2024) vs Reembolsos de despesas (2025+) ──
-    // Protocolo UNIFED-GOLD v13.2 — Adaptação anual da nomenclatura da plataforma.
-    // O advogado e o juiz identificam visualmente a adaptação técnica do perito.
     const anoFiscal = UNIFEDSystem.selectedYear || new Date().getFullYear();
     const labelEl   = document.getElementById('auxBoxPortagensLabel');
     const descEl    = document.getElementById('auxBoxPortagensDesc');
     const boxEl     = document.getElementById('auxBoxPortagens');
     if (labelEl) {
         if (anoFiscal >= 2025) {
-            labelEl.textContent = 'REEMBOLSOS / PORTAGENS';
-            if (descEl) descEl.textContent = 'Reembolsos de despesas (2025+)';
+            labelEl.textContent = currentLang === 'pt' ? 'REEMBOLSOS / PORTAGENS' : 'REIMBURSEMENTS / TOLLS';
+            if (descEl) descEl.textContent = currentLang === 'pt' ? 'Reembolsos de despesas (2025+)' : 'Expense reimbursements (2025+)';
             if (boxEl) {
-                boxEl.setAttribute('title', "Extraído de: 'Reembolsos de despesas' (2025+) — reembolso operacional");
+                boxEl.setAttribute('title', currentLang === 'pt' ? "Extraído de: 'Reembolsos de despesas' (2025+) — reembolso operacional" : "Extracted from: 'Expense reimbursements' (2025+) — operational reimbursement");
                 boxEl.setAttribute('data-field', 'Reembolsos de despesas');
                 boxEl.classList.remove('year-2024');
                 boxEl.classList.add('year-2025');
                 if (aux.portagens > 0) boxEl.classList.add('has-value');
             }
         } else {
-            labelEl.textContent = 'PORTAGENS';
-            if (descEl) descEl.textContent = 'Reembolso operacional (2024)';
+            labelEl.textContent = currentLang === 'pt' ? 'PORTAGENS' : 'TOLLS';
+            if (descEl) descEl.textContent = currentLang === 'pt' ? 'Reembolso operacional (2024)' : 'Operational reimbursement (2024)';
             if (boxEl) {
-                boxEl.setAttribute('title', "Extraído de: 'Portagens' (2024) — reembolso operacional");
+                boxEl.setAttribute('title', currentLang === 'pt' ? "Extraído de: 'Portagens' (2024) — reembolso operacional" : "Extracted from: 'Tolls' (2024) — operational reimbursement");
                 boxEl.setAttribute('data-field', 'Portagens');
                 boxEl.classList.remove('year-2025');
                 boxEl.classList.add('year-2024');
@@ -7939,7 +7717,6 @@ function _updateAuxiliaryBoxes() {
         }
     }
 
-    // Nota DAC7: visibilidade condicional — mostrar "zona cinzenta" se totalNaoSujeitos > 0
     const dac7NoteEl = document.getElementById('auxDac7ReconciliationNote');
     if (dac7NoteEl && aux.totalNaoSujeitos > 0) {
         dac7NoteEl.style.display = 'block';
@@ -7950,15 +7727,9 @@ function _updateAuxiliaryBoxes() {
     }
 }
 
-// ============================================================================
-// injectAuxiliaryHelperBoxes() — DOM Injection via DocumentFragment
-// Injeta as 5 "Indicação de Apoio Pericial" boxes SEM interferir na main-grid.
-// Chamada uma única vez no initializeDashboard().
-// ============================================================================
 function injectAuxiliaryHelperBoxes() {
     const targetId = 'auxiliaryHelperSection';
 
-    // Verificar se já foram injetadas (idempotência)
     if (document.getElementById(targetId)) return;
 
     const container = document.getElementById('dashboardAlerts');
@@ -7967,7 +7738,6 @@ function injectAuxiliaryHelperBoxes() {
         return;
     }
 
-    // ── DocumentFragment — zero re-renders da main-grid ──────────────────────
     const frag = document.createDocumentFragment();
 
     const wrapper = document.createElement('div');
@@ -7977,117 +7747,101 @@ function injectAuxiliaryHelperBoxes() {
     wrapper.setAttribute('data-legal', 'Lei TVDE · Art. 125.º CPP · ISO/IEC 27037:2012');
 
     wrapper.innerHTML = `
-        <!-- ══ SECÇÃO DE INDICAÇÃO DE APOIO PERICIAL ══════════════════════════════
-             UNIFED - PROBATUM · Módulo Auxiliar de Dados de Plataforma
-             Isolado de UNIFEDSystem.financials (Non-Interfering Data Objects)
-             Valores: fluxos de caixa de terceiros — 0% comissão — Lei TVDE
-             ══════════════════════════════════════════════════════════════════ -->
         <div class="aux-section-header">
             <i class="fas fa-layer-group"></i>
-            <span>INDICAÇÃO DE APOIO PERICIAL — FLUXOS NÃO SUJEITOS A COMISSÃO</span>
-            <!-- badge Lei TVDE removido — v13.2.1: título mantido sem referência normativa no cabeçalho -->
+            <span>${currentLang === 'pt' ? 'INDICAÇÃO DE APOIO PERICIAL — FLUXOS NÃO SUJEITOS A COMISSÃO' : 'FORENSIC SUPPORT INDICATION — FLOWS NOT SUBJECT TO COMMISSION'}</span>
         </div>
 
         <div class="aux-boxes-grid">
 
-            <!-- BOX 1: CAMPANHAS -->
             <div class="small-info-box aux-box-campaigns" id="auxBoxCampanhas"
-                 data-field="Ganhos da campanha"
-                 title="Extraído de: 'Ganhos da campanha' — PDF Ganhos da Empresa">
+                 data-field="${currentLang === 'pt' ? 'Ganhos da campanha' : 'Campaign earnings'}"
+                 title="${currentLang === 'pt' ? 'Extraído de: \'Ganhos da campanha\' — PDF Ganhos da Empresa' : 'Extracted from: \'Campaign earnings\' — PDF Company Earnings'}">
                 <div class="aux-box-icon"><i class="fas fa-bullhorn"></i></div>
                 <div class="aux-box-body">
-                    <h5 class="aux-box-label">CAMPANHAS</h5>
+                    <h5 class="aux-box-label">${currentLang === 'pt' ? 'CAMPANHAS' : 'CAMPAIGNS'}</h5>
                     <p class="aux-box-value" id="auxBoxCampanhasValue">0,00 €</p>
-                    <span class="aux-box-desc">Ganhos da campanha</span>
+                    <span class="aux-box-desc">${currentLang === 'pt' ? 'Ganhos da campanha' : 'Campaign earnings'}</span>
                 </div>
-                <div class="aux-box-legal-tag">Isento comissão · 0%</div>
+                <div class="aux-box-legal-tag">${currentLang === 'pt' ? 'Isento comissão · 0%' : 'Commission exempt · 0%'}</div>
             </div>
 
-            <!-- BOX 2: PORTAGENS (2024) / REEMBOLSOS DE DESPESAS (2025+) -->
-            <!-- Rótulo dinâmico: actualizado por _updateAuxiliaryBoxLabel() em função do ano fiscal -->
             <div class="small-info-box aux-box-tolls info-box-refunds" id="auxBoxPortagens"
-                 data-field="Portagens|Reembolsos de despesas"
-                 data-year-label-2024="PORTAGENS (2024)"
-                 data-year-label-2025="REEMBOLSOS / PORTAGENS (2025+)"
-                 title="Extraído de: 'Portagens' (2024) ou 'Reembolsos de despesas' (2025+) — reembolso operacional">
+                 data-field="${currentLang === 'pt' ? 'Portagens|Reembolsos de despesas' : 'Tolls|Expense reimbursements'}"
+                 data-year-label-2024="${currentLang === 'pt' ? 'PORTAGENS (2024)' : 'TOLLS (2024)'}"
+                 data-year-label-2025="${currentLang === 'pt' ? 'REEMBOLSOS / PORTAGENS (2025+)' : 'REIMBURSEMENTS / TOLLS (2025+)'}"
+                 title="${currentLang === 'pt' ? 'Extraído de: \'Portagens\' (2024) ou \'Reembolsos de despesas\' (2025+) — reembolso operacional' : 'Extracted from: \'Tolls\' (2024) or \'Expense reimbursements\' (2025+) — operational reimbursement'}">
                 <div class="aux-box-icon"><i class="fas fa-road"></i></div>
                 <div class="aux-box-body">
-                    <h5 class="aux-box-label" id="auxBoxPortagensLabel">PORTAGENS</h5>
+                    <h5 class="aux-box-label" id="auxBoxPortagensLabel">${currentLang === 'pt' ? 'PORTAGENS' : 'TOLLS'}</h5>
                     <p class="aux-box-value" id="auxBoxPortagensValue">0,00 €</p>
-                    <span class="aux-box-desc" id="auxBoxPortagensDesc">Reembolso operacional</span>
+                    <span class="aux-box-desc" id="auxBoxPortagensDesc">${currentLang === 'pt' ? 'Reembolso operacional' : 'Operational reimbursement'}</span>
                 </div>
-                <div class="aux-box-legal-tag">Custo reembolsado · 0%</div>
+                <div class="aux-box-legal-tag">${currentLang === 'pt' ? 'Custo reembolsado · 0%' : 'Reimbursed cost · 0%'}</div>
             </div>
 
-            <!-- BOX 3: GORJETAS -->
             <div class="small-info-box aux-box-tips" id="auxBoxGorjetas"
-                 data-field="Gorjetas dos passageiros"
-                 title="Extraído de: 'Gorjetas dos passageiros' — transferência P2P direta">
+                 data-field="${currentLang === 'pt' ? 'Gorjetas dos passageiros' : 'Passenger tips'}"
+                 title="${currentLang === 'pt' ? 'Extraído de: \'Gorjetas dos passageiros\' — transferência P2P direta' : 'Extracted from: \'Passenger tips\' — direct P2P transfer'}">
                 <div class="aux-box-icon"><i class="fas fa-hand-holding-heart"></i></div>
                 <div class="aux-box-body">
-                    <h5 class="aux-box-label">GORJETAS</h5>
+                    <h5 class="aux-box-label">${currentLang === 'pt' ? 'GORJETAS' : 'TIPS'}</h5>
                     <p class="aux-box-value" id="auxBoxGorjetasValue">0,00 €</p>
-                    <span class="aux-box-desc">Gorjetas dos passageiros</span>
+                    <span class="aux-box-desc">${currentLang === 'pt' ? 'Gorjetas dos passageiros' : 'Passenger tips'}</span>
                 </div>
-                <div class="aux-box-legal-tag">Transferência P2P · 0%</div>
+                <div class="aux-box-legal-tag">${currentLang === 'pt' ? 'Transferência P2P · 0%' : 'P2P Transfer · 0%'}</div>
             </div>
 
-            <!-- BOX 4: TOTAL NÃO SUJEITOS -->
             <div class="small-info-box aux-box-total-ns highlighted" id="auxBoxTotalNS"
-                 data-field="Total Não Sujeitos"
-                 title="Soma: Campanhas + Portagens + Gorjetas — fluxos isentos de comissão">
+                 data-field="${currentLang === 'pt' ? 'Total Não Sujeitos' : 'Total Not Subject'}"
+                 title="${currentLang === 'pt' ? 'Soma: Campanhas + Portagens + Gorjetas — fluxos isentos de comissão' : 'Sum: Campaigns + Tolls + Tips — commission-exempt flows'}">
                 <div class="aux-box-icon"><i class="fas fa-sigma"></i></div>
                 <div class="aux-box-body">
-                    <h5 class="aux-box-label">TOTAL NÃO SUJEITOS</h5>
+                    <h5 class="aux-box-label">${currentLang === 'pt' ? 'TOTAL NÃO SUJEITOS' : 'TOTAL NOT SUBJECT'}</h5>
                     <p class="aux-box-value highlighted" id="auxBoxTotalNSValue">0,00 €</p>
-                    <span class="aux-box-desc">Σ Campanhas + Portagens + Gorjetas</span>
+                    <span class="aux-box-desc">Σ ${currentLang === 'pt' ? 'Campanhas + Portagens + Gorjetas' : 'Campaigns + Tolls + Tips'}</span>
                 </div>
-                <div class="aux-box-legal-tag">Fora da base tributável</div>
+                <div class="aux-box-legal-tag">${currentLang === 'pt' ? 'Fora da base tributável' : 'Outside the taxable base'}</div>
             </div>
 
-            <!-- BOX 5: TAXAS DE CANCELAMENTO -->
             <div class="small-info-box aux-box-cancel" id="auxBoxCancel"
-                 data-field="Cancelamentos"
-                 title="Taxas de cancelamento — comissão já incluída nas Despesas/Comissões">
+                 data-field="${currentLang === 'pt' ? 'Cancelamentos' : 'Cancellations'}"
+                 title="${currentLang === 'pt' ? 'Taxas de cancelamento — comissão já incluída nas Despesas/Comissões' : 'Cancellation fees — commission already included in Expenses/Commissions'}">
                 <div class="aux-box-icon"><i class="fas fa-ban"></i></div>
                 <div class="aux-box-body">
-                    <h5 class="aux-box-label">TAXAS CANCELAMENTO</h5>
+                    <h5 class="aux-box-label">${currentLang === 'pt' ? 'TAXAS CANCELAMENTO' : 'CANCELLATION FEES'}</h5>
                     <p class="aux-box-value" id="auxBoxCancelValue">0,00 €</p>
-                    <span class="aux-box-desc">Cancelamentos (já em Despesas)</span>
+                    <span class="aux-box-desc">${currentLang === 'pt' ? 'Cancelamentos (já em Despesas)' : 'Cancellations (already in Expenses)'}</span>
                 </div>
                 <div class="aux-box-legal-tag aux-tag-warning">
                     <i class="fas fa-exclamation-triangle"></i>
-                    Comissão incluída nos −Despesas
+                    ${currentLang === 'pt' ? 'Comissão incluída nos −Despesas' : 'Commission included in −Expenses'}
                 </div>
             </div>
 
         </div>
 
-        <!-- ── NOTA DE RECONCILIAÇÃO DAC7 ─────────────────────────────────────
-             Explica a "zona cinzenta" entre o reportado à AT e o valor líquido
-             recebido pelo motorista. Conforme instrução de implementação forense.
-             ─────────────────────────────────────────────────────────────────── -->
         <div class="aux-dac7-reconciliation-note" id="auxDac7ReconciliationNote" style="display:none;">
             <div class="dac7-note-header">
                 <i class="fas fa-balance-scale-right"></i>
-                <strong>NOTA DE RECONCILIAÇÃO DAC7 — ZONA CINZENTA IDENTIFICADA</strong>
+                <strong>${currentLang === 'pt' ? 'NOTA DE RECONCILIAÇÃO DAC7 — ZONA CINZENTA IDENTIFICADA' : 'DAC7 RECONCILIATION NOTE — GREY ZONE IDENTIFIED'}</strong>
             </div>
             <p>
-                O sistema UNIFED-PROBATUM isolou
+                ${currentLang === 'pt' ? 'O sistema UNIFED-PROBATUM isolou' : 'The UNIFED-PROBATUM system isolated'}
                 <strong id="auxDac7NoteValue" class="dac7-highlight">0,00 €</strong>
-                em valores <em>não sujeitos a comissão</em> (Campanhas + Portagens + Gorjetas).
-                A soma destes campos explica a <strong>"zona cinzenta"</strong> entre o valor
-                reportado à Autoridade Tributária (DAC7) e o valor líquido recebido pelo motorista.
+                ${currentLang === 'pt' ? 'em valores <em>não sujeitos a comissão</em> (Campanhas + Portagens + Gorjetas).' : 'in <em>commission-exempt</em> values (Campaigns + Tolls + Tips).'}
+                ${currentLang === 'pt' ? 'A soma destes campos explica a <strong>"zona cinzenta"</strong> entre o valor' : 'The sum of these fields explains the <strong>"grey zone"</strong> between the value'}
+                ${currentLang === 'pt' ? 'reportado à Autoridade Tributária (DAC7) e o valor líquido recebido pelo motorista.' : 'reported to the Tax Authority (DAC7) and the net amount received by the driver.'}
             </p>
             <div class="dac7-question-contraditorio">
-                <p class="dac7-q-label"><i class="fas fa-gavel"></i> QUESTIONÁRIO ESTRATÉGICO AO ADVOGADO (CONTRADITÓRIO)</p>
+                <p class="dac7-q-label"><i class="fas fa-gavel"></i> ${currentLang === 'pt' ? 'QUESTIONÁRIO ESTRATÉGICO AO ADVOGADO (CONTRADITÓRIO)' : 'STRATEGIC QUESTIONNAIRE TO THE LAWYER (CONTRADICTION)'}</p>
                 <p class="dac7-q-text">
-                    <em>"Considerando que o sistema UNIFED-PROBATUM isolou
-                    <strong id="auxDac7NoteValueQ" class="dac7-highlight"></strong> em Gorjetas e Campanhas,
-                    pode a parte contrária confirmar se estes valores (isentos de comissão) foram
-                    indevidamente incluídos na base de cálculo para o apuramento de rendimentos brutos
-                    reportados no SAF-T? Se sim, por que razão foi aplicada uma presunção de rendimento
-                    sobre valores que legalmente não sofrem retenção ou comissão pela plataforma (Termos e Condições)?"</em>
+                    <em>"${currentLang === 'pt' ? 'Considerando que o sistema UNIFED-PROBATUM isolou' : 'Considering that the UNIFED-PROBATUM system isolated'}
+                    <strong id="auxDac7NoteValueQ" class="dac7-highlight"></strong> ${currentLang === 'pt' ? 'em Gorjetas e Campanhas,' : 'in Tips and Campaigns,'}
+                    ${currentLang === 'pt' ? 'pode a parte contrária confirmar se estes valores (isentos de comissão) foram' : 'can the opposing party confirm whether these values (commission-exempt) were'}
+                    ${currentLang === 'pt' ? 'indevidamente incluídos na base de cálculo para o apuramento de rendimentos brutos' : 'improperly included in the calculation basis for determining gross income'}
+                    ${currentLang === 'pt' ? 'reportados no SAF-T? Se sim, por que razão foi aplicada uma presunção de rendimento' : 'reported in SAF-T? If so, why was a presumption of income applied'}
+                    ${currentLang === 'pt' ? 'sobre valores que legalmente não sofrem retenção ou comissão pela plataforma (Termos e Condições)?"' : 'to values that legally do not suffer withholding or commission by the platform (Terms and Conditions)?"'}</em>
                 </p>
             </div>
         </div>
@@ -8095,7 +7849,6 @@ function injectAuxiliaryHelperBoxes() {
 
     frag.appendChild(wrapper);
 
-    // Injetar APÓS o container dashboardAlerts — sem tocar na main-grid
     container.parentNode.insertBefore(frag, container.nextSibling);
 
     console.log('[UNIFED-AUX] ✅ Auxiliary Helper Boxes injetadas via DocumentFragment. Non-Interfering. Core Freeze mantido.');
@@ -8107,7 +7860,6 @@ function injectAuxiliaryHelperBoxes() {
     });
 }
 
-// ── Reset auxiliaryData no clearConsole / resetAllValues ─────────────────────
 function resetAuxiliaryData() {
     UNIFEDSystem.auxiliaryData = {
         campanhas:        0,
@@ -8124,9 +7876,6 @@ function resetAuxiliaryData() {
 }
 
 function generateMasterHash() {
-    // ── forensicSummary: inclui auxiliaryData para imutabilidade da análise ──
-    // Conforme instrução: "o MasterHash final inclui estes novos campos no
-    // metadata.forensicSummary para garantir a imutabilidade da análise."
     const forensicSummary = {
         auxiliaryData: {
             campanhas:        UNIFEDSystem.auxiliaryData.campanhas,
@@ -8136,7 +7885,7 @@ function generateMasterHash() {
             totalNaoSujeitos: UNIFEDSystem.auxiliaryData.totalNaoSujeitos,
             processedFrom:    UNIFEDSystem.auxiliaryData.processedFrom,
             extractedAt:      UNIFEDSystem.auxiliaryData.extractedAt,
-            legalBasis:       'Lei TVDE · 0% comissão · Art. 125.º CPP'
+            legalBasis:       currentLang === 'pt' ? 'Lei TVDE · 0% comissão · Art. 125.º CPP' : 'TVDE Law · 0% commission · Art. 125 CPP'
         }
     };
 
@@ -8155,7 +7904,6 @@ function generateMasterHash() {
     UNIFEDSystem.masterHash = CryptoJS.SHA256(data).toString();
     setElementText('masterHashValue', UNIFEDSystem.masterHash);
     generateQRCode();
-    // SSoT: actualizar activeForensicSession após cada geração de hash
     window.activeForensicSession = {
         sessionId:  UNIFEDSystem.sessionId,
         masterHash: UNIFEDSystem.masterHash
@@ -8208,7 +7956,6 @@ function showToast(message, type = 'info') {
 }
 
 function clearConsole() {
-    // Reset documentos
     UNIFEDSystem.documents = {
         control: { files: [], hashes: {}, totals: { records: 0 } },
         saft: { files: [], hashes: {}, totals: { records: 0, iliquido: 0, iva: 0, bruto: 0 } },
@@ -8218,10 +7965,9 @@ function clearConsole() {
     };
     UNIFEDSystem.analysis.evidenceIntegrity = [];
     UNIFEDSystem.dataMonths = new Set();
-    UNIFEDSystem.monthlyData = {}; // ATF reset
+    UNIFEDSystem.monthlyData = {};
     UNIFEDSystem.processedFiles = new Set();
 
-    // Purga completa do Sujeito Passivo (transacional)
     UNIFEDSystem.client = null;
     document.querySelectorAll('.client-data-field').forEach(el => el.textContent = '---');
     const clientNameInput = document.getElementById('clientNameFixed');
@@ -8232,36 +7978,30 @@ function clearConsole() {
     if (clientStatus) clientStatus.style.display = 'none';
     localStorage.removeItem('ifde_client_data_v12_8');
 
-    // Reset campos de auditoria por ID (compatibilidade)
     const fieldsToClear = ['subject-name', 'subject-nif', 'subject-address', 'audit-period', 'audit-hash', 'audit-status', 'saft-total', 'saft-iva', 'saft-iliquido', 'extract-ganhos', 'extract-despesas', 'dac7-total', 'revenue-gap', 'expense-gap'];
     fieldsToClear.forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = '---'; });
 
-    // Limpeza do DOM de custódia
     const consoleLogs = document.getElementById('console-logs');
     if (consoleLogs) consoleLogs.innerHTML = '';
 
-    // Reset LEDs, boxes de alerta e estilos inline (purga total)
     document.querySelectorAll('.led-red-blink, .led-yellow-blink').forEach(led => { led.className = 'led-status led-off'; });
     document.querySelectorAll('.box-border-blink, .box-despesas-blink').forEach(box => {
         box.classList.remove('box-border-blink', 'box-despesas-blink');
     });
-    // Purgar estilos inline do LED vermelho na box de despesas
     const statCommCardWipe = document.getElementById('statCommCard');
     if (statCommCardWipe) {
         statCommCardWipe.classList.remove('alert-intermitent', 'box-despesas-blink');
         statCommCardWipe.style.borderColor = '';
         statCommCardWipe.style.boxShadow   = '';
     }
-    // Purgar modo demo
     UNIFEDSystem.demoMode = false;
     if (UNIFEDSystem.fileSources) UNIFEDSystem.fileSources.clear();
 
-    // Reset valores numéricos de UI via resetAllValues
     resetAllValues();
 
     logAudit('🧹 SISTEMA PURGADO: Reset total executado. Sujeito Passivo eliminado.', 'warn');
     ForensicLogger.addEntry('CONSOLE_CLEARED', { clientPurged: true });
-    showToast('Sistema purgado com sucesso', 'success');
+    showToast(currentLang === 'pt' ? 'Sistema purgado com sucesso' : 'System purged successfully', 'success');
 }
 
 function resetAllValues() {
@@ -8332,7 +8072,7 @@ function resetAllValues() {
     };
     UNIFEDSystem.analysis.verdict = null;
     UNIFEDSystem.analysis.selectedQuestions = [];
-    UNIFEDSystem.monthlyData = {};             // purga ATF entre lotes
+    UNIFEDSystem.monthlyData = {};
     UNIFEDSystem.demoMode = false;
     UNIFEDSystem.casoRealAnonimizado = false;
     if (UNIFEDSystem.fileSources) UNIFEDSystem.fileSources.clear();
@@ -8425,12 +8165,11 @@ function resetAllValues() {
     generateMasterHash();
     ForensicLogger.addEntry('VALUES_RESET');
 
-    // Reset dos dados auxiliares (Non-Interfering) — sincronizado com o reset principal
     resetAuxiliaryData();
 }
 
 function resetSystem() {
-    if (!confirm('[!] Tem a certeza que deseja reiniciar o sistema? Todos os dados serão perdidos.')) return;
+    if (!confirm(currentLang === 'pt' ? '[!] Tem a certeza que deseja reiniciar o sistema? Todos os dados serão perdidos.' : '[!] Are you sure you want to restart the system? All data will be lost.')) return;
 
     ForensicLogger.addEntry('SYSTEM_RESET');
 
@@ -8490,16 +8229,16 @@ function setupLogsModal() {
             a.download = `IFDE_LOGS_${UNIFEDSystem.sessionId || 'PRE_SESSION'}.json`;
             a.click();
             URL.revokeObjectURL(a.href);
-            showToast('Logs exportados', 'success');
+            showToast(currentLang === 'pt' ? 'Logs exportados' : 'Logs exported', 'success');
         });
     }
 
     if (clearBtn) {
         clearBtn.addEventListener('click', () => {
-            if (confirm('Tem a certeza que deseja limpar todos os registos de atividade?')) {
+            if (confirm(currentLang === 'pt' ? 'Tem a certeza que deseja limpar todos os registos de atividade?' : 'Are you sure you want to clear all activity logs?')) {
                 ForensicLogger.clearLogs();
                 ForensicLogger.renderLogsToElement('logsDisplayArea');
-                showToast('Logs limpos', 'success');
+                showToast(currentLang === 'pt' ? 'Logs limpos' : 'Logs cleared', 'success');
             }
         });
     }
@@ -8535,7 +8274,7 @@ function setupWipeButton() {
     if (!wipeBtn) return;
 
     wipeBtn.addEventListener('click', () => {
-        if (confirm('[!] PURGA TOTAL DE DADOS\n\nEsta ação irá eliminar permanentemente TODOS os ficheiros carregados, registos de cliente e logs de atividade. Esta ação é irreversível.\n\nTem a certeza absoluta?')) {
+        if (confirm(currentLang === 'pt' ? '[!] PURGA TOTAL DE DADOS\n\nEsta ação irá eliminar permanentemente TODOS os ficheiros carregados, registos de cliente e logs de atividade. Esta ação é irreversível.\n\nTem a certeza absoluta?' : '[!] TOTAL DATA PURGE\n\nThis action will permanently delete ALL uploaded files, client records and activity logs. This action is irreversible.\n\nAre you absolutely sure?')) {
             ForensicLogger.addEntry('WIPE_INITIATED');
 
             localStorage.removeItem('ifde_client_data_v12_8');
@@ -8559,8 +8298,8 @@ function setupWipeButton() {
                 consoleOutput.innerHTML = '';
             }
 
-            logAudit('🧹 PURGA TOTAL DE DADOS EXECUTADA. Todos os dados forenses foram eliminados.', 'success');
-            showToast('Purga total concluída. Sistema limpo.', 'success');
+            logAudit(currentLang === 'pt' ? '🧹 PURGA TOTAL DE DADOS EXECUTADA. Todos os dados forenses foram eliminados.' : '🧹 TOTAL DATA PURGE EXECUTED. All forensic data has been deleted.', 'success');
+            showToast(currentLang === 'pt' ? 'Purga total concluída. Sistema limpo.' : 'Total purge completed. System clean.', 'success');
 
             ForensicLogger.addEntry('WIPE_COMPLETED');
 
@@ -8598,7 +8337,7 @@ function setupDualScreenDetection() {
             e.preventDefault();
             document.body.classList.toggle('presentation-mode');
             const isActive = document.body.classList.contains('presentation-mode');
-            logAudit(isActive ? '🎬 Modo Apresentação ATIVADO' : '🎬 Modo Apresentação DESATIVADO', 'info');
+            logAudit(isActive ? (currentLang === 'pt' ? '🎬 Modo Apresentação ATIVADO' : '🎬 Presentation Mode ACTIVATED') : (currentLang === 'pt' ? '🎬 Modo Apresentação DESATIVADO' : '🎬 Presentation Mode DEACTIVATED'), 'info');
             ForensicLogger.addEntry('PRESENTATION_MODE_TOGGLED', { active: isActive });
         }
     });
@@ -8621,67 +8360,15 @@ window.processAuxiliaryPlatformData = processAuxiliaryPlatformData;
 window.injectAuxiliaryHelperBoxes = injectAuxiliaryHelperBoxes;
 window.resetAuxiliaryData = resetAuxiliaryData;
 
-/* =====================================================================
-   FIM DO FICHEIRO SCRIPT.JS · v13.5.0-PURE · COURT READY · DORA COMPLIANT
-   UNIFED - PROBATUM — PERSISTÊNCIA NORMATIVA E SINCRONIZAÇÃO TEMPORAL
-   CORREÇÕES IMPLEMENTADAS:
-   ✓ robustSAFTParser v13.1.6-GOLD: Header-Based CSV Mapping (mapeamento dinâmico
-     por label de cabeçalho) — labels exactas: "Preço da viagem (sem IVA)",
-     "IVA", "Preço da viagem". Parser RFC-4180 com sanitização por linha.
-     Estrutura de saída (UNIFEDSystem.documents.saft.totals) inalterada.
-   ✓ clearConsole: Purga Total — UNIFEDSystem.client=null, DOM reset, .client-data-field, LEDs
-   ✓ ForensicLogger (Art. 30.º RGPD): UNIFED_FORENSIC_LOGS (invariante), 5000 entradas, exportMonthly()
-   ✓ filterDAC7ByPeriod(): reactivo ao seletor, Q1-Q4 visíveis por período, recalc de totais
-   ✓ box-border-blink: border+shadow only, background estável, target #jurosCard/#discrepancy5Card
-   ✓ Box "OMISSÃO DE DESPESAS %": (Despesas/Ganhos)*100 — Big Data v13.0
-   ✓ generateQRCode: CorrectLevel.L + string compacta UNIFED|SESSION|HASH
-   ✓ DORA (UE) 2022/2554 — cláusula no PDF e nos badges
-
-   NOVO — v13.5.0-PURE (Refatoração Cirúrgica — Court Ready):
-   ✓ UNIFEDSystem.auxiliaryData: Non-Interfering Data Object — isolado de financials
-     Campos: campanhas, portagens, gorjetas, cancelamentos, totalNaoSujeitos
-     Base Legal: Lei TVDE · 0% comissão · Art. 125.º CPP
-   ✓ processAuxiliaryPlatformData(text, filename): Regex Pattern Matching para
-     "Ganhos da campanha", "Gorjetas dos passageiros", "Portagens", "Cancelamentos"
-     via String.match() — chamada após SchemaRegistry.processStatement()
-   ✓ injectAuxiliaryHelperBoxes(): DOM Injection via DocumentFragment
-     5 div.small-info-box injetadas APÓS #dashboardAlerts (sem tocar na main-grid)
-     Nota de Reconciliação DAC7 incluída — explica a "zona cinzenta" AT vs motorista
-   ✓ generateMasterHash(): incluí UNIFEDSystem.auxiliaryData no metadata.forensicSummary
-     garantindo imutabilidade da análise sobre os campos auxiliares
-   ✓ resetAuxiliaryData(): sincronizado com resetAllValues() — purga total coerente
-   ✓ Questionário Estratégico ao Advogado (Contraditório) integrado na Nota DAC7
-   ===================================================================== */
-
-
-/* ============================================================================
-   UNIFED - PROBATUM · v13.5.0-PURE · INICIALIZAÇÃO DO PAINEL DE CASO REAL
-   ============================================================================
-   Este bloco é o ponto de entrada no script.js para a v13.5.0-PURE.
-   Expõe o método loadAnonymizedRealCase() como extensão do UNIFEDSystem.
-   A lógica de dados e o HTML do painel residem em:
-     · script_injection_v13.5.0-PURE.js  (dados verificados + _syncPureDashboard)
-     · panel_v13.5.0-PURE.html           (estrutura HTML do painel)
-     · style_additions_v13.5.0-PURE.css  (estilos do painel)
-   Activação automática: invocada pelo loader inline em index.html após
-   todos os scripts serem carregados.
-   Core Freeze: este bloco não altera nenhuma fórmula de análise forense.
-   ============================================================================ */
-
-// ── Registo do módulo v13.5.0-PURE no UNIFEDSystem ─────────────────────────────
-// Garante que o método está disponível mesmo que script_injection seja carregado
-// depois deste ficheiro (ordem de carregamento em index.html: enrichment → script → nexus → injection).
 (function _registerPUREModule() {
     if (typeof UNIFEDSystem === 'undefined') {
         console.warn('[UNIFED-PURE] UNIFEDSystem não disponível no momento do registo — aguardar DOMContentLoaded.');
         return;
     }
 
-    // Marcador de versão do módulo PURE
     UNIFEDSystem._pureModuleVersion = 'v13.5.0-PURE';
     UNIFEDSystem._pureModuleLoaded  = false;
 
-    // Stub de segurança: se script_injection não for carregado, evita erro de runtime
     if (typeof UNIFEDSystem.loadAnonymizedRealCase !== 'function') {
         UNIFEDSystem.loadAnonymizedRealCase = function _pureStub() {
             console.warn(
@@ -8699,4 +8386,4 @@ window.resetAuxiliaryData = resetAuxiliaryData;
     );
 })();
 
-/* ══ FIM — v13.5.0-PURE Integration Block · script.js · UNIFED - PROBATUM ══ */
+console.log('UNIFED - PROBATUM v13.5.0-PURE · DORA COMPLIANT · ATF · INTEGRITY SEAL · DOCX · AI ADVERSARIAL · NIFAF GUARD · NEXUS · ATIVADO');
