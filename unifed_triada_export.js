@@ -26,14 +26,21 @@
     }
     
     function _eur(val) {
-        return new Intl.NumberFormat('pt-PT', {
+        return new Intl.NumberFormat(_locale(), {
             style: 'currency', currency: 'EUR',
             minimumFractionDigits: 2, maximumFractionDigits: 2
         }).format(val || 0);
     }
     
+    // Helper bilíngue
+    function _getLang() {
+        return (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
+    }
+    function _T(pt, en) { return _getLang() === 'en' ? en : pt; }
+    function _locale() { return _getLang() === 'en' ? 'en-GB' : 'pt-PT'; }
+    
     function _dataHoje() {
-        return new Date().toLocaleDateString('pt-PT', {
+        return new Date().toLocaleDateString(_locale(), {
             day: '2-digit', month: '2-digit', year: 'numeric'
         });
     }
@@ -185,25 +192,25 @@
             doc.text('UNIFED — PROBATUM', pageW / 2, 14, { align: 'center' });
             doc.setFontSize(10);
             doc.setTextColor(180, 210, 255);
-            doc.text('RELATÓRIO PERICIAL DE RECONSTITUIÇÃO DA VERDADE MATERIAL', pageW / 2, 22, { align: 'center' });
+            doc.text(_T('RELATÓRIO PERICIAL DE RECONSTITUIÇÃO DA VERDADE MATERIAL', 'EXPERT REPORT — RECONSTRUCTION OF MATERIAL TRUTH'), pageW / 2, 22, { align: 'center' });
             doc.setFontSize(8);
             doc.setTextColor(120, 160, 200);
             doc.text('v13.5.0-PURE · ISO/IEC 27037:2012 · DORA (UE) 2022/2554 · RFC 3161', pageW / 2, 30, { align: 'center' });
             doc.text('Art. 103.º–104.º RGIT · Art. 125.º CPP · Diretiva DAC7 (UE) 2021/514', pageW / 2, 35, { align: 'center' });
             
             var y = 46;
-            y = _sectionHeader('I. DADOS DO CASO — IDENTIFICAÇÃO DA SESSÃO FORENSE', y, [10, 40, 90]);
-            y = _kpiRow('Referência da Sessão', sessId, y, false);
-            y = _kpiRow('Plataforma', (sys.metadata && sys.metadata.client && sys.metadata.client.platform) || 'bolt', y, false);
-            y = _kpiRow('Sujeito Passivo', (sys.metadata && sys.metadata.client && sys.metadata.client.name) || 'OPERADOR_ANONIMIZADO', y, false);
-            y = _kpiRow('NIF', (sys.metadata && sys.metadata.client && sys.metadata.client.nif) || '*** ANONIMIZADO ***', y, false);
-            y = _kpiRow('Período de Análise', '2.º Semestre 2024 (Setembro–Dezembro 2024)', y, false);
-            y = _kpiRow('Ano Fiscal', '2024', y, false);
-            y = _kpiRow('Data de Emissão', hoje, y, false);
-            y = _kpiRow('Perito Responsável', 'Sistema UNIFED-PROBATUM v13.5.0-PURE', y, false);
+            y = _sectionHeader(_T('I. DADOS DO CASO — IDENTIFICAÇÃO DA SESSÃO FORENSE', 'I. CASE DATA — FORENSIC SESSION IDENTIFICATION'), y, [10, 40, 90]);
+            y = _kpiRow(_T('Referência da Sessão','Session Reference'), sessId, y, false);
+            y = _kpiRow(_T('Plataforma','Platform'), (sys.metadata && sys.metadata.client && sys.metadata.client.platform) || 'bolt', y, false);
+            y = _kpiRow(_T('Sujeito Passivo','Taxpayer'), (sys.metadata && sys.metadata.client && sys.metadata.client.name) || 'OPERATOR_ANONYMISED', y, false);
+            y = _kpiRow(_T('NIF','Tax ID'), (sys.metadata && sys.metadata.client && sys.metadata.client.nif) || '*** ANONYMISED ***', y, false);
+            y = _kpiRow(_T('Período de Análise','Analysis Period'), _T('2.º Semestre 2024 (Setembro–Dezembro 2024)','2nd Semester 2024 (September–December 2024)'), y, false);
+            y = _kpiRow(_T('Ano Fiscal','Fiscal Year'), '2024', y, false);
+            y = _kpiRow(_T('Data de Emissão','Issue Date'), hoje, y, false);
+            y = _kpiRow(_T('Perito Responsável','Expert'), 'Sistema UNIFED-PROBATUM v13.5.0-PURE', y, false);
             y += 4;
             
-            y = _sectionHeader('II. ÂMBITO DA PERÍCIA', y, [10, 40, 90]);
+            y = _sectionHeader(_T('II. ÂMBITO DA PERÍCIA', 'II. SCOPE OF EXPERTISE'), y, [10, 40, 90]);
             doc.setFontSize(8.5);
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(40, 40, 40);
@@ -221,13 +228,13 @@
             );
             y += 4;
             
-            y = _sectionHeader('III. SUMÁRIO DE ACHADOS — PROVA RAINHA', y, [120, 30, 30]);
-            y = _kpiRow('Ganhos Totais (Extrato Ledger)', _eur(t.ganhos), y, false);
-            y = _kpiRow('Despesas/Comissões Retidas (BTOR)', _eur(t.despesas), y, false);
-            y = _kpiRow('Ganhos Líquidos (Extrato Real)', _eur(t.ganhosLiquidos), y, false);
-            y = _kpiRow('SAF-T Bruto (Declarado)', _eur(t.saftBruto), y, false);
-            y = _kpiRow('DAC7 Reportado à AT (2.º Sem. 2024)', _eur(t.dac7TotalPeriodo), y, false);
-            y = _kpiRow('Comissões Faturadas BTF (PT1124/1125)', _eur(t.faturaPlataforma), y, false);
+            y = _sectionHeader(_T('III. SUMÁRIO DE ACHADOS — PROVA RAINHA', 'III. SUMMARY OF FINDINGS — CROWN EVIDENCE'), y, [120, 30, 30]);
+            y = _kpiRow(_T('Ganhos Totais (Extrato Ledger)','Total Earnings (Ledger Statement)'), _eur(t.ganhos), y, false);
+            y = _kpiRow(_T('Despesas/Comissões Retidas (BTOR)','Expenses/Commissions Withheld (BTOR)'), _eur(t.despesas), y, false);
+            y = _kpiRow(_T('Ganhos Líquidos (Extrato Real)','Net Earnings (Actual Statement)'), _eur(t.ganhosLiquidos), y, false);
+            y = _kpiRow(_T('SAF-T Bruto (Declarado)','SAF-T Gross (Declared)'), _eur(t.saftBruto), y, false);
+            y = _kpiRow(_T('DAC7 Reportado à AT (2.º Sem. 2024)','DAC7 Reported to TA (2nd Sem. 2024)'), _eur(t.dac7TotalPeriodo), y, false);
+            y = _kpiRow(_T('Comissões Faturadas BTF (PT1124/1125)','Invoiced Commissions BTF (PT1124/1125)'), _eur(t.faturaPlataforma), y, false);
             y += 2;
             
             doc.setFillColor(255, 245, 245);
@@ -237,9 +244,9 @@
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(8.5);
             doc.setTextColor(180, 30, 30);
-            doc.text('SMOKING GUN C2 — COMISSÕES EXTRATO vs FATURA BTF', L + 3, y + 3);
+            doc.text(_T('SMOKING GUN C2 — COMISSÕES EXTRATO vs FATURA BTF','SMOKING GUN C2 — STATEMENT COMMISSIONS vs INVOICE BTF'), L + 3, y + 3);
             doc.setFontSize(10);
-            doc.text('OMISSÃO: ' + _eur(c.discrepanciaCritica) + '  (' + (c.percentagemOmissao || 0).toFixed(2) + '%)', L + 3, y + 9);
+            doc.text(_T('OMISSÃO: ','OMISSION: ') + _eur(c.discrepanciaCritica) + '  (' + (c.percentagemOmissao || 0).toFixed(2) + '%)', L + 3, y + 9);
             doc.setTextColor(0, 0, 0);
             y += 18;
             
@@ -250,9 +257,9 @@
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(8.5);
             doc.setTextColor(140, 80, 0);
-            doc.text('SMOKING GUN C1 — SAF-T BRUTO vs REPORTE DAC7', L + 3, y + 3);
+            doc.text(_T('SMOKING GUN C1 — SAF-T BRUTO vs REPORTE DAC7','SMOKING GUN C1 — SAF-T GROSS vs DAC7 REPORT'), L + 3, y + 3);
             doc.setFontSize(10);
-            doc.text('DIFERENÇA: ' + _eur(c.discrepanciaSaftVsDac7) + '  (' + (c.percentagemSaftVsDac7 || 0).toFixed(2) + '%)', L + 3, y + 9);
+            doc.text(_T('DIFERENÇA: ','DIFFERENCE: ') + _eur(c.discrepanciaSaftVsDac7) + '  (' + (c.percentagemSaftVsDac7 || 0).toFixed(2) + '%)', L + 3, y + 9);
             doc.setTextColor(0, 0, 0);
             y += 18;
             
@@ -261,7 +268,7 @@
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(11);
             doc.setTextColor(0, 229, 255);
-            doc.text('VEREDICTO PERICIAL: ' + (v.level && v.level.pt ? v.level.pt : 'RISCO ELEVADO'), L + 3, y + 6);
+            doc.text(_T('VEREDICTO PERICIAL: ','EXPERT VERDICT: ') + (v.level && (v.level[_getLang()] || v.level.pt) ? (v.level[_getLang()] || v.level.pt) : _T('RISCO ELEVADO','HIGH RISK')), L + 3, y + 6);
             doc.setFontSize(9);
             doc.setTextColor(255, 180, 180);
             doc.text('Fundamentação: Art. 103.º / 104.º RGIT · Art. 125.º CPP', L + 3, y + 11.5);
@@ -273,7 +280,7 @@
             // PÁGINA 2 (simplificada para não exceder tamanho)
             _newPage();
             y = 18;
-            y = _sectionHeader('IV. INTRODUÇÃO — CONTEXTO NORMATIVO', y, [10, 60, 110]);
+            y = _sectionHeader(_T('IV. INTRODUÇÃO — CONTEXTO NORMATIVO', 'IV. INTRODUCTION — NORMATIVE CONTEXT'), y, [10, 60, 110]);
             doc.setFontSize(8.5);
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(40, 40, 40);
@@ -296,18 +303,18 @@
                 y += 2;
             });
             
-            doc.text('Hash SHA-256 do Snapshot de Dados (runtime): ' + _runtimeHash, L, pageH - 20);
+            doc.text(_T('Hash SHA-256 do Snapshot de Dados (runtime): ','Data Snapshot Hash SHA-256 (runtime): ') + _runtimeHash, L, pageH - 20);
             _footer(true);
             
             var _fname = 'UNIFED_RELATORIO_PERICIAL_' + sessId + '_' + hoje.replace(/\//g, '-') + '.pdf';
             doc.save(_fname);
             
             _log('✅ PDF Relatório Pericial exportado: ' + _fname, 'success');
-            if (typeof window.showToast === 'function') window.showToast('Relatório Pericial exportado com sucesso.', 'success');
+            if (typeof window.showToast === 'function') window.showToast(_T('Relatório Pericial exportado com sucesso.','Expert Report exported successfully.'), 'success');
             
         } catch (pdfErr) {
             _log('Erro ao gerar PDF: ' + pdfErr.message, 'error');
-            if (typeof window.showToast === 'function') window.showToast('Erro ao gerar PDF: ' + pdfErr.message, 'error');
+            if (typeof window.showToast === 'function') window.showToast(_T('Erro ao gerar PDF: ','Error generating PDF: ') + pdfErr.message, 'error');
         }
     }
     
@@ -356,7 +363,7 @@
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(14);
             doc.setTextColor(0, 229, 255);
-            doc.text('UNIFED — PROBATUM · ANEXO DE EVIDÊNCIAS — CADEIA DE CUSTÓDIA', pageW / 2, 10, { align: 'center' });
+            doc.text('UNIFED — PROBATUM · ' + _T('ANEXO DE EVIDÊNCIAS — CADEIA DE CUSTÓDIA', 'EVIDENCE ANNEX — CHAIN OF CUSTODY'), pageW / 2, 10, { align: 'center' });
             doc.setFontSize(8);
             doc.setTextColor(160, 200, 255);
             doc.text('Sessão: ' + sessId + ' · Emissão: ' + hoje + ' · ISO/IEC 27037:2012', pageW / 2, 17, { align: 'center' });
@@ -366,7 +373,7 @@
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(60, 60, 60);
             var _colW = [18, 38, 60, 116, 24];
-            var _cols = ['ID_EVIDÊNCIA', 'TIPO', 'ORIGEM', 'HASH SHA-256', 'STATUS'];
+            var _cols = [_T('ID_EVIDÊNCIA','ID_EVIDENCE'), _T('TIPO','TYPE'), _T('ORIGEM','SOURCE'), 'HASH SHA-256', 'STATUS'];
             
             doc.setFillColor(10, 40, 90);
             doc.rect(L, y, pageW - L * 2, 7, 'F');
@@ -444,11 +451,11 @@
             doc.save(_fname);
             
             _log('✅ PDF Anexo Custódia exportado: ' + _fname, 'success');
-            if (typeof window.showToast === 'function') window.showToast('Anexo de Custódia exportado com sucesso.', 'success');
+            if (typeof window.showToast === 'function') window.showToast(_T('Anexo de Custódia exportado com sucesso.','Chain of Custody Annex exported successfully.'), 'success');
             
         } catch (anexoErr) {
             _log('Erro ao gerar PDF Anexo: ' + anexoErr.message, 'error');
-            if (typeof window.showToast === 'function') window.showToast('Erro ao gerar Anexo: ' + anexoErr.message, 'error');
+            if (typeof window.showToast === 'function') window.showToast(_T('Erro ao gerar Anexo: ','Error generating Annex: ') + anexoErr.message, 'error');
         }
     }
     
@@ -508,40 +515,40 @@
             }
             
             var _bodyParts = [];
-            _bodyParts.push(_p('UNIFED — PROBATUM · MATRIZ DE ARGUMENTAÇÃO JURÍDICA', 'Heading1', true, 28, '0A3060'));
-            _bodyParts.push(_p('Peça Processual Editável — Gerada Automaticamente pelo Motor Forense v13.5.0-PURE', 'Normal', false, 18, '4B5563'));
+            _bodyParts.push(_p(_T('UNIFED — PROBATUM · MATRIZ DE ARGUMENTAÇÃO JURÍDICA', 'UNIFED — PROBATUM · LEGAL ARGUMENTATION MATRIX'), 'Heading1', true, 28, '0A3060'));
+            _bodyParts.push(_p(_T('Peça Processual Editável — Gerada Automaticamente pelo Motor Forense v13.5.0-PURE', 'Editable Procedural Document — Automatically Generated by Forensic Engine v13.5.0-PURE'), 'Normal', false, 18, '4B5563'));
             _bodyParts.push(_p('Sessão: ' + sessId + ' · Emissão: ' + hoje, 'Normal', false, 18, '6B7280'));
             _bodyParts.push(_p('Master Hash SHA-256: ' + mhash, 'Normal', true, 17, 'DC2626'));
             
-            _bodyParts.push(_p('I. RECONSTITUIÇÃO DA VERDADE MATERIAL — DADOS VERIFICADOS', 'Heading2', true, 24, '1D4ED8'));
+            _bodyParts.push(_p(_T('I. RECONSTITUIÇÃO DA VERDADE MATERIAL — DADOS VERIFICADOS', 'I. RECONSTRUCTION OF MATERIAL TRUTH — VERIFIED DATA'), 'Heading2', true, 24, '1D4ED8'));
             _bodyParts.push(_tbl([
-                _tr(['VARIÁVEL', 'VALOR (€)', 'FONTE'], true),
+                _tr([_T('VARIÁVEL','VARIABLE'), _T('VALOR (€)','AMOUNT (€)'), _T('FONTE','SOURCE')], true),
                 _tr(['Ganhos Brutos (Extrato Ledger)', _eur(t.ganhos), 'Extrato Bolt · 2.º Sem. 2024']),
-                _tr(['Despesas/Comissões Retidas (BTOR)', _eur(t.despesas), 'Extrato Ledger']),
-                _tr(['Ganhos Líquidos (Extrato Real)', _eur(t.ganhosLiquidos), 'Ganhos − Despesas']),
-                _tr(['SAF-T Bruto (Declarado)', _eur(t.saftBruto), 'SAF-T Plataforma']),
-                _tr(['DAC7 Reportado à AT (2.º Sem. 2024)', _eur(t.dac7TotalPeriodo), 'Reporte AT']),
+                _tr([_T('Despesas/Comissões Retidas (BTOR)','Expenses/Commissions Withheld (BTOR)'), _eur(t.despesas), 'Extrato Ledger']),
+                _tr([_T('Ganhos Líquidos (Extrato Real)','Net Earnings (Actual Statement)'), _eur(t.ganhosLiquidos), 'Ganhos − Despesas']),
+                _tr([_T('SAF-T Bruto (Declarado)','SAF-T Gross (Declared)'), _eur(t.saftBruto), 'SAF-T Plataforma']),
+                _tr([_T('DAC7 Reportado à AT (2.º Sem. 2024)','DAC7 Reported to TA (2nd Sem. 2024)'), _eur(t.dac7TotalPeriodo), 'Reporte AT']),
                 _tr(['Comissões Faturadas BTF', _eur(t.faturaPlataforma), 'Faturas BTF'])
             ], [2600, 1600, 2800]));
             
-            _bodyParts.push(_p('II. DISCREPÂNCIAS APURADAS', 'Heading2', true, 24, 'DC2626'));
+            _bodyParts.push(_p(_T('II. DISCREPÂNCIAS APURADAS', 'II. DISCREPANCIES FOUND'), 'Heading2', true, 24, 'DC2626'));
             _bodyParts.push(_tbl([
-                _tr(['SMOKING GUN', 'DESCRIÇÃO', 'VALOR OMITIDO (€)', 'PERCENTAGEM'], true),
-                _tr(['C2 — PRINCIPAL', 'Comissões Extrato vs Faturadas', _eur(c.discrepanciaCritica), (c.percentagemOmissao || 0).toFixed(2) + '%']),
-                _tr(['C1 — SECUNDÁRIO', 'SAF-T Bruto vs Reporte DAC7', _eur(c.discrepanciaSaftVsDac7), (c.percentagemSaftVsDac7 || 0).toFixed(2) + '%'])
+                _tr(['SMOKING GUN', _T('DESCRIÇÃO','DESCRIPTION'), _T('VALOR OMITIDO (€)','OMITTED AMOUNT (€)'), _T('PERCENTAGEM','PERCENTAGE')], true),
+                _tr(['C2 — ' + _T('PRINCIPAL','MAIN'), _T('Comissões Extrato vs Faturadas','Statement vs Invoiced Commissions'), _eur(c.discrepanciaCritica), (c.percentagemOmissao || 0).toFixed(2) + '%']),
+                _tr(['C1 — ' + _T('SECUNDÁRIO','SECONDARY'), _T('SAF-T Bruto vs Reporte DAC7','SAF-T Gross vs DAC7 Report'), _eur(c.discrepanciaSaftVsDac7), (c.percentagemSaftVsDac7 || 0).toFixed(2) + '%'])
             ], [1200, 3400, 1400, 1000]));
             
-            _bodyParts.push(_p('III. QUANTIFICAÇÃO DO IMPACTO FISCAL', 'Heading2', true, 24, '065F46'));
+            _bodyParts.push(_p(_T('III. QUANTIFICAÇÃO DO IMPACTO FISCAL', 'III. QUANTIFICATION OF TAX IMPACT'), 'Heading2', true, 24, '065F46'));
             _bodyParts.push(_tbl([
-                _tr(['TRIBUTO', 'BASE DE INCIDÊNCIA', 'TAXA', 'VALOR ESTIMADO (€)'], true),
-                _tr(['IVA (taxa normal)', _eur(c.discrepanciaCritica), '23%', _eur(c.ivaFalta)]),
-                _tr(['IVA (taxa reduzida)', _eur(c.discrepanciaCritica), '6%', _eur(c.ivaFalta6)]),
-                _tr(['IRC', _eur(c.agravamentoBrutoIRC || c.discrepanciaCritica), '21%', _eur(c.ircEstimado)])
+                _tr([_T('TRIBUTO','TAX'), _T('BASE DE INCIDÊNCIA','ASSESSMENT BASIS'), _T('TAXA','RATE'), _T('VALOR ESTIMADO (€)','ESTIMATED AMOUNT (€)')], true),
+                _tr([_T('IVA (taxa normal)','VAT (standard rate)'), _eur(c.discrepanciaCritica), '23%', _eur(c.ivaFalta)]),
+                _tr([_T('IVA (taxa reduzida)','VAT (reduced rate)'), _eur(c.discrepanciaCritica), '6%', _eur(c.ivaFalta6)]),
+                _tr([_T('IRC','CIT'), _eur(c.agravamentoBrutoIRC || c.discrepanciaCritica), '21%', _eur(c.ircEstimado)])
             ], [1800, 2200, 700, 1800]));
             
-            _bodyParts.push(_p('IV. VEREDICTO PERICIAL', 'Heading2', true, 24, '7C3AED'));
-            _bodyParts.push(_p(v.level && v.level.pt ? v.level.pt : 'RISCO ELEVADO', 'Normal', true, 20, 'EF4444'));
-            _bodyParts.push(_p('Percentagem de Omissão: ' + (c.percentagemOmissao || 0).toFixed(2) + '%', 'Normal', false, 18, '6B7280'));
+            _bodyParts.push(_p(_T('IV. VEREDICTO PERICIAL', 'IV. EXPERT VERDICT'), 'Heading2', true, 24, '7C3AED'));
+            _bodyParts.push(_p(v.level && (v.level[_getLang()] || v.level.pt) ? (v.level[_getLang()] || v.level.pt) : _T('RISCO ELEVADO','HIGH RISK'), 'Normal', true, 20, 'EF4444'));
+            _bodyParts.push(_p(_T('Percentagem de Omissão: ','Omission Percentage: ') + (c.percentagemOmissao || 0).toFixed(2) + '%', 'Normal', false, 18, '6B7280'));
             
             var _docXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>' + _bodyParts.join('') + '<w:sectPr><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1417"/></w:sectPr></w:body></w:document>';
             
@@ -560,11 +567,11 @@
             URL.revokeObjectURL(link.href);
             
             _log('✅ DOCX Matriz Jurídica exportada.', 'success');
-            if (typeof window.showToast === 'function') window.showToast('Matriz Jurídica DOCX exportada com sucesso.', 'success');
+            if (typeof window.showToast === 'function') window.showToast(_T('Matriz Jurídica DOCX exportada com sucesso.','Legal Matrix DOCX exported successfully.'), 'success');
             
         } catch (docxErr) {
             _log('Erro ao gerar DOCX: ' + docxErr.message, 'error');
-            if (typeof window.showToast === 'function') window.showToast('Erro ao gerar DOCX: ' + docxErr.message, 'error');
+            if (typeof window.showToast === 'function') window.showToast(_T('Erro ao gerar DOCX: ','Error generating DOCX: ') + docxErr.message, 'error');
         }
     }
     
@@ -638,9 +645,9 @@
         }
         
         var botoes = [
-            { id: 'unifedPdfRelatorioBtn', icon: 'fa-file-pdf', label: 'RELATÓRIO PERICIAL', cor: '#00E5FF', handler: _unifedExportPdfRelatorio },
-            { id: 'unifedPdfAnexoBtn', icon: 'fa-file-contract', label: 'ANEXO · CUSTÓDIA', cor: '#F59E0B', handler: _unifedExportPdfAnexoCustodia },
-            { id: 'unifedDocxMatrizBtn', icon: 'fa-file-word', label: 'MATRIZ JURÍDICA', cor: '#10B981', handler: _unifedExportDocxMatriz }
+            { id: 'unifedPdfRelatorioBtn', icon: 'fa-file-pdf', label: _T('RELATÓRIO PERICIAL', 'EXPERT REPORT'), cor: '#00E5FF', handler: _unifedExportPdfRelatorio },
+            { id: 'unifedPdfAnexoBtn', icon: 'fa-file-contract', label: _T('ANEXO · CUSTÓDIA', 'ANNEX · CUSTODY'), cor: '#F59E0B', handler: _unifedExportPdfAnexoCustodia },
+            { id: 'unifedDocxMatrizBtn', icon: 'fa-file-word', label: _T('MATRIZ JURÍDICA', 'LEGAL MATRIX'), cor: '#10B981', handler: _unifedExportDocxMatriz }
         ];
         
         botoes.forEach(function(b) {

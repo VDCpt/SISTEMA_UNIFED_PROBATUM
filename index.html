@@ -351,18 +351,18 @@
                         <!-- v13.3.0-DIAMOND: Minuta de Petição Inicial DOCX -->
                         <button id="exportDOCXBtn" class="btn-tool"
                             title="Exportar Minuta de Petição Inicial (.docx) — OOXML editável pelo advogado">
-                            <i class="fas fa-file-word"></i> MINUTA WORD
+                            <i class="fas fa-file-word"></i> <span id="btnDOCX">MINUTA WORD</span>
                         </button>
                         <!-- v13.3.0-DIAMOND: ATF — Análise Temporal Forense -->
                         <button id="atfModalBtn" class="btn-tool"
                             title="Análise Temporal Forense — Tendências · Outliers 2σ · Score de Persistência">
-                            <i class="fas fa-chart-line"></i> &#x23F3; TENDÊNCIA ATF
+                            <i class="fas fa-chart-line"></i> <span id="btnATF">&#x23F3; TENDÊNCIA ATF</span>
                         </button>
                         <button id="exportJSONBtn" class="btn-tool">
-                            <i class="fas fa-file-code"></i> EXPORTAR JSON
+                            <i class="fas fa-file-code"></i> <span id="btnJSON">EXPORTAR JSON</span>
                         </button>
                         <button id="resetBtn" class="btn-tool">
-                            <i class="fas fa-redo-alt"></i> REINICIAR
+                            <i class="fas fa-redo-alt"></i> <span id="btnReset">REINICIAR</span>
                         </button>
                         <button id="clearConsoleBtn" class="btn-tool">
                             <i class="fas fa-trash-alt"></i> <span id="clearConsoleBtnText">LIMPAR CONSOLE</span>
@@ -622,7 +622,7 @@
                         <!-- ── Acesso à Cadeia de Custódia ── -->
                         <div style="margin-top: 0.8rem; display: flex; justify-content: center;">
                             <button id="custodyChainTriggerBtn" onclick="openCustodyChainModal()" title="Visualizar Cadeia de Custódia Forense">
-                                <i class="fas fa-link"></i> CADEIA DE CUSTÓDIA
+                                <i class="fas fa-link"></i> <span id="btnCustody">CADEIA DE CUSTÓDIA</span>
                             </button>
                         </div>
                     </div>
@@ -858,15 +858,15 @@
                 <div style="display:flex;gap:0.6rem;flex-wrap:wrap;justify-content:flex-end;">
                     <!-- BLOCKCHAIN OTS: OpenTimestamps -->
                     <button class="blockchain-btn ots-btn" onclick="submitToOpenTimestamps()" id="otsSealBtn">
-                        <i class="fas fa-link"></i> CERTIFICAR NA BLOCKCHAIN (OTS)
+                        <i class="fas fa-link"></i> <span id="btnOTSSeal">CERTIFICAR NA BLOCKCHAIN (OTS)</span>
                     </button>
                     <!-- NÍVEL 2: Selagem Externa RFC 3161 -->
                     <button class="blockchain-btn nivel2-btn" onclick="anchorMasterHashExternal()" id="nivel2SealBtn">
-                        <i class="fas fa-shield-alt"></i> CARREGAR PROVA TSR / SELAR (NÍVEL 2 · RFC 3161)
+                        <i class="fas fa-shield-alt"></i> <span id="btnNivel2Seal">CARREGAR PROVA TSR / SELAR (NÍVEL 2 · RFC 3161)</span>
                     </button>
                     <!-- IMPORT CSV: Sincronizar 01_CONTROLO_AUTENTICIDADE.csv local -->
                     <button class="blockchain-btn" onclick="triggerImportCSV()" id="importCsvBtn" style="border-color:#e2b87a;color:#e2b87a;" title="Importar 01_CONTROLO_AUTENTICIDADE.csv gerado pelo motor PowerShell/OpenSSL">
-                        <i class="fas fa-file-csv"></i> IMPORTAR CSV CONTROLO (RFC 3161)
+                        <i class="fas fa-file-csv"></i> <span id="btnImportCSV">IMPORTAR CSV CONTROLO (RFC 3161)</span>
                     </button>
                     <button class="custody-export-btn" onclick="exportCustodyChainJSON()">
                         <i class="fas fa-download"></i> EXPORTAR JSON
@@ -874,8 +874,8 @@
                     <button class="custody-export-btn" onclick="clearCustodyLogs()" style="border-color:#ef4444;color:#ef4444;">
                         <i class="fas fa-trash"></i> LIMPAR
                     </button>
-                    <button class="custody-export-btn" onclick="closeCustodyChainModal()">
-                        FECHAR PAINEL
+                    <button class="custody-export-btn" onclick="closeCustodyChainModal()" id="btnCloseCustodyPanel">
+                        <span id="btnCustodyClose">FECHAR PAINEL</span>
                     </button>
 
                 </div>

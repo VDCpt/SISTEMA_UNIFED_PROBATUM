@@ -1050,6 +1050,10 @@ function openATFModal() {
     var sys = window.UNIFEDSystem;
     if (!sys) { console.warn('[UNIFED-ATF] UNIFEDSystem nao disponivel.'); return; }
 
+    // Helper de tradução bilíngue
+    var _L = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
+    var _T = function(pt, en) { return _L === 'en' ? en : pt; };
+
     var atf    = computeTemporalAnalysis(sys.monthlyData || {}, sys.analysis);
     var months = atf.months;
     var existing = document.getElementById('atfModal');
@@ -1070,12 +1074,12 @@ function openATFModal() {
         '<div style="width:100%;max-width:1100px">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(0,229,255,0.3);padding-bottom:12px;margin-bottom:20px">' +
             '<div>' +
-                '<div style="color:#00E5FF;font-size:1.1rem;font-weight:bold;letter-spacing:0.08em">\u23f3 ANALISE TEMPORAL FORENSE (ATF) \u00b7 v13.5.0-PURE</div>' +
-                '<div style="color:rgba(255,255,255,0.5);font-size:0.72rem;margin-top:4px">Tendencias \u00b7 Outliers 2\u03c3 \u00b7 Indice de Recidiva Algorítmica \u00b7 Read-Only</div>' +
+                '<div style="color:#00E5FF;font-size:1.1rem;font-weight:bold;letter-spacing:0.08em">' + _T('⏳ ANÁLISE TEMPORAL FORENSE (ATF)', '⏳ FORENSIC TEMPORAL ANALYSIS (ATF)') + ' · v13.5.0-PURE</div>' +
+                '<div style="color:rgba(255,255,255,0.5);font-size:0.72rem;margin-top:4px">' + _T('Tendências · Outliers 2σ · Índice de Recidiva Algorítmica · Read-Only', 'Trends · Outliers 2σ · Algorithmic Recidivism Index · Read-Only') + '</div>' +
             '</div>' +
             '<button onclick="document.getElementById(\'atfModal\').remove()" ' +
                 'style="background:none;border:1px solid rgba(0,229,255,0.4);color:#00E5FF;cursor:pointer;padding:6px 14px;font-family:Courier New,monospace;font-size:0.8rem;border-radius:4px">' +
-                '\u2715 FECHAR</button>' +
+                _T('✕ FECHAR', '✕ CLOSE') + '</button>' +
         '</div>' +
 
         '<div style="background:rgba(' + spRGB + ',0.12);border:1px solid ' + spColor + ';border-radius:8px;padding:16px 20px;margin-bottom:20px">' +
@@ -1085,7 +1089,7 @@ function openATFModal() {
                     '<div style="color:rgba(255,255,255,0.5);font-size:0.65rem">/100 \u2014 SP</div>' +
                 '</div>' +
                 '<div style="flex:1">' +
-                    '<div style="color:' + spColor + ';font-weight:bold;font-size:0.9rem;margin-bottom:4px">SCORE DE PERSISTENCIA (SP)</div>' +
+                    '<div style="color:' + spColor + ';font-weight:bold;font-size:0.9rem;margin-bottom:4px">' + _T('SCORE DE PERSISTÊNCIA (SP)', 'PERSISTENCE SCORE (SP)') + '</div>' +
                     '<div style="color:rgba(255,255,255,0.75);font-size:0.8rem;line-height:1.5">' + atf.persistenceLabel + '</div>' +
                 '</div>' +
             '</div>' +
@@ -1096,31 +1100,31 @@ function openATFModal() {
 
         '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px">' +
             '<div style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.4);border-radius:6px;padding:12px;text-align:center">' +
-                '<div style="color:rgba(255,255,255,0.5);font-size:0.65rem;margin-bottom:4px">MESES ANALISADOS</div>' +
+                '<div style="color:rgba(255,255,255,0.5);font-size:0.65rem;margin-bottom:4px">' + _T('MESES ANALISADOS', 'MONTHS ANALYSED') + '</div>' +
                 '<div style="color:#3B82F6;font-size:1.5rem;font-weight:bold">' + months.length + '</div></div>' +
             '<div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.4);border-radius:6px;padding:12px;text-align:center">' +
                 '<div style="color:rgba(255,255,255,0.5);font-size:0.65rem;margin-bottom:4px">OUTLIERS &gt; 2\u03c3</div>' +
                 '<div style="color:#EF4444;font-size:1.5rem;font-weight:bold">' + atf.outlierMonths.length + '</div></div>' +
             '<div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.4);border-radius:6px;padding:12px;text-align:center">' +
-                '<div style="color:rgba(255,255,255,0.5);font-size:0.65rem;margin-bottom:4px">TENDENCIA</div>' +
+                '<div style="color:rgba(255,255,255,0.5);font-size:0.65rem;margin-bottom:4px">' + _T('TENDÊNCIA', 'TREND') + '</div>' +
                 '<div style="color:#F59E0B;font-size:1rem;font-weight:bold;margin-top:6px">' +
-                    (atf.trend === 'ascending' ? '\ud83d\udcc8 ASCENDENTE' : atf.trend === 'descending' ? '\ud83d\udcc9 DESCENDENTE' : '\u27a1\ufe0f ESTAVEL') + '</div></div>' +
+                    (atf.trend === 'ascending' ? '📈 ' + _T('ASCENDENTE','ASCENDING') : atf.trend === 'descending' ? '📉 ' + _T('DESCENDENTE','DESCENDING') : '➡️ ' + _T('ESTÁVEL','STABLE')) + '</div></div>' +
             '<div style="background:rgba(' + (atf.opportunisticPattern ? '239,68,68' : '16,185,129') + ',0.1);border:1px solid rgba(' + (atf.opportunisticPattern ? '239,68,68' : '16,185,129') + ',0.4);border-radius:6px;padding:12px;text-align:center">' +
-                '<div style="color:rgba(255,255,255,0.5);font-size:0.65rem;margin-bottom:4px">PADRAO OPORTUNISTICO</div>' +
+                '<div style="color:rgba(255,255,255,0.5);font-size:0.65rem;margin-bottom:4px">' + _T('PADRÃO OPORTUNÍSTICO', 'OPPORTUNISTIC PATTERN') + '</div>' +
                 '<div style="color:' + (atf.opportunisticPattern ? '#EF4444' : '#10B981') + ';font-size:0.9rem;font-weight:bold;margin-top:6px">' +
-                    (atf.opportunisticPattern ? '\u26a0 DETETADO' : '\u2713 NAO DETETADO') + '</div></div>' +
+                    (atf.opportunisticPattern ? '⚠ ' + _T('DETETADO','DETECTED') : '✓ ' + _T('NÃO DETETADO','NOT DETECTED')) + '</div></div>' +
         '</div>' +
 
         '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(0,229,255,0.2);border-radius:8px;padding:16px;margin-bottom:20px">' +
-            '<div style="color:#00E5FF;font-size:0.8rem;margin-bottom:12px;font-weight:bold">GRAFICO TEMPORAL \u2014 GANHOS \u00b7 DESPESAS \u00b7 DISCREPANCIA</div>' +
+            '<div style="color:#00E5FF;font-size:0.8rem;margin-bottom:12px;font-weight:bold">' + _T('GRÁFICO TEMPORAL — GANHOS · DESPESAS · DISCREPÂNCIA', 'TEMPORAL CHART — EARNINGS · EXPENSES · DISCREPANCY') + '</div>' +
             (months.length === 0
-                ? '<div style="color:rgba(255,255,255,0.4);text-align:center;padding:40px">Sem dados mensais. Carregue extratos com nome incluindo AAAAMM.</div>'
+                ? '<div style="color:rgba(255,255,255,0.4);text-align:center;padding:40px">' + _T('Sem dados mensais. Carregue extratos com nome incluindo AAAAMM.', 'No monthly data. Upload statements with filename including YYYYMM.') + '</div>'
                 : '<canvas id="atfChartCanvas" style="width:100%;max-height:320px"></canvas>') +
         '</div>' +
 
         (atf.outlierMonths.length > 0
             ? '<div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:16px;margin-bottom:20px">' +
-              '<div style="color:#EF4444;font-weight:bold;font-size:0.8rem;margin-bottom:8px">\u26a0 MESES COM OUTLIER (DESVIO &gt; 2\u03c3) \u2014 Indicio qualificado Art. 104.o RGIT</div>' +
+              '<div style="color:#EF4444;font-weight:bold;font-size:0.8rem;margin-bottom:8px">' + _T('⚠ MESES COM OUTLIER (DESVIO > 2σ) — Indício qualificado Art. 104.º RGIT', '⚠ MONTHS WITH OUTLIER (DEVIATION > 2σ) — Qualified evidence Art. 104 RGIT') + '</div>' +
               '<div style="display:flex;flex-wrap:wrap;gap:8px">' +
               atf.outlierMonths.map(function(m) {
                   var idx  = months.indexOf(m);
@@ -1135,7 +1139,7 @@ function openATFModal() {
             : '') +
 
         '<div style="background:rgba(0,229,255,0.04);border:1px solid rgba(0,229,255,0.15);border-radius:6px;padding:12px;font-size:0.72rem;color:rgba(255,255,255,0.5);line-height:1.6">' +
-            '<strong style="color:rgba(0,229,255,0.7)">Fundamentacao Juridica:</strong> ' +
+            '<strong style="color:rgba(0,229,255,0.7)">' + _T('Fundamentação Jurídica:', 'Legal Basis:') + '</strong> ' +
             'O Art. 103.o e 104.o do RGIT distinguem o erro pontual da conduta dolosa mediante a demonstracao de iteracao. ' +
             'O Score de Persistencia quantifica a sistematicidade das omissoes. ' +
             'O Padrao Oportunistico (outliers em picos de faturacao) reforca o dolo especifico. ' +
@@ -1171,17 +1175,17 @@ function openATFModal() {
                     data: {
                         labels: monthLabels,
                         datasets: [
-                            { label: 'Ganhos',    data: atf.ganhosSeries,    borderColor: '#3B82F6', backgroundColor: 'rgba(59,130,246,0.1)',  borderWidth: 2, tension: 0.3, pointRadius: 4 },
-                            { label: 'Despesas',  data: atf.despesasSeries,  borderColor: '#10B981', backgroundColor: 'rgba(16,185,129,0.1)',  borderWidth: 2, tension: 0.3, pointRadius: 4 },
+                            { label: _T('Ganhos','Earnings'),    data: atf.ganhosSeries,    borderColor: '#3B82F6', backgroundColor: 'rgba(59,130,246,0.1)',  borderWidth: 2, tension: 0.3, pointRadius: 4 },
+                            { label: _T('Despesas','Expenses'),  data: atf.despesasSeries,  borderColor: '#10B981', backgroundColor: 'rgba(16,185,129,0.1)',  borderWidth: 2, tension: 0.3, pointRadius: 4 },
                             {
-                                label: 'Discrepancia', data: atf.discrepancySeries, borderColor: '#F59E0B',
+                                label: _T('Discrepância','Discrepancy'), data: atf.discrepancySeries, borderColor: '#F59E0B',
                                 backgroundColor: 'rgba(245,158,11,0.15)', borderWidth: 3, tension: 0.3,
                                 pointRadius: atf.discrepancySeries.map(function(v, i) { return atf.outlierMonths.indexOf(months[i]) !== -1 ? 9 : 5; }),
                                 pointBackgroundColor: atf.discrepancySeries.map(function(v, i) { return atf.outlierMonths.indexOf(months[i]) !== -1 ? '#EF4444' : '#F59E0B'; }),
                                 pointBorderColor: atf.discrepancySeries.map(function(v, i) { return atf.outlierMonths.indexOf(months[i]) !== -1 ? '#FFFFFF' : '#F59E0B'; }),
                                 pointBorderWidth: atf.discrepancySeries.map(function(v, i) { return atf.outlierMonths.indexOf(months[i]) !== -1 ? 2 : 1; })
                             },
-                            { label: 'Limiar 2\u03c3', data: Array(months.length).fill(mean2s), borderColor: 'rgba(239,68,68,0.5)', borderDash: [5,5], borderWidth: 1.5, pointRadius: 0, fill: false }
+                            { label: _T('Limiar 2σ', 'Threshold 2σ'), data: Array(months.length).fill(mean2s), borderColor: 'rgba(239,68,68,0.5)', borderDash: [5,5], borderWidth: 1.5, pointRadius: 0, fill: false }
                         ]
                     },
                     options: {
@@ -1191,7 +1195,7 @@ function openATFModal() {
                             legend: { labels: { color: 'rgba(255,255,255,0.7)', font: { family: 'Courier New' } } },
                             tooltip: {
                                 backgroundColor: 'rgba(8,18,36,0.95)', titleColor: '#00E5FF', bodyColor: 'rgba(255,255,255,0.8)',
-                                callbacks: { label: function(c2) { return ' ' + c2.dataset.label + ': ' + new Intl.NumberFormat('pt-PT',{style:'currency',currency:'EUR'}).format(c2.raw||0); } }
+                                callbacks: { label: function(c2) { var _loc = (typeof window.currentLang !== 'undefined' && window.currentLang === 'en') ? 'en-GB' : 'pt-PT'; return ' ' + c2.dataset.label + ': ' + new Intl.NumberFormat(_loc,{style:'currency',currency:'EUR'}).format(c2.raw||0); } }
                             }
                         },
                         scales: {

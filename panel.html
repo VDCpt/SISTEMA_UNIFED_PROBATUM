@@ -2,13 +2,18 @@
   ============================================================================
   UNIFED - PROBATUM · v13.5.0-PURE · PAINEL DE CASO REAL ANONIMIZADO
   ============================================================================
-  Inserir após o painel de Dashboard principal no index.html.
-  Todos os valores são preenchidos por _syncPureDashboard() em script.js.
-  IDs marcados com "pure-*" — sem conflito com IDs existentes.
+  PT: Inserir após o painel de Dashboard principal no index.html.
+      Todos os valores são preenchidos por _syncPureDashboard() em script.js.
+      IDs marcados com "pure-*" — sem conflito com IDs existentes.
+  EN: Insert after the main Dashboard panel in index.html.
+      All values populated by _syncPureDashboard() in script.js.
+      IDs marked with "pure-*" — no conflict with existing IDs.
   
-  SUPORTE A TRADUÇÃO PT/EN:
-    - O painel é gerado dinamicamente com placeholders que serão traduzidos
-    - A função window._translatePurePanel() é chamada quando o idioma muda
+  SUPORTE A TRADUÇÃO PT/EN / PT/EN TRANSLATION SUPPORT:
+    - Elementos com data-pt e data-en são traduzidos por window._translatePurePanel()
+    - Elements with data-pt and data-en are translated by window._translatePurePanel()
+    - Chamada automática em switchLanguage() de script.js
+    - Automatically called in switchLanguage() from script.js
   ============================================================================
 -->
 
@@ -17,12 +22,12 @@
   <!-- ── HEADER DA SECÇÃO ────────────────────────────────────────────────── -->
   <div class="pure-section-header">
     <div class="pure-section-title">
-      <span class="pure-badge-version">v13.5.0-PURE</span>
+      <span class="pure-badge-version" title="Versão / Version">v13.5.0-PURE</span>
       <span id="pure-title-text" data-pt="RECONSTITUIÇÃO DA VERDADE MATERIAL — SESSÃO" data-en="RECONSTRUCTION OF MATERIAL TRUTH — SESSION">RECONSTITUIÇÃO DA VERDADE MATERIAL — SESSÃO</span>
       <span id="pure-session-id" class="pure-mono">UNIFED-MMLADX8Q-CV69L</span>
     </div>
     <div class="pure-session-badge">
-      <span class="pure-label">SHA-256</span>
+      <span class="pure-label" data-pt="INTEGRIDADE" data-en="INTEGRITY">SHA-256</span>
       <span id="pure-hash-prefix" class="pure-mono pure-hash">5150e767...</span>
     </div>
   </div>
@@ -197,8 +202,8 @@
         id="pure-atf-btn"
         data-pt="⏳ ABRIR ANÁLISE TEMPORAL FORENSE COMPLETA"
         data-en="⏳ OPEN COMPLETE FORENSIC TEMPORAL ANALYSIS"
-        title="Abrir modal ATF completo com Chart.js e Motor Preditivo NEXUS">
-        ⏳ ABRIR ANÁLISE TEMPORAL FORENSE COMPLETA
+        title="Abrir modal ATF completo / Open complete ATF modal">
+        <span id="pure-atf-btn-text">⏳ ABRIR ANÁLISE TEMPORAL FORENSE COMPLETA</span>
       </button>
     </div>
   </div>
@@ -252,7 +257,7 @@
     <div class="pure-verdict-row">
       <div class="pure-verdict-block">
         <div class="pure-verdict-label" id="pure-verdict-label" data-pt="VEREDICTO PERICIAL" data-en="EXPERT VERDICT">VEREDICTO PERICIAL</div>
-        <div id="pure-verdict" class="pure-verdict-value">RISCO ELEVADO</div>
+        <div id="pure-verdict" class="pure-verdict-value" data-pt="RISCO ELEVADO" data-en="HIGH RISK">RISCO ELEVADO</div>
         <div id="pure-verdict-pct" class="pure-verdict-pct">89,26%</div>
         <div class="pure-verdict-basis" id="pure-verdict-basis" data-pt="Art. 103.º / 104.º RGIT · Art. 125.º CPP" data-en="Art. 103 / 104 RGIT · Art. 125 CPP">Art. 103.º / 104.º RGIT · Art. 125.º CPP</div>
       </div>

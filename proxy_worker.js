@@ -156,8 +156,9 @@ function _corsHeaders(request) {
     const _ALLOWED_ORIGINS = [
         'https://app.unifed.com',
         'https://unifed.com',
-        // 'http://localhost:5500',   // Descomentar para desenvolvimento local
-        // 'http://127.0.0.1:5500',   // Descomentar para desenvolvimento local
+        'https://www.unifed.com',   // www variant
+        // 'http://localhost:5500',   // Descomentar para desenvolvimento local / Uncomment for local development
+        // 'http://127.0.0.1:5500',   // Descomentar para desenvolvimento local / Uncomment for local development
     ];
 
     const origin  = (request && request.headers) ? request.headers.get('Origin') : null;

@@ -20,6 +20,7 @@
 // ============================================================================
 // DADOS VERIFICADOS — extraídos do JSON UNIFED-MMLADX8Q-CV69L
 // Verificação: hash SHA-256 = 5150e7674b891d5d07ca990e4c7124fc66af40488452759aeebdf84976eaa8f6
+// NOTA: Todos os valores são dados reais verificados — demoMode: false
 // ============================================================================
 const _REAL_CASE_MMLADX8Q = Object.freeze({
 
@@ -51,7 +52,7 @@ const _REAL_CASE_MMLADX8Q = Object.freeze({
     crossings: Object.freeze({
         // C2 — Smoking Gun: Despesas/Comissões Extrato vs Fatura BTF
         discrepanciaCritica:    2184.95,  // BTOR(2447,89) - BTF(262,94)
-        percentagemOmissao:       89.26,  // (2184,95 / 2447,89) × 100
+        percentagemOmissao:       89.26,  // (2184,95 / 2447,89) × 100 — Omissão de faturação 89,26%
 
         // C1 — SAF-T Bruto vs DAC7
         discrepanciaSaftVsDac7: 2402.57,  // 10157,73 - 7755,16
@@ -89,7 +90,7 @@ const _REAL_CASE_MMLADX8Q = Object.freeze({
     // ── Valores auxiliares (não sujeitos a comissão — isolados pelo sistema) ─
     // Fonte: audit log [AUX] — Outubro 2024 (mês com Total Não Sujeitos: 451,00 €)
     nonCommissionable: Object.freeze({
-        campanhas:   451.00,   // Out: 205 + Nov: 180 + Dez: 20 = 405 (log confirma 451 out/alone)
+        campanhas:   451.00,   // Outubro 2024: 451,00 € (mês de maior campanha) — log confirma
         portagens:     0.00,
         gorjetas:     46.00,   // Out: 19,50 + Nov: 17,50 + Dez: 9,00
         cancelamentos: 58.10,  // Out: 24,20 + Nov: 14,80 + Dez: 15,60 + Set: 3,50

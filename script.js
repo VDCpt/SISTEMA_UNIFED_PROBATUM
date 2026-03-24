@@ -1907,7 +1907,15 @@ const translations = {
         // Toolbar
         btnPDF: "PARECER TÉCNICO",
         btnDOCX: "MINUTA WORD",
-        btnATF: "TENDÊNCIA ATF",
+        btnATF: "&#x23F3; TENDÊNCIA ATF",
+        btnDOCX: "MINUTA WORD",
+        btnJSON: "EXPORTAR JSON",
+        btnReset: "REINICIAR",
+        btnCustody: "CADEIA DE CUSTÓDIA",
+        btnOTSSeal: "CERTIFICAR NA BLOCKCHAIN (OTS)",
+        btnNivel2Seal: "CARREGAR PROVA TSR / SELAR (NÍVEL 2 · RFC 3161)",
+        btnImportCSV: "IMPORTAR CSV CONTROLO (RFC 3161)",
+        btnCustodyClose: "FECHAR PAINEL",
         
         // Dashboard - Cards
         cardNet: "VALOR LÍQUIDO RECONSTRUÍDO",
@@ -2081,7 +2089,15 @@ const translations = {
         // Toolbar
         btnPDF: "EXPERT OPINION",
         btnDOCX: "WORD DRAFT",
-        btnATF: "ATF TREND",
+        btnATF: "&#x23F3; ATF TREND",
+        btnDOCX: "WORD DRAFT",
+        btnJSON: "EXPORT JSON",
+        btnReset: "RESTART",
+        btnCustody: "CHAIN OF CUSTODY",
+        btnOTSSeal: "CERTIFY ON BLOCKCHAIN (OTS)",
+        btnNivel2Seal: "LOAD TSR PROOF / SEAL (LEVEL 2 · RFC 3161)",
+        btnImportCSV: "IMPORT CONTROL CSV (RFC 3161)",
+        btnCustodyClose: "CLOSE PANEL",
         
         // Dashboard - Cards
         cardNet: "RECONSTRUCTED NET VALUE",
@@ -2365,8 +2381,38 @@ function switchLanguage() {
     // ATF Button
     const atfModalBtn = document.getElementById('atfModalBtn');
     if (atfModalBtn) {
-        atfModalBtn.innerHTML = `<i class="fas fa-chart-line"></i> &#x23F3; ${t.btnATF}`;
+        const atfSpan = atfModalBtn.querySelector('span');
+        if (atfSpan) atfSpan.innerHTML = t.btnATF;
+        else atfModalBtn.innerHTML = `<i class="fas fa-chart-line"></i> <span id="btnATF">${t.btnATF}</span>`;
     }
+    
+    // JSON Export Button
+    const btnJSONEl = document.getElementById('btnJSON');
+    if (btnJSONEl) btnJSONEl.textContent = t.btnJSON;
+    
+    // Reset Button
+    const btnResetEl = document.getElementById('btnReset');
+    if (btnResetEl) btnResetEl.textContent = t.btnReset;
+    
+    // Custody Chain Button
+    const btnCustodyEl = document.getElementById('btnCustody');
+    if (btnCustodyEl) btnCustodyEl.textContent = t.btnCustody;
+    
+    // OTS Seal Button
+    const btnOTSSealEl = document.getElementById('btnOTSSeal');
+    if (btnOTSSealEl) btnOTSSealEl.textContent = t.btnOTSSeal;
+    
+    // Nivel2 Seal Button
+    const btnNivel2SealEl = document.getElementById('btnNivel2Seal');
+    if (btnNivel2SealEl) btnNivel2SealEl.textContent = t.btnNivel2Seal;
+    
+    // Import CSV Button
+    const btnImportCSVEl = document.getElementById('btnImportCSV');
+    if (btnImportCSVEl) btnImportCSVEl.textContent = t.btnImportCSV;
+    
+    // Close Custody Panel Button
+    const btnCustodyCloseEl = document.getElementById('btnCustodyClose');
+    if (btnCustodyCloseEl) btnCustodyCloseEl.textContent = t.btnCustodyClose;
     
     // Botão Limpar Console
     const clearConsoleBtn = document.getElementById('clearConsoleBtn');
@@ -2608,11 +2654,40 @@ function switchLanguage() {
     // Atualizar data e hora com novo locale
     startClockAndDate();
     
+    // Traduzir painel pureDashboard (panel.html) se estiver visível
+    if (typeof window._translatePurePanel === 'function') {
+        window._translatePurePanel(currentLang);
+    }
+    
     logAudit(`Idioma alterado para: ${currentLang.toUpperCase()}`, 'info');
     ForensicLogger.addEntry('LANGUAGE_CHANGED', { lang: currentLang });
     
     console.log('[UNIFED-LANG] Tradução concluída com sucesso.');
 }
+
+// ============================================================================
+// 7.2 _translatePurePanel — Tradução dinâmica do painel #pureDashboard
+// ============================================================================
+window._translatePurePanel = function _translatePurePanel(lang) {
+    const _panel = document.getElementById('pureDashboard');
+    if (!_panel) return;
+    
+    const _lang = lang || 'pt';
+    
+    // Seleccionar todos os elementos com data-pt e data-en dentro do painel
+    _panel.querySelectorAll('[data-pt][data-en]').forEach(function(el) {
+        const _val = _lang === 'en' ? el.getAttribute('data-en') : el.getAttribute('data-pt');
+        if (_val !== null) el.textContent = _val;
+    });
+    
+    // Botões com data-pt/data-en no atributo próprio
+    _panel.querySelectorAll('button[data-pt][data-en]').forEach(function(btn) {
+        const _val = _lang === 'en' ? btn.getAttribute('data-en') : btn.getAttribute('data-pt');
+        if (_val !== null) btn.textContent = _val;
+    });
+    
+    console.log('[UNIFED-PURE] Painel traduzido para: ' + _lang.toUpperCase());
+};
 
 // ============================================================================
 // 8. SCHEMA REGISTRY - VERSÃO CORRIGIDA (v12.8.9) - EXTRAÇÃO PRECISA
@@ -4477,7 +4552,9 @@ function performAudit() {
         } finally {
             if(analyzeBtn) {
                 analyzeBtn.disabled = false;
-                analyzeBtn.innerHTML = `<i class="fas fa-search-dollar"></i> ${translations[currentLang].btnAnalyze}`;
+                const _analyzeLbl = document.getElementById('btnAnalyze');
+                if (_analyzeLbl) _analyzeLbl.textContent = translations[currentLang].btnAnalyze;
+                else analyzeBtn.innerHTML = `<i class="fas fa-search-dollar"></i> ${translations[currentLang].btnAnalyze}`;
             }
         }
     }, 1000);

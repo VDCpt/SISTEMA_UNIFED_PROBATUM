@@ -129,6 +129,11 @@
 (function _nexusRAGJurisprudential() {
 
     // Base de Jurisprudência STA — Knowledge Base para RAG
+    // NOTA PERICIAL IMPORTANTE: Os acórdãos listados em _STA_ACORDAOS são referências
+    // doutrinárias simuladas para orientação do advogado mandatário.
+    // Toda a referência a acórdãos deve ser validada pelo advogado antes de uso processual.
+    // NOTE: STA acórdãos listed are simulated doctrinal references for lawyer guidance.
+    // All judgement references must be independently validated before procedural use.
     var _JURISPRUDENCE_KB = {
         rgit103: {
             artigo: 'Art. 103.o RGIT — Fraude Fiscal',
@@ -562,6 +567,10 @@
         var existing = document.getElementById('nexusForecastPanel');
         if (existing) existing.remove();
 
+        // Helper bilíngue
+        var _L = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
+        var _T = function(pt, en) { return _L === 'en' ? en : pt; };
+
         var fmtEur = function(v) {
             return new Intl.NumberFormat('pt-PT', {style:'currency',currency:'EUR',minimumFractionDigits:2}).format(v || 0);
         };
@@ -586,22 +595,22 @@
             '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:14px">' +
                 // Card 1: Omissão Total Projetada
                 '<div style="background:rgba(168,85,247,0.12);border:1px solid rgba(168,85,247,0.35);border-radius:6px;padding:14px;text-align:center">' +
-                    '<div style="color:rgba(255,255,255,0.5);font-size:0.62rem;margin-bottom:4px;letter-spacing:0.04em">OMISSÃO PROJETADA (6M)</div>' +
+                    '<div style="color:rgba(255,255,255,0.5);font-size:0.62rem;margin-bottom:4px;letter-spacing:0.04em">' + _T('OMISSÃO PROJETADA (6M)', 'PROJECTED OMISSION (6M)') + '</div>' +
                     '<div style="color:#A855F7;font-size:1.45rem;font-weight:900">' + fmtEur(forecast.risco) + '</div>' +
-                    '<div style="color:rgba(255,255,255,0.35);font-size:0.6rem;margin-top:2px">Passivo total estimado</div>' +
+                    '<div style="color:rgba(255,255,255,0.35);font-size:0.6rem;margin-top:2px">' + _T('Passivo total estimado', 'Estimated total liability') + '</div>' +
                 '</div>' +
                 // Card 2: IVA em Falta Projetado
                 '<div style="background:rgba(249,115,22,0.1);border:1px solid rgba(249,115,22,0.3);border-radius:6px;padding:14px;text-align:center">' +
-                    '<div style="color:rgba(255,255,255,0.5);font-size:0.62rem;margin-bottom:4px;letter-spacing:0.04em">IVA EM FALTA PROJETADO (6M)</div>' +
+                    '<div style="color:rgba(255,255,255,0.5);font-size:0.62rem;margin-bottom:4px;letter-spacing:0.04em">' + _T('IVA EM FALTA PROJETADO (6M)', 'PROJECTED MISSING VAT (6M)') + '</div>' +
                     '<div style="color:#F97316;font-size:1.45rem;font-weight:900">' + fmtEur(forecast.ivaRisco) + '</div>' +
-                    '<div style="color:rgba(255,255,255,0.35);font-size:0.6rem;margin-top:2px">23% sobre omissão proj.</div>' +
+                    '<div style="color:rgba(255,255,255,0.35);font-size:0.6rem;margin-top:2px">' + _T('23% sobre omissão proj.', '23% on projected omission') + '</div>' +
                 '</div>' +
                 // Card 3: Pior mês projetado
                 (function() {
                     var maxIdx = 0, maxVal = 0;
                     forecast.discSeries.forEach(function(v, i) { if (v > maxVal) { maxVal = v; maxIdx = i; } });
                     return '<div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:14px;text-align:center">' +
-                        '<div style="color:rgba(255,255,255,0.5);font-size:0.62rem;margin-bottom:4px;letter-spacing:0.04em">PICO DE RISCO PROJETADO</div>' +
+                        '<div style="color:rgba(255,255,255,0.5);font-size:0.62rem;margin-bottom:4px;letter-spacing:0.04em">' + _T('PICO DE RISCO PROJETADO', 'PROJECTED RISK PEAK') + '</div>' +
                         '<div style="color:#EF4444;font-size:1.1rem;font-weight:900">' + (forecast.labels[maxIdx] || 'N/A') + '</div>' +
                         '<div style="color:#EF4444;font-size:0.9rem;font-weight:700">' + fmtEur(maxVal) + '</div>' +
                     '</div>';
@@ -612,10 +621,10 @@
                 '<table style="width:100%;border-collapse:collapse;font-size:0.7rem;color:rgba(255,255,255,0.8)">' +
                     '<thead>' +
                         '<tr>' +
-                            '<th style="border:1px solid rgba(168,85,247,0.25);padding:6px 10px;background:rgba(168,85,247,0.15);color:#A855F7;text-align:left">Período</th>' +
-                            '<th style="border:1px solid rgba(168,85,247,0.25);padding:6px 10px;background:rgba(168,85,247,0.15);color:#A855F7;text-align:right">Omissão Proj.</th>' +
-                            '<th style="border:1px solid rgba(168,85,247,0.25);padding:6px 10px;background:rgba(168,85,247,0.15);color:#F97316;text-align:right">IVA 23% Proj.</th>' +
-                            '<th style="border:1px solid rgba(168,85,247,0.25);padding:6px 10px;background:rgba(168,85,247,0.15);color:rgba(255,255,255,0.5);text-align:center">Risco</th>' +
+                            '<th style="border:1px solid rgba(168,85,247,0.25);padding:6px 10px;background:rgba(168,85,247,0.15);color:#A855F7;text-align:left">' + _T('Período','Period') + '</th>' +
+                            '<th style="border:1px solid rgba(168,85,247,0.25);padding:6px 10px;background:rgba(168,85,247,0.15);color:#A855F7;text-align:right">' + _T('Omissão Proj.','Proj. Omission') + '</th>' +
+                            '<th style="border:1px solid rgba(168,85,247,0.25);padding:6px 10px;background:rgba(168,85,247,0.15);color:#F97316;text-align:right">' + _T('IVA 23% Proj.','VAT 23% Proj.') + '</th>' +
+                            '<th style="border:1px solid rgba(168,85,247,0.25);padding:6px 10px;background:rgba(168,85,247,0.15);color:rgba(255,255,255,0.5);text-align:center">' + _T('Risco','Risk') + '</th>' +
                         '</tr>' +
                     '</thead>' +
                     '<tbody>' +
@@ -631,7 +640,7 @@
                                 '<td style="border:1px solid rgba(168,85,247,0.15);padding:5px 10px;text-align:right;color:#F97316">' + fmtEur(iva) + '</td>' +
                                 '<td style="border:1px solid rgba(168,85,247,0.15);padding:5px 10px;text-align:center">' +
                                     '<div style="display:inline-block;background:' + rColor + ';border-radius:3px;padding:2px 8px;font-size:0.62rem;color:#fff">' +
-                                        (pct > 75 ? '[!] ALTO' : pct > 45 ? '[^] MED' : '[OK] MOD') +
+                                        (pct > 75 ? '[!] ' + _T('ALTO','HIGH') : pct > 45 ? '[^] ' + _T('MED','MED') : '[OK] ' + _T('MOD','LOW')) +
                                     '</div>' +
                                 '</td>' +
                             '</tr>';
@@ -640,11 +649,11 @@
                 '</table>' +
             '</div>' +
             '<div style="margin-top:12px;background:rgba(0,0,0,0.3);border:1px solid rgba(168,85,247,0.2);border-radius:4px;padding:8px 12px;font-size:0.65rem;color:rgba(255,255,255,0.4);line-height:1.6">' +
-                '<strong style="color:rgba(168,85,247,0.8)">⚙ Metodologia Preditiva (NEXUS ATF):</strong> ' +
-                'Regressão Linear Simples (OLS) + Média Móvel Exponencial (EMA α=0.3) sobre série temporal de omissões. ' +
-                'Combinação ponderada 60/40. Projeção sem dados sazonais — índice de confiança: <strong style="color:#A855F7">' + forecast.confidence + '</strong>. ' +
-                'Histórico: <strong>' + forecast.historicN + '</strong> meses. ' +
-                'Este painel NÃO altera os cálculos fiscais do motor PROBATUM (Read-Only). ' +
+                '<strong style="color:rgba(168,85,247,0.8)">⚙ ' + _T('Metodologia Preditiva (NEXUS ATF):', 'Predictive Methodology (NEXUS ATF):') + '</strong> ' +
+                _T('Regressão Linear Simples (OLS) + Média Móvel Exponencial (EMA α=0.3) sobre série temporal de omissões. ', 'Simple Linear Regression (OLS) + Exponential Moving Average (EMA α=0.3) on omission time series. ') +
+                _T('Combinação ponderada 60/40. Projeção sem dados sazonais — índice de confiança: ', 'Weighted combination 60/40. Projection without seasonal data — confidence index: ') + '<strong style="color:#A855F7">' + forecast.confidence + '</strong>. ' +
+                _T('Histórico: ', 'History: ') + '<strong>' + forecast.historicN + '</strong> ' + _T('meses. ', 'months. ') +
+                _T('Este painel NÃO altera os cálculos fiscais do motor PROBATUM (Read-Only). ', 'This panel does NOT alter the PROBATUM engine tax calculations (Read-Only). ') +
                 'Art. 103.o e 104.o RGIT · ISO/IEC 27037:2012' +
             '</div>';
 
@@ -827,6 +836,10 @@
         var existing = document.getElementById(_EXPLORER_MODAL_ID);
         if (existing) { existing.remove(); return; }
 
+        // Helper bilíngue
+        var _L = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
+        var _T = function(pt, en) { return _L === 'en' ? en : pt; };
+
         var registry = _collectDocumentRegistry();
 
         // Enriquecer registry com hashes computados (Web Crypto)
@@ -858,8 +871,8 @@
         var itemsHTML = '';
         if (enriched.length === 0) {
             itemsHTML = '<div style="text-align:center;padding:32px;color:rgba(255,255,255,0.3);font-size:0.8rem">' +
-                '📭 Nenhum documento registado na sessão atual.<br>' +
-                '<span style="font-size:0.65rem">Carregue evidências para ativar o Explorer.</span>' +
+                '📭 ' + _T('Nenhum documento registado na sessão atual.<br>', 'No documents registered in the current session.<br>') +
+                '<span style="font-size:0.65rem">' + _T('Carregue evidências para ativar o Explorer.', 'Upload evidence to activate the Explorer.') + '</span>' +
                 '</div>';
         } else {
             itemsHTML = enriched.map(function(item, idx) {
@@ -926,8 +939,8 @@
                     '<div>' +
                         '<div style="color:#00E5FF;font-size:0.85rem;font-weight:700;letter-spacing:0.08em">⛓️ BLOCKCHAIN EVIDENCE EXPLORER · NEXUS v13.5.0-PURE</div>' +
                         '<div style="color:rgba(255,255,255,0.4);font-size:0.62rem;margin-top:2px">' +
-                            'SHA-256 Individual · OTS Status · Cadeia de Custódia · ' +
-                            enriched.length + ' documento' + (enriched.length !== 1 ? 's' : '') +
+                            _T('SHA-256 Individual · OTS Status · Cadeia de Custódia · ', 'SHA-256 Individual · OTS Status · Chain of Custody · ') +
+                            enriched.length + ' ' + _T('documento', 'document') + (enriched.length !== 1 ? 's' : '') +
                         '</div>' +
                     '</div>' +
                     '<button id="nexusExplorerCloseBtn" style="' +
@@ -957,7 +970,7 @@
                     'background:rgba(0,0,0,0.3);' +
                     'font-size:0.6rem;color:rgba(255,255,255,0.3);line-height:1.6;' +
                 '">' +
-                    '⚙ NEXUS Blockchain Explorer · SHA-256 independente por ficheiro · ' +
+                    '⚙ ' + _T('NEXUS Blockchain Explorer · SHA-256 independente por ficheiro · ', 'NEXUS Blockchain Explorer · Individual SHA-256 per file · ') +
                     'Art. 125.o CPP · ISO/IEC 27037:2012 · DORA (UE) 2022/2554 · Read-Only sobre UNIFEDSystem · ' +
                     new Date().toLocaleString('pt-PT') +
                 '</div>' +
@@ -1066,8 +1079,8 @@
             'vertical-align:middle;',
         ].join('');
 
-        btn.innerHTML = '⛓️ VER EXPLORER';
-        btn.title = 'NEXUS Blockchain Evidence Explorer — SHA-256 individual por ficheiro';
+        btn.innerHTML = '⛓️ ' + _T('VER EXPLORER', 'VIEW EXPLORER');
+        btn.title = _T('NEXUS Blockchain Evidence Explorer — SHA-256 individual por ficheiro', 'NEXUS Blockchain Evidence Explorer — Individual SHA-256 per file');
 
         btn.addEventListener('mouseenter', function() {
             this.style.background = 'linear-gradient(135deg,rgba(0,229,255,0.2),rgba(168,85,247,0.2))';
@@ -1136,7 +1149,7 @@ console.info(
         window.fetch patch + unhandledrejection + error listeners (capture:true)
         Padrões: CORS/Anthropic/OTS/FreeTSA — convertidos para console.info
    M2 — RAG Jurisprudencial DOCX:
-        JSZip.prototype.file hook temporário — injeta VI. JURISPRUDÊNCIA
+        XML jurisprudencial injectado via xmlInject (FIX-4) — injeta VI. JURISPRUDÊNCIA
         Tabela de artigos + 5 Acordaos STA simulados — discrepancyPercent > 0
    M3 — Motor Preditivo ATF:
         Regressão Linear (OLS) + EMA α=0.3 combinados 60/40
