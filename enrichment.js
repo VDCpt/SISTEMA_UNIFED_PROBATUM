@@ -243,7 +243,7 @@ function _fallbackNarrative(reason) {
         '',
         '(II) IMPACTO SISTEMICO ESTIMADO (SIMULACAO): Com base na metrica de discrepancia apurada neste processo e extrapolando para a estabilidade do setor (38.000 condutores — IMT), estima-se um passivo fiscal oculto sistemico de magnitude superior a 500M EUR. Esta projecao carece de prova pericial complementar em sede de execucao e nao constitui prova de facto neste processo concreto.',
         '',
-        '(III) RECOMENDACAO PROCESSUAL: Face a robustez dos artefactos apresentados, recomenda-se a inversao do onus da prova (Art. 344.o CC e Art. 100.o CPPT), mantendo-se a disponibilidade para o pleno exercicio do contraditorio (Art. 327.o CPP) mediante acesso aos logs brutos de calculo de comissoes, sob custodia exclusiva da plataforma. O UNIFED-PROBATUM realiza RECONSTITUICAO DA VERDADE MATERIAL DIGITAL — nao contabilidade — distinção juridicamente relevante para a admissibilidade da prova pericial.
+        '(III) RECOMENDACAO PROCESSUAL: Face a robustez dos artefactos apresentados, recomenda-se a inversao do onus da prova (Art. 344.o CC e Art. 100.o CPPT), mantendo-se a disponibilidade para o pleno exercicio do contraditorio (Art. 327.o CPP) mediante acesso aos logs brutos de calculo de comissoes, sob custodia exclusiva da plataforma. O UNIFED-PROBATUM realiza RECONSTITUICAO DA VERDADE MATERIAL DIGITAL — nao contabilidade — distinção juridicamente relevante para a admissibilidade da prova pericial.',
         '',
         'Seccao D - ESTRATEGIA DE CONTRA-INTERROGATORIO',
         'Argumento da Defesa: "Os valores reportados pelo DAC7 incluem taxas de cancelamento e reembolsos ' +
