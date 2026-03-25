@@ -645,16 +645,36 @@
         }
         
         var botoes = [
-            { id: 'unifedPdfRelatorioBtn', icon: 'fa-file-pdf', label: _T('RELATÓRIO PERICIAL', 'EXPERT REPORT'), cor: '#00E5FF', handler: _unifedExportPdfRelatorio },
-            { id: 'unifedPdfAnexoBtn', icon: 'fa-file-contract', label: _T('ANEXO · CUSTÓDIA', 'ANNEX · CUSTODY'), cor: '#F59E0B', handler: _unifedExportPdfAnexoCustodia },
-            { id: 'unifedDocxMatrizBtn', icon: 'fa-file-word', label: _T('MATRIZ JURÍDICA', 'LEGAL MATRIX'), cor: '#10B981', handler: _unifedExportDocxMatriz }
+            { id: 'unifedPdfRelatorioBtn', icon: 'fa-file-pdf', labelPt: 'RELATÓRIO PERICIAL', labelEn: 'EXPERT REPORT', cor: '#00E5FF', handler: _unifedExportPdfRelatorio },
+            { id: 'unifedPdfAnexoBtn', icon: 'fa-file-contract', labelPt: 'ANEXO · CUSTÓDIA', labelEn: 'ANNEX · CUSTODY', cor: '#F59E0B', handler: _unifedExportPdfAnexoCustodia },
+            { id: 'unifedDocxMatrizBtn', icon: 'fa-file-word', labelPt: 'MATRIZ JURÍDICA', labelEn: 'LEGAL MATRIX', cor: '#10B981', handler: _unifedExportDocxMatriz }
         ];
         
         botoes.forEach(function(b) {
-            var btn = criarBotao(b.id, b.icon, b.label, b.cor, b.handler);
+            var btn = criarBotao(b.id, b.icon, _T(b.labelPt, b.labelEn), b.cor, b.handler);
+            // Guardar labels para actualização dinâmica de idioma
+            btn.setAttribute('data-pt', b.labelPt);
+            btn.setAttribute('data-en', b.labelEn);
+            btn.setAttribute('data-icon', b.icon);
             container.appendChild(btn);
             console.log('[UNIFED-TRIADA] ✅ Botão criado:', b.id);
         });
+
+        // Registar hook de idioma: actualiza labels quando switchLanguage() é chamado
+        var _triadaLangHook = function() {
+            ['unifedPdfRelatorioBtn', 'unifedPdfAnexoBtn', 'unifedDocxMatrizBtn'].forEach(function(id) {
+                var _btn = document.getElementById(id);
+                if (!_btn) return;
+                var _pt   = _btn.getAttribute('data-pt');
+                var _en   = _btn.getAttribute('data-en');
+                var _icon = _btn.getAttribute('data-icon');
+                var _lbl  = _getLang() === 'en' ? _en : _pt;
+                _btn.innerHTML = '<i class="fas ' + _icon + '"></i> ' + _lbl;
+                _btn.title = _lbl;
+            });
+        };
+        // Substituir hook anterior se já existir
+        window._triadaUpdateLabels = _triadaLangHook;
         
         var btnPDF = document.getElementById('exportPDFBtn');
         var btnDOCX = document.getElementById('exportDOCXBtn');

@@ -452,7 +452,11 @@ const validateNIF = (nif) => {
 };
 
 const formatCurrency = (value) => {
-    return forensicRound(value).toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+    const _lang   = (typeof currentLang !== 'undefined') ? currentLang : 'pt';
+    const _locale = _lang === 'en' ? 'en-GB' : 'pt-PT';
+    const _num    = forensicRound(value).toLocaleString(_locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    // PT: número + espaço + € (ex: 2 447,89 €) | EN: € + número (ex: €2,447.89)
+    return _lang === 'en' ? '€' + _num : _num + ' €';
 };
 
 const formatCurrencyEN = (value) => {
@@ -2659,7 +2663,17 @@ function switchLanguage() {
     
     logAudit(`Idioma alterado para: ${currentLang.toUpperCase()}`, 'info');
     ForensicLogger.addEntry('LANGUAGE_CHANGED', { lang: currentLang });
-    
+
+    // Actualizar labels dos botões da Tríade Documental (unifed_triada_export.js)
+    if (typeof window._triadaUpdateLabels === 'function') {
+        window._triadaUpdateLabels();
+    }
+
+    // Actualizar atributo title dos seal-items (conformity-seals)
+    document.querySelectorAll('.seal-item[data-pt][data-en]').forEach(function(el) {
+        el.title = currentLang === 'en' ? el.getAttribute('data-en') : el.getAttribute('data-pt');
+    });
+
     console.log('[UNIFED-LANG] Tradução concluída com sucesso.');
 }
 
@@ -4865,9 +4879,11 @@ function showTwoAxisAlerts() {
 
         if (ganhos > 0 && despesas > 0) {
             omissaoCard.style.display = 'block';
-            omissaoValue.textContent  = pct.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' %';
+            omissaoValue.textContent  = pct.toLocaleString(currentLang === 'en' ? 'en-GB' : 'pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' %';
             if (omissaoDesc) {
-                omissaoDesc.textContent = `(${formatCurrency(despesas)} / ${formatCurrency(ganhos)}) × 100  [Despesas/Comissões / Ganhos]`;
+                omissaoDesc.textContent = currentLang === 'en'
+                    ? `(${formatCurrency(despesas)} / ${formatCurrency(ganhos)}) × 100  [Expenses/Commissions / Earnings]`
+                    : `(${formatCurrency(despesas)} / ${formatCurrency(ganhos)}) × 100  [Despesas/Comissões / Ganhos]`;
             }
             if (pct > 25) {
                 omissaoCard.classList.add('omissao-threshold-alert');
@@ -4914,35 +4930,40 @@ function updateDashboard() {
 
     const quantumFormulaEl = document.getElementById('quantumFormula');
     if (quantumFormulaEl) {
-        quantumFormulaEl.textContent = `Diferencial de Base em Análise (Despesas/Comissões vs Fatura): ${formatCurrency(cross.discrepanciaCritica)} | ${cross.percentagemOmissao.toFixed(2)}%`;
+        quantumFormulaEl.textContent = currentLang === 'en'
+            ? `Base Differential Under Analysis (Expenses/Commissions vs Invoice): ${formatCurrency(cross.discrepanciaCritica)} | ${cross.percentagemOmissao.toFixed(2)}%`
+            : `Diferencial de Base em Análise (Despesas/Comissões vs Fatura): ${formatCurrency(cross.discrepanciaCritica)} | ${cross.percentagemOmissao.toFixed(2)}%`;
     }
 
     const quantumNoteEl = document.getElementById('quantumNote');
     if (quantumNoteEl) {
-        quantumNoteEl.textContent = `IVA 23%: ${formatCurrency(cross.ivaFalta)} | IVA 6%: ${formatCurrency(cross.ivaFalta6)} | SAF-T/DAC7: ${formatCurrency(cross.discrepanciaSaftVsDac7)}`;
+        quantumNoteEl.textContent = currentLang === 'en'
+            ? `VAT 23%: ${formatCurrency(cross.ivaFalta)} | VAT 6%: ${formatCurrency(cross.ivaFalta6)} | SAF-T/DAC7: ${formatCurrency(cross.discrepanciaSaftVsDac7)}`
+            : `IVA 23%: ${formatCurrency(cross.ivaFalta)} | IVA 6%: ${formatCurrency(cross.ivaFalta6)} | SAF-T/DAC7: ${formatCurrency(cross.discrepanciaSaftVsDac7)}`;
     }
 
     const quantumBreakdownEl = document.getElementById('quantumBreakdown');
     if (quantumBreakdownEl) {
+        const _qT = (pt, en) => currentLang === 'en' ? en : pt;
         quantumBreakdownEl.innerHTML = `
             <div class="quantum-breakdown-item">
-                <span>BTOR (Despesas/Comissões Extrato):</span>
+                <span>${_qT('BTOR (Despesas/Comissões Extrato):', 'BTOR (Expenses/Commissions Statement):')}</span>
                 <span>${formatCurrency(cross.btor)}</span>
             </div>
             <div class="quantum-breakdown-item">
-                <span>BTF (Faturas):</span>
+                <span>${_qT('BTF (Faturas):', 'BTF (Invoices):')}</span>
                 <span>${formatCurrency(cross.btf)}</span>
             </div>
             <div class="quantum-breakdown-item" style="border-top: 1px solid rgba(0,229,255,0.3); margin-top:0.3rem; padding-top:0.3rem;">
-                <span>DISCREPÂNCIA DESPESAS/COMISSÕES:</span>
+                <span>${_qT('DISCREPÂNCIA DESPESAS/COMISSÕES:', 'EXPENSE/COMMISSION DISCREPANCY:')}</span>
                 <span style="color:var(--warn-primary);">${formatCurrency(cross.discrepanciaCritica)} (${cross.percentagemOmissao.toFixed(2)}%)</span>
             </div>
             <div class="quantum-breakdown-item">
-                <span>Ganhos (Extrato):</span>
+                <span>${_qT('Ganhos (Extrato):', 'Earnings (Statement):')}</span>
                 <span>${formatCurrency(totals.ganhos)}</span>
             </div>
             <div class="quantum-breakdown-item">
-                <span>SAF-T Bruto:</span>
+                <span>${_qT('SAF-T Bruto:', 'SAF-T Gross:')}</span>
                 <span>${formatCurrency(totals.saftBruto)}</span>
             </div>
             <div class="quantum-breakdown-item">
@@ -4950,27 +4971,27 @@ function updateDashboard() {
                 <span>${formatCurrency(totals.dac7TotalPeriodo)}</span>
             </div>
             <div class="quantum-breakdown-item" style="border-top: 1px solid rgba(245,158,11,0.3); margin-top:0.3rem; padding-top:0.3rem;">
-                <span>DISCREPÂNCIA SAF-T vs DAC7:</span>
+                <span>${_qT('DISCREPÂNCIA SAF-T vs DAC7:', 'SAF-T vs DAC7 DISCREPANCY:')}</span>
                 <span style="color:var(--warn-secondary);">${formatCurrency(cross.discrepanciaSaftVsDac7)} (${cross.percentagemSaftVsDac7.toFixed(2)}%)</span>
             </div>
             <div class="quantum-breakdown-item">
-                <span>Meses com dados:</span>
+                <span>${_qT('Meses com dados:', 'Months with data:')}</span>
                 <span>${mesesDados}</span>
             </div>
             <div class="quantum-breakdown-item">
-                <span>Média mensal:</span>
+                <span>${_qT('Média mensal:', 'Monthly average:')}</span>
                 <span>${formatCurrency(cross.discrepanciaCritica / mesesDados)}</span>
             </div>
             <div class="quantum-breakdown-item" style="border-top: 1px solid rgba(0,229,255,0.3); margin-top:0.3rem; padding-top:0.3rem;">
-                <span>Impacto Mensal Mercado (38k):</span>
+                <span>${_qT('Impacto Mensal Mercado (38k):', 'Monthly Market Impact (38k):')}</span>
                 <span>${formatCurrency(cross.impactoMensalMercado)}</span>
             </div>
             <div class="quantum-breakdown-item">
-                <span>Impacto Anual Mercado:</span>
+                <span>${_qT('Impacto Anual Mercado:', 'Annual Market Impact:')}</span>
                 <span>${formatCurrency(cross.impactoAnualMercado)}</span>
             </div>
             <div class="quantum-breakdown-item">
-                <span>IMPACTO 7 ANOS:</span>
+                <span>${_qT('IMPACTO 7 ANOS:', '7-YEAR IMPACT:')}</span>
                 <span style="color:var(--accent-primary); font-weight:800;">${formatCurrency(cross.impactoSeteAnosMercado)}</span>
             </div>
         `;
@@ -5153,13 +5174,13 @@ function showAlerts() {
 
         const parecerHTML = `
             <div style="margin-bottom: 1rem;">
-                <strong style="color: var(--accent-primary);">I. ANÁLISE PERICIAL (${periodoTexto}):</strong><br>
+                <strong style="color: var(--accent-primary);">${currentLang === 'pt' ? 'I. ANÁLISE PERICIAL' : 'I. FORENSIC ANALYSIS'} (${periodoTexto}):</strong><br>
                 <span style="color: var(--text-secondary);">${currentLang === 'pt' ? 'Duas discrepâncias fundamentais detetadas:' : 'Two fundamental discrepancies detected:'}</span><br>
                 <span style="color: var(--warn-primary);">1. ${currentLang === 'pt' ? 'Despesas/Comissões (Extrato) vs Faturas' : 'Expenses/Commissions (Statement) vs Invoices'}: ${formatCurrency(cross.discrepanciaCritica)} (${cross.percentagemOmissao.toFixed(2)}%)</span><br>
                 <span style="color: var(--warn-secondary);">2. ${currentLang === 'pt' ? 'SAF-T vs DAC7' : 'SAF-T vs DAC7'}: ${formatCurrency(cross.discrepanciaSaftVsDac7)} (${cross.percentagemSaftVsDac7.toFixed(2)}%)</span>
             </div>
             <div style="margin-bottom: 1rem;">
-                <strong style="color: var(--accent-primary);">II. FACTOS CONSTATADOS:</strong><br>
+                <strong style="color: var(--accent-primary);">${currentLang === 'pt' ? 'II. FACTOS CONSTATADOS:' : 'II. ESTABLISHED FACTS:'}</strong><br>
                 <span style="color: var(--text-secondary);">${currentLang === 'pt' ? 'Ganhos (Extrato): ' : 'Earnings (Statement): '}${formatCurrency(totals.ganhos)}</span><br>
                 <span style="color: var(--text-secondary);">${currentLang === 'pt' ? 'Despesas (Extrato): ' : 'Expenses (Statement): '}${formatCurrency(totals.despesas)}</span><br>
                 <span style="color: var(--success-primary);">${currentLang === 'pt' ? 'Ganhos Líquidos (Extrato): ' : 'Net Earnings (Statement): '}${formatCurrency(totals.ganhosLiquidos)}</span><br>
@@ -5170,24 +5191,24 @@ function showAlerts() {
                 <span style="color: var(--warn-secondary); font-weight: 700;">${currentLang === 'pt' ? 'Diferença SAF-T vs DAC7: ' : 'SAF-T vs DAC7 Difference: '}${formatCurrency(cross.discrepanciaSaftVsDac7)} (${cross.percentagemSaftVsDac7.toFixed(2)}%)</span>
             </div>
             <div style="margin-bottom: 1rem;">
-                <strong style="color: var(--accent-primary);">III. ENQUADRAMENTO LEGAL:</strong><br>
-                <span style="color: var(--text-secondary);">Artigo 2.º, n.º 1, alínea i) do CIVA (Autoliquidação). Artigo 108.º do CIVA (Infrações).</span><br>
-                <span style="color: var(--text-secondary);">Decreto-Lei n.º 28/2019 - Integridade do processamento de dados e validade de documentos eletrónicos.</span>
+                <strong style="color: var(--accent-primary);">${currentLang === 'pt' ? 'III. ENQUADRAMENTO LEGAL:' : 'III. LEGAL FRAMEWORK:'}</strong><br>
+                <span style="color: var(--text-secondary);">${currentLang === 'pt' ? 'Artigo 2.º, n.º 1, alínea i) do CIVA (Autoliquidação). Artigo 108.º do CIVA (Infrações).' : 'Article 2(1)(i) CIVA (Self-assessment). Article 108 CIVA (Infringements).'}</span><br>
+                <span style="color: var(--text-secondary);">${currentLang === 'pt' ? 'Decreto-Lei n.º 28/2019 - Integridade do processamento de dados e validade de documentos eletrónicos.' : 'Decree-Law No. 28/2019 - Data processing integrity and validity of electronic documents.'}</span>
             </div>
             <div style="margin-bottom: 1rem;">
-                <strong style="color: var(--accent-primary);">IV. IMPACTO FISCAL E AGRAVAMENTO DE GESTÃO:</strong><br>
+                <strong style="color: var(--accent-primary);">${currentLang === 'pt' ? 'IV. IMPACTO FISCAL E AGRAVAMENTO DE GESTÃO:' : 'IV. TAX IMPACT AND MANAGEMENT BURDEN:'}</strong><br>
                 <span style="color: var(--text-secondary);">${currentLang === 'pt' ? 'IVA em falta (23% sobre diferencial de base): ' : 'Missing VAT (23% on base differential): '}${formatCurrency(cross.ivaFalta)}</span><br>
                 <span style="color: var(--text-secondary);">${currentLang === 'pt' ? 'IVA em falta (6% sobre transporte): ' : 'Missing VAT (6% on transport): '}${formatCurrency(cross.ivaFalta6)}</span><br>
                 <span style="color: var(--text-secondary);">${currentLang === 'pt' ? 'Discrepância SAF-T vs DAC7 (base tributável em análise): ' : 'SAF-T vs DAC7 discrepancy (taxable base under analysis): '}${formatCurrency(cross.discrepanciaSaftVsDac7)}</span>
             </div>
             <div style="margin-bottom: 1rem;">
-                <strong style="color: var(--accent-primary);">V. CADEIA DE CUSTÓDIA:</strong><br>
+                <strong style="color: var(--accent-primary);">${currentLang === 'pt' ? 'V. CADEIA DE CUSTÓDIA:' : 'V. CHAIN OF CUSTODY:'}</strong><br>
                 <span style="color: var(--text-secondary); font-family: var(--font-mono); font-size: 0.7rem;">Master Hash SHA-256:</span><br>
-                <span style="color: var(--accent-secondary); font-family: var(--font-mono); font-size: 0.7rem; word-break: break-all;">${UNIFEDSystem.masterHash || 'A calcular...'}</span><br>
-                <span style="color: var(--text-secondary); font-size: 0.7rem;">${UNIFEDSystem.analysis.evidenceIntegrity.length} evidências processadas (clique no QR Code para verificar)</span>
+                <span style="color: var(--accent-secondary); font-family: var(--font-mono); font-size: 0.7rem; word-break: break-all;">${UNIFEDSystem.masterHash || (currentLang === 'pt' ? 'A calcular...' : 'Computing...')}</span><br>
+                <span style="color: var(--text-secondary); font-size: 0.7rem;">${UNIFEDSystem.analysis.evidenceIntegrity.length} ${currentLang === 'pt' ? 'evidências processadas (clique no QR Code para verificar)' : 'evidence files processed (click the QR Code to verify)'}</span>
             </div>
             <div style="margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 0.5rem;">
-                <strong style="color: var(--warn-primary);">VI. CONCLUSÃO:</strong><br>
+                <strong style="color: var(--warn-primary);">${currentLang === 'pt' ? 'VI. CONCLUSÃO:' : 'VI. CONCLUSION:'}</strong><br>
                 <span style="color: var(--text-secondary);">${
                     currentLang === 'pt'
                         ? (UNIFEDSystem.analysis.verdict?.description?.pt || 'Indícios de infração ao Artigo 108.º do Código do IVA e não conformidade com o Decreto-Lei n.º 28/2019.')
