@@ -3,7 +3,7 @@
  * UNIFED - PROBATUM · v13.5.0-PURE · MÓDULO DE EXPORTAÇÃO — TRÍADE DOCUMENTAL
  * ============================================================================
  * Ficheiro      : unifed_triada_export.js
- * Versão        : 1.0.7-TRIADA (COMPLETA - COM EXPORTAÇÕES REAIS)
+ * Versão        : 1.0.8-TRIADA (COMPLETA - COM EXPORTAÇÕES REAIS)
  * ============================================================================
  */
 
@@ -32,12 +32,13 @@
         return window.UNIFEDSystem;
     }
 
-    // Centralização da formatação monetária
+    // ── FUNÇÃO DE FORMATAÇÃO CENTRALIZADA ──────────────────────────────────────
+    // Delega na função global window.formatCurrency definida em script.js
     function _formatCurrencyCentral(val) {
-        if (window.UNIFEDSystem && window.UNIFEDSystem.utils && window.UNIFEDSystem.utils.formatCurrency) {
-            return window.UNIFEDSystem.utils.formatCurrency(val);
+        if (typeof window.formatCurrency === 'function') {
+            return window.formatCurrency(val);
         }
-        // Fallback crítico
+        // Fallback crítico (nunca deve ocorrer em produção)
         var _lang = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
         var _locale = _lang === 'en' ? 'en-GB' : 'pt-PT';
         return new Intl.NumberFormat(_locale, { style: 'currency', currency: 'EUR' }).format(val || 0);
@@ -185,6 +186,7 @@
                 return y + 6;
             }
             
+            // PÁGINA 1
             _watermark();
             doc.setFillColor(5, 20, 50);
             doc.rect(0, 0, pageW, 38, 'F');
@@ -279,6 +281,7 @@
             
             _footer(false);
             
+            // PÁGINA 2
             _newPage();
             y = 18;
             y = _sectionHeader(_T('IV. INTRODUÇÃO — CONTEXTO NORMATIVO', 'IV. INTRODUCTION — NORMATIVE CONTEXT'), y, [10, 60, 110]);
@@ -711,4 +714,4 @@
     
     executar();
     
-})(); // Fim do IIFE
+})();

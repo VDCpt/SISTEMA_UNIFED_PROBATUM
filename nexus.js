@@ -11,11 +11,6 @@
  *   2. RAG JURISPRUDENCIAL AVANÇADO — DOCX Upgrade (Citações + Acórdãos STA)
  *   3. MOTOR PREDITIVO ATF          — Forecasting 6M (Regressão Linear + Chart.js)
  *   4. BLOCKCHAIN EVIDENCE EXPLORER — OTS Individual por Ficheiro (SHA-256 + DOM UI)
- *
- * DIRETIVA DE INTEGRIDADE:
- *   NÃO altera UNIFEDSystem.analysis nem fórmulas de script.js.
- *   NÃO altera o Dashboard do index.html.
- *   Toda a lógica reside exclusivamente neste ficheiro.
  * ============================================================================
  */
 
@@ -98,7 +93,7 @@
         '  Escopo: CORS · API Anthropic · OTS/Blockchain · FreeTSA · Fetch externo'
     );
 
-})(); // Fim do Módulo 1
+})();
 
 // ============================================================================
 // MÓDULO 2 · RAG JURISPRUDENCIAL AVANÇADO — DOCX Upgrade
@@ -312,7 +307,7 @@
 
     _installDOCXHook();
 
-})(); // Fim do Módulo 2
+})();
 
 // ============================================================================
 // MÓDULO 3 · MOTOR PREDITIVO ATF — Forecasting 6 Meses
@@ -494,8 +489,8 @@
         var _T = function(pt, en) { return _L === 'en' ? en : pt; };
 
         var fmtEur = function(v) {
-            if (window.UNIFEDSystem && window.UNIFEDSystem.utils && window.UNIFEDSystem.utils.formatCurrency) {
-                return window.UNIFEDSystem.utils.formatCurrency(v);
+            if (typeof window.formatCurrency === 'function') {
+                return window.formatCurrency(v);
             }
             return new Intl.NumberFormat('pt-PT', {style:'currency',currency:'EUR',minimumFractionDigits:2}).format(v || 0);
         };
@@ -546,7 +541,7 @@
                             '<th style="border:1px solid rgba(168,85,247,0.25);padding:6px 10px;background:rgba(168,85,247,0.15);color:#A855F7;text-align:right">' + _T('Omissão Proj.','Proj. Omission') + '</th>' +
                             '<th style="border:1px solid rgba(168,85,247,0.25);padding:6px 10px;background:rgba(168,85,247,0.15);color:#F97316;text-align:right">' + _T('IVA 23% Proj.','VAT 23% Proj.') + '</th>' +
                             '<th style="border:1px solid rgba(168,85,247,0.25);padding:6px 10px;background:rgba(168,85,247,0.15);color:rgba(255,255,255,0.5);text-align:center">' + _T('Risco','Risk') + '</th>' +
-                        '</tr>' +
+                        '\)' +
                     '</thead>' +
                     '<tbody>' +
                         forecast.labels.map(function(lbl, i) {
@@ -619,8 +614,8 @@
 
                 console.info(
                     '[NEXUS·M3] ✅ Motor Preditivo ATF — Risco Futuro 6M calculado.\n' +
-                    '  Omissão proj. : ' + (window.UNIFEDSystem && window.UNIFEDSystem.utils && window.UNIFEDSystem.utils.formatCurrency ? window.UNIFEDSystem.utils.formatCurrency(forecast.risco) : new Intl.NumberFormat('pt-PT',{style:'currency',currency:'EUR'}).format(forecast.risco)) + '\n' +
-                    '  IVA em falta  : ' + (window.UNIFEDSystem && window.UNIFEDSystem.utils && window.UNIFEDSystem.utils.formatCurrency ? window.UNIFEDSystem.utils.formatCurrency(forecast.ivaRisco) : new Intl.NumberFormat('pt-PT',{style:'currency',currency:'EUR'}).format(forecast.ivaRisco)) + '\n' +
+                    '  Omissão proj. : ' + (typeof window.formatCurrency === 'function' ? window.formatCurrency(forecast.risco) : new Intl.NumberFormat('pt-PT',{style:'currency',currency:'EUR'}).format(forecast.risco)) + '\n' +
+                    '  IVA em falta  : ' + (typeof window.formatCurrency === 'function' ? window.formatCurrency(forecast.ivaRisco) : new Intl.NumberFormat('pt-PT',{style:'currency',currency:'EUR'}).format(forecast.ivaRisco)) + '\n' +
                     '  Confiança     : ' + forecast.confidence + '\n' +
                     '  Tendência     : ' + forecast.trend
                 );
@@ -632,7 +627,7 @@
 
     _installATFHook();
 
-})(); // Fim do Módulo 3
+})();
 
 // ============================================================================
 // MÓDULO 4 · BLOCKCHAIN EVIDENCE EXPLORER — OTS Individual
@@ -773,16 +768,15 @@
                 '<span style="font-size:0.65rem">' + _T('Carregue evidências para ativar o Explorer.', 'Upload evidence to activate the Explorer.') + '</span>' +
                 '</div>';
         } else {
+            var escapeHTML = function(str) {
+                return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+            };
             itemsHTML = enriched.map(function(item, idx) {
                 var isAnchored = item.otsStatus.indexOf('ANCORADO') !== -1;
                 var statusColor = isAnchored ? '#4ADE80' : '#F59E0B';
                 var statusIcon  = isAnchored ? '🔗' : '⏳';
                 var hashPart1   = item.hash ? item.hash.substring(0, 32)  : '—';
                 var hashPart2   = item.hash ? item.hash.substring(32, 64) : '';
-
-                var escapeHTML = function(str) {
-                    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-                };
 
                 return '<div style="' +
                     'background:rgba(255,255,255,0.03);' +
@@ -997,7 +991,7 @@
         setTimeout(injectBlockchainExplorerUI, 400);
     }
 
-})(); // Fim do Módulo 4
+})();
 
 // ============================================================================
 // NEXUS · EXPOSIÇÃO GLOBAL E LOG DE ARRANQUE

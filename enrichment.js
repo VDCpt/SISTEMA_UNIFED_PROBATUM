@@ -15,21 +15,10 @@
  *   2. renderSankeyToImage()         — Sankey Canvas-to-PDF
  *   3. generateIntegritySeal()       — Integrity Visual Signature (Selo Holográfico)
  *   4. exportDOCX()                  — DOCX Petição Inicial (JSZip + OOXML)
- *   5. NIFAF                         — Non-Intrusive Forensic Auditory Feedback
+ *   5. NIFAF                         — Delegado à implementação principal em script.js
  *   6. generateTemporalChartImage()  — ATF: Gráfico Canvas para PDF
  *   7. computeTemporalAnalysis()     — ATF: Analytics Engine (2σ · SP · Outliers)
  *   8. openATFModal()                — ATF: Modal Dashboard com Chart.js
- *
- * CORS — NOTA ESTRUTURAL (F12 ERROS RESOLVIDOS):
- *   Os erros "Access-Control-Allow-Origin" para api.anthropic.com e freetsa.org
- *   sao bloqueios de seguranca do browser em modo Air-Gapped / Ambiente Local.
- *   São estruturais — não são bugs do sistema.
- *   Resolução: todos os módulos têm fallback completo. Erros silenciados para
- *   console.info (nível informativo, não erro). PDF, DOCX e Dashboard funcionam
- *   100% sem a API.
- *   Resolução definitiva da AI: proxy HTTPS serverless na mesma origem.
- *
- * PONTO DE INJEÇÃO: exportPDF() e updateDashboard() — exclusivamente.
  * ============================================================================
  */
 
@@ -38,16 +27,12 @@
 // ============================================================================
 // 0. UTILITÁRIOS INTERNOS
 // ============================================================================
-// ── _fmtEur — delega na função central UNIFEDSystem.utils.formatCurrency ─────
-// A fonte única de verdade está em script.js (UNIFEDSystem.utils.formatCurrency)
+// ── _fmtEur — delega na função central window.formatCurrency ─────────────────
 const _fmtEur = (val) => {
-    if (typeof window !== 'undefined' &&
-        window.UNIFEDSystem &&
-        window.UNIFEDSystem.utils &&
-        typeof window.UNIFEDSystem.utils.formatCurrency === 'function') {
-        return window.UNIFEDSystem.utils.formatCurrency(val);
+    if (typeof window !== 'undefined' && typeof window.formatCurrency === 'function') {
+        return window.formatCurrency(val);
     }
-    // Fallback crítico (nunca deve ocorrer em produção com a ordem de carregamento correta)
+    // Fallback crítico (nunca deve ocorrer em produção com ordem de carregamento correta)
     const _raw = (val === null || val === undefined || isNaN(Number(val))) ? 0 : Number(val);
     const _lang = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
     const _locale = _lang === 'en' ? 'en-GB' : 'pt-PT';
@@ -259,7 +244,6 @@ function _fallbackNarrative(reason) {
     ].join('\n');
 }
 
-
 // ============================================================================
 // 3. renderSankeyToImage(analysis) — Dynamic Canvas-to-PDF Injection
 // ============================================================================
@@ -298,7 +282,6 @@ async function renderSankeyToImage(analysis) {
     ctx.fillStyle = 'rgba(0,229,255,0.7)';
     ctx.fillText('Read-Only · Art. 125.o CPP · Output Enrichment Layer', W / 2, 55);
 
-    // ── Variáveis para o Sankey v13.5.0-PURE ────────────────────────────
     var ganhos    = t.ganhos    || 0;
     var dac7      = t.dac7TotalPeriodo || 0;
     var saftBruto = t.saftBruto || 0;
@@ -381,10 +364,8 @@ async function renderSankeyToImage(analysis) {
     return dataURL;
 }
 
-
 // ============================================================================
 // 4. generateIntegritySeal(masterHash, doc, x, y, sealSize)
-//    Integrity Visual Signature - Selo Holografico Digital
 // ============================================================================
 function generateIntegritySeal(masterHash, doc, x, y, sealSize) {
     if (!masterHash || masterHash.length < 32 || !doc) return;
@@ -464,9 +445,8 @@ function generateIntegritySeal(masterHash, doc, x, y, sealSize) {
 
 window.generateIntegritySeal = generateIntegritySeal;
 
-
 // ============================================================================
-// 5. exportDOCX(xmlInject) - Structural DOCX Export - Minuta de Peticao Inicial
+// 5. exportDOCX(xmlInject) - Structural DOCX Export
 // ============================================================================
 async function exportDOCX(xmlInject) {
     if (typeof JSZip === 'undefined') {
@@ -527,8 +507,8 @@ async function exportDOCX(xmlInject) {
     };
 
     var fe = function(val) {
-        if (window.UNIFEDSystem && window.UNIFEDSystem.utils && window.UNIFEDSystem.utils.formatCurrency) {
-            return window.UNIFEDSystem.utils.formatCurrency(val);
+        if (typeof window.formatCurrency === 'function') {
+            return window.formatCurrency(val);
         }
         return new Intl.NumberFormat('pt-PT',{style:'currency',currency:'EUR',minimumFractionDigits:2}).format(val||0);
     };
@@ -726,57 +706,24 @@ async function exportDOCX(xmlInject) {
 
 window.exportDOCX = exportDOCX;
 
-
 // ============================================================================
-// 6. NIFAF - Non-Intrusive Forensic Auditory Feedback
+// 6. NIFAF - Delegado à implementação principal em script.js
 // ============================================================================
-var NIFAF = {
-    isEnabled: (function() {
-        try { return localStorage.getItem('IFDE_AUDIO_ENABLED') === 'true'; }
-        catch (_) { return false; }
-    })(),
-
-    playCriticalAlert: function() {
-        if (!this.isEnabled) return;
-        try {
-            var ctx2 = new (window.AudioContext || window.webkitAudioContext)();
-            var gain = ctx2.createGain();
-            gain.gain.setValueAtTime(0, ctx2.currentTime);
-            gain.gain.linearRampToValueAtTime(0.35, ctx2.currentTime + 0.05);
-            gain.gain.linearRampToValueAtTime(0,    ctx2.currentTime + 0.45);
-            gain.connect(ctx2.destination);
-
-            [180, 140].forEach(function(freq, idx) {
-                var osc = ctx2.createOscillator();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(freq, ctx2.currentTime + idx * 0.18);
-                osc.connect(gain);
-                osc.start(ctx2.currentTime + idx * 0.18);
-                osc.stop(ctx2.currentTime + idx * 0.18 + 0.38);
-            });
-
-            setTimeout(function() { try { ctx2.close(); } catch (_) {} }, 1200);
-        } catch (err) {
-            console.warn('[UNIFED-NIFAF] \u26a0 Feedback auditivo indisponivel:', err.message);
-        }
-    },
-
-    toggle: function() {
-        this.isEnabled = !this.isEnabled;
-        try { localStorage.setItem('IFDE_AUDIO_ENABLED', String(this.isEnabled)); } catch (_) {}
-        if (this.isEnabled) this.playCriticalAlert();
-        return this.isEnabled;
-    }
-};
-
-window.NIFAF = NIFAF;
-console.log('[UNIFED-NIFAF] \u2705 Non-Intrusive Forensic Auditory Feedback carregado - Estado:', NIFAF.isEnabled ? 'ATIVO' : 'MUTE');
-
+if (typeof window.NIFAF === 'undefined') {
+    var NIFAF_FALLBACK = {
+        isEnabled: false,
+        playCriticalAlert: function() {},
+        toggle: function() { return false; }
+    };
+    window.NIFAF = NIFAF_FALLBACK;
+    console.log('[UNIFED-ENRICHMENT] NIFAF em modo fallback (implementação principal em script.js)');
+} else {
+    console.log('[UNIFED-ENRICHMENT] NIFAF já definido — utilizando implementação principal de script.js');
+}
 
 // ============================================================================
 // 7. ATF - ANALISE TEMPORAL FORENSE
 // ============================================================================
-
 function computeTemporalAnalysis(monthlyData, analysis) {
     var months = Object.keys(monthlyData || {}).sort();
 
@@ -862,7 +809,6 @@ function computeTemporalAnalysis(monthlyData, analysis) {
 }
 
 window.computeTemporalAnalysis = computeTemporalAnalysis;
-
 
 async function generateTemporalChartImage(monthlyData, analysis) {
     var W = 1200, H = 420;
@@ -982,7 +928,6 @@ async function generateTemporalChartImage(monthlyData, analysis) {
 }
 
 window.generateTemporalChartImage = generateTemporalChartImage;
-
 
 function openATFModal() {
     var sys = window.UNIFEDSystem;
@@ -1144,7 +1089,6 @@ function openATFModal() {
 
 window.openATFModal = openATFModal;
 
-
 // ============================================================================
 // 8. EXPOSICAO GLOBAL
 // ============================================================================
@@ -1152,15 +1096,14 @@ window.generateLegalNarrative  = generateLegalNarrative;
 window.renderSankeyToImage     = renderSankeyToImage;
 
 // ============================================================================
-// UNIFED-v13.5.0-PURE — generateBurdenOfProofSection()
-// Adenda de Alta Inteligência Jurídica: Inversão do Ónus da Prova
+// generateBurdenOfProofSection() — Inversão do Ónus da Prova
 // ============================================================================
 function generateBurdenOfProofSection(discrepancyValue) {
     if (!discrepancyValue || discrepancyValue <= 0) return '';
 
-    var _fmtVal = new Intl.NumberFormat('pt-PT', {
-        style: 'currency', currency: 'EUR', minimumFractionDigits: 2
-    }).format(discrepancyValue);
+    var _fmtVal = (typeof window.formatCurrency === 'function')
+        ? window.formatCurrency(discrepancyValue)
+        : new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2 }).format(discrepancyValue);
 
     return (
         '---------------------------------------------------------------------------\n' +
@@ -1204,7 +1147,7 @@ console.log('[UNIFED-ENRICHMENT]   . generateLegalNarrative()     - IA Argumenta
 console.log('[UNIFED-ENRICHMENT]   . renderSankeyToImage()        - Dynamic Canvas-to-PDF (Sankey)');
 console.log('[UNIFED-ENRICHMENT]   . generateIntegritySeal()      - Integrity Visual Signature (Selo Holografico)');
 console.log('[UNIFED-ENRICHMENT]   . exportDOCX()                 - Structural DOCX (Minuta Peticao Inicial)');
-console.log('[UNIFED-ENRICHMENT]   . NIFAF                        - Non-Intrusive Forensic Auditory Feedback');
+console.log('[UNIFED-ENRICHMENT]   . NIFAF (delegado)             - Implementação principal em script.js');
 console.log('[UNIFED-ENRICHMENT]   . generateTemporalChartImage() - ATF Grafico Canvas-to-PDF');
 console.log('[UNIFED-ENRICHMENT]   . computeTemporalAnalysis()    - ATF Analytics (2sigma SP Outliers)');
 console.log('[UNIFED-ENRICHMENT]   . openATFModal()               - ATF Dashboard Modal (Chart.js)');
