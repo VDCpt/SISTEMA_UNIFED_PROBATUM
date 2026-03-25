@@ -44,16 +44,20 @@ if (typeof window.logAudit !== 'function') {
 // 0. UTILITÁRIOS INTERNOS
 // ============================================================================
 // ── _fmtEur — delega na função central window.formatCurrency ─────────────────
+// (R-A1 — RTR-UNIFED-2026-002) Fallback com Intl.NumberFormat e locale dinâmica;
+// posição do símbolo €: antes do número em 'en' (€1.00), depois em 'pt' (1,00 €).
 const _fmtEur = (val) => {
     if (typeof window !== 'undefined' && typeof window.formatCurrency === 'function') {
         return window.formatCurrency(val);
     }
     // Fallback crítico (nunca deve ocorrer em produção com ordem de carregamento correta)
-    const _raw = (val === null || val === undefined || isNaN(Number(val))) ? 0 : Number(val);
-    const _lang = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
+    const _raw    = (val === null || val === undefined || isNaN(Number(val))) ? 0 : Number(val);
+    const _lang   = (typeof window !== 'undefined' && typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
     const _locale = _lang === 'en' ? 'en-GB' : 'pt-PT';
-    const _num = _raw.toLocaleString(_locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    return _lang === 'en' ? '\u20AC' + _num : _num + '\u00A0\u20AC';
+    return new Intl.NumberFormat(_locale, {
+        style: 'currency', currency: 'EUR',
+        minimumFractionDigits: 2, maximumFractionDigits: 2
+    }).format(_raw);
 };
 
 // ============================================================================
@@ -526,7 +530,10 @@ async function exportDOCX(xmlInject) {
         if (typeof window.formatCurrency === 'function') {
             return window.formatCurrency(val);
         }
-        return new Intl.NumberFormat('pt-PT',{style:'currency',currency:'EUR',minimumFractionDigits:2}).format(val||0);
+        // Fallback (R-A2 — RTR-UNIFED-2026-002): locale dinâmica conforme currentLang
+        var _lang   = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
+        var _locale = _lang === 'en' ? 'en-GB' : 'pt-PT';
+        return new Intl.NumberFormat(_locale, {style:'currency',currency:'EUR',minimumFractionDigits:2}).format(val||0);
     };
 
     var discRows = [tr([tc('Indicador Pericial', true, 5000, 'E8F0F8'), tc('Valor Apurado', true, 4000, 'E8F0F8')])];
@@ -1030,7 +1037,12 @@ function openATFModal() {
                   var disc = atf.discrepancySeries[idx] || 0;
                   return '<div style="background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.5);border-radius:4px;padding:6px 12px;color:#FCA5A5;font-size:0.75rem">' +
                          '<strong>' + lbl + '</strong><br>\u0394 ' +
-                         new Intl.NumberFormat('pt-PT',{style:'currency',currency:'EUR',minimumFractionDigits:2}).format(disc) +
+                         (typeof window.formatCurrency === 'function'
+                             ? window.formatCurrency(disc)
+                             : new Intl.NumberFormat(
+                                 (typeof window.currentLang !== 'undefined' && window.currentLang === 'en') ? 'en-GB' : 'pt-PT',
+                                 {style:'currency',currency:'EUR',minimumFractionDigits:2}
+                               ).format(disc)) +
                          '</div>';
               }).join('') +
               '</div></div>'
@@ -1090,7 +1102,7 @@ function openATFModal() {
                             x: { ticks: { color: 'rgba(255,255,255,0.5)', font: { family: 'Courier New', size: 11 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
                             y: {
                                 ticks: { color: 'rgba(255,255,255,0.5)', font: { family: 'Courier New', size: 11 },
-                                    callback: function(v2) { return new Intl.NumberFormat('pt-PT',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(v2); } },
+                                    callback: function(v2) { var _loc = (typeof window.currentLang !== 'undefined' && window.currentLang === 'en') ? 'en-GB' : 'pt-PT'; return new Intl.NumberFormat(_loc,{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(v2); } },
                                 grid: { color: 'rgba(255,255,255,0.05)' }
                             }
                         }
@@ -1119,7 +1131,10 @@ function generateBurdenOfProofSection(discrepancyValue) {
 
     var _fmtVal = (typeof window.formatCurrency === 'function')
         ? window.formatCurrency(discrepancyValue)
-        : new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2 }).format(discrepancyValue);
+        : new Intl.NumberFormat(
+              (typeof window.currentLang !== 'undefined' && window.currentLang === 'en') ? 'en-GB' : 'pt-PT',
+              { style: 'currency', currency: 'EUR', minimumFractionDigits: 2 }
+          ).format(discrepancyValue);
 
     return (
         '---------------------------------------------------------------------------\n' +

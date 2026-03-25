@@ -676,6 +676,43 @@
             });
         };
         window._triadaUpdateLabels = _triadaLangHook;
+
+        // ── PONTO B — Sincronização de Gatilhos (RTR-UNIFED-2026-002) ──────────
+        // Encadeia _triadaUpdateLabels na função window.switchLanguage do script.js
+        // para que a mudança de idioma propague automaticamente os labels dos botões
+        // da Tríade, o painel principal e todos os módulos de formatação de moeda.
+        (function _installLangSwitchHook() {
+            var _origSwitch = window.switchLanguage;
+            window.switchLanguage = function _triadaSwitchLanguage(lang) {
+                // 1. Chamar a implementação original do script.js
+                if (typeof _origSwitch === 'function') {
+                    _origSwitch.call(this, lang);
+                }
+                // 2. Actualizar o painel principal (se disponível)
+                if (typeof window._translatePurePanel === 'function') {
+                    try { window._translatePurePanel(lang); } catch (_e) {}
+                }
+                // 3. Actualizar os labels dos botões da Tríade
+                if (typeof window._triadaUpdateLabels === 'function') {
+                    try { window._triadaUpdateLabels(); } catch (_e) {}
+                }
+            };
+            // Se switchLanguage ainda não existir no momento da injecção,
+            // instalar um stub que será sobrescrito pelo script.js via cadeia acima.
+            if (typeof window.switchLanguage !== 'function') {
+                window.switchLanguage = function _triadaStubSwitch(lang) {
+                    if (typeof window.currentLang !== 'undefined') window.currentLang = lang;
+                    if (typeof window._translatePurePanel === 'function') {
+                        try { window._translatePurePanel(lang); } catch (_e) {}
+                    }
+                    if (typeof window._triadaUpdateLabels === 'function') {
+                        try { window._triadaUpdateLabels(); } catch (_e) {}
+                    }
+                };
+            }
+            console.log('[UNIFED-TRIADA] ✅ Hook switchLanguage instalado — cadeia: switchLanguage → _translatePurePanel → _triadaUpdateLabels');
+        })();
+        // ── FIM PONTO B ─────────────────────────────────────────────────────────
         
         var btnPDF = document.getElementById('exportPDFBtn');
         var btnDOCX = document.getElementById('exportDOCXBtn');

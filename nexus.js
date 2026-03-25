@@ -250,7 +250,7 @@
             _para('', false),
 
             _para('VI.1 · BASE LEGAL DIRETAMENTE APLICAVEL', true, '22', '003366'),
-            _para('Com base na discrepancia de ' + pct + '% apurada (IVA em falta: ' + new Intl.NumberFormat('pt-PT',{style:'currency',currency:'EUR'}).format(iva) + '), aplicam-se os seguintes preceitos legais:', false, '20', '333333'),
+            _para('Com base na discrepancia de ' + pct + '% apurada (IVA em falta: ' + (typeof window.formatCurrency === 'function' ? window.formatCurrency(iva) : new Intl.NumberFormat((typeof window.currentLang !== 'undefined' && window.currentLang === 'en') ? 'en-GB' : 'pt-PT',{style:'currency',currency:'EUR'}).format(iva)) + '), aplicam-se os seguintes preceitos legais:', false, '20', '333333'),
             _para('', false),
             tblArtigos,
             _para('', false),
@@ -492,7 +492,10 @@
             if (typeof window.formatCurrency === 'function') {
                 return window.formatCurrency(v);
             }
-            return new Intl.NumberFormat('pt-PT', {style:'currency',currency:'EUR',minimumFractionDigits:2}).format(v || 0);
+            // Fallback (R-C1 — RTR-UNIFED-2026-002): locale dinâmica conforme currentLang
+            var _lang   = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
+            var _locale = _lang === 'en' ? 'en-GB' : 'pt-PT';
+            return new Intl.NumberFormat(_locale, {style:'currency',currency:'EUR',minimumFractionDigits:2}).format(v || 0);
         };
 
         var frag = document.createDocumentFragment();
@@ -613,9 +616,9 @@
                 _injectRiscoFuturoPanel(forecast);
 
                 console.info(
-                    '[NEXUS·M3] ✅ Motor Preditivo ATF — Risco Futuro 6M calculado.\n' +
-                    '  Omissão proj. : ' + (typeof window.formatCurrency === 'function' ? window.formatCurrency(forecast.risco) : new Intl.NumberFormat('pt-PT',{style:'currency',currency:'EUR'}).format(forecast.risco)) + '\n' +
-                    '  IVA em falta  : ' + (typeof window.formatCurrency === 'function' ? window.formatCurrency(forecast.ivaRisco) : new Intl.NumberFormat('pt-PT',{style:'currency',currency:'EUR'}).format(forecast.ivaRisco)) + '\n' +
+                    '[NEXUS·M3] \u2705 Motor Preditivo ATF — Risco Futuro 6M calculado.\n' +
+                    '  Omissão proj. : ' + (typeof window.formatCurrency === 'function' ? window.formatCurrency(forecast.risco) : new Intl.NumberFormat((typeof window.currentLang !== 'undefined' && window.currentLang === 'en') ? 'en-GB' : 'pt-PT',{style:'currency',currency:'EUR'}).format(forecast.risco)) + '\n' +
+                    '  IVA em falta  : ' + (typeof window.formatCurrency === 'function' ? window.formatCurrency(forecast.ivaRisco) : new Intl.NumberFormat((typeof window.currentLang !== 'undefined' && window.currentLang === 'en') ? 'en-GB' : 'pt-PT',{style:'currency',currency:'EUR'}).format(forecast.ivaRisco)) + '\n' +
                     '  Confiança     : ' + forecast.confidence + '\n' +
                     '  Tendência     : ' + forecast.trend
                 );
