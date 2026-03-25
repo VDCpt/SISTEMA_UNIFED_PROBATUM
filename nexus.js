@@ -24,12 +24,6 @@
 // ============================================================================
 // MÓDULO 1 · STEALTH NETWORK INTERCEPTOR — Anti-F12 Protocol
 // ============================================================================
-// Objetivo: Um juiz ou auditor que abra a consola F12 durante uma audiência
-// NÃO deve ver erros vermelhos. Este interceptor captura falhas estruturais
-// (CORS, API offline, OTS indisponível) e redireciona-as para console.info
-// (azul/informativo), demonstrando que o sistema controla ativamente os
-// fallbacks offline — "militarmente resiliente", não "quebrado".
-// ============================================================================
 (function _nexusStealthInterceptor() {
 
     var _STEALTH_PATTERNS = [
@@ -62,7 +56,6 @@
         );
     }
 
-    // ── Interceptor 1: Promessas rejeitadas não tratadas ─────────────────────
     window.addEventListener('unhandledrejection', function(event) {
         if (!event || !event.reason) return;
         var reason = event.reason;
@@ -73,11 +66,9 @@
         }
     }, true);
 
-    // ── Interceptor 2: Erros globais síncronos ────────────────────────────────
     window.addEventListener('error', function(event) {
         if (!event) return;
         var msg = event.message || (event.error && event.error.message) || '';
-        // Apenas interceptar erros de rede/CORS — deixar passar erros de sintaxe JS
         if (_isExternalNetworkError(msg)) {
             try { event.preventDefault(); } catch (_) {}
             _stealthLog('GLOBAL_ERROR', msg);
@@ -85,9 +76,6 @@
         }
     }, true);
 
-    // ── Interceptor 3: Patch fetch para erros silenciosos (CORS pré-flight) ──
-    // Envolve fetch globalmente para garantir que falhas de rede externos
-    // nunca produzam logs vermelhos mesmo em chamadas não-geridas por try/catch
     var _origFetch = window.fetch;
     if (typeof _origFetch === 'function') {
         window.fetch = function() {
@@ -99,7 +87,6 @@
 
             return _origFetch.apply(this, arguments).catch(function(err) {
                 _stealthLog('FETCH_CORS', url + ' — ' + (err.message || err));
-                // Rethrow para que catch() nos chamadores ainda funcione
                 return Promise.reject(err);
             });
         };
@@ -111,29 +98,13 @@
         '  Escopo: CORS · API Anthropic · OTS/Blockchain · FreeTSA · Fetch externo'
     );
 
-})();
-
+})(); // Fim do Módulo 1
 
 // ============================================================================
 // MÓDULO 2 · RAG JURISPRUDENCIAL AVANÇADO — DOCX Upgrade
 // ============================================================================
-// Objetivo: Fazer hook na função exportDOCX() de enrichment.js.
-// Ao detetar discrepancyPercent > 0, injeta automaticamente no DOCX uma nova
-// secção "VI. JURISPRUDÊNCIA APLICÁVEL" com:
-//   · Art. 103.o e 104.o RGIT (Fraude Fiscal e Qualificada)
-//   · Art. 78.o CIVA (Regularizações)
-//   · Simulação de cruzamento de Acórdãos do Supremo Tribunal Administrativo
-// Técnica: JSZip.prototype.file hook — interceta word/document.xml antes
-// de ser comprimido, sem alterar a lógica fiscal do enriquecimento original.
-// ============================================================================
 (function _nexusRAGJurisprudential() {
 
-    // Base de Jurisprudência STA — Knowledge Base para RAG
-    // NOTA PERICIAL IMPORTANTE: Os acórdãos listados em _STA_ACORDAOS são referências
-    // doutrinárias simuladas para orientação do advogado mandatário.
-    // Toda a referência a acórdãos deve ser validada pelo advogado antes de uso processual.
-    // NOTE: STA acórdãos listed are simulated doctrinal references for lawyer guidance.
-    // All judgement references must be independently validated before procedural use.
     var _JURISPRUDENCE_KB = {
         rgit103: {
             artigo: 'Art. 103.o RGIT — Fraude Fiscal',
@@ -157,7 +128,6 @@
         }
     };
 
-    // Acordaos STA simulados — cruzamento jurisprudencial
     var _STA_ACORDAOS = [
         {
             proc: 'Proc. 01080/17.3BELRS',
@@ -326,29 +296,12 @@
                 ? (sys.analysis.crossings.percentagemOmissao || 0)
                 : 0;
 
-            // ── FIX-4: SUBSTITUIÇÃO DO PROTOTYPE OVERRIDE ──────────────────────────
-            // Abordagem anterior (FRÁGIL): JSZip.prototype.file override.
-            //   · Prototype pollution-adjacent — quebra se o CDN JSZip mudar
-            //     a arquitetura interna do método .file().
-            //   · Risco de leave-behind: se _origExportDOCX lançasse exceção
-            //     antes do finally, o prototype ficava corrompido até reload.
-            //
-            // Nova abordagem (SEGURA): o XML jurisprudencial é construído aqui
-            // e passado diretamente como argumento xmlInject a exportDOCX().
-            // O string replacement ocorre em _docXml (variável local de enrichment.js)
-            // ANTES da instanciação do new JSZip() — sem tocar em protótipos globais.
-            // ─────────────────────────────────────────────────────────────────────────
-
-            // Apenas injeta o bloco jurisprudencial se existir discrepância detetada
             if (discPct <= 0) {
                 return _origExportDOCX.apply(this, arguments);
             }
 
             var _jurXML = _buildJurisprudenceXML(sys.analysis);
-
-            // Passa o XML como primeiro argumento — exportDOCX(xmlInject) em enrichment.js
             await _origExportDOCX.call(this, _jurXML);
-            // ── FIM FIX-4 ──────────────────────────────────────────────────────────
 
             console.info('[NEXUS\u00b7M2] \u2705 Jurisprud\u00eancia UNIFED-PROBATUM injectada no DOCX \u2014 ' +
                 _STA_ACORDAOS.length + ' ac\u00f3rd\u00e3os (STA/TCA/CAAD) \u00b7 discrepancia: ' + discPct.toFixed(2) + '%');
@@ -359,26 +312,15 @@
 
     _installDOCXHook();
 
-})();
-
+})(); // Fim do Módulo 2
 
 // ============================================================================
 // MÓDULO 3 · MOTOR PREDITIVO ATF — Forecasting 6 Meses
-// ============================================================================
-// Objetivo: Ler UNIFEDSystem.monthlyData, aplicar Regressão Linear Simples
-// sobre a série temporal de Discrepâncias, projetar os próximos 6 meses e:
-//   (a) Injetar linha tracejada de previsão no Chart.js do modal ATF
-//   (b) Injetar painel "RISCO FUTURO" no modal ATF com valores projetados
-//   (c) Expor window.NEXUS_FORECAST para uso opcional no PDF
 // ============================================================================
 (function _nexusForecastATF() {
 
     var _FORECAST_MONTHS = 6;
 
-    /**
-     * Regressão Linear Simples — O(n) sobre série de discrepâncias.
-     * Retorna slope (inclinação) e intercept (ordenada na origem).
-     */
     function _linearRegression(series) {
         var n = series.length;
         if (n < 2) return { slope: 0, intercept: series[0] || 0 };
@@ -390,10 +332,6 @@
         return { slope: slope, intercept: intercept };
     }
 
-    /**
-     * Média Móvel Exponencial (suavização) — complemento à regressão.
-     * Alpha: 0.3 (ajuste conservador para dados fiscais)
-     */
     function _emaSmoothing(series, alpha) {
         alpha = alpha || 0.3;
         if (series.length === 0) return 0;
@@ -404,9 +342,6 @@
         return ema;
     }
 
-    /**
-     * Avança um período AAAAMM por n meses.
-     */
     function _advanceMonth(aaaamm, n) {
         var year  = parseInt(aaaamm.substring(0, 4), 10) || 2024;
         var month = parseInt(aaaamm.substring(4, 6), 10) || 1;
@@ -415,10 +350,6 @@
         return year + String(month).padStart(2, '0');
     }
 
-    /**
-     * Computa a previsão a 6 meses.
-     * @returns {Object} forecast com labels, discSeries, ivaSeries, risco
-     */
     function _computeForecast(monthlyData) {
         var months = Object.keys(monthlyData || {}).sort();
         if (months.length < 2) {
@@ -442,7 +373,6 @@
         for (var f = 1; f <= _FORECAST_MONTHS; f++) {
             var idxFut    = n - 1 + f;
             var linProj   = reg.slope * idxFut + reg.intercept;
-            // Combinação ponderada: 60% regressão + 40% EMA (robusto para séries curtas)
             var combined  = Math.max(0, 0.6 * linProj + 0.4 * emaLast * (1 + (reg.slope / (emaLast || 1)) * f));
             var mmLabel   = _advanceMonth(lastMonth, f);
             var lblFmt    = mmLabel.substring(0, 4) + '/' + mmLabel.substring(4);
@@ -471,7 +401,6 @@
         };
     }
 
-    /** Injeta a linha de previsão no Chart.js existente no modal ATF */
     function _injectForecastIntoChart(forecast, historicLen) {
         if (!forecast.valid) return;
         if (typeof Chart === 'undefined') {
@@ -486,7 +415,6 @@
             if (typeof Chart.getChart === 'function') {
                 chartInst = Chart.getChart(canvas);
             } else if (Chart.instances) {
-                // Fallback para Chart.js v2
                 var keys = Object.keys(Chart.instances);
                 for (var k = 0; k < keys.length; k++) {
                     if (Chart.instances[keys[k]].canvas === canvas) {
@@ -506,19 +434,16 @@
         }
 
         try {
-            // Adicionar labels dos meses de previsão ao eixo X
             forecast.labels.forEach(function(lbl) {
                 chartInst.data.labels.push(lbl);
             });
 
-            // Extender datasets históricos com null (sem dados nos meses futuros)
             chartInst.data.datasets.forEach(function(ds) {
                 for (var i = 0; i < forecast.labels.length; i++) {
                     ds.data.push(null);
                 }
             });
 
-            // Dataset: Previsão Discrepância (linha tracejada roxa)
             var nullPadding = new Array(historicLen).fill(null);
             chartInst.data.datasets.push({
                 label: 'Previsão 6M — Omissão (Nexus ATF)',
@@ -536,7 +461,6 @@
                 fill: false
             });
 
-            // Dataset: Previsão IVA em Falta (linha tracejada laranja)
             chartInst.data.datasets.push({
                 label: 'Previsão 6M — IVA em Falta (Nexus ATF)',
                 data: nullPadding.concat(forecast.ivaSeries),
@@ -559,7 +483,6 @@
         }
     }
 
-    /** Injeta painel "RISCO FUTURO" no modal ATF */
     function _injectRiscoFuturoPanel(forecast) {
         if (!forecast.valid) return;
         var modal = document.getElementById('atfModal');
@@ -567,11 +490,13 @@
         var existing = document.getElementById('nexusForecastPanel');
         if (existing) existing.remove();
 
-        // Helper bilíngue
         var _L = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
         var _T = function(pt, en) { return _L === 'en' ? en : pt; };
 
         var fmtEur = function(v) {
+            if (window.UNIFEDSystem && window.UNIFEDSystem.utils && window.UNIFEDSystem.utils.formatCurrency) {
+                return window.UNIFEDSystem.utils.formatCurrency(v);
+            }
             return new Intl.NumberFormat('pt-PT', {style:'currency',currency:'EUR',minimumFractionDigits:2}).format(v || 0);
         };
 
@@ -593,30 +518,26 @@
                 '<div style="margin-left:auto;color:rgba(255,255,255,0.3);font-size:0.6rem">Tendência: ' + forecast.trend + '</div>' +
             '</div>' +
             '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:14px">' +
-                // Card 1: Omissão Total Projetada
-                '<div style="background:rgba(168,85,247,0.12);border:1px solid rgba(168,85,247,0.35);border-radius:6px;padding:14px;text-align:center">' +
-                    '<div style="color:rgba(255,255,255,0.5);font-size:0.62rem;margin-bottom:4px;letter-spacing:0.04em">' + _T('OMISSÃO PROJETADA (6M)', 'PROJECTED OMISSION (6M)') + '</div>' +
-                    '<div style="color:#A855F7;font-size:1.45rem;font-weight:900">' + fmtEur(forecast.risco) + '</div>' +
-                    '<div style="color:rgba(255,255,255,0.35);font-size:0.6rem;margin-top:2px">' + _T('Passivo total estimado', 'Estimated total liability') + '</div>' +
-                '</div>' +
-                // Card 2: IVA em Falta Projetado
-                '<div style="background:rgba(249,115,22,0.1);border:1px solid rgba(249,115,22,0.3);border-radius:6px;padding:14px;text-align:center">' +
-                    '<div style="color:rgba(255,255,255,0.5);font-size:0.62rem;margin-bottom:4px;letter-spacing:0.04em">' + _T('IVA EM FALTA PROJETADO (6M)', 'PROJECTED MISSING VAT (6M)') + '</div>' +
-                    '<div style="color:#F97316;font-size:1.45rem;font-weight:900">' + fmtEur(forecast.ivaRisco) + '</div>' +
-                    '<div style="color:rgba(255,255,255,0.35);font-size:0.6rem;margin-top:2px">' + _T('23% sobre omissão proj.', '23% on projected omission') + '</div>' +
-                '</div>' +
-                // Card 3: Pior mês projetado
                 (function() {
                     var maxIdx = 0, maxVal = 0;
                     forecast.discSeries.forEach(function(v, i) { if (v > maxVal) { maxVal = v; maxIdx = i; } });
-                    return '<div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:14px;text-align:center">' +
+                    return '<div style="background:rgba(168,85,247,0.12);border:1px solid rgba(168,85,247,0.35);border-radius:6px;padding:14px;text-align:center">' +
+                        '<div style="color:rgba(255,255,255,0.5);font-size:0.62rem;margin-bottom:4px;letter-spacing:0.04em">' + _T('OMISSÃO PROJETADA (6M)', 'PROJECTED OMISSION (6M)') + '</div>' +
+                        '<div style="color:#A855F7;font-size:1.45rem;font-weight:900">' + fmtEur(forecast.risco) + '</div>' +
+                        '<div style="color:rgba(255,255,255,0.35);font-size:0.6rem;margin-top:2px">' + _T('Passivo total estimado', 'Estimated total liability') + '</div>' +
+                    '</div>' +
+                    '<div style="background:rgba(249,115,22,0.1);border:1px solid rgba(249,115,22,0.3);border-radius:6px;padding:14px;text-align:center">' +
+                        '<div style="color:rgba(255,255,255,0.5);font-size:0.62rem;margin-bottom:4px;letter-spacing:0.04em">' + _T('IVA EM FALTA PROJETADO (6M)', 'PROJECTED MISSING VAT (6M)') + '</div>' +
+                        '<div style="color:#F97316;font-size:1.45rem;font-weight:900">' + fmtEur(forecast.ivaRisco) + '</div>' +
+                        '<div style="color:rgba(255,255,255,0.35);font-size:0.6rem;margin-top:2px">' + _T('23% sobre omissão proj.', '23% on projected omission') + '</div>' +
+                    '</div>' +
+                    '<div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:14px;text-align:center">' +
                         '<div style="color:rgba(255,255,255,0.5);font-size:0.62rem;margin-bottom:4px;letter-spacing:0.04em">' + _T('PICO DE RISCO PROJETADO', 'PROJECTED RISK PEAK') + '</div>' +
                         '<div style="color:#EF4444;font-size:1.1rem;font-weight:900">' + (forecast.labels[maxIdx] || 'N/A') + '</div>' +
                         '<div style="color:#EF4444;font-size:0.9rem;font-weight:700">' + fmtEur(maxVal) + '</div>' +
                     '</div>';
                 })() +
             '</div>' +
-            // Tabela mensal de previsão
             '<div style="overflow-x:auto">' +
                 '<table style="width:100%;border-collapse:collapse;font-size:0.7rem;color:rgba(255,255,255,0.8)">' +
                     '<thead>' +
@@ -659,7 +580,6 @@
 
         frag.appendChild(panel);
 
-        // Injectar antes do botão FECHAR no modal (no final do conteúdo)
         var wrapper = modal.querySelector('div[style*="max-width:1100px"]');
         if (wrapper) {
             wrapper.appendChild(frag);
@@ -668,7 +588,6 @@
         }
     }
 
-    /** Hook em openATFModal */
     function _installATFHook() {
         if (typeof window.openATFModal !== 'function') {
             setTimeout(_installATFHook, 300);
@@ -687,7 +606,6 @@
             var months      = Object.keys(monthlyData).sort();
             var forecast    = _computeForecast(monthlyData);
 
-            // Expor forecast globalmente para uso opcional no PDF
             window.NEXUS_FORECAST = forecast;
 
             if (!forecast.valid) {
@@ -695,15 +613,14 @@
                 return;
             }
 
-            // Aguardar Chart.js renderizar (~250ms) antes de injectar
             setTimeout(function() {
                 _injectForecastIntoChart(forecast, months.length);
                 _injectRiscoFuturoPanel(forecast);
 
                 console.info(
                     '[NEXUS·M3] ✅ Motor Preditivo ATF — Risco Futuro 6M calculado.\n' +
-                    '  Omissão proj. : ' + new Intl.NumberFormat('pt-PT',{style:'currency',currency:'EUR'}).format(forecast.risco) + '\n' +
-                    '  IVA em falta  : ' + new Intl.NumberFormat('pt-PT',{style:'currency',currency:'EUR'}).format(forecast.ivaRisco) + '\n' +
+                    '  Omissão proj. : ' + (window.UNIFEDSystem && window.UNIFEDSystem.utils && window.UNIFEDSystem.utils.formatCurrency ? window.UNIFEDSystem.utils.formatCurrency(forecast.risco) : new Intl.NumberFormat('pt-PT',{style:'currency',currency:'EUR'}).format(forecast.risco)) + '\n' +
+                    '  IVA em falta  : ' + (window.UNIFEDSystem && window.UNIFEDSystem.utils && window.UNIFEDSystem.utils.formatCurrency ? window.UNIFEDSystem.utils.formatCurrency(forecast.ivaRisco) : new Intl.NumberFormat('pt-PT',{style:'currency',currency:'EUR'}).format(forecast.ivaRisco)) + '\n' +
                     '  Confiança     : ' + forecast.confidence + '\n' +
                     '  Tendência     : ' + forecast.trend
                 );
@@ -715,23 +632,16 @@
 
     _installATFHook();
 
-})();
-
+})(); // Fim do Módulo 3
 
 // ============================================================================
 // MÓDULO 4 · BLOCKCHAIN EVIDENCE EXPLORER — OTS Individual
-// ============================================================================
-// Objetivo: Ler UNIFEDSystem.documents e ForensicLogger, gerar um SHA-256
-// independente por ficheiro e injectar no painel de Cadeia de Custódia
-// um botão "VER EXPLORER" que abre um modal flutuante listando cada ficheiro
-// com o seu hash e status "Pendente/Ancorado na Bitcoin Network".
 // ============================================================================
 (function _nexusBlockchainExplorer() {
 
     var _EXPLORER_INJECTED = false;
     var _EXPLORER_MODAL_ID = 'nexusBlockchainExplorerModal';
 
-    /** Computa SHA-256 via Web Crypto API (mesmo mecanismo de script.js) */
     async function _sha256Nexus(content) {
         try {
             var encoder = new TextEncoder();
@@ -740,7 +650,6 @@
             var arr     = Array.from(new Uint8Array(buf));
             return arr.map(function(b) { return b.toString(16).padStart(2, '0'); }).join('').toUpperCase();
         } catch (e) {
-            // Fallback: hash deterministico simples (polyfill)
             var hash = 0;
             var s    = String(content);
             for (var i = 0; i < s.length; i++) {
@@ -752,16 +661,11 @@
         }
     }
 
-    /**
-     * Recolhe todos os ficheiros registados no sistema.
-     * Cruza UNIFEDSystem.documents (estrutura de files) com os logs de custódia.
-     */
     function _collectDocumentRegistry() {
         var registry = [];
         var sys = window.UNIFEDSystem;
         if (!sys) return registry;
 
-        // Mapa de hashes existentes da cadeia de custódia (ForensicLogger)
         var custodyMap = {};
         try {
             var logs = window.ForensicLogger ? window.ForensicLogger.getLogs() : [];
@@ -774,7 +678,6 @@
             });
         } catch (_) {}
 
-        // Dicionário de tipos de documento
         var docTypes = {
             control:    { label: 'Controlo de Autenticidade', icon: '🔐', color: '#E2B87A' },
             saft:       { label: 'SAF-T / Relatório CSV',     icon: '📊', color: '#3B82F6' },
@@ -799,13 +702,11 @@
                     hash:     (existingCustody && existingCustody.hash) || null,
                     serial:   (existingCustody && existingCustody.serial) || null,
                     ts:       (existingCustody && existingCustody.ts) || null,
-                    // Status OTS: baseado na presença do hash na cadeia de custódia
                     otsStatus: existingCustody ? 'ANCORADO — Nível 1 ATIVO' : 'PENDENTE'
                 });
             });
         });
 
-        // Fallback: se não há documentos no UNIFEDSystem, usar os logs de custódia
         if (registry.length === 0 && Object.keys(custodyMap).length > 0) {
             Object.keys(custodyMap).forEach(function(fname) {
                 var c = custodyMap[fname];
@@ -831,18 +732,15 @@
         return registry;
     }
 
-    /** Abre o modal flutuante Blockchain Evidence Explorer */
     async function _openBlockchainExplorerModal() {
         var existing = document.getElementById(_EXPLORER_MODAL_ID);
         if (existing) { existing.remove(); return; }
 
-        // Helper bilíngue
         var _L = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
         var _T = function(pt, en) { return _L === 'en' ? en : pt; };
 
         var registry = _collectDocumentRegistry();
 
-        // Enriquecer registry com hashes computados (Web Crypto)
         var enriched = await Promise.all(registry.map(async function(item) {
             if (!item.hash) {
                 item.hash = await _sha256Nexus(item.filename + (item.ts || Date.now()));
@@ -882,36 +780,37 @@
                 var hashPart1   = item.hash ? item.hash.substring(0, 32)  : '—';
                 var hashPart2   = item.hash ? item.hash.substring(32, 64) : '';
 
+                var escapeHTML = function(str) {
+                    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+                };
+
                 return '<div style="' +
                     'background:rgba(255,255,255,0.03);' +
                     'border:1px solid rgba(' + (isAnchored ? '74,222,128' : '245,158,11') + ',0.2);' +
                     'border-left:3px solid ' + item.color + ';' +
                     'border-radius:4px;padding:12px 14px;margin-bottom:10px;' +
                 '">' +
-                    // Linha 1: Ficheiro + Tipo
                     '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;flex-wrap:wrap">' +
                         '<div style="display:flex;align-items:center;gap:8px">' +
                             '<span style="font-size:1rem">' + item.icon + '</span>' +
                             '<div>' +
-                                '<div style="color:#fff;font-size:0.75rem;font-weight:600">' + _escapeHTML(item.filename) + '</div>' +
+                                '<div style="color:#fff;font-size:0.75rem;font-weight:600">' + escapeHTML(item.filename) + '</div>' +
                                 '<div style="color:rgba(255,255,255,0.4);font-size:0.62rem">' + item.type + '</div>' +
                             '</div>' +
                         '</div>' +
                         '<div style="display:flex;align-items:center;gap:6px">' +
                             '<span style="font-size:0.8rem">' + statusIcon + '</span>' +
-                            '<span style="font-size:0.62rem;color:' + statusColor + ';font-weight:600">' + _escapeHTML(item.otsStatus) + '</span>' +
+                            '<span style="font-size:0.62rem;color:' + statusColor + ';font-weight:600">' + escapeHTML(item.otsStatus) + '</span>' +
                         '</div>' +
                     '</div>' +
-                    // Hash SHA-256
                     '<div style="background:rgba(0,0,0,0.4);border-radius:3px;padding:6px 10px;margin-bottom:6px">' +
                         '<div style="color:rgba(0,229,255,0.6);font-size:0.6rem;margin-bottom:2px;letter-spacing:0.06em">SHA-256</div>' +
                         '<div style="font-size:0.62rem;color:#4ADE80;word-break:break-all;line-height:1.5">' +
                             hashPart1 + '<br>' + hashPart2 +
                         '</div>' +
                     '</div>' +
-                    // Metadata
                     '<div style="display:flex;gap:16px;flex-wrap:wrap">' +
-                        (item.serial ? '<div style="font-size:0.6rem;color:rgba(255,255,255,0.4)">S/N: <span style="color:#E2B87A">' + _escapeHTML(item.serial) + '</span></div>' : '') +
+                        (item.serial ? '<div style="font-size:0.6rem;color:rgba(255,255,255,0.4)">S/N: <span style="color:#E2B87A">' + escapeHTML(item.serial) + '</span></div>' : '') +
                         (item.ts ? '<div style="font-size:0.6rem;color:rgba(255,255,255,0.4)">⏱ ' + fmtTs(item.ts) + '</div>' : '') +
                     '</div>' +
                 '</div>';
@@ -929,7 +828,6 @@
                 'overflow:hidden;' +
             '">' +
 
-                // ── HEADER ──────────────────────────────────────────────────
                 '<div style="' +
                     'padding:16px 20px;' +
                     'border-bottom:1px solid rgba(0,229,255,0.15);' +
@@ -952,18 +850,15 @@
                        'onmouseout="this.style.background=\'transparent\'">✕ FECHAR</button>' +
                 '</div>' +
 
-                // ── LEGENDA ──────────────────────────────────────────────────
                 '<div style="padding:8px 20px;background:rgba(0,0,0,0.2);font-size:0.62rem;color:rgba(255,255,255,0.35);display:flex;gap:20px;flex-wrap:wrap">' +
                     '<span>🔗 <span style="color:#4ADE80">ANCORADO</span> — Hash registado na cadeia de custódia PROBATUM (Nível 1 ativo)</span>' +
                     '<span>⏳ <span style="color:#F59E0B">PENDENTE</span> — Hash gerado por NEXUS (sem registo prévio na sessão)</span>' +
                 '</div>' +
 
-                // ── LISTA DE DOCUMENTOS ──────────────────────────────────────
                 '<div style="overflow-y:auto;padding:16px 20px;flex:1">' +
                     itemsHTML +
                 '</div>' +
 
-                // ── FOOTER ───────────────────────────────────────────────────
                 '<div style="' +
                     'padding:10px 20px;' +
                     'border-top:1px solid rgba(0,229,255,0.1);' +
@@ -980,7 +875,6 @@
         frag.appendChild(overlay);
         document.body.appendChild(frag);
 
-        // Event listeners
         document.getElementById('nexusExplorerCloseBtn').addEventListener('click', function() {
             var m = document.getElementById(_EXPLORER_MODAL_ID);
             if (m) m.remove();
@@ -998,26 +892,13 @@
         console.info('[NEXUS·M4] ✅ Blockchain Evidence Explorer aberto — ' + enriched.length + ' documentos analisados.');
     }
 
-    /** Escapa HTML para uso em innerHTML */
-    function _escapeHTML(str) {
-        return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    }
-
-    /**
-     * injectBlockchainExplorerUI()
-     * Injeta via DocumentFragment o botão "VER EXPLORER" no painel
-     * da Cadeia de Custódia. Usa MutationObserver para detetar quando
-     * o modal de custódia é aberto (classe 'active' adicionada).
-     */
     function injectBlockchainExplorerUI() {
         var custodyModal = document.getElementById('custodyModal');
         if (!custodyModal) {
-            // DOM ainda não está pronto — tentar novamente
             setTimeout(injectBlockchainExplorerUI, 500);
             return;
         }
 
-        // Observar quando o modal de custódia se torna ativo
         var observer = new MutationObserver(function(mutations) {
             mutations.forEach(function(mutation) {
                 if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
@@ -1034,7 +915,6 @@
 
         observer.observe(custodyModal, { attributes: true });
 
-        // Se o modal já estiver ativo no momento do carregamento
         if (custodyModal.classList.contains('active') && !_EXPLORER_INJECTED) {
             _injectExplorerButton(custodyModal);
             _EXPLORER_INJECTED = true;
@@ -1043,24 +923,23 @@
         console.info('[NEXUS·M4] ✅ MutationObserver instalado no #custodyModal.');
     }
 
-    /** Injeta o botão VER EXPLORER no header do modal de custódia */
     function _injectExplorerButton(custodyModal) {
-        // Verificar se já foi injetado nesta sessão de modal
         if (document.getElementById('nexusExplorerBtn')) return;
 
-        // Procurar o header/toolbar do modal
         var header = custodyModal.querySelector('.modal-header')
             || custodyModal.querySelector('[class*="header"]')
             || custodyModal.querySelector('div:first-child');
 
         if (!header) {
-            // Fallback: injetar no topo do modal
             header = custodyModal;
         }
 
         var frag = document.createDocumentFragment();
         var btn  = document.createElement('button');
         btn.id   = 'nexusExplorerBtn';
+
+        var _L = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
+        var _T = function(pt, en) { return _L === 'en' ? en : pt; };
 
         btn.style.cssText = [
             'background:linear-gradient(135deg,rgba(0,229,255,0.1),rgba(168,85,247,0.1));',
@@ -1099,33 +978,26 @@
 
         frag.appendChild(btn);
 
-        // Tentar injectar junto aos botões existentes no header
         var existingBtns = header.querySelectorAll('button');
         if (existingBtns.length > 0) {
-            // Injetar antes do primeiro botão no header
             existingBtns[0].parentNode.insertBefore(frag, existingBtns[0]);
         } else {
-            // Fallback: prepend no header
             header.insertBefore(frag, header.firstChild);
         }
 
         console.info('[NEXUS·M4] ✅ Botão VER EXPLORER injectado no painel de Cadeia de Custódia.');
     }
 
-    // Expor função globalmente conforme especificação
     window.injectBlockchainExplorerUI = injectBlockchainExplorerUI;
     window.nexusOpenBlockchainExplorer = _openBlockchainExplorerModal;
 
-    // Aguardar DOM pronto para ativar o observer
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', injectBlockchainExplorerUI);
     } else {
-        // DOM já está pronto
         setTimeout(injectBlockchainExplorerUI, 400);
     }
 
-})();
-
+})(); // Fim do Módulo 4
 
 // ============================================================================
 // NEXUS · EXPOSIÇÃO GLOBAL E LOG DE ARRANQUE
@@ -1140,24 +1012,3 @@ console.info(
     'color:#00E5FF;font-family:Courier New,monospace;font-weight:700;font-size:0.9em;',
     'color:rgba(0,229,255,0.65);font-family:Courier New,monospace;font-size:0.8em;'
 );
-
-/* =========================================================================
-   FIM DO FICHEIRO NEXUS.JS · v13.5.0-PURE · UNIFED - PROBATUM
-   ARQUITETURA: Adaptive Extension Layer — ZERO IMPACTO no script.js
-   ============================================================ ============
-   M1 — Stealth Network Interceptor:
-        window.fetch patch + unhandledrejection + error listeners (capture:true)
-        Padrões: CORS/Anthropic/OTS/FreeTSA — convertidos para console.info
-   M2 — RAG Jurisprudencial DOCX:
-        XML jurisprudencial injectado via xmlInject (FIX-4) — injeta VI. JURISPRUDÊNCIA
-        Tabela de artigos + 5 Acordaos STA simulados — discrepancyPercent > 0
-   M3 — Motor Preditivo ATF:
-        Regressão Linear (OLS) + EMA α=0.3 combinados 60/40
-        Chart.js dataset injection (linha tracejada roxa) + painel RISCO FUTURO
-        window.NEXUS_FORECAST exposto para uso opcional no PDF
-   M4 — Blockchain Evidence Explorer:
-        MutationObserver em #custodyModal.classList — botão VER EXPLORER
-        DocumentFragment injection — modal flutuante glassmorphism/dark mode
-        SHA-256 via Web Crypto API + fallback hash por ficheiro
-        Status: ANCORADO (cadeia de custódia existente) / PENDENTE (hash NEXUS)
-   ========================================================================= */

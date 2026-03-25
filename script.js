@@ -162,7 +162,7 @@ const normalizeNumericValue = (input) => {
     //   2. Se existir vírgula E ponto → remover ponto e trocar vírgula por ponto (formato europeu)
     //   3. Se existir apenas ponto com duas casas decimais → tratar como decimal
     //   4. Devolver float limpo
-    // -------------------------------------------────────────────────────────
+    // -------------------------------------------────────────────────────
 
     // Passo 1: Remover caracteres de controlo
     str = str.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g, '');
@@ -3125,7 +3125,7 @@ const UNIFEDSystem = {
     documents: {
         control: { files: [], hashes: {}, totals: { records: 0 } },
         saft: { files: [], hashes: {}, totals: { records: 0, iliquido: 0, iva: 0, bruto: 0 } },
-        invoices: { files: [], hashes: {}, totals: { invoiceValue: 0, records: 0 } },
+        invoices: { files: [], hashes: {}, totals: { records: 0, invoiceValue: 0 } },
         statements: { files: [], hashes: {}, totals: {
             records: 0,
             ganhos: 0,

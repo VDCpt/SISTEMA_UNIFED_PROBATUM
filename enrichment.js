@@ -38,25 +38,20 @@
 // ============================================================================
 // 0. UTILITÁRIOS INTERNOS
 // ============================================================================
-// ── _fmtEur — formatação monetária locale-aware ──────────────────────────────
-// Delega em UNIFEDSystem.utils.formatCurrency (fonte central de script.js)
-// quando disponível; fallback interno para isolamento offline.
-// Regra ISO PT: sufixo " €"  (ex: 9.582,76 €)
-// Regra ISO EN: prefixo "€"  (ex: €9,582.76)
+// ── _fmtEur — delega na função central UNIFEDSystem.utils.formatCurrency ─────
+// A fonte única de verdade está em script.js (UNIFEDSystem.utils.formatCurrency)
 const _fmtEur = (val) => {
-    // Delegação na função central de script.js (fonte única de verdade)
     if (typeof window !== 'undefined' &&
         window.UNIFEDSystem &&
         window.UNIFEDSystem.utils &&
         typeof window.UNIFEDSystem.utils.formatCurrency === 'function') {
         return window.UNIFEDSystem.utils.formatCurrency(val);
     }
-    // Fallback locale-aware (usado quando enrichment.js carrega antes de script.js)
-    const _raw  = (val === null || val === undefined || isNaN(Number(val))) ? 0 : Number(val);
-    const _lang   = (typeof window !== 'undefined' && typeof window.currentLang !== 'undefined')
-        ? window.currentLang : 'pt';
+    // Fallback crítico (nunca deve ocorrer em produção com a ordem de carregamento correta)
+    const _raw = (val === null || val === undefined || isNaN(Number(val))) ? 0 : Number(val);
+    const _lang = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
     const _locale = _lang === 'en' ? 'en-GB' : 'pt-PT';
-    const _num    = _raw.toLocaleString(_locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const _num = _raw.toLocaleString(_locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     return _lang === 'en' ? '\u20AC' + _num : _num + '\u00A0\u20AC';
 };
 
@@ -132,8 +127,6 @@ Deves SEMPRE incluir o termo "limbo contabilístico" na Seccao A (Qualificacao J
 IDENTIDADE DO SISTEMA — RECONSTITUIÇÃO DA VERDADE MATERIAL DIGITAL:
 O sistema UNIFED-PROBATUM nao realiza contabilidade. Realiza RECONSTITUICAO DA VERDADE MATERIAL DIGITAL — um processo forense de engenharia reversa sobre os fluxos de caixa reais vs. reportados, com o objetivo de estabelecer a verdade material dos factos para efeitos processuais. Esta distinção e juridicamente relevante e deve ser sublinhada na narrativa.`;
 
-
-
     const userPrompt = `Com base nos dados forenses certificados e na base legal aplicavel, elabora uma Sintese Juridica Pericial em QUATRO seccoes obrigatorias.
 
 === DADOS FORENSES CERTIFICADOS ===
@@ -154,15 +147,6 @@ Seccao D - ESTRATEGIA DE CONTRA-INTERROGATORIO (AI Adversarial Simulator)
 Maximo 900 palavras. Prosa juridica formal. Sem preambulos.`;
 
     try {
-        // ── FIX-3: RESOLUÇÃO DE CORS — PROXY SERVERLESS ─────────────────────────
-        // O fetch direto a api.anthropic.com falha com bloqueio CORS estrito
-        // (política do browser: cross-origin sem cabeçalho Allow-Origin).
-        // Solução: Proxy Serverless (Cloudflare Worker em claude-proxy.worker.js)
-        // que interceta o pedido, injeta x-api-key via variável de ambiente segura,
-        // faz forward para Anthropic e devolve os cabeçalhos CORS corretos.
-        // O x-api-key NUNCA é exposto no front-end (segurança de produção).
-        // Worker: https://github.com/unifed/claude-proxy | Env: ANTHROPIC_API_KEY
-        // ────────────────────────────────────────────────────────────────────────
         const response = await fetch('https://api.unifed.com/claude-proxy', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -173,7 +157,6 @@ Maximo 900 palavras. Prosa juridica formal. Sem preambulos.`;
                 messages: [{ role: 'user', content: userPrompt }]
             })
         });
-        // ── FIM FIX-3 ────────────────────────────────────────────────────────────
 
         if (!response.ok) throw new Error('HTTP ' + response.status);
 
@@ -188,7 +171,6 @@ Maximo 900 palavras. Prosa juridica formal. Sem preambulos.`;
         return text.trim();
 
     } catch (err) {
-        // CORS/network errors: silenciar como info (nao como error)
         const isCors = err.message.indexOf('fetch') !== -1 || err.message.indexOf('Failed') !== -1;
         if (isCors) {
             console.info('[UNIFED-AI] [i] Execucao em Ambiente Local Seguro (Air-Gapped). ' +
@@ -317,41 +299,25 @@ async function renderSankeyToImage(analysis) {
     ctx.fillText('Read-Only · Art. 125.o CPP · Output Enrichment Layer', W / 2, 55);
 
     // ── Variáveis para o Sankey v13.5.0-PURE ────────────────────────────
-    // NODO RAIZ: Volume Transacional Real = Ganhos Extrato (fonte: extrato bancário)
     var ganhos    = t.ganhos    || 0;
     var dac7      = t.dac7TotalPeriodo || 0;
     var saftBruto = t.saftBruto || 0;
 
-    // Volume real = o que efectivamente entrou na conta bancária do sujeito passivo
     var volumeReal = ganhos;
-
-    // Ramo 1 — Faturado SAF-T: o que foi declarado à AT via SAF-T
     var faturadoSaft = Math.min(saftBruto, volumeReal);
-
-    // Ramo 2 — Reportado DAC7: o que a plataforma comunicou à UE
     var reportadoDac7 = Math.min(dac7, volumeReal);
-
-    // Ramo 3 — Omissão/Retenção Sistemática: resíduo não declarado nem reportado
     var omissaoRet = Math.max(0, volumeReal - faturadoSaft - reportadoDac7);
 
-    // ── Nós do Diagrama de Fluxo Forense (3 saídas do nó raiz) ─────────────
     var nodes = [
-        // Nó Principal (esquerda) — Volume Transacional Real (Ganhos Extrato)
         { x:  60, y: 240, w: 200, h: 110, label: 'Volume Transacional\nReal\n(Ganhos Extrato)',       value: volumeReal,    color: '#3B82F6' },
-        // Ramo superior — Faturado SAF-T (declarado à AT)
         { x: 440, y:  60, w: 200, h:  90, label: 'Faturado\n(SAF-T)',                                 value: faturadoSaft,  color: '#10B981' },
-        // Ramo central — Reportado DAC7 (comunicado à UE)
         { x: 440, y: 260, w: 200, h:  90, label: 'Reportado\n(DAC7)',                                 value: reportadoDac7, color: '#6366F1' },
-        // Ramo inferior — Omissão/Retenção Sistemática (resíduo forense)
         { x: 440, y: 460, w: 200, h:  90, label: 'Omissão /\nRetenção\nSistemática',                  value: omissaoRet,    color: '#EF4444' }
     ];
 
     var flows = [
-        // Volume Real → Faturado SAF-T (fluxo declarado AT)
         { from: 0, to: 1, color: '#10B981', opacity: 0.55 },
-        // Volume Real → Reportado DAC7 (fluxo comunicado UE)
         { from: 0, to: 2, color: '#6366F1', opacity: 0.55 },
-        // Volume Real → Omissão/Retenção Sistemática (evidência forense)
         { from: 0, to: 3, color: '#EF4444', opacity: 0.70 }
     ];
 
@@ -408,12 +374,9 @@ async function renderSankeyToImage(analysis) {
     });
 
     var dataURL = canvas.toDataURL('image/png');
-    // ── PATCH UNIFED-v13.5.0-PURE: Forçar limpeza de memória RAM ──────────
-    // Evita memory leaks em sessões longas com múltiplas exportações PDF
     canvas.width  = 0;
     canvas.height = 0;
     ctx = null;
-    // ── FIM PATCH LIMPEZA DE MEMÓRIA ─────────────────────────────────────────
     document.body.removeChild(canvas);
     return dataURL;
 }
@@ -422,8 +385,6 @@ async function renderSankeyToImage(analysis) {
 // ============================================================================
 // 4. generateIntegritySeal(masterHash, doc, x, y, sealSize)
 //    Integrity Visual Signature - Selo Holografico Digital
-//    Padrao geometrico deterministico derivado do Master Hash SHA-256.
-//    Zero dependencias extra - usa exclusivamente jsPDF primitives.
 // ============================================================================
 function generateIntegritySeal(masterHash, doc, x, y, sealSize) {
     if (!masterHash || masterHash.length < 32 || !doc) return;
@@ -441,10 +402,10 @@ function generateIntegritySeal(masterHash, doc, x, y, sealSize) {
     doc.saveGraphicsState();
 
     doc.setFillColor(8, 18, 36);
-    doc.rect(x, y, SZ, SZ, 'F');  // roundedRect polyfill
+    doc.rect(x, y, SZ, SZ, 'F');
     doc.setDrawColor(0, 229, 255);
     doc.setLineWidth(0.6);
-    doc.rect(x, y, SZ, SZ, 'S');  // roundedRect polyfill
+    doc.rect(x, y, SZ, SZ, 'S');
 
     doc.setFontSize(3.8);
     doc.setFont('courier', 'bold');
@@ -506,21 +467,6 @@ window.generateIntegritySeal = generateIntegritySeal;
 
 // ============================================================================
 // 5. exportDOCX(xmlInject) - Structural DOCX Export - Minuta de Peticao Inicial
-//
-//    BUG FIX CRITICO: A variavel interna do documento OOXML foi renomeada
-//    para _docXml (anteriormente "document"), o que causava shadow do
-//    objeto global document, resultando no erro:
-//    "document.createElement is not a function"
-//    O objeto global document e agora usado corretamente no final.
-//
-//    FIX-4 (v13.5.0-PURE): Parâmetro opcional xmlInject.
-//    O NEXUS RAG passa o XML jurisprudencial diretamente como argumento.
-//    O string replacement seguro ocorre em _docXml (variável local) ANTES
-//    da instanciação do new JSZip() — elimina o risco de prototype pollution
-//    adjacente (JSZip.prototype.file override).
-//    Padrão: injeção limpa e imune a mudanças de arquitetura do CDN JSZip.
-//
-//    Dependencia: JSZip (carregado via CDN em index.html).
 // ============================================================================
 async function exportDOCX(xmlInject) {
     if (typeof JSZip === 'undefined') {
@@ -581,6 +527,9 @@ async function exportDOCX(xmlInject) {
     };
 
     var fe = function(val) {
+        if (window.UNIFEDSystem && window.UNIFEDSystem.utils && window.UNIFEDSystem.utils.formatCurrency) {
+            return window.UNIFEDSystem.utils.formatCurrency(val);
+        }
         return new Intl.NumberFormat('pt-PT',{style:'currency',currency:'EUR',minimumFractionDigits:2}).format(val||0);
     };
 
@@ -603,19 +552,13 @@ async function exportDOCX(xmlInject) {
             aiNarrative = await generateLegalNarrative(sys.analysis);
     } catch (_e) { /* silent */ }
 
-    // ── PASSO 1 · Ghost-Text Purge ───────────────────────────────────────────
-    // Elimina qualquer fragmento de metadados, paginação ou ruído de formatação
-    // que possa ter vazado para a narrativa gerada (e.g. "Página X de Y",
-    // "PROBATUM SEAL", "AL RGIT", "TERIAL", entidades HTML mal codificadas).
-    // O pipeline devolve APENAS doutrina jurídica limpa.
-    // ─────────────────────────────────────────────────────────────────────────
     var _ghostRe = /Página\s+\d+\s+de\s+\d+|PROBATUM\s+SEAL|v13\.\d+\.\d+-[A-Z]+\s*·\s*Página|\bTERIAL\b|\bAL\s+RGIT\b|&amp;|&ndash;|&–|&#\d+;/gi;
 
     var narrativeParas = aiNarrative.split('\n')
         .map(function(l) { return l.trim(); })
         .filter(function(l) { return l.length > 0; })
-        .map(function(l) { return l.replace(_ghostRe, '').trim(); })   // purge ghost
-        .filter(function(l) { return l.length > 0; })                  // drop empty after purge
+        .map(function(l) { return l.replace(_ghostRe, '').trim(); })
+        .filter(function(l) { return l.length > 0; })
         .map(function(l) {
             var isH = /^Secc?[a-z]o [A-D]|^SINTESE/.test(l);
             return para(l, isH, isH ? '22' : '20', isH ? '003366' : '222222');
@@ -664,7 +607,7 @@ async function exportDOCX(xmlInject) {
         para('', false), tbl(srcRows), para('', false), hr(), para('', false),
 
         para('III-A. QUALIFICACAO JURIDICA — CRIMINALIDADE DE COLARINHO BRANCO', true, '26', '6B0099'), para('', false),
-        para('A engenharia algorítmica da plataforma cria uma zona cinzenta premeditada entre o ganho real retido na fonte e o valor reportado em SAF-T/DAC7. Este diferencial nao declarado fica num limbo contabilístico, caracterizando uma tipologia de criminalidade de colarinho branco e evasao fiscal estruturada, explorando a assimetria de informacao contra o parceiro e o Estado.', false, '20', '333333'),
+        para('A engenharia algoritmica da plataforma cria uma zona cinzenta premeditada entre o ganho real retido na fonte e o valor reportado em SAF-T/DAC7. Este diferencial nao declarado fica num limbo contabilistico, caracterizando uma tipologia de criminalidade de colarinho branco e evasao fiscal estruturada, explorando a assimetria de informacao contra o parceiro e o Estado.', false, '20', '333333'),
         para('', false), hr(), para('', false),
 
         para('III-B. PERDA DE CHANCE E DANO REPUTACIONAL', true, '26', 'B85000'), para('', false),
@@ -708,7 +651,6 @@ async function exportDOCX(xmlInject) {
         para('AVISO: Esta minuta e destinada ao advogado mandatario. Nao constitui por si so peca processual.', false, '16', 'AA0000')
     ]).join('');
 
-    // ── OOXML Package files ────────────────────────────────────────────────────
     var contentTypes = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' +
         '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">\n' +
         '  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>\n' +
@@ -733,9 +675,6 @@ async function exportDOCX(xmlInject) {
         '<w:sz w:val="20"/></w:rPr></w:rPrDefault></w:docDefaults>\n' +
         '</w:styles>';
 
-    // NOTA CRITICA: Esta variavel e _docXml (NAO "document").
-    // O nome "document" causava shadow do objeto global document,
-    // resultando no erro: "document.createElement is not a function"
     var _docXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' +
         '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"\n' +
         '            xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">\n' +
@@ -749,24 +688,16 @@ async function exportDOCX(xmlInject) {
         '</w:document>';
 
     try {
-        // ── FIX-4: INJEÇÃO SEGURA DE XML (xmlInject → _docXml) ──────────────────
-        // O NEXUS RAG passa o bloco XML jurisprudencial via parâmetro formal.
-        // O string replacement ocorre em _docXml (variável local) ANTES de
-        // instanciar o new JSZip(), eliminando completamente a necessidade de
-        // JSZip.prototype.file override (prototype pollution-adjacent).
-        // Esta abordagem é imune a mudanças de arquitetura interna do CDN JSZip.
-        // ────────────────────────────────────────────────────────────────────────
         if (xmlInject && typeof xmlInject === 'string' && xmlInject.trim().length > 0) {
             _docXml = _docXml.replace('</w:body>', xmlInject + '</w:body>');
             console.info('[UNIFED-DOCX] [i] xmlInject RAG aplicado em _docXml (' + xmlInject.length + ' chars) — prototype seguro.');
         }
-        // ── FIM FIX-4 ─────────────────────────────────────────────────────────────
 
         var zip = new JSZip();
         zip.file('[Content_Types].xml', contentTypes);
         zip.file('_rels/.rels', pkgRels);
         zip.file('word/_rels/document.xml.rels', wordRels);
-        zip.file('word/document.xml', _docXml);   // _docXml — sem shadow do global document
+        zip.file('word/document.xml', _docXml);
         zip.file('word/styles.xml', stylesXml);
 
         var blob = await zip.generateAsync({
@@ -775,7 +706,7 @@ async function exportDOCX(xmlInject) {
         });
 
         var url  = URL.createObjectURL(blob);
-        var link = document.createElement('a');   // document global - correto
+        var link = document.createElement('a');
         link.href     = url;
         link.download = 'UNIFED_PETICAO_' + (sys.sessionId || 'DRAFT') + '.docx';
         document.body.appendChild(link);
@@ -798,8 +729,6 @@ window.exportDOCX = exportDOCX;
 
 // ============================================================================
 // 6. NIFAF - Non-Intrusive Forensic Auditory Feedback
-//    Estado: MUTE por defeito (localStorage).
-//    Gatilho: _nifafAlertedHash guard em updateDashboard() de script.js.
 // ============================================================================
 var NIFAF = {
     isEnabled: (function() {
@@ -848,10 +777,6 @@ console.log('[UNIFED-NIFAF] \u2705 Non-Intrusive Forensic Auditory Feedback carr
 // 7. ATF - ANALISE TEMPORAL FORENSE
 // ============================================================================
 
-/**
- * computeTemporalAnalysis(monthlyData, analysis)
- * Analytics Engine: tendencias, outliers 2sigma, Score de Persistencia.
- */
 function computeTemporalAnalysis(monthlyData, analysis) {
     var months = Object.keys(monthlyData || {}).sort();
 
@@ -878,19 +803,16 @@ function computeTemporalAnalysis(monthlyData, analysis) {
 
     var outlierMonths = months.filter(function(m, i) { return discrepancySeries[i] > mean + 2 * stdDev; });
 
-    // Tendencia (regressao linear simples)
     var sx = 0, sy = 0, sxy = 0, sx2 = 0;
     discrepancySeries.forEach(function(v, i) { sx += i; sy += v; sxy += i * v; sx2 += i * i; });
     var slope = n > 1 ? (n * sxy - sx * sy) / (n * sx2 - sx * sx) : 0;
     var trend = slope > 50 ? 'ascending' : slope < -50 ? 'descending' : 'stable';
 
-    // Padrao oportunistico
     var meanGanhos = ganhosSeries.reduce(function(a, v) { return a + v; }, 0) / n;
     var opportunisticPattern = months.some(function(m, i) {
         return outlierMonths.indexOf(m) !== -1 && ganhosSeries[i] > meanGanhos;
     });
 
-    // Score de Persistencia (SP) 0-100
     var pctDisc  = discrepancySeries.filter(function(v) { return v > 0.01; }).length / n;
     var spBase   = pctDisc * 40;
     var spTrend  = trend === 'ascending' ? 25 : trend === 'stable' ? 10 : 0;
@@ -942,10 +864,6 @@ function computeTemporalAnalysis(monthlyData, analysis) {
 window.computeTemporalAnalysis = computeTemporalAnalysis;
 
 
-/**
- * generateTemporalChartImage(monthlyData, analysis)
- * Canvas invisivel → base64 PNG para injecao no PDF.
- */
 async function generateTemporalChartImage(monthlyData, analysis) {
     var W = 1200, H = 420;
     var canvas;
@@ -994,13 +912,11 @@ async function generateTemporalChartImage(monthlyData, analysis) {
     var toX  = function(i) { return padL + i * xS; };
     var toY  = function(v) { return padT + cH - (v / maxV) * cH; };
 
-    // Linha media
     var mY = toY(atf.mean);
     ctx3.strokeStyle = 'rgba(255,255,255,0.2)'; ctx3.setLineDash([6, 4]);
     ctx3.beginPath(); ctx3.moveTo(padL, mY); ctx3.lineTo(padL + cW, mY); ctx3.stroke();
     ctx3.setLineDash([]);
 
-    // Linha 2sigma
     if (atf.stdDev > 0) {
         var sigY = toY(atf.mean + 2 * atf.stdDev);
         ctx3.strokeStyle = 'rgba(239,68,68,0.3)'; ctx3.setLineDash([3, 3]);
@@ -1010,28 +926,24 @@ async function generateTemporalChartImage(monthlyData, analysis) {
         ctx3.textAlign = 'left'; ctx3.fillText('2\u03c3', padL + cW + 4, sigY + 4);
     }
 
-    // Serie Ganhos
     ctx3.strokeStyle = '#3B82F6'; ctx3.lineWidth = 2;
     ctx3.beginPath();
     atf.ganhosSeries.forEach(function(v, i) {
         if (i === 0) ctx3.moveTo(toX(i), toY(v)); else ctx3.lineTo(toX(i), toY(v));
     }); ctx3.stroke();
 
-    // Serie Despesas
     ctx3.strokeStyle = '#10B981'; ctx3.lineWidth = 2;
     ctx3.beginPath();
     atf.despesasSeries.forEach(function(v, i) {
         if (i === 0) ctx3.moveTo(toX(i), toY(v)); else ctx3.lineTo(toX(i), toY(v));
     }); ctx3.stroke();
 
-    // Serie Discrepancia
     ctx3.strokeStyle = '#F59E0B'; ctx3.lineWidth = 2.5;
     ctx3.beginPath();
     atf.discrepancySeries.forEach(function(v, i) {
         if (i === 0) ctx3.moveTo(toX(i), toY(v)); else ctx3.lineTo(toX(i), toY(v));
     }); ctx3.stroke();
 
-    // Pontos
     atf.discrepancySeries.forEach(function(v, i) {
         var isOut = atf.outlierMonths.indexOf(months[i]) !== -1;
         ctx3.fillStyle   = isOut ? '#EF4444' : '#F59E0B';
@@ -1042,14 +954,12 @@ async function generateTemporalChartImage(monthlyData, analysis) {
         ctx3.fill(); if (isOut) ctx3.stroke();
     });
 
-    // Labels X
     ctx3.fillStyle = 'rgba(255,255,255,0.6)'; ctx3.font = '10px Courier New, monospace'; ctx3.textAlign = 'center';
     months.forEach(function(m, i) {
         var label = m.length === 6 ? m.substring(0, 4) + '/' + m.substring(4) : m;
         ctx3.fillText(label, toX(i), padT + cH + 18);
     });
 
-    // Legenda
     [
         { color: '#3B82F6', text: 'Ganhos' },
         { color: '#10B981', text: 'Despesas' },
@@ -1063,12 +973,9 @@ async function generateTemporalChartImage(monthlyData, analysis) {
     });
 
     var dataURL = canvas.toDataURL('image/png');
-    // ── PATCH UNIFED-v13.5.0-PURE: Forçar limpeza de memória RAM ──────────
-    // Evita memory leaks em sessões longas com múltiplas exportações PDF (ATF)
     canvas.width  = 0;
     canvas.height = 0;
     ctx3 = null;
-    // ── FIM PATCH LIMPEZA DE MEMÓRIA ─────────────────────────────────────────
     document.body.removeChild(canvas);
     console.log('[UNIFED-ATF] \u2705 Grafico ATF gerado - meses:', months.length, '| SP:', atf.persistenceScore);
     return dataURL;
@@ -1077,14 +984,10 @@ async function generateTemporalChartImage(monthlyData, analysis) {
 window.generateTemporalChartImage = generateTemporalChartImage;
 
 
-/**
- * openATFModal() - Modal Dashboard interativo com Chart.js
- */
 function openATFModal() {
     var sys = window.UNIFEDSystem;
     if (!sys) { console.warn('[UNIFED-ATF] UNIFEDSystem nao disponivel.'); return; }
 
-    // Helper de tradução bilíngue
     var _L = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
     var _T = function(pt, en) { return _L === 'en' ? en : pt; };
 
@@ -1183,25 +1086,15 @@ function openATFModal() {
 
     document.body.appendChild(modal);
 
-    // Chart.js
     if (months.length > 0 && typeof Chart !== 'undefined') {
         try {
             var cvs = document.getElementById('atfChartCanvas');
             if (cvs) {
-                // ── FIX-1: MITIGAÇÃO DE MEMORY LEAK (WebGL Context Accumulation) ──────
-                // Chart.js acumula contextos WebGL no mesmo <canvas> se não for
-                // explicitamente destruído. A API oficial Chart.getChart(canvas) permite
-                // recuperar a instância ativa sem aceder a internals privados.
-                // Se existir uma instância prévia, invoca .destroy() para libertar
-                // o contexto na Garbage Collection antes de instanciar o novo render.
-                // Conformidade: DORA (UE) 2022/2554 — Resiliência de Sistemas Críticos.
-                // ──────────────────────────────────────────────────────────────────────
                 var _existingChart = Chart.getChart(cvs);
                 if (_existingChart) {
                     _existingChart.destroy();
                     console.info('[UNIFED-ATF] [i] Instância Chart.js prévia destruída (memory leak mitigado).');
                 }
-                // ── FIM FIX-1 ──────────────────────────────────────────────────────────
 
                 var mean2s = atf.mean + 2 * atf.stdDev;
                 new Chart(cvs, {
@@ -1261,17 +1154,7 @@ window.renderSankeyToImage     = renderSankeyToImage;
 // ============================================================================
 // UNIFED-v13.5.0-PURE — generateBurdenOfProofSection()
 // Adenda de Alta Inteligência Jurídica: Inversão do Ónus da Prova
-// Fundamento: Art. 344.º n.º 2 CC · Princípio da Proximidade da Prova
-//             Acórdão STJ 11/07/2013 · Art. 100.º CPPT
-// ISOLAMENTO: Injeção de texto puro — motor de cálculo INTOCADO
 // ============================================================================
-
-/**
- * Injeta a fundamentação de Inversão do Ónus da Prova.
- * Focada em esmagar a defesa baseada em "erro de sistema" ou "caixa negra".
- * @param {number} discrepancyValue - Valor da discrepância apurada (cross.discrepanciaCritica)
- * @returns {string} Bloco de texto pericial estruturado para inclusão nos outputs
- */
 function generateBurdenOfProofSection(discrepancyValue) {
     if (!discrepancyValue || discrepancyValue <= 0) return '';
 
@@ -1326,26 +1209,3 @@ console.log('[UNIFED-ENRICHMENT]   . generateTemporalChartImage() - ATF Grafico 
 console.log('[UNIFED-ENRICHMENT]   . computeTemporalAnalysis()    - ATF Analytics (2sigma SP Outliers)');
 console.log('[UNIFED-ENRICHMENT]   . openATFModal()               - ATF Dashboard Modal (Chart.js)');
 console.log('[UNIFED-ENRICHMENT]   . Modo: Read-Only - Fonte: UNIFEDSystem.analysis + monthlyData');
-
-/* =====================================================================
-   FIM DO FICHEIRO ENRICHMENT.JS - v13.5.0-PURE
-   UNIFED - PROBATUM - OUTPUT ENRICHMENT LAYER
-
-   BUGS CORRIGIDOS:
-   [FIX-1] DOCX shadow: const document -> var _docXml
-           Eliminado "document.createElement is not a function"
-   [FIX-2] CORS Anthropic/FreeTSA: fetch errors silenciados como
-           console.info (nao como console.error). Sistema 100% funcional.
-   [FIX-3] Async listener (chrome extension): OTS handshake ja tem
-           try/catch em script.js. NIFAF guard evita re-triggers.
-
-   NOVOS MODULOS:
-   [ATF-1] computeTemporalAnalysis() - 2sigma, Score de Persistencia, outliers
-   [ATF-2] generateTemporalChartImage() - canvas invisivel para PDF
-   [ATF-3] openATFModal() - overlay Dashboard com Chart.js interativo
-   [SEAL]  generateIntegritySeal() - padrao geometrico do SHA-256
-   [ADV]   AI Adversarial Simulator (Seccao D na narrativa)
-   [NIFAF] Guard _nifafAlertedHash em script.js (sem loops)
-
-   CONFORMIDADE: DORA (UE) 2022/2554 - RGPD - ISO/IEC 27037:2012
-   ===================================================================== */

@@ -3,7 +3,7 @@
  * UNIFED - PROBATUM · v13.5.0-PURE · MÓDULO DE EXPORTAÇÃO — TRÍADE DOCUMENTAL
  * ============================================================================
  * Ficheiro      : unifed_triada_export.js
- * Versão        : 1.0.6-TRIADA (COMPLETA - COM EXPORTAÇÕES REAIS)
+ * Versão        : 1.0.7-TRIADA (COMPLETA - COM EXPORTAÇÕES REAIS)
  * ============================================================================
  */
 
@@ -13,7 +13,7 @@
     console.log('[UNIFED-TRIADA] ========== INICIANDO TRÍADE DOCUMENTAL ==========');
     
     // =========================================================================
-    // UTILITÁRIOS (DO ORIGINAL)
+    // UTILITÁRIOS
     // =========================================================================
     
     function _log(msg, level) {
@@ -25,19 +25,30 @@
         }
     }
     
-    function _eur(val) {
-        return new Intl.NumberFormat(_locale(), {
-            style: 'currency', currency: 'EUR',
-            minimumFractionDigits: 2, maximumFractionDigits: 2
-        }).format(val || 0);
+    function _getSys() {
+        if (!window.UNIFEDSystem || !window.UNIFEDSystem.analysis) {
+            throw new Error('UNIFEDSystem.analysis não disponível — execute a análise forense primeiro.');
+        }
+        return window.UNIFEDSystem;
+    }
+
+    // Centralização da formatação monetária
+    function _formatCurrencyCentral(val) {
+        if (window.UNIFEDSystem && window.UNIFEDSystem.utils && window.UNIFEDSystem.utils.formatCurrency) {
+            return window.UNIFEDSystem.utils.formatCurrency(val);
+        }
+        // Fallback crítico
+        var _lang = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
+        var _locale = _lang === 'en' ? 'en-GB' : 'pt-PT';
+        return new Intl.NumberFormat(_locale, { style: 'currency', currency: 'EUR' }).format(val || 0);
     }
     
-    // Helper bilíngue
+    function _locale() { return _getLang() === 'en' ? 'en-GB' : 'pt-PT'; }
+    
     function _getLang() {
         return (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
     }
     function _T(pt, en) { return _getLang() === 'en' ? en : pt; }
-    function _locale() { return _getLang() === 'en' ? 'en-GB' : 'pt-PT'; }
     
     function _dataHoje() {
         return new Date().toLocaleDateString(_locale(), {
@@ -62,15 +73,8 @@
             .replace(/'/g, '&apos;');
     }
     
-    function _getSys() {
-        if (!window.UNIFEDSystem || !window.UNIFEDSystem.analysis) {
-            throw new Error('UNIFEDSystem.analysis não disponível — execute a análise forense primeiro.');
-        }
-        return window.UNIFEDSystem;
-    }
-    
     // =========================================================================
-    // EXPORTAÇÃO PDF RELATÓRIO PERICIAL (COMPLETA)
+    // EXPORTAÇÃO PDF RELATÓRIO PERICIAL
     // =========================================================================
     async function _unifedExportPdfRelatorio() {
         _log('📄 Exportando PDF Relatório Pericial...', 'info');
@@ -102,7 +106,6 @@
             var W = R - L;
             var hoje = _dataHoje();
             
-            // Computar hash do snapshot
             var _snapshotStr = JSON.stringify({
                 sessionId: sessId,
                 ganhos: t.ganhos,
@@ -182,7 +185,6 @@
                 return y + 6;
             }
             
-            // PÁGINA 1
             _watermark();
             doc.setFillColor(5, 20, 50);
             doc.rect(0, 0, pageW, 38, 'F');
@@ -229,12 +231,12 @@
             y += 4;
             
             y = _sectionHeader(_T('III. SUMÁRIO DE ACHADOS — PROVA RAINHA', 'III. SUMMARY OF FINDINGS — CROWN EVIDENCE'), y, [120, 30, 30]);
-            y = _kpiRow(_T('Ganhos Totais (Extrato Ledger)','Total Earnings (Ledger Statement)'), _eur(t.ganhos), y, false);
-            y = _kpiRow(_T('Despesas/Comissões Retidas (BTOR)','Expenses/Commissions Withheld (BTOR)'), _eur(t.despesas), y, false);
-            y = _kpiRow(_T('Ganhos Líquidos (Extrato Real)','Net Earnings (Actual Statement)'), _eur(t.ganhosLiquidos), y, false);
-            y = _kpiRow(_T('SAF-T Bruto (Declarado)','SAF-T Gross (Declared)'), _eur(t.saftBruto), y, false);
-            y = _kpiRow(_T('DAC7 Reportado à AT (2.º Sem. 2024)','DAC7 Reported to TA (2nd Sem. 2024)'), _eur(t.dac7TotalPeriodo), y, false);
-            y = _kpiRow(_T('Comissões Faturadas BTF (PT1124/1125)','Invoiced Commissions BTF (PT1124/1125)'), _eur(t.faturaPlataforma), y, false);
+            y = _kpiRow(_T('Ganhos Totais (Extrato Ledger)','Total Earnings (Ledger Statement)'), _formatCurrencyCentral(t.ganhos), y, false);
+            y = _kpiRow(_T('Despesas/Comissões Retidas (BTOR)','Expenses/Commissions Withheld (BTOR)'), _formatCurrencyCentral(t.despesas), y, false);
+            y = _kpiRow(_T('Ganhos Líquidos (Extrato Real)','Net Earnings (Actual Statement)'), _formatCurrencyCentral(t.ganhosLiquidos), y, false);
+            y = _kpiRow(_T('SAF-T Bruto (Declarado)','SAF-T Gross (Declared)'), _formatCurrencyCentral(t.saftBruto), y, false);
+            y = _kpiRow(_T('DAC7 Reportado à AT (2.º Sem. 2024)','DAC7 Reported to TA (2nd Sem. 2024)'), _formatCurrencyCentral(t.dac7TotalPeriodo), y, false);
+            y = _kpiRow(_T('Comissões Faturadas BTF (PT1124/1125)','Invoiced Commissions BTF (PT1124/1125)'), _formatCurrencyCentral(t.faturaPlataforma), y, false);
             y += 2;
             
             doc.setFillColor(255, 245, 245);
@@ -246,7 +248,7 @@
             doc.setTextColor(180, 30, 30);
             doc.text(_T('SMOKING GUN C2 — COMISSÕES EXTRATO vs FATURA BTF','SMOKING GUN C2 — STATEMENT COMMISSIONS vs INVOICE BTF'), L + 3, y + 3);
             doc.setFontSize(10);
-            doc.text(_T('OMISSÃO: ','OMISSION: ') + _eur(c.discrepanciaCritica) + '  (' + (c.percentagemOmissao || 0).toFixed(2) + '%)', L + 3, y + 9);
+            doc.text(_T('OMISSÃO: ','OMISSION: ') + _formatCurrencyCentral(c.discrepanciaCritica) + '  (' + (c.percentagemOmissao || 0).toFixed(2) + '%)', L + 3, y + 9);
             doc.setTextColor(0, 0, 0);
             y += 18;
             
@@ -259,7 +261,7 @@
             doc.setTextColor(140, 80, 0);
             doc.text(_T('SMOKING GUN C1 — SAF-T BRUTO vs REPORTE DAC7','SMOKING GUN C1 — SAF-T GROSS vs DAC7 REPORT'), L + 3, y + 3);
             doc.setFontSize(10);
-            doc.text(_T('DIFERENÇA: ','DIFFERENCE: ') + _eur(c.discrepanciaSaftVsDac7) + '  (' + (c.percentagemSaftVsDac7 || 0).toFixed(2) + '%)', L + 3, y + 9);
+            doc.text(_T('DIFERENÇA: ','DIFFERENCE: ') + _formatCurrencyCentral(c.discrepanciaSaftVsDac7) + '  (' + (c.percentagemSaftVsDac7 || 0).toFixed(2) + '%)', L + 3, y + 9);
             doc.setTextColor(0, 0, 0);
             y += 18;
             
@@ -277,7 +279,6 @@
             
             _footer(false);
             
-            // PÁGINA 2 (simplificada para não exceder tamanho)
             _newPage();
             y = 18;
             y = _sectionHeader(_T('IV. INTRODUÇÃO — CONTEXTO NORMATIVO', 'IV. INTRODUCTION — NORMATIVE CONTEXT'), y, [10, 60, 110]);
@@ -291,9 +292,9 @@
                 '',
                 'A análise forense incide especificamente sobre a divergência entre: (a) o valor das ' +
                 'comissões efetivamente retidas pela plataforma, evidenciadas no extrato ledger ' +
-                '(BTOR: €' + (t.despesas || 0).toFixed(2) + '), e (b) o valor declarado nas faturas ' +
-                'emitidas pela plataforma ao operador (BTF: €' + (t.faturaPlataforma || 0).toFixed(2) + '). ' +
-                'A omissão apurada de ' + _eur(c.discrepanciaCritica) + ' (' +
+                '(BTOR: ' + _formatCurrencyCentral(t.despesas) + '), e (b) o valor declarado nas faturas ' +
+                'emitidas pela plataforma ao operador (BTF: ' + _formatCurrencyCentral(t.faturaPlataforma) + '). ' +
+                'A omissão apurada de ' + _formatCurrencyCentral(c.discrepanciaCritica) + ' (' +
                 (c.percentagemOmissao || 0).toFixed(2) + '%) suscita obrigações declarativas em sede de ' +
                 'IVA (Art. 36.º n.º 11 CIVA) e potencialmente em sede de IRC (Art. 17.º CIRC).'
             ];
@@ -319,7 +320,7 @@
     }
     
     // =========================================================================
-    // EXPORTAÇÃO PDF ANEXO CUSTÓDIA (COMPLETA)
+    // EXPORTAÇÃO PDF ANEXO CUSTÓDIA
     // =========================================================================
     async function _unifedExportPdfAnexoCustodia() {
         _log('📄 Exportando PDF Anexo Custódia...', 'info');
@@ -460,7 +461,7 @@
     }
     
     // =========================================================================
-    // EXPORTAÇÃO DOCX MATRIZ JURÍDICA (COMPLETA)
+    // EXPORTAÇÃO DOCX MATRIZ JURÍDICA
     // =========================================================================
     async function _unifedExportDocxMatriz() {
         _log('📄 Exportando DOCX Matriz Jurídica...', 'info');
@@ -523,27 +524,27 @@
             _bodyParts.push(_p(_T('I. RECONSTITUIÇÃO DA VERDADE MATERIAL — DADOS VERIFICADOS', 'I. RECONSTRUCTION OF MATERIAL TRUTH — VERIFIED DATA'), 'Heading2', true, 24, '1D4ED8'));
             _bodyParts.push(_tbl([
                 _tr([_T('VARIÁVEL','VARIABLE'), _T('VALOR (€)','AMOUNT (€)'), _T('FONTE','SOURCE')], true),
-                _tr(['Ganhos Brutos (Extrato Ledger)', _eur(t.ganhos), 'Extrato Bolt · 2.º Sem. 2024']),
-                _tr([_T('Despesas/Comissões Retidas (BTOR)','Expenses/Commissions Withheld (BTOR)'), _eur(t.despesas), 'Extrato Ledger']),
-                _tr([_T('Ganhos Líquidos (Extrato Real)','Net Earnings (Actual Statement)'), _eur(t.ganhosLiquidos), 'Ganhos − Despesas']),
-                _tr([_T('SAF-T Bruto (Declarado)','SAF-T Gross (Declared)'), _eur(t.saftBruto), 'SAF-T Plataforma']),
-                _tr([_T('DAC7 Reportado à AT (2.º Sem. 2024)','DAC7 Reported to TA (2nd Sem. 2024)'), _eur(t.dac7TotalPeriodo), 'Reporte AT']),
-                _tr(['Comissões Faturadas BTF', _eur(t.faturaPlataforma), 'Faturas BTF'])
+                _tr(['Ganhos Brutos (Extrato Ledger)', _formatCurrencyCentral(t.ganhos), 'Extrato Bolt · 2.º Sem. 2024']),
+                _tr([_T('Despesas/Comissões Retidas (BTOR)','Expenses/Commissions Withheld (BTOR)'), _formatCurrencyCentral(t.despesas), 'Extrato Ledger']),
+                _tr([_T('Ganhos Líquidos (Extrato Real)','Net Earnings (Actual Statement)'), _formatCurrencyCentral(t.ganhosLiquidos), 'Ganhos − Despesas']),
+                _tr([_T('SAF-T Bruto (Declarado)','SAF-T Gross (Declared)'), _formatCurrencyCentral(t.saftBruto), 'SAF-T Plataforma']),
+                _tr([_T('DAC7 Reportado à AT (2.º Sem. 2024)','DAC7 Reported to TA (2nd Sem. 2024)'), _formatCurrencyCentral(t.dac7TotalPeriodo), 'Reporte AT']),
+                _tr(['Comissões Faturadas BTF', _formatCurrencyCentral(t.faturaPlataforma), 'Faturas BTF'])
             ], [2600, 1600, 2800]));
             
             _bodyParts.push(_p(_T('II. DISCREPÂNCIAS APURADAS', 'II. DISCREPANCIES FOUND'), 'Heading2', true, 24, 'DC2626'));
             _bodyParts.push(_tbl([
                 _tr(['SMOKING GUN', _T('DESCRIÇÃO','DESCRIPTION'), _T('VALOR OMITIDO (€)','OMITTED AMOUNT (€)'), _T('PERCENTAGEM','PERCENTAGE')], true),
-                _tr(['C2 — ' + _T('PRINCIPAL','MAIN'), _T('Comissões Extrato vs Faturadas','Statement vs Invoiced Commissions'), _eur(c.discrepanciaCritica), (c.percentagemOmissao || 0).toFixed(2) + '%']),
-                _tr(['C1 — ' + _T('SECUNDÁRIO','SECONDARY'), _T('SAF-T Bruto vs Reporte DAC7','SAF-T Gross vs DAC7 Report'), _eur(c.discrepanciaSaftVsDac7), (c.percentagemSaftVsDac7 || 0).toFixed(2) + '%'])
+                _tr(['C2 — ' + _T('PRINCIPAL','MAIN'), _T('Comissões Extrato vs Faturadas','Statement vs Invoiced Commissions'), _formatCurrencyCentral(c.discrepanciaCritica), (c.percentagemOmissao || 0).toFixed(2) + '%']),
+                _tr(['C1 — ' + _T('SECUNDÁRIO','SECONDARY'), _T('SAF-T Bruto vs Reporte DAC7','SAF-T Gross vs DAC7 Report'), _formatCurrencyCentral(c.discrepanciaSaftVsDac7), (c.percentagemSaftVsDac7 || 0).toFixed(2) + '%'])
             ], [1200, 3400, 1400, 1000]));
             
             _bodyParts.push(_p(_T('III. QUANTIFICAÇÃO DO IMPACTO FISCAL', 'III. QUANTIFICATION OF TAX IMPACT'), 'Heading2', true, 24, '065F46'));
             _bodyParts.push(_tbl([
                 _tr([_T('TRIBUTO','TAX'), _T('BASE DE INCIDÊNCIA','ASSESSMENT BASIS'), _T('TAXA','RATE'), _T('VALOR ESTIMADO (€)','ESTIMATED AMOUNT (€)')], true),
-                _tr([_T('IVA (taxa normal)','VAT (standard rate)'), _eur(c.discrepanciaCritica), '23%', _eur(c.ivaFalta)]),
-                _tr([_T('IVA (taxa reduzida)','VAT (reduced rate)'), _eur(c.discrepanciaCritica), '6%', _eur(c.ivaFalta6)]),
-                _tr([_T('IRC','CIT'), _eur(c.agravamentoBrutoIRC || c.discrepanciaCritica), '21%', _eur(c.ircEstimado)])
+                _tr([_T('IVA (taxa normal)','VAT (standard rate)'), _formatCurrencyCentral(c.discrepanciaCritica), '23%', _formatCurrencyCentral(c.ivaFalta)]),
+                _tr([_T('IVA (taxa reduzida)','VAT (reduced rate)'), _formatCurrencyCentral(c.discrepanciaCritica), '6%', _formatCurrencyCentral(c.ivaFalta6)]),
+                _tr([_T('IRC','CIT'), _formatCurrencyCentral(c.agravamentoBrutoIRC || c.discrepanciaCritica), '21%', _formatCurrencyCentral(c.ircEstimado)])
             ], [1800, 2200, 700, 1800]));
             
             _bodyParts.push(_p(_T('IV. VEREDICTO PERICIAL', 'IV. EXPERT VERDICT'), 'Heading2', true, 24, '7C3AED'));
@@ -576,7 +577,7 @@
     }
     
     // =========================================================================
-    // CRIAÇÃO DOS BOTÕES (COM AS FUNÇÕES REAIS)
+    // CRIAÇÃO DOS BOTÕES E INJEÇÃO
     // =========================================================================
     function criarBotao(id, iconClass, label, cor, handler) {
         var btn = document.createElement('button');
@@ -652,7 +653,6 @@
         
         botoes.forEach(function(b) {
             var btn = criarBotao(b.id, b.icon, _T(b.labelPt, b.labelEn), b.cor, b.handler);
-            // Guardar labels para actualização dinâmica de idioma
             btn.setAttribute('data-pt', b.labelPt);
             btn.setAttribute('data-en', b.labelEn);
             btn.setAttribute('data-icon', b.icon);
@@ -660,7 +660,6 @@
             console.log('[UNIFED-TRIADA] ✅ Botão criado:', b.id);
         });
 
-        // Registar hook de idioma: actualiza labels quando switchLanguage() é chamado
         var _triadaLangHook = function() {
             ['unifedPdfRelatorioBtn', 'unifedPdfAnexoBtn', 'unifedDocxMatrizBtn'].forEach(function(id) {
                 var _btn = document.getElementById(id);
@@ -673,7 +672,6 @@
                 _btn.title = _lbl;
             });
         };
-        // Substituir hook anterior se já existir
         window._triadaUpdateLabels = _triadaLangHook;
         
         var btnPDF = document.getElementById('exportPDFBtn');
@@ -713,4 +711,4 @@
     
     executar();
     
-})();
+})(); // Fim do IIFE
