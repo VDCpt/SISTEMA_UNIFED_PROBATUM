@@ -25,6 +25,22 @@
 'use strict';
 
 // ============================================================================
+// SINGLETON GUARD — window.logAudit
+// Garante que window.logAudit está sempre definido, independentemente da ordem
+// de carregamento dos módulos. Não sobrescreve a implementação principal do
+// script.js se esta já estiver presente. (D-001 — RTR-UNIFED-2026-001)
+// ============================================================================
+if (typeof window.logAudit !== 'function') {
+    window.logAudit = function(msg, level) {
+        var _prefix = '[UNIFED-AUDIT-FALLBACK] ';
+        if (level === 'error')        console.error(_prefix + msg);
+        else if (level === 'warn')    console.warn(_prefix  + msg);
+        else if (level === 'success') console.info(_prefix  + msg);
+        else                          console.log(_prefix   + msg);
+    };
+}
+
+// ============================================================================
 // 0. UTILITÁRIOS INTERNOS
 // ============================================================================
 // ── _fmtEur — delega na função central window.formatCurrency ─────────────────
@@ -459,7 +475,7 @@ async function exportDOCX(xmlInject) {
         return;
     }
 
-    if (typeof logAudit === 'function') logAudit('\ud83d\udcc4 [v13.5.0-PURE] A gerar Minuta de Peticao Inicial (DOCX)...', 'info');
+    if (typeof window.logAudit === 'function') window.logAudit('\ud83d\udcc4 [v13.5.0-PURE] A gerar Minuta de Peticao Inicial (DOCX)...', 'info');
 
     var sys  = window.UNIFEDSystem;
     var t    = sys.analysis.totals    || {};
@@ -695,7 +711,7 @@ async function exportDOCX(xmlInject) {
             try { URL.revokeObjectURL(url); document.body.removeChild(link); } catch (_) {}
         }, 2000);
 
-        if (typeof logAudit === 'function') logAudit('\u2705 [v13.5.0-PURE] Minuta DOCX exportada com sucesso.', 'success');
+        if (typeof window.logAudit === 'function') window.logAudit('\u2705 [v13.5.0-PURE] Minuta DOCX exportada com sucesso.', 'success');
         if (typeof showToast === 'function') showToast('Minuta DOCX exportada - Peticao Inicial pronta', 'success');
         if (typeof ForensicLogger !== 'undefined') ForensicLogger.addEntry('DOCX_EXPORT_COMPLETED', { sessionId: sys.sessionId });
     } catch (zipErr) {
