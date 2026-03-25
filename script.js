@@ -459,8 +459,10 @@ const formatCurrency = (value) => {
     return _lang === 'en' ? '€' + _num : _num + ' €';
 };
 
+// formatCurrencyEN — formatação estática EN-GB (prefixo €, ponto decimal, vírgula milhar)
+// Mantido por compatibilidade; formatCurrency() é a função preferida (locale-aware dinâmica).
 const formatCurrencyEN = (value) => {
-    return forensicRound(value).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+    return '€' + forensicRound(value).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
 const getRiskVerdict = (delta, gross) => {
@@ -8471,6 +8473,14 @@ function setupDualScreenDetection() {
 // 30. EXPOSIÇÃO GLOBAL
 // ============================================================================
 window.UNIFEDSystem = UNIFEDSystem;
+
+// ── UTILS CENTRAL: função de formatação monetária locale-aware ────────────────
+// Exposta em UNIFEDSystem.utils para consumo por enrichment.js, nexus.js e
+// outros módulos periféricos sem dependência de cópia local.
+// Regra: PT → sufixo " €" (ex: 2 447,89 €) | EN → prefixo "€" (ex: €2,447.89)
+UNIFEDSystem.utils = {
+    formatCurrency: formatCurrency
+};
 window.ValueSource = ValueSource;
 window.ForensicLogger = ForensicLogger;
 window.SchemaRegistry = SchemaRegistry;

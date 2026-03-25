@@ -38,12 +38,26 @@
 // ============================================================================
 // 0. UTILITÁRIOS INTERNOS
 // ============================================================================
+// ── _fmtEur — formatação monetária locale-aware ──────────────────────────────
+// Delega em UNIFEDSystem.utils.formatCurrency (fonte central de script.js)
+// quando disponível; fallback interno para isolamento offline.
+// Regra ISO PT: sufixo " €"  (ex: 9.582,76 €)
+// Regra ISO EN: prefixo "€"  (ex: €9,582.76)
 const _fmtEur = (val) => {
-    if (!val || isNaN(val)) return '\u20AC0,00';
-    return new Intl.NumberFormat('pt-PT', {
-        style: 'currency', currency: 'EUR',
-        minimumFractionDigits: 2, maximumFractionDigits: 2
-    }).format(val);
+    // Delegação na função central de script.js (fonte única de verdade)
+    if (typeof window !== 'undefined' &&
+        window.UNIFEDSystem &&
+        window.UNIFEDSystem.utils &&
+        typeof window.UNIFEDSystem.utils.formatCurrency === 'function') {
+        return window.UNIFEDSystem.utils.formatCurrency(val);
+    }
+    // Fallback locale-aware (usado quando enrichment.js carrega antes de script.js)
+    const _raw  = (val === null || val === undefined || isNaN(Number(val))) ? 0 : Number(val);
+    const _lang   = (typeof window !== 'undefined' && typeof window.currentLang !== 'undefined')
+        ? window.currentLang : 'pt';
+    const _locale = _lang === 'en' ? 'en-GB' : 'pt-PT';
+    const _num    = _raw.toLocaleString(_locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return _lang === 'en' ? '\u20AC' + _num : _num + '\u00A0\u20AC';
 };
 
 // ============================================================================
