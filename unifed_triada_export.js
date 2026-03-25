@@ -16,9 +16,13 @@
     // UTILITÁRIOS
     // =========================================================================
     
+    // F-02 (RTR-UNIFED-2026-004): _log centralizado em UNIFEDSystem.utils.log
     function _log(msg, level) {
         var prefix = '[UNIFED-TRIADA] ';
-        if (typeof window.logAudit === 'function') {
+        var _utils = window.UNIFEDSystem && window.UNIFEDSystem.utils;
+        if (_utils && typeof _utils.log === 'function') {
+            _utils.log(prefix + msg, level || 'info');
+        } else if (typeof window.logAudit === 'function') {
             window.logAudit(prefix + msg, level || 'info');
         } else {
             console.log(prefix + msg);
@@ -34,14 +38,23 @@
 
     // ── FUNÇÃO DE FORMATAÇÃO CENTRALIZADA ──────────────────────────────────────
     // Delega na função global window.formatCurrency definida em script.js
+    // F-03 (RTR-UNIFED-2026-004): _formatCurrencyCentral — delega em UNIFEDSystem.utils
+    // ou window.formatCurrency; fallback ISO com minimumFractionDigits:2.
     function _formatCurrencyCentral(val) {
+        var _utils = window.UNIFEDSystem && window.UNIFEDSystem.utils;
+        if (_utils && typeof _utils.formatCurrency === 'function') {
+            return _utils.formatCurrency(val);
+        }
         if (typeof window.formatCurrency === 'function') {
             return window.formatCurrency(val);
         }
-        // Fallback crítico (nunca deve ocorrer em produção)
-        var _lang = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
+        // Fallback crítico: nunca deve ocorrer em produção
+        var _lang   = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
         var _locale = _lang === 'en' ? 'en-GB' : 'pt-PT';
-        return new Intl.NumberFormat(_locale, { style: 'currency', currency: 'EUR' }).format(val || 0);
+        return new Intl.NumberFormat(_locale, {
+            style: 'currency', currency: 'EUR',
+            minimumFractionDigits: 2, maximumFractionDigits: 2
+        }).format(val || 0);
     }
     
     function _locale() { return _getLang() === 'en' ? 'en-GB' : 'pt-PT'; }
@@ -695,6 +708,10 @@
                 // 3. Actualizar os labels dos botões da Tríade
                 if (typeof window._triadaUpdateLabels === 'function') {
                     try { window._triadaUpdateLabels(); } catch (_e) {}
+                }
+                // 4. F-04 (RTR-UNIFED-2026-004): Actualizar enrichment (Chart.js ATF + outliers)
+                if (typeof window._enrichmentRefreshLang === 'function') {
+                    try { window._enrichmentRefreshLang(lang); } catch (_e) {}
                 }
             };
             // Se switchLanguage ainda não existir no momento da injecção,

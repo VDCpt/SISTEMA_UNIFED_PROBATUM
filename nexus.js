@@ -250,7 +250,8 @@
             _para('', false),
 
             _para('VI.1 · BASE LEGAL DIRETAMENTE APLICAVEL', true, '22', '003366'),
-            _para('Com base na discrepancia de ' + pct + '% apurada (IVA em falta: ' + (typeof window.formatCurrency === 'function' ? window.formatCurrency(iva) : new Intl.NumberFormat((typeof window.currentLang !== 'undefined' && window.currentLang === 'en') ? 'en-GB' : 'pt-PT',{style:'currency',currency:'EUR'}).format(iva)) + '), aplicam-se os seguintes preceitos legais:', false, '20', '333333'),
+            // F-06 (RTR-UNIFED-2026-004): utils.formatCurrency para IVA em falta
+            _para('Com base na discrepancia de ' + pct + '% apurada (IVA em falta: ' + (function(){ var _u=window.UNIFEDSystem&&window.UNIFEDSystem.utils; return (_u&&_u.formatCurrency)?_u.formatCurrency(iva):(window.formatCurrency?window.formatCurrency(iva):new Intl.NumberFormat((typeof window.currentLang!=='undefined'&&window.currentLang==='en')?'en-GB':'pt-PT',{style:'currency',currency:'EUR'}).format(iva)); })() + '), aplicam-se os seguintes preceitos legais:', false, '20', '333333'),
             _para('', false),
             tblArtigos,
             _para('', false),
@@ -488,14 +489,14 @@
         var _L = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
         var _T = function(pt, en) { return _L === 'en' ? en : pt; };
 
+        // F-05 (RTR-UNIFED-2026-004): delegar em UNIFEDSystem.utils.formatCurrency
         var fmtEur = function(v) {
-            if (typeof window.formatCurrency === 'function') {
-                return window.formatCurrency(v);
-            }
-            // Fallback (R-C1 — RTR-UNIFED-2026-002): locale dinâmica conforme currentLang
-            var _lang   = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
-            var _locale = _lang === 'en' ? 'en-GB' : 'pt-PT';
-            return new Intl.NumberFormat(_locale, {style:'currency',currency:'EUR',minimumFractionDigits:2}).format(v || 0);
+            var _utils = window.UNIFEDSystem && window.UNIFEDSystem.utils;
+            if (_utils && typeof _utils.formatCurrency === 'function') { return _utils.formatCurrency(v); }
+            if (typeof window.formatCurrency === 'function') { return window.formatCurrency(v); }
+            var _lang = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
+            return new Intl.NumberFormat(_lang === 'en' ? 'en-GB' : 'pt-PT',
+                {style:'currency',currency:'EUR',minimumFractionDigits:2}).format(v || 0);
         };
 
         var frag = document.createDocumentFragment();

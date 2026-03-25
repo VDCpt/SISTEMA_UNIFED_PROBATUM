@@ -25,40 +25,150 @@
 'use strict';
 
 // ============================================================================
-// SINGLETON GUARD — window.logAudit
-// Garante que window.logAudit está sempre definido, independentemente da ordem
-// de carregamento dos módulos. Não sobrescreve a implementação principal do
-// script.js se esta já estiver presente. (D-001 — RTR-UNIFED-2026-001)
+// UNIFEDSystem.utils — UTILITÁRIOS CENTRALIZADOS (RTR-UNIFED-2026-003)
 // ============================================================================
-if (typeof window.logAudit !== 'function') {
-    window.logAudit = function(msg, level) {
-        var _prefix = '[UNIFED-AUDIT-FALLBACK] ';
-        if (level === 'error')        console.error(_prefix + msg);
-        else if (level === 'warn')    console.warn(_prefix  + msg);
-        else if (level === 'success') console.info(_prefix  + msg);
-        else                          console.log(_prefix   + msg);
+// Centraliza formatCurrency e logAudit num único namespace partilhado por todos
+// os módulos (enrichment.js, nexus.js, unifed_triada_export.js, script.js).
+//
+// DIRETIVA A — Inversão Dinâmica do Símbolo €:
+//   utils.formatCurrency() usa Intl.NumberFormat com locale derivada de
+//   window.currentLang: 'en' → 'en-GB' (€1,234.56 — prefixo ISO 4217),
+//                       'pt' → 'pt-PT' (1 234,56 € — sufixo padrão PT).
+//
+// DIRETIVA C — Higienização de Escopo:
+//   Elimina as funções _eur, _fmtEur e _log dispersas. Todos os módulos
+//   invocam window.UNIFEDSystem.utils.formatCurrency e utils.log.
+//   window.formatCurrency e window.logAudit são mantidos como aliases de
+//   compatibilidade para script.js e nexus.js.
+//
+// DIRETIVA B — Sincronização de Gatilhos:
+//   Expõe window._enrichmentRefreshLang() para que o hook switchLanguage do
+//   unifed_triada_export.js possa disparar actualizações reactivas em modais
+//   ATF abertos sem reload de página.
+// ============================================================================
+(function _installUNIFEDUtils() {
+
+    // ── 1. Namespace UNIFEDSystem.utils ──────────────────────────────────────
+    if (typeof window.UNIFEDSystem === 'undefined') { window.UNIFEDSystem = {}; }
+    if (typeof window.UNIFEDSystem.utils === 'undefined') { window.UNIFEDSystem.utils = {}; }
+
+    var _utils = window.UNIFEDSystem.utils;
+
+    // ── 2. utils.formatCurrency — fonte única de verdade para formatação € ──
+    // Padrão ISO 4217 + DIRETIVA A:
+    //   currentLang === 'en'  →  en-GB  →  €1,234.56  (símbolo como prefixo)
+    //   currentLang === 'pt'  →  pt-PT  →  1 234,56 € (símbolo como sufixo)
+    if (typeof _utils.formatCurrency !== 'function') {
+        _utils.formatCurrency = function _uFormatCurrency(val) {
+            // Delegar na implementação principal do script.js se disponível
+            if (typeof window.formatCurrency === 'function' &&
+                window.formatCurrency !== _utils.formatCurrency) {
+                return window.formatCurrency(val);
+            }
+            var _raw    = (val === null || val === undefined || isNaN(Number(val))) ? 0 : Number(val);
+            var _lang   = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
+            var _locale = (_lang === 'en') ? 'en-GB' : 'pt-PT';
+            return new Intl.NumberFormat(_locale, {
+                style             : 'currency',
+                currency          : 'EUR',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(_raw);
+        };
+    }
+
+    // ── 3. Alias global window.formatCurrency (compatibilidade) ─────────────
+    // Não sobrescreve se o script.js já definiu a sua própria implementação.
+    if (typeof window.formatCurrency !== 'function') {
+        window.formatCurrency = _utils.formatCurrency;
+    }
+
+    // ── 4. utils.log — fonte única de verdade para auditoria ────────────────
+    if (typeof _utils.log !== 'function') {
+        _utils.log = function _uLog(msg, level) {
+            var _prefix = '[UNIFED-ENRICHMENT] ';
+            // Delegar na implementação principal do script.js se disponível
+            if (typeof window.logAudit === 'function' &&
+                window.logAudit !== _utils.log) {
+                window.logAudit(msg, level);
+                return;
+            }
+            if (level === 'error')        console.error(_prefix + msg);
+            else if (level === 'warn')    console.warn(_prefix  + msg);
+            else if (level === 'success') console.info(_prefix  + msg);
+            else                          console.log(_prefix   + msg);
+        };
+    }
+
+    // ── 5. Alias global window.logAudit (compatibilidade + Singleton Guard) ─
+    if (typeof window.logAudit !== 'function') {
+        window.logAudit = _utils.log;
+    }
+
+    // ── 6. DIRETIVA B — window._enrichmentRefreshLang() ─────────────────────
+    // Chamada pelo hook window.switchLanguage (unifed_triada_export.js) após
+    // mudança de idioma. Actualiza componentes reactivos do enrichment que
+    // possam estar montados no DOM (modal ATF, modal Sankey, etc.).
+    window._enrichmentRefreshLang = function _enrichmentRefreshLang(lang) {
+        var _newLang = lang || (typeof window.currentLang !== 'undefined' ? window.currentLang : 'pt');
+
+        // Actualizar o eixo Y do Chart.js ATF se o modal estiver aberto
+        var _atfCanvas = document.getElementById('atfChartCanvas');
+        if (_atfCanvas && typeof Chart !== 'undefined') {
+            try {
+                var _chart = Chart.getChart(_atfCanvas);
+                if (_chart) {
+                    var _newLocale = _newLang === 'en' ? 'en-GB' : 'pt-PT';
+                    // Actualizar callback do eixo Y com nova locale
+                    if (_chart.options && _chart.options.scales && _chart.options.scales.y) {
+                        _chart.options.scales.y.ticks.callback = function(v2) {
+                            return new Intl.NumberFormat(_newLocale, {
+                                style: 'currency', currency: 'EUR', maximumFractionDigits: 0
+                            }).format(v2);
+                        };
+                    }
+                    // Actualizar tooltips
+                    if (_chart.options && _chart.options.plugins && _chart.options.plugins.tooltip) {
+                        _chart.options.plugins.tooltip.callbacks.label = function(c2) {
+                            return ' ' + c2.dataset.label + ': ' + new Intl.NumberFormat(_newLocale, {
+                                style: 'currency', currency: 'EUR'
+                            }).format(c2.raw || 0);
+                        };
+                    }
+                    _chart.update('none'); // 'none' = sem animação — actualização atómica
+                }
+            } catch (_e) { /* silent — modal pode não estar aberto */ }
+        }
+
+        // Actualizar labels de outlier no modal ATF se presentes no DOM
+        var _atfModal = document.getElementById('atfModal');
+        if (_atfModal) {
+            var _outlierDivs = _atfModal.querySelectorAll('[data-disc-value]');
+            _outlierDivs.forEach(function(el) {
+                var _raw = parseFloat(el.getAttribute('data-disc-value'));
+                if (!isNaN(_raw)) {
+                    var _fmtd = _utils.formatCurrency(_raw);
+                    var _strong = el.querySelector('strong');
+                    // Substituir apenas o texto após o <strong>
+                    if (_strong && _strong.nextSibling) {
+                        _strong.nextSibling.textContent = '\n\u0394 ' + _fmtd;
+                    }
+                }
+            });
+        }
+
+        console.log('[UNIFED-ENRICHMENT] _enrichmentRefreshLang() executado — lang: ' + _newLang);
     };
-}
+
+    console.log('[UNIFED-ENRICHMENT] \u2705 UNIFEDSystem.utils inicializado — formatCurrency · log · _enrichmentRefreshLang');
+})();
+
+// ── Alias interno _fmtEur → UNIFEDSystem.utils.formatCurrency ───────────────
+// Mantém compatibilidade com todas as chamadas internas existentes no módulo.
+const _fmtEur = (val) => window.UNIFEDSystem.utils.formatCurrency(val);
 
 // ============================================================================
 // 0. UTILITÁRIOS INTERNOS
-// ============================================================================
-// ── _fmtEur — delega na função central window.formatCurrency ─────────────────
-// (R-A1 — RTR-UNIFED-2026-002) Fallback com Intl.NumberFormat e locale dinâmica;
-// posição do símbolo €: antes do número em 'en' (€1.00), depois em 'pt' (1,00 €).
-const _fmtEur = (val) => {
-    if (typeof window !== 'undefined' && typeof window.formatCurrency === 'function') {
-        return window.formatCurrency(val);
-    }
-    // Fallback crítico (nunca deve ocorrer em produção com ordem de carregamento correta)
-    const _raw    = (val === null || val === undefined || isNaN(Number(val))) ? 0 : Number(val);
-    const _lang   = (typeof window !== 'undefined' && typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
-    const _locale = _lang === 'en' ? 'en-GB' : 'pt-PT';
-    return new Intl.NumberFormat(_locale, {
-        style: 'currency', currency: 'EUR',
-        minimumFractionDigits: 2, maximumFractionDigits: 2
-    }).format(_raw);
-};
 
 // ============================================================================
 // 1. BASE LEGAL ESTATICA (RAG — Knowledge Base)
@@ -526,15 +636,8 @@ async function exportDOCX(xmlInject) {
                '<w:spacing w:before="120" w:after="120"/></w:pPr></w:p>';
     };
 
-    var fe = function(val) {
-        if (typeof window.formatCurrency === 'function') {
-            return window.formatCurrency(val);
-        }
-        // Fallback (R-A2 — RTR-UNIFED-2026-002): locale dinâmica conforme currentLang
-        var _lang   = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
-        var _locale = _lang === 'en' ? 'en-GB' : 'pt-PT';
-        return new Intl.NumberFormat(_locale, {style:'currency',currency:'EUR',minimumFractionDigits:2}).format(val||0);
-    };
+    // Diretiva C (RTR-UNIFED-2026-003): fe() centralizado em UNIFEDSystem.utils
+    var fe = function(val) { return window.UNIFEDSystem.utils.formatCurrency(val); };
 
     var discRows = [tr([tc('Indicador Pericial', true, 5000, 'E8F0F8'), tc('Valor Apurado', true, 4000, 'E8F0F8')])];
     if (Math.abs(c.discrepanciaCritica || 0) > 0) discRows.push(tr([tc('Omissao de Custos - BTF (Despesas vs Fatura)', false, 5000), tc(fe(c.discrepanciaCritica), false, 4000)]));
@@ -1035,14 +1138,9 @@ function openATFModal() {
                   var idx  = months.indexOf(m);
                   var lbl  = m.length === 6 ? m.substring(0, 4) + '/' + m.substring(4) : m;
                   var disc = atf.discrepancySeries[idx] || 0;
-                  return '<div style="background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.5);border-radius:4px;padding:6px 12px;color:#FCA5A5;font-size:0.75rem">' +
+                  return '<div data-disc-value="' + disc + '" style="background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.5);border-radius:4px;padding:6px 12px;color:#FCA5A5;font-size:0.75rem">' +
                          '<strong>' + lbl + '</strong><br>\u0394 ' +
-                         (typeof window.formatCurrency === 'function'
-                             ? window.formatCurrency(disc)
-                             : new Intl.NumberFormat(
-                                 (typeof window.currentLang !== 'undefined' && window.currentLang === 'en') ? 'en-GB' : 'pt-PT',
-                                 {style:'currency',currency:'EUR',minimumFractionDigits:2}
-                               ).format(disc)) +
+                         window.UNIFEDSystem.utils.formatCurrency(disc) +
                          '</div>';
               }).join('') +
               '</div></div>'
@@ -1058,6 +1156,29 @@ function openATFModal() {
         '</div>';
 
     document.body.appendChild(modal);
+
+    // DIRETIVA B (RTR-UNIFED-2026-003): registar hook de refresh de idioma
+    // enquanto o modal ATF estiver aberto. Quando switchLanguage() for invocado
+    // pelo unifed_triada_export.js, o Chart.js e os outlier badges actualizam-se
+    // instantaneamente sem reload de página.
+    var _atfLangHook = function(lang) {
+        if (typeof window._enrichmentRefreshLang === 'function') {
+            window._enrichmentRefreshLang(lang);
+        }
+    };
+    // Encadear no switchLanguage existente (ou instalar se ainda não existir)
+    var _prevSwitchForATF = window.switchLanguage;
+    window.switchLanguage = function _atfModalSwitchLanguage(lang) {
+        if (typeof _prevSwitchForATF === 'function') _prevSwitchForATF.call(this, lang);
+        _atfLangHook(lang);
+    };
+    // Limpar hook ao fechar o modal para evitar acumulação de wrappers
+    var _closeBtn = modal.querySelector('button');
+    if (_closeBtn) {
+        _closeBtn.addEventListener('click', function _restoreSwitchOnClose() {
+            window.switchLanguage = _prevSwitchForATF;
+        }, { once: true });
+    }
 
     if (months.length > 0 && typeof Chart !== 'undefined') {
         try {
@@ -1129,12 +1250,7 @@ window.renderSankeyToImage     = renderSankeyToImage;
 function generateBurdenOfProofSection(discrepancyValue) {
     if (!discrepancyValue || discrepancyValue <= 0) return '';
 
-    var _fmtVal = (typeof window.formatCurrency === 'function')
-        ? window.formatCurrency(discrepancyValue)
-        : new Intl.NumberFormat(
-              (typeof window.currentLang !== 'undefined' && window.currentLang === 'en') ? 'en-GB' : 'pt-PT',
-              { style: 'currency', currency: 'EUR', minimumFractionDigits: 2 }
-          ).format(discrepancyValue);
+    var _fmtVal = window.UNIFEDSystem.utils.formatCurrency(discrepancyValue);
 
     return (
         '---------------------------------------------------------------------------\n' +
