@@ -112,7 +112,11 @@
             var c = sys.analysis.crossings || {};
             var v = sys.analysis.verdict || {};
             var sessId = sys.sessionId || 'N/D';
-            var mhash = sys.masterHash || 'N/D';
+            var mhash  = (sys.masterHash && sys.masterHash !== 'N/D')
+                ? sys.masterHash
+                : ((window._REAL_CASE_MMLADX8Q && window._REAL_CASE_MMLADX8Q.masterHash)
+                    ? window._REAL_CASE_MMLADX8Q.masterHash
+                    : 'N/D');
             var pageW = doc.internal.pageSize.getWidth();
             var pageH = doc.internal.pageSize.getHeight();
             var L = 14;
@@ -359,7 +363,11 @@
             var t = sys.analysis.totals || {};
             var c = sys.analysis.crossings || {};
             var sessId = sys.sessionId || 'N/D';
-            var mhash = sys.masterHash || 'N/D';
+            var mhash  = (sys.masterHash && sys.masterHash !== 'N/D')
+                ? sys.masterHash
+                : ((window._REAL_CASE_MMLADX8Q && window._REAL_CASE_MMLADX8Q.masterHash)
+                    ? window._REAL_CASE_MMLADX8Q.masterHash
+                    : 'N/D');
             var pageW = doc.internal.pageSize.getWidth();
             var pageH = doc.internal.pageSize.getHeight();
             var L = 10;
@@ -499,7 +507,11 @@
             var c = sys.analysis.crossings || {};
             var v = sys.analysis.verdict || {};
             var sessId = sys.sessionId || 'N/D';
-            var mhash = sys.masterHash || 'N/D';
+            var mhash  = (sys.masterHash && sys.masterHash !== 'N/D')
+                ? sys.masterHash
+                : ((window._REAL_CASE_MMLADX8Q && window._REAL_CASE_MMLADX8Q.masterHash)
+                    ? window._REAL_CASE_MMLADX8Q.masterHash
+                    : 'N/D');
             var hoje = _dataHoje();
             
             function _p(txt, style, bold, sz, color) {
