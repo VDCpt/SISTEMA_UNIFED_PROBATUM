@@ -8,6 +8,7 @@
  * 3. Centralização da formatação monetária via window.formatCurrency
  * 4. Sincronização atómica da UI (translatePurePanel + triadaUpdateLabels)
  * 5. Eliminação de duplicações (NIFAF, formatCurrency)
+ * 6. Integração do Módulo de Exportação PDF Mod. 03-B (PAGINAÇÃO ROBUSTA)
  * ====================================================================
  */
 
@@ -158,7 +159,7 @@ window.formatCurrency = function(val) {
     }).format(num);
 };
 
-// Mantém formatCurrency como alias para compatibilidade
+// Mantém formatCurrency como alias local para compatibilidade interna
 const formatCurrency = window.formatCurrency;
 
 // formatCurrencyEN mantido para compatibilidade (deprecated - usar formatCurrency)
@@ -8298,7 +8299,7 @@ window.resetAuxiliaryData = resetAuxiliaryData;
     }
 
     UNIFEDSystem._pureModuleVersion = 'v13.5.0-PURE';
-    UNIFEDSystem._pureModuleLoaded = false;
+    UNIFEDSystem._pureModuleLoaded = true;
 
     if (typeof UNIFEDSystem.loadAnonymizedRealCase !== 'function') {
         UNIFEDSystem.loadAnonymizedRealCase = function _pureStub() {
@@ -8309,12 +8310,7 @@ window.resetAuxiliaryData = resetAuxiliaryData;
         };
     }
 
-    console.info(
-        '[UNIFED-PURE] ✅ Módulo v13.5.0-PURE registado no UNIFEDSystem.\n' +
-        '  Activação : UNIFEDSystem.loadAnonymizedRealCase()\n' +
-        '  Fonte     : UNIFED-MMLADX8Q-CV69L · demoMode: false\n' +
-        '  Hash ref. : 5150e767... (SHA-256 verificado)'
-    );
+    console.info('[UNIFED-PURE] ✅ Sistema Consolidado com Sucesso.');
 })();
 
 console.log('UNIFED - PROBATUM v13.5.0-PURE · DORA COMPLIANT · ATF · INTEGRITY SEAL · DOCX · AI ADVERSARIAL · NIFAF GUARD · NEXUS · ATIVADO');
