@@ -383,7 +383,7 @@
             doc.text('UNIFED — PROBATUM · ' + _T('ANEXO DE EVIDÊNCIAS — CADEIA DE CUSTÓDIA', 'EVIDENCE ANNEX — CHAIN OF CUSTODY'), pageW / 2, 10, { align: 'center' });
             doc.setFontSize(8);
             doc.setTextColor(160, 200, 255);
-            doc.text('Sessão: ' + sessId + ' · Emissão: ' + hoje + ' · ISO/IEC 27037:2012', pageW / 2, 17, { align: 'center' });
+            doc.text('ESTRUTURA DE RELATÓRIO FORENSE MOD. 03-B (NORMA ISO/IEC 27037:2012)', pageW / 2, 17, { align: 'center' });
             
             var y = 28;
             doc.setFontSize(7.5);
@@ -563,7 +563,11 @@
                 _tr([_T('IRC','CIT'), _formatCurrencyCentral(c.agravamentoBrutoIRC || c.discrepanciaCritica), '21%', _formatCurrencyCentral(c.ircEstimado)])
             ], [1800, 2200, 700, 1800]));
             
-            _bodyParts.push(_p(_T('IV. VEREDICTO PERICIAL', 'IV. EXPERT VERDICT'), 'Heading2', true, 24, '7C3AED'));
+            _bodyParts.push(_p(_T('IV. ADENDA FORENSE: ESTRATÉGIA DE MÁ-FÉ E OFUSCAÇÃO DE DADOS', 'IV. FORENSIC ADDENDUM: BAD FAITH AND DATA OBFUSCATION STRATEGY'), 'Heading2', true, 24, 'B45309'));
+            _bodyParts.push(_p(_T('A análise forense estruturada detetou práticas de obscurecimento algorítmico, nomeadamente: Inconsistência de Sintaxe (Data Obfuscation - Level 1) e Ambiguidade Semântica (\'Net Earnings\' Masking - Fiscal Camouflage).', 'The structured forensic analysis detected algorithmic obfuscation practices, namely: Syntax Inconsistency (Data Obfuscation - Level 1) and Semantic Ambiguity (\'Net Earnings\' Masking - Fiscal Camouflage).'), 'Normal', false, 20, '374151'));
+            _bodyParts.push(_p(_T('A plataforma impõe uma janela máxima de 6 meses para acesso a dados históricos detalhados, consubstanciando uma destruição de rasto de auditoria (Audit Trail Destruction), em violação do Art. 40.º do CIVA.', 'The platform imposes a maximum 6-month window for access to detailed historical data, constituting an audit trail destruction (Audit Trail Destruction), in violation of Art. 40 of the VAT Code.'), 'Normal', false, 20, '374151'));
+
+            _bodyParts.push(_p(_T('V. VEREDICTO PERICIAL', 'V. EXPERT VERDICT'), 'Heading2', true, 24, '7C3AED'));
             _bodyParts.push(_p(v.level && (v.level[_getLang()] || v.level.pt) ? (v.level[_getLang()] || v.level.pt) : _T('RISCO ELEVADO','HIGH RISK'), 'Normal', true, 20, 'EF4444'));
             _bodyParts.push(_p(_T('Percentagem de Omissão: ','Omission Percentage: ') + (c.percentagemOmissao || 0).toFixed(2) + '%', 'Normal', false, 18, '6B7280'));
             
