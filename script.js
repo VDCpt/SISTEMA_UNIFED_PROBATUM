@@ -4519,13 +4519,13 @@ function performForensicCrossings() {
 function selectQuestions(riskKey) {
     const filtered = QUESTIONS_CACHE.filter(q => {
         if (riskKey === 'critical') return true;
-        if (riskKey === 'high') return q.type === 'high' || q.type === 'med';
-        if (riskKey === 'med') return q.type === 'med' || q.type === 'low';
-        if (riskKey === 'low') return q.type === 'low';
+        if (riskKey === 'high')     return q.type === 'critical' || q.type === 'high' || q.type === 'med';
+        if (riskKey === 'med')      return q.type === 'med' || q.type === 'low';
+        if (riskKey === 'low')      return q.type === 'low';
         return true;
     });
 
-    const PRIORITY_ORDER = { high: 0, med: 1, low: 2 };
+    const PRIORITY_ORDER = { critical: -1, high: 0, med: 1, low: 2 };
     const sorted = [...filtered].sort((a, b) => {
         const pa = PRIORITY_ORDER[a.type] ?? 2;
         const pb = PRIORITY_ORDER[b.type] ?? 2;
@@ -6867,7 +6867,7 @@ async function exportPDF() {
             questionsToShow = UNIFEDSystem.analysis.selectedQuestions.slice(0, 10);
         }
         if (questionsToShow.length < 10) {
-            const PRIORITY_ORDER = { high: 0, med: 1, low: 2 };
+            const PRIORITY_ORDER = { critical: -1, high: 0, med: 1, low: 2 };
             const additional = QUESTIONS_CACHE
                 .filter(q => !questionsToShow.some(sq => sq.id === q.id))
                 .sort((a, b) => (PRIORITY_ORDER[a.type] ?? 2) - (PRIORITY_ORDER[b.type] ?? 2))
@@ -6875,12 +6875,22 @@ async function exportPDF() {
             questionsToShow = [...questionsToShow, ...additional];
         }
 
-        const topQuestionIds = questionsToShow.slice(0, 5).map(q => q.id);
-
         questionsToShow.forEach((q, index) => {
-            const isTop = topQuestionIds.includes(q.id);
+            const isCritical = q.type === 'critical' || q.type === 'high';
 
-            if (isTop) {
+            const prefix = isCritical ? `${index + 1}. [* CRÍTICA] ` : `${index + 1}. `;
+            const questionText = prefix + q.text;
+            const splitText = doc.splitTextToSize(questionText, doc.internal.pageSize.getWidth() - 30);
+            const lineH = (splitText.length * 4) + 2;
+
+            if (y + lineH > 250) {
+                addFooter(doc, pageNumber);
+                doc.addPage();
+                pageNumber++;
+                y = 20;
+            }
+
+            if (isCritical) {
                 doc.setFont('helvetica', 'bold');
                 doc.setTextColor(180, 20, 20);
             } else {
@@ -6888,19 +6898,10 @@ async function exportPDF() {
                 doc.setTextColor(0, 0, 0);
             }
 
-            const prefix = isTop ? `${index + 1}. [* CRITICA] ` : `${index + 1}. `;
-            const questionText = prefix + q.text;
-            const splitText = doc.splitTextToSize(questionText, doc.internal.pageSize.getWidth() - 30);
             doc.text(splitText, left, y);
-            y += (splitText.length * 4) + 2;
+            y += lineH;
 
             doc.setTextColor(0, 0, 0);
-
-            if (y > 270) {
-                doc.addPage();
-                pageNumber++;
-                y = 20;
-            }
         });
 
         addFooter(doc, pageNumber);
