@@ -266,7 +266,7 @@ Maximo 900 palavras. Prosa juridica formal. Sem preambulos.`;
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                model: 'claude-sonnet-4-20250514',
+                model: 'claude-sonnet-4-6',
                 max_tokens: 1500,
                 system: systemPrompt,
                 messages: [{ role: 'user', content: userPrompt }]
@@ -1172,13 +1172,39 @@ function openATFModal() {
         if (typeof _prevSwitchForATF === 'function') _prevSwitchForATF.call(this, lang);
         _atfLangHook(lang);
     };
-    // Limpar hook ao fechar o modal para evitar acumulação de wrappers
+
+    // [D-03 RETIFICAÇÃO] Função de restore centralizada — invocada por TODOS
+    // os mecanismos de fecho: botão, ESC e clique no overlay.
+    // Impede acumulação de closures em aberturas sucessivas do modal.
+    var _restoreSwitchLanguage = function _restoreSwitchLanguage() {
+        window.switchLanguage = _prevSwitchForATF;
+    };
+
+    // Fechar via botão
     var _closeBtn = modal.querySelector('button');
     if (_closeBtn) {
-        _closeBtn.addEventListener('click', function _restoreSwitchOnClose() {
-            window.switchLanguage = _prevSwitchForATF;
-        }, { once: true });
+        _closeBtn.addEventListener('click', _restoreSwitchLanguage, { once: true });
     }
+
+    // [D-03] Fechar via ESC — restore garantido
+    var _escHandlerATF = function _escHandlerATF(e) {
+        if (e.key === 'Escape') {
+            var _m = document.getElementById('atfModal');
+            if (_m) { _m.remove(); }
+            _restoreSwitchLanguage();
+            document.removeEventListener('keydown', _escHandlerATF);
+        }
+    };
+    document.addEventListener('keydown', _escHandlerATF);
+
+    // [D-03] Fechar via clique no overlay (fora do painel interno)
+    modal.addEventListener('click', function _atfOverlayClick(e) {
+        if (e.target === modal) {
+            modal.remove();
+            _restoreSwitchLanguage();
+            document.removeEventListener('keydown', _escHandlerATF);
+        }
+    });
 
     if (months.length > 0 && typeof Chart !== 'undefined') {
         try {

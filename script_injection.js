@@ -203,6 +203,11 @@ function _syncPureDashboard(sys) {
     _set('pure-iva-23',         _eur(c.ivaFalta));
     _set('pure-iva-6',          _eur(c.ivaFalta6));
     _set('pure-irc',            _eur(c.ircEstimado));
+    // [C-02 RETIFICAÇÃO] Valores individuais das caixas Smoking Gun
+    _set('pure-sg2-btor-val',   _eur(t.despesas));
+    _set('pure-sg2-btf-val',    _eur(t.faturaPlataforma));
+    _set('pure-sg1-saft-val',   _eur(t.saftBruto));
+    _set('pure-sg1-dac7-val',   _eur(t.dac7TotalPeriodo));
 
     // ── Painel III — ATF — bilíngue ───────────────────────────────────────────
     // SP=40 verificado para lote Out/Nov/Dez 2024 (3 meses histórico)

@@ -7904,7 +7904,7 @@ function clearConsole() {
     const fieldsToClear = ['subject-name', 'subject-nif', 'subject-address', 'audit-period', 'audit-hash', 'audit-status', 'saft-total', 'saft-iva', 'saft-iliquido', 'extract-ganhos', 'extract-despesas', 'dac7-total', 'revenue-gap', 'expense-gap'];
     fieldsToClear.forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = '---'; });
 
-    const consoleLogs = document.getElementById('console-logs');
+    const consoleLogs = document.getElementById('consoleOutput');
     if (consoleLogs) consoleLogs.innerHTML = '';
 
     document.querySelectorAll('.led-red-blink, .led-yellow-blink').forEach(led => { led.className = 'led-status led-off'; });
