@@ -3,8 +3,18 @@
  * UNIFED - PROBATUM · v13.5.0-PURE · MÓDULO DE EXPORTAÇÃO — TRÍADE DOCUMENTAL
  * ============================================================================
  * Ficheiro      : unifed_triada_export.js
- * Versão        : 1.0.9-TRIADA (RETIFICADA - ESTRUTURA MOD. 03-B)
+ * Versão        : 1.0.9-TRIADA (RETIFICADA - DELEGAÇÃO CENTRALIZADA)
  * Conformidade  : ISO/IEC 27037:2012 · Art. 125.º CPP · Art. 103.º RGIT
+ * ============================================================================
+ * 
+ * PRINCÍPIO DE DELEGAÇÃO:
+ *   As funções de exportação dos documentos principais (Relatório Pericial e
+ *   Matriz Jurídica) delegam em window.exportPDF() e window.exportDOCX() para
+ *   garantir que todas as correcções de segurança (hashing puro, hash completo
+ *   no rodapé, QR code na última página) sejam aplicadas de forma consistente.
+ *   O Anexo de Custódia mantém a sua implementação local por ser um documento
+ *   independente.
+ * 
  * ============================================================================
  */
 
@@ -86,7 +96,7 @@
     }
     
     // =========================================================================
-    // EXPORTAÇÃO PDF RELATÓRIO PERICIAL (MOD. 03-B CIRÚRGICO)
+    // EXPORTAÇÃO PDF RELATÓRIO PERICIAL (MOD. 03-B)
     // =========================================================================
     async function _unifedExportPdfRelatorio() {
         if (typeof window.exportPDF === 'function') {
@@ -172,7 +182,7 @@
             container.appendChild(btn);
         });
 
-        // Os botões originais exportPDFBtn e exportDOCXBtn são ocultados
+        // Oculta os botões originais para evitar duplicação, mantendo fallback silencioso
         var btnPDF = document.getElementById('exportPDFBtn');
         var btnDOCX = document.getElementById('exportDOCXBtn');
         if (btnPDF) {
