@@ -5367,6 +5367,7 @@ async function exportPDF() {
             }
         }
 
+        // Função de rodapé com Master Hash completo e QR code na última página
         const addFooter = (doc, pageNum, isLastPage = false) => {
             const pageWidth = doc.internal.pageSize.getWidth();
             const pageHeight = doc.internal.pageSize.getHeight();
@@ -5383,24 +5384,27 @@ async function exportPDF() {
             doc.setTextColor(120, 120, 120);
             doc.text(sessionLabel, pageWidth - margin, 8, { align: 'right' });
 
-            // ── RODAPÉ PERSISTENTE: Master Hash SHA-256 em todas as páginas ──────
+            // RODAPÉ PERSISTENTE: Master Hash SHA-256 completo em todas as páginas
             const _mhFull = (typeof window.activeForensicSession !== 'undefined' && window.activeForensicSession.masterHash)
                 ? window.activeForensicSession.masterHash
                 : (UNIFEDSystem.masterHash || '');
             if (_mhFull) {
-                const _mhShort = _mhFull.substring(0, 32) + '…';
+                // Dividir hash em duas linhas para melhor legibilidade
+                const _hashLines = doc.splitTextToSize(`SHA-256: ${_mhFull}`, pageWidth - margin * 2);
                 doc.setFontSize(5);
                 doc.setFont('courier', 'normal');
                 doc.setTextColor(150, 150, 150);
                 doc.line(margin, pageHeight - 12, pageWidth - margin, pageHeight - 12);
-                doc.text('SHA-256: ' + _mhShort, margin, pageHeight - 8);
-                doc.text('Pág. ' + pageNum + ' · UNIFED-PROBATUM v13.5.0-PURE · ISO/IEC 27037:2012 · Art. 125.º CPP',
+                let yPos = pageHeight - 8;
+                for (let i = _hashLines.length - 1; i >= 0; i--) {
+                    doc.text(_hashLines[i], margin, yPos);
+                    yPos -= 4;
+                }
+                doc.text(`Pág. ${pageNum} · UNIFED-PROBATUM v13.5.0-PURE · ISO/IEC 27037:2012 · Art. 125.º CPP`,
                     pageWidth / 2, pageHeight - 8, { align: 'center' });
             }
 
-            // ── QR CODE MINIATURA em todas as páginas (15×15 mm, canto inf. dir.) ─
-            // Nota técnica: dimensão 15 mm é o mínimo legível por leitores móveis
-            // modernos a distância normal de digitalização (20–30 cm).
+            // QR CODE MINIATURA em todas as páginas (15×15 mm, canto inf. dir.)
             const _qrMiniSize = 15;
             const _qrMiniX = pageWidth - margin - _qrMiniSize;
             const _qrMiniY = pageHeight - margin - _qrMiniSize + 2;
@@ -5412,6 +5416,7 @@ async function exportPDF() {
                 doc.text('PROBATUM', _qrMiniX + _qrMiniSize / 2, _qrMiniY + _qrMiniSize + 2, { align: 'center' });
             }
 
+            // QR CODE GRANDE na última página (canto inferior direito)
             if (isLastPage) {
                 const boxSize = 50;
                 const qrSize = 26;
