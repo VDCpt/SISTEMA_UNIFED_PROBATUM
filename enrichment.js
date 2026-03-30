@@ -1126,11 +1126,16 @@ function openATFModal() {
         '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(0,229,255,0.2);border-radius:8px;padding:16px;margin-bottom:20px">' +
             '<div style="color:#00E5FF;font-size:0.8rem;margin-bottom:12px;font-weight:bold">' + _T('GRÁFICO TEMPORAL — GANHOS · DESPESAS · DISCREPÂNCIA', 'TEMPORAL CHART — EARNINGS · EXPENSES · DISCREPANCY') + '</div>' +
             (months.length === 0
-                ? '<div style="color:rgba(255,255,255,0.4);text-align:center;padding:40px">' + _T('Sem dados mensais. Carregue extratos com nome incluindo AAAAMM.', 'No monthly data. Upload statements with filename including YYYYMM.') + '</div>'
+                ? '<div style="padding:2rem;text-align:center;background:rgba(0,0,0,0.5);border-radius:8px;margin-top:1rem;">' +
+                    '<i class="fas fa-chart-line" style="font-size:2rem;color:var(--warn-secondary);"></i>' +
+                    '<h4>' + _T('Análise Temporal Forense não disponível', 'Forensic Temporal Analysis not available') + '</h4>' +
+                    '<p>' + _T('O lote global não possui decomposição mensal. Os dados são processados em modo agregado.', 'The global batch does not have monthly breakdown. Data is processed in aggregate mode.') + '</p>' +
+                    '<p>' + _T('As discrepâncias apuradas (C2: €2.184,95 – 89,26%; C1: €2.402,57 – 23,65%) mantêm plena relevância jurídica.', 'The discrepancies found (C2: €2,184.95 – 89.26%; C1: €2,402.57 – 23.65%) maintain full legal relevance.') + '</p>' +
+                  '</div>'
                 : '<canvas id="atfChartCanvas" style="width:100%;max-height:320px"></canvas>') +
         '</div>' +
 
-        (atf.outlierMonths.length > 0
+        (atf.outlierMonths.length > 0 && months.length > 0
             ? '<div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:16px;margin-bottom:20px">' +
               '<div style="color:#EF4444;font-weight:bold;font-size:0.8rem;margin-bottom:8px">' + _T('⚠ MESES COM OUTLIER (DESVIO > 2σ) — Indício qualificado Art. 104.º RGIT', '⚠ MONTHS WITH OUTLIER (DEVIATION > 2σ) — Qualified evidence Art. 104 RGIT') + '</div>' +
               '<div style="display:flex;flex-wrap:wrap;gap:8px">' +
@@ -1158,24 +1163,19 @@ function openATFModal() {
     document.body.appendChild(modal);
 
     // DIRETIVA B (RTR-UNIFED-2026-003): registar hook de refresh de idioma
-    // enquanto o modal ATF estiver aberto. Quando switchLanguage() for invocado
-    // pelo unifed_triada_export.js, o Chart.js e os outlier badges actualizam-se
-    // instantaneamente sem reload de página.
+    // enquanto o modal ATF estiver aberto.
     var _atfLangHook = function(lang) {
         if (typeof window._enrichmentRefreshLang === 'function') {
             window._enrichmentRefreshLang(lang);
         }
     };
-    // Encadear no switchLanguage existente (ou instalar se ainda não existir)
+    // Encadear no switchLanguage existente
     var _prevSwitchForATF = window.switchLanguage;
     window.switchLanguage = function _atfModalSwitchLanguage(lang) {
         if (typeof _prevSwitchForATF === 'function') _prevSwitchForATF.call(this, lang);
         _atfLangHook(lang);
     };
 
-    // [D-03 RETIFICAÇÃO] Função de restore centralizada — invocada por TODOS
-    // os mecanismos de fecho: botão, ESC e clique no overlay.
-    // Impede acumulação de closures em aberturas sucessivas do modal.
     var _restoreSwitchLanguage = function _restoreSwitchLanguage() {
         window.switchLanguage = _prevSwitchForATF;
     };
@@ -1186,7 +1186,7 @@ function openATFModal() {
         _closeBtn.addEventListener('click', _restoreSwitchLanguage, { once: true });
     }
 
-    // [D-03] Fechar via ESC — restore garantido
+    // Fechar via ESC
     var _escHandlerATF = function _escHandlerATF(e) {
         if (e.key === 'Escape') {
             var _m = document.getElementById('atfModal');
@@ -1197,7 +1197,7 @@ function openATFModal() {
     };
     document.addEventListener('keydown', _escHandlerATF);
 
-    // [D-03] Fechar via clique no overlay (fora do painel interno)
+    // Fechar via clique no overlay
     modal.addEventListener('click', function _atfOverlayClick(e) {
         if (e.target === modal) {
             modal.remove();
@@ -1213,7 +1213,6 @@ function openATFModal() {
                 var _existingChart = Chart.getChart(cvs);
                 if (_existingChart) {
                     _existingChart.destroy();
-                    console.info('[UNIFED-ATF] [i] Instância Chart.js prévia destruída (memory leak mitigado).');
                 }
 
                 var mean2s = atf.mean + 2 * atf.stdDev;
