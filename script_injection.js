@@ -3,7 +3,7 @@
  * UNIFED - PROBATUM · v13.5.0-PURE · INJEÇÃO DE CASO REAL ANONIMIZADO
  * ============================================================================
  * Ficheiro      : script_injection.js
- * Versão        : 13.5.0-PURE (FUSÃO ATÓMICA + LOGS DE DEPURAÇÃO)
+ * Versão        : 13.5.0-PURE (COM ZONA CINZENTA)
  * Sessão de ref.: UNIFED-MMLADX8Q-CV69L
  * Estado        : PRODUÇÃO (demoMode: false)
  * Conformidade  : ISO/IEC 27037:2012 · DORA (UE) 2022/2554 · Art. 125.º CPP
@@ -15,7 +15,7 @@
 (function _pureInjectionModule() {
 
     // ============================================================================
-    // SECÇÃO 1 — DADOS VERIFICADOS (DATA CORE)
+    // SECÇÃO 1 — DADOS VERIFICADOS (DATA CORE + ZONA CINZENTA)
     // ============================================================================
     const _REAL_CASE_MMLADX8Q = {
         sessionId:  "UNIFED-MMLADX8Q-CV69L",
@@ -65,6 +65,15 @@
                     { date: "2024-12-31", ganhos: 2539.43, despesas: 611.97, discrepancia: 0 }
                 ]
             }
+        },
+
+        // ZONA CINZENTA — valores não sujeitos a comissão (extraídos dos extratos)
+        nonCommissionable: {
+            campanhas:    405.00,   // Ganhos da campanha (total período)
+            gorjetas:      46.00,   // Gorjetas dos passageiros
+            portagens:      0.15,   // Reembolso de portagens / despesas
+            cancelamentos: 58.10,   // Taxas de cancelamento
+            totalNaoSujeitos: 451.15 // Soma: campanhas + gorjetas + portagens
         }
     };
 
@@ -139,11 +148,14 @@
         }
         UNIFEDSystem.auditLog = _REAL_CASE_MMLADX8Q.analysis.metadata.auditLog || [];
 
-        // 5. Configuração
+        // 5. ZONA CINZENTA — valores não sujeitos a comissão
+        UNIFEDSystem.nonCommissionable = Object.assign({}, _REAL_CASE_MMLADX8Q.nonCommissionable);
+
+        // 6. Configuração
         UNIFEDSystem.config = UNIFEDSystem.config || {};
         UNIFEDSystem.config.demoMode = _REAL_CASE_MMLADX8Q.demoMode;
 
-        // 6. Garantir a função generateForensicSeal
+        // 7. Garantir a função generateForensicSeal
         if (typeof UNIFEDSystem.generateForensicSeal !== 'function') {
             UNIFEDSystem.generateForensicSeal = async function() {
                 const encoder = new TextEncoder();
@@ -156,7 +168,8 @@
                     selectedYear: this.selectedYear,
                     selectedPeriodo: this.selectedPeriodo,
                     selectedPlatform: this.selectedPlatform,
-                    auditLog: this.auditLog
+                    auditLog: this.auditLog,
+                    nonCommissionable: this.nonCommissionable
                 });
                 const data = encoder.encode(payload);
                 const hashBuffer = await crypto.subtle.digest('SHA-256', data);
@@ -175,22 +188,24 @@
             };
         }
 
-        // 7. Calcular hash dinâmico
+        // 8. Calcular hash dinâmico
         await UNIFEDSystem.generateForensicSeal();
 
-        // 8. Sincronizar UI
+        // 9. Sincronizar UI
         _syncPureDashboard();
 
-        // 9. Log de confirmação
+        // 10. Log de confirmação
         console.log('[UNIFED-PURE] ✅ Dados injetados:');
         console.log('   - totals.ganhos:', UNIFEDSystem.analysis.totals.ganhos);
         console.log('   - totals.despesas:', UNIFEDSystem.analysis.totals.despesas);
         console.log('   - crossings.discrepanciaCritica:', UNIFEDSystem.analysis.crossings.discrepanciaCritica);
+        console.log('   - nonCommissionable.campanhas:', UNIFEDSystem.nonCommissionable.campanhas);
+        console.log('   - nonCommissionable.gorjetas:', UNIFEDSystem.nonCommissionable.gorjetas);
         console.log('   - masterHash:', UNIFEDSystem.masterHash);
     };
 
     // ============================================================================
-    // SECÇÃO 3 — SINCRONIZAÇÃO DE UI (DASHBOARD PURE)
+    // SECÇÃO 3 — SINCRONIZAÇÃO DE UI (DASHBOARD PURE + ZONA CINZENTA)
     // ============================================================================
     const _syncPureDashboard = function() {
         const sys = window.UNIFEDSystem;
@@ -202,8 +217,10 @@
         const totals = sys.analysis.totals || {};
         const crossings = sys.analysis.crossings || {};
         const verdict = sys.analysis.verdict || {};
+        const nc = sys.nonCommissionable || {};
 
         const elements = {
+            // Metadados e veredicto
             'pure-session-id': sys.sessionId || '',
             'pure-client-name': sys.client?.name || '',
             'pure-client-nif': sys.client?.nif || '',
@@ -213,7 +230,7 @@
             'pure-verdict-pct': (verdict.percent || '0.00%'),
             'pure-total-omission': _fmtEur(crossings.discrepanciaCritica || 0),
 
-            // Painel I
+            // Painel I – Reconstituição financeira
             'pure-ganhos': _fmtEur(totals.ganhos),
             'pure-despesas': _fmtEur(totals.despesas),
             'pure-liquido': _fmtEur(totals.ganhosLiquidos),
@@ -221,7 +238,7 @@
             'pure-dac7': _fmtEur(totals.dac7TotalPeriodo),
             'pure-fatura': _fmtEur(totals.faturaPlataforma),
 
-            // Painel II
+            // Painel II – Discrepâncias
             'pure-disc-c2': _fmtEur(crossings.discrepanciaCritica),
             'pure-disc-c2-pct': (crossings.percentagemOmissao || 0).toFixed(2) + '%',
             'pure-disc-saft-dac7': _fmtEur(crossings.discrepanciaSaftVsDac7),
@@ -234,12 +251,15 @@
             'pure-sg1-saft-val': _fmtEur(totals.bruto),
             'pure-sg1-dac7-val': _fmtEur(totals.dac7TotalPeriodo),
 
-            // Painel IV – Zona Cinzenta (dados auxiliares)
-            'pure-nc-campanhas': _fmtEur(0), // será preenchido pelo processamento posterior
-            'pure-nc-gorjetas': _fmtEur(0),
-            'pure-nc-portagens': _fmtEur(0),
-            'pure-nc-cancelamentos': _fmtEur(0),
-            'pure-nc-total': _fmtEur(0)
+            // Painel IV – ZONA CINZENTA
+            'pure-nc-campanhas': _fmtEur(nc.campanhas || 0),
+            'pure-nc-gorjetas': _fmtEur(nc.gorjetas || 0),
+            'pure-nc-portagens': _fmtEur(nc.portagens || 0),
+            'pure-nc-cancelamentos': _fmtEur(nc.cancelamentos || 0),
+            'pure-nc-total': _fmtEur(nc.totalNaoSujeitos || 0),
+
+            // Valor textual de suporte (exibido no parágrafo)
+            'pure-zc-amount': _fmtEur(nc.totalNaoSujeitos || 0)
         };
 
         for (const [id, value] of Object.entries(elements)) {
@@ -271,7 +291,7 @@
             modeIndicator.style.color = '#EF4444';
         }
 
-        console.log('[UNIFED-PURE] ✅ Painel sincronizado com os valores carregados.');
+        console.log('[UNIFED-PURE] ✅ Painel sincronizado (inclui zona cinzenta).');
     };
 
     function _fmtEur(v) {
@@ -310,7 +330,8 @@
                 selectedYear: this.selectedYear,
                 selectedPeriodo: this.selectedPeriodo,
                 selectedPlatform: this.selectedPlatform,
-                auditLog: this.auditLog
+                auditLog: this.auditLog,
+                nonCommissionable: this.nonCommissionable
             });
             const data = encoder.encode(payload);
             const hashBuffer = await crypto.subtle.digest('SHA-256', data);
@@ -332,6 +353,6 @@
     window._REAL_CASE_MMLADX8Q = Object.freeze(_REAL_CASE_MMLADX8Q);
     window._syncPureDashboard = _syncPureDashboard;
 
-    console.info('[UNIFED-PURE] v13.5.0-PURE · Módulo de Injeção de Dados com Hashing Dinâmico Carregado.');
+    console.info('[UNIFED-PURE] v13.5.0-PURE · Módulo de Injeção de Dados com Hashing Dinâmico e Zona Cinzenta Carregado.');
 
 })();
