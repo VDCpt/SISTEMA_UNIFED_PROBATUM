@@ -3,7 +3,7 @@
  * UNIFED - PROBATUM · v13.5.0-PURE · INJEÇÃO DE CASO REAL ANONIMIZADO
  * ============================================================================
  * Ficheiro      : script_injection.js
- * Versão        : 13.5.0-PURE (FUSÃO ATÓMICA)
+ * Versão        : 13.5.0-PURE (FUSÃO ATÓMICA + LOGS DE DEPURAÇÃO)
  * Sessão de ref.: UNIFED-MMLADX8Q-CV69L
  * Estado        : PRODUÇÃO (demoMode: false)
  * Conformidade  : ISO/IEC 27037:2012 · DORA (UE) 2022/2554 · Art. 125.º CPP
@@ -72,39 +72,35 @@
     // SECÇÃO 2 — MÉTODO DE CARREGAMENTO ATÓMICO (FUSÃO, NÃO SUBSTITUIÇÃO)
     // ============================================================================
     const loadAnonymizedRealCase = async function() {
+        console.log('[UNIFED-PURE] ⏳ A iniciar carregamento do Caso Real...');
+
         if (typeof UNIFEDSystem === 'undefined') {
-            console.error('[UNIFED-PURE] Erro Crítico: Core System não detectado.');
+            console.error('[UNIFED-PURE] ❌ UNIFEDSystem não definido. Abortando.');
             return;
         }
 
-        console.info('[UNIFED-PURE] A iniciar sincronização de Caso Real: ' + _REAL_CASE_MMLADX8Q.sessionId);
-
-        // Sincronização de estado
+        // 1. Sincronizar metadados da sessão
         UNIFEDSystem.currentSession = {
             id: _REAL_CASE_MMLADX8Q.sessionId,
             isProduction: !_REAL_CASE_MMLADX8Q.demoMode
         };
+        UNIFEDSystem.sessionId = _REAL_CASE_MMLADX8Q.sessionId;
+        UNIFEDSystem.client = UNIFEDSystem.client || {};
+        UNIFEDSystem.client.name = _REAL_CASE_MMLADX8Q.client.name;
+        UNIFEDSystem.client.nif  = _REAL_CASE_MMLADX8Q.client.nif;
+        UNIFEDSystem.selectedPlatform = _REAL_CASE_MMLADX8Q.client.platform;
 
-        // GARANTIR que UNIFEDSystem.analysis existe com as estruturas mínimas
+        // 2. Garantir que UNIFEDSystem.analysis existe com as sub‑estruturas essenciais
         if (!UNIFEDSystem.analysis) {
             UNIFEDSystem.analysis = {};
         }
 
-        // Preservar twoAxis e evidenceIntegrity se já existirem (importante)
+        // Preservar twoAxis e evidenceIntegrity se já existirem
         const preservedTwoAxis = UNIFEDSystem.analysis.twoAxis;
         const preservedEvidence = UNIFEDSystem.analysis.evidenceIntegrity;
 
-        // Fundir os dados do caso real nas sub‑estruturas existentes
-        UNIFEDSystem.analysis.totals     = Object.assign({}, UNIFEDSystem.analysis.totals,     _REAL_CASE_MMLADX8Q.analysis.totals);
-        UNIFEDSystem.analysis.crossings  = Object.assign({}, UNIFEDSystem.analysis.crossings,  _REAL_CASE_MMLADX8Q.analysis.crossings);
-        UNIFEDSystem.analysis.verdict    = Object.assign({}, UNIFEDSystem.analysis.verdict,    _REAL_CASE_MMLADX8Q.analysis.verdict);
-        UNIFEDSystem.analysis.metadata   = Object.assign({}, UNIFEDSystem.analysis.metadata,   _REAL_CASE_MMLADX8Q.analysis.metadata);
-
-        // Restaurar twoAxis e evidenceIntegrity se existiam (ou criar defaults)
-        if (preservedTwoAxis) {
-            UNIFEDSystem.analysis.twoAxis = preservedTwoAxis;
-        } else {
-            // Cria o objeto padrão caso não exista
+        // Se não existirem, criar estruturas vazias (mas não sobrescrever se existirem)
+        if (!preservedTwoAxis) {
             UNIFEDSystem.analysis.twoAxis = {
                 revenueGap: 0,
                 expenseGap: 0,
@@ -112,14 +108,25 @@
                 expenseGapActive: false
             };
         }
-
-        if (preservedEvidence) {
-            UNIFEDSystem.analysis.evidenceIntegrity = preservedEvidence;
-        } else {
+        if (!preservedEvidence) {
             UNIFEDSystem.analysis.evidenceIntegrity = [];
         }
 
-        // Dados mensais (monthlyData) e auditLog
+        // 3. Fundir os dados do caso real nas sub‑estruturas existentes
+        UNIFEDSystem.analysis.totals     = Object.assign({}, UNIFEDSystem.analysis.totals,     _REAL_CASE_MMLADX8Q.analysis.totals);
+        UNIFEDSystem.analysis.crossings  = Object.assign({}, UNIFEDSystem.analysis.crossings,  _REAL_CASE_MMLADX8Q.analysis.crossings);
+        UNIFEDSystem.analysis.verdict    = Object.assign({}, UNIFEDSystem.analysis.verdict,    _REAL_CASE_MMLADX8Q.analysis.verdict);
+        UNIFEDSystem.analysis.metadata   = Object.assign({}, UNIFEDSystem.analysis.metadata,   _REAL_CASE_MMLADX8Q.analysis.metadata);
+
+        // Restaurar twoAxis e evidenceIntegrity (já estão preservados)
+        if (preservedTwoAxis) {
+            UNIFEDSystem.analysis.twoAxis = preservedTwoAxis;
+        }
+        if (preservedEvidence) {
+            UNIFEDSystem.analysis.evidenceIntegrity = preservedEvidence;
+        }
+
+        // 4. Dados mensais (monthlyData) e auditLog
         if (_REAL_CASE_MMLADX8Q.analysis.metadata.monthlyData) {
             UNIFEDSystem.monthlyData = {};
             _REAL_CASE_MMLADX8Q.analysis.metadata.monthlyData.forEach(m => {
@@ -132,11 +139,11 @@
         }
         UNIFEDSystem.auditLog = _REAL_CASE_MMLADX8Q.analysis.metadata.auditLog || [];
 
-        // Configuração
+        // 5. Configuração
         UNIFEDSystem.config = UNIFEDSystem.config || {};
         UNIFEDSystem.config.demoMode = _REAL_CASE_MMLADX8Q.demoMode;
 
-        // Garantir a função generateForensicSeal (se ainda não existir)
+        // 6. Garantir a função generateForensicSeal
         if (typeof UNIFEDSystem.generateForensicSeal !== 'function') {
             UNIFEDSystem.generateForensicSeal = async function() {
                 const encoder = new TextEncoder();
@@ -168,13 +175,18 @@
             };
         }
 
-        // Calcular hash dinâmico
+        // 7. Calcular hash dinâmico
         await UNIFEDSystem.generateForensicSeal();
 
-        // Sincronizar UI
+        // 8. Sincronizar UI
         _syncPureDashboard();
 
-        console.info('[UNIFED-PURE] Sincronização concluída. Master Hash gerado dinamicamente:', UNIFEDSystem.masterHash);
+        // 9. Log de confirmação
+        console.log('[UNIFED-PURE] ✅ Dados injetados:');
+        console.log('   - totals.ganhos:', UNIFEDSystem.analysis.totals.ganhos);
+        console.log('   - totals.despesas:', UNIFEDSystem.analysis.totals.despesas);
+        console.log('   - crossings.discrepanciaCritica:', UNIFEDSystem.analysis.crossings.discrepanciaCritica);
+        console.log('   - masterHash:', UNIFEDSystem.masterHash);
     };
 
     // ============================================================================
@@ -182,7 +194,10 @@
     // ============================================================================
     const _syncPureDashboard = function() {
         const sys = window.UNIFEDSystem;
-        if (!sys || !sys.analysis) return;
+        if (!sys || !sys.analysis) {
+            console.warn('[UNIFED-PURE] ⚠ sys.analysis não disponível para sincronização UI.');
+            return;
+        }
 
         const totals = sys.analysis.totals || {};
         const crossings = sys.analysis.crossings || {};
@@ -196,7 +211,35 @@
             'pure-hash-prefix-verdict': (sys.masterHash || '').substring(0, 8) + '...',
             'pure-verdict-value': (verdict.level?.pt || verdict.level?.en || 'N/A'),
             'pure-verdict-pct': (verdict.percent || '0.00%'),
-            'pure-total-omission': _fmtEur(crossings.discrepanciaCritica || 0)
+            'pure-total-omission': _fmtEur(crossings.discrepanciaCritica || 0),
+
+            // Painel I
+            'pure-ganhos': _fmtEur(totals.ganhos),
+            'pure-despesas': _fmtEur(totals.despesas),
+            'pure-liquido': _fmtEur(totals.ganhosLiquidos),
+            'pure-saft': _fmtEur(totals.bruto),
+            'pure-dac7': _fmtEur(totals.dac7TotalPeriodo),
+            'pure-fatura': _fmtEur(totals.faturaPlataforma),
+
+            // Painel II
+            'pure-disc-c2': _fmtEur(crossings.discrepanciaCritica),
+            'pure-disc-c2-pct': (crossings.percentagemOmissao || 0).toFixed(2) + '%',
+            'pure-disc-saft-dac7': _fmtEur(crossings.discrepanciaSaftVsDac7),
+            'pure-disc-saft-pct': (crossings.percentagemSaftVsDac7 || 0).toFixed(2) + '%',
+            'pure-iva-23': _fmtEur(crossings.ivaFalta),
+            'pure-iva-6': _fmtEur(crossings.ivaFalta6),
+            'pure-irc': _fmtEur(crossings.ircEstimado),
+            'pure-sg2-btor-val': _fmtEur(totals.despesas),
+            'pure-sg2-btf-val': _fmtEur(totals.faturaPlataforma),
+            'pure-sg1-saft-val': _fmtEur(totals.bruto),
+            'pure-sg1-dac7-val': _fmtEur(totals.dac7TotalPeriodo),
+
+            // Painel IV – Zona Cinzenta (dados auxiliares)
+            'pure-nc-campanhas': _fmtEur(0), // será preenchido pelo processamento posterior
+            'pure-nc-gorjetas': _fmtEur(0),
+            'pure-nc-portagens': _fmtEur(0),
+            'pure-nc-cancelamentos': _fmtEur(0),
+            'pure-nc-total': _fmtEur(0)
         };
 
         for (const [id, value] of Object.entries(elements)) {
@@ -209,13 +252,26 @@
             }
         }
 
-        // Atualização da flag visual de modo de operação
+        // Atualizar o Score de Persistência no painel (se houver ATF)
+        if (typeof window.computeTemporalAnalysis === 'function') {
+            const atf = window.computeTemporalAnalysis(sys.monthlyData || {}, sys.analysis);
+            const spEl = document.getElementById('pure-atf-sp');
+            if (spEl) spEl.innerHTML = (atf.persistenceScore || 40) + '<span style="font-size:1rem;opacity:0.6">/100</span>';
+            const statusEl = document.getElementById('pure-atf-status');
+            if (statusEl) statusEl.textContent = atf.persistenceLabel || '';
+            const trendEl = document.getElementById('pure-atf-trend');
+            if (trendEl) trendEl.textContent = atf.trend === 'ascending' ? '📈 ASCENDENTE' : (atf.trend === 'descending' ? '📉 DESCENDENTE' : '➡️ ESTÁVEL');
+        }
+
+        // Atualizar flag visual de modo de operação
         const modeIndicator = document.querySelector('.pure-mode-indicator');
         if (modeIndicator) {
             modeIndicator.textContent = 'MODO PERICIAL ATIVO';
             modeIndicator.style.background = 'rgba(239, 68, 68, 0.1)';
             modeIndicator.style.color = '#EF4444';
         }
+
+        console.log('[UNIFED-PURE] ✅ Painel sincronizado com os valores carregados.');
     };
 
     function _fmtEur(v) {
