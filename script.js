@@ -451,10 +451,16 @@ const setElementText = (id, text) => {
     if (el) el.textContent = text;
 };
 
-const generateSessionId = () => {
-    return 'UNIFED-' + Date.now().toString(36).toUpperCase() + '-' +
-           Math.random().toString(36).substring(2, 7).toUpperCase();
-};
+/**
+ * Gera um identificador de sessão criptograficamente seguro.
+ * @returns {string}
+ */
+function generateSessionId() {
+    const randomBytes = new Uint8Array(6); // 6 bytes = 12 caracteres hex
+    crypto.getRandomValues(randomBytes);
+    const randomPart = Array.from(randomBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+    return `UNIFED-${Date.now().toString(36).toUpperCase()}-${randomPart.toUpperCase()}`;
+}
 
 const readFileAsText = (file) => {
     return new Promise((resolve, reject) => {
@@ -491,29 +497,52 @@ function getForensicMetadata() {
 // 5. SISTEMA DE LOGS FORENSES (ART. 30 RGPD) - CUSTÓDIA PROBATUM
 // ============================================================================
 
-function mockRFC3161Timestamp(hashHex) {
+/**
+ * Gera um objecto de selo de tempo interno (Nível 1) com entropia criptográfica
+ * e indicação da fonte do timestamp.
+ * @param {string} hashHex – hash SHA‑256 do documento/evidência
+ * @param {boolean} verified – se true, indica que o timestamp foi obtido de fonte confiável (NTP)
+ * @returns {object}
+ */
+function mockRFC3161Timestamp(hashHex, verified = false) {
     const now = new Date();
+
+    // Geração de serial number com CSPRNG (12 bytes → 24 caracteres hex)
+    const randomBytes = new Uint8Array(12);
+    crypto.getRandomValues(randomBytes);
+    const serialHex = Array.from(randomBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+
+    const timestampSource = verified ? 'NTP_VERIFIED' : 'LOCAL_CLOCK_UNVERIFIED';
+
     return {
         status: 'PROBATUM_INTERNAL_SEAL',
-        tsaSource: 'PROBATUM INTERNAL SEAL (PENDING EXTERNAL TSA)',
+        tsaSource: `PROBATUM INTERNAL SEAL (${timestampSource})`,
         tsaLevel: 'Certificação de Tempo Interna (Nível 1)',
-        serialNumber: 'PROBATUM-' + Math.random().toString(36).substr(2, 9).toUpperCase(),
+        serialNumber: `PROBATUM-${serialHex.toUpperCase()}`,
         genTime: now.toISOString(),
         genTimeUnix: Math.floor(now.getTime() / 1000),
+        timestampSource: timestampSource,
+        verified: verified,
         messageImprint: {
             hashAlgorithm: 'SHA-256',
             hashedMessage: hashHex
         },
         policy: 'UNIFED-INTERNAL-OID-1.0',
-        nonce: Math.floor(Math.random() * 0xFFFF).toString(16).toUpperCase(),
+        nonce: crypto.getRandomValues(new Uint8Array(4))[0].toString(16).toUpperCase(),
         ordering: false,
-        _note: 'O hash SHA-256 é definitivo e matematicamente verificável. Nível 2 (RFC 3161 externo) activo após configuração da API de produção TSA.'
+        _note: 'Hash SHA-256 calculado exclusivamente sobre o conteúdo original. Selagem de Nível 1 (interna). Para prova de existência temporal com validade jurídica reforçada, utilizar selagem Nível 2 (RFC 3161 externa).'
     };
 }
 
+/**
+ * Gera o hash SHA‑256 do conteúdo fornecido, sem qualquer salt adicional.
+ * Conforme ISO/IEC 27037:2012 – o hash deve ser calculado exclusivamente sobre os dados originais.
+ * @param {string} content – conteúdo a hashear
+ * @returns {Promise<string>} – hash em hexadecimal maiúsculo
+ */
 async function generateForensicHash(content) {
     const encoder = new TextEncoder();
-    const data = encoder.encode(content + 'IFDE_PROBATUM_SALT_2024');
+    const data = encoder.encode(content);
     const hashBuffer = await crypto.subtle.digest('SHA-256', data);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
@@ -524,7 +553,7 @@ async function generateForensicLog(action, fileName, hash) {
         ? hash.toUpperCase()
         : await generateForensicHash(fileName + Date.now());
 
-    const seal = mockRFC3161Timestamp(finalHash);
+    const seal = mockRFC3161Timestamp(finalHash, false); // false = relógio local não verificado
 
     const entry = {
         action,
@@ -534,6 +563,7 @@ async function generateForensicLog(action, fileName, hash) {
         serial: seal.serialNumber,
         source: seal.tsaSource,
         level: seal.tsaLevel,
+        timestampSource: seal.timestampSource,
         rfc3161: seal,
         isoTimestamp: seal.genTime,
         unixTimestamp: seal.genTimeUnix
@@ -642,6 +672,7 @@ function renderCustodyLog(logs) {
         const serial = d.serial || (d.rfc3161 && d.rfc3161.serialNumber) || '—';
         const level = d.level || 'Certificação de Tempo Interna (Nível 1)';
         const source = d.source || 'PROBATUM INTERNAL SEAL';
+        const timestampSource = d.timestampSource ? ` (${d.timestampSource})` : '';
         const fname = d.fileName || d.filename || '—';
         const ts = entry.timestamp
             ? entry.timestamp.replace('T', ' ').replace(/\.\d+Z$/, ' UTC')
@@ -661,7 +692,7 @@ function renderCustodyLog(logs) {
                     <p><strong>FICHEIRO:</strong> <span style="color:#e2b87a;">${fname}</span></p>
                     <p><strong>TIMESTAMP:</strong> ${ts}</p>
                     ${hasHash ? `<p><strong>HASH SHA-256:</strong><br><code class="hash-text">${hash}</code></p>` : ''}
-                    <p><strong>FONTE:</strong> ${source}</p>
+                    <p><strong>FONTE:</strong> ${source}${timestampSource}</p>
                     <p><strong>NÍVEL:</strong> ${level}</p>
                 </div>
                 ${hasHash ? `<button class="blockchain-btn" onclick="showBlockchainExplain('${hash}')">
