@@ -596,7 +596,7 @@
                      Activação: UNIFEDSystem.loadAnonymizedRealCase() (chamada em script_injection.js)
                      Conformidade: ISO/IEC 27037 · Art. 125.º CPP · DORA (UE) 2022/2554
                      ══════════════════════════════════════════════════════════════════════════════ -->
-                <div id="pureDashboardWrapper" style="display:none">
+                <div id="pureDashboardWrapper" style="display:none; opacity:0; transition: opacity 0.2s ease;">
                     <!-- Conteúdo injectado via innerHTML pelo script_injection_v13.5.0-PURE.js -->
                 </div>
 
@@ -922,7 +922,7 @@
         // Aguarda UNIFEDSystem estar disponível, depois:
         //   1. Injeta o HTML do painel no wrapper
         //   2. Chama loadAnonymizedRealCase() para popular os dados
-        //   3. Torna o wrapper visível
+        //   3. Torna o wrapper visível com transição suave
         // O fetch do panel.html é local — sem dependências externas.
         // Painel v13.5.0-PURE: NÃO auto-executa.
         // Activação exclusiva via window._activatePurePanel() chamado em activateDemoMode().
@@ -933,10 +933,19 @@
                     var wrapper = document.getElementById('pureDashboardWrapper');
                     if (wrapper) {
                         wrapper.innerHTML = html;
+                        // Aplica transição suave após o carregamento
+                        wrapper.style.opacity = '0';
                         wrapper.style.display = 'block';
-                    }
-                    if (typeof UNIFEDSystem !== 'undefined' && typeof UNIFEDSystem.loadAnonymizedRealCase === 'function') {
-                        UNIFEDSystem.loadAnonymizedRealCase();
+                        if (typeof UNIFEDSystem !== 'undefined' && typeof UNIFEDSystem.loadAnonymizedRealCase === 'function') {
+                            UNIFEDSystem.loadAnonymizedRealCase();
+                        }
+                        if (typeof window._translatePurePanel === 'function') {
+                            window._translatePurePanel(window.currentLang || 'pt');
+                        }
+                        // Pequeno delay para garantir que os estilos foram aplicados
+                        setTimeout(function() {
+                            wrapper.style.opacity = '1';
+                        }, 50);
                     }
                     console.info('[UNIFED-PURE] ✅ Painel v13.5.0-PURE activado.');
                 })

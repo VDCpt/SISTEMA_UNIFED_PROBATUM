@@ -7,10 +7,10 @@
  * Conformidade: DORA (UE) 2022/2554 · RGPD · ISO/IEC 27037:2012 · Art. 125.o CPP
  *
  * MÓDULOS ELITE:
- *   1. STEALTH NETWORK INTERCEPTOR  — Anti-F12 Protocol (Consola Cirurgicamente Limpa)
- *   2. RAG JURISPRUDENCIAL AVANÇADO — DOCX Upgrade (Citações + Acórdãos STA)
- *   3. MOTOR PREDITIVO ATF          — Forecasting 6M (Regressão Linear + Chart.js)
- *   4. BLOCKCHAIN EVIDENCE EXPLORER — OTS Individual por Ficheiro (SHA-256 + DOM UI)
+ * 1. STEALTH NETWORK INTERCEPTOR  — Anti-F12 Protocol (Consola Cirurgicamente Limpa)
+ * 2. RAG JURISPRUDENCIAL AVANÇADO — DOCX Upgrade (Citações + Acórdãos STA)
+ * 3. MOTOR PREDITIVO ATF          — Forecasting 6M (Regressão Linear + Chart.js)
+ * 4. BLOCKCHAIN EVIDENCE EXPLORER — OTS Individual por Ficheiro (SHA-256 + DOM UI)
  * ============================================================================
  */
 
@@ -250,7 +250,6 @@
             _para('', false),
 
             _para('VI.1 · BASE LEGAL DIRETAMENTE APLICAVEL', true, '22', '003366'),
-            // F-06 (RTR-UNIFED-2026-004): utils.formatCurrency para IVA em falta
             _para('Com base na discrepancia de ' + pct + '% apurada (IVA em falta: ' + (function(){ var _u=window.UNIFEDSystem&&window.UNIFEDSystem.utils; return (_u&&_u.formatCurrency)?_u.formatCurrency(iva):(window.formatCurrency?window.formatCurrency(iva):new Intl.NumberFormat((typeof window.currentLang!=='undefined'&&window.currentLang==='en')?'en-GB':'pt-PT',{style:'currency',currency:'EUR'}).format(iva)); })() + '), aplicam-se os seguintes preceitos legais:', false, '20', '333333'),
             _para('', false),
             tblArtigos,
@@ -280,10 +279,20 @@
 
     function _installDOCXHook() {
         if (typeof window.exportDOCX !== 'function') {
-            setTimeout(_installDOCXHook, 300);
+            window.addEventListener('UNIFED_CORE_READY', function onCoreReady() {
+                if (typeof window.exportDOCX === 'function') {
+                    _installDOCXHookCore();
+                    window.removeEventListener('UNIFED_CORE_READY', onCoreReady);
+                } else {
+                    console.warn('[NEXUS·M2] window.exportDOCX ainda não disponível após UNIFED_CORE_READY.');
+                }
+            });
             return;
         }
+        _installDOCXHookCore();
+    }
 
+    function _installDOCXHookCore() {
         var _origExportDOCX = window.exportDOCX;
 
         window.exportDOCX = async function _nexusExportDOCX() {
@@ -299,7 +308,7 @@
             var _jurXML = _buildJurisprudenceXML(sys.analysis);
             await _origExportDOCX.call(this, _jurXML);
 
-            console.info('[NEXUS\u00b7M2] \u2705 Jurisprud\u00eancia UNIFED-PROBATUM injectada no DOCX \u2014 ' +
+            console.info('[NEXUS·M2] \u2705 Jurisprud\u00eancia UNIFED-PROBATUM injectada no DOCX \u2014 ' +
                 _STA_ACORDAOS.length + ' ac\u00f3rd\u00e3os (STA/TCA/CAAD) \u00b7 discrepancia: ' + discPct.toFixed(2) + '%');
         };
 
@@ -489,7 +498,6 @@
         var _L = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
         var _T = function(pt, en) { return _L === 'en' ? en : pt; };
 
-        // F-05 (RTR-UNIFED-2026-004): delegar em UNIFEDSystem.utils.formatCurrency
         var fmtEur = function(v) {
             var _utils = window.UNIFEDSystem && window.UNIFEDSystem.utils;
             if (_utils && typeof _utils.formatCurrency === 'function') { return _utils.formatCurrency(v); }
@@ -545,7 +553,7 @@
                             '<th style="border:1px solid rgba(168,85,247,0.25);padding:6px 10px;background:rgba(168,85,247,0.15);color:#A855F7;text-align:right">' + _T('Omissão Proj.','Proj. Omission') + '</th>' +
                             '<th style="border:1px solid rgba(168,85,247,0.25);padding:6px 10px;background:rgba(168,85,247,0.15);color:#F97316;text-align:right">' + _T('IVA 23% Proj.','VAT 23% Proj.') + '</th>' +
                             '<th style="border:1px solid rgba(168,85,247,0.25);padding:6px 10px;background:rgba(168,85,247,0.15);color:rgba(255,255,255,0.5);text-align:center">' + _T('Risco','Risk') + '</th>' +
-                        '</tr>' +
+                        'th>' +
                     '</thead>' +
                     '<tbody>' +
                         forecast.labels.map(function(lbl, i) {
@@ -555,18 +563,18 @@
                             var pct  = rMax > 0 ? (disc / rMax * 100) : 0;
                             var rColor = pct > 75 ? '#EF4444' : pct > 45 ? '#F59E0B' : '#10B981';
                             return '<tr>' +
-                                '<td style="border:1px solid rgba(168,85,247,0.15);padding:5px 10px;color:#A855F7">' + lbl + '</td>' +
-                                '<td style="border:1px solid rgba(168,85,247,0.15);padding:5px 10px;text-align:right">' + fmtEur(disc) + '</td>' +
-                                '<td style="border:1px solid rgba(168,85,247,0.15);padding:5px 10px;text-align:right;color:#F97316">' + fmtEur(iva) + '</td>' +
+                                '<td style="border:1px solid rgba(168,85,247,0.15);padding:5px 10px;color:#A855F7">' + lbl + '……' +
+                                '<td style="border:1px solid rgba(168,85,247,0.15);padding:5px 10px;text-align:right">' + fmtEur(disc) + '……' +
+                                '<td style="border:1px solid rgba(168,85,247,0.15);padding:5px 10px;text-align:right;color:#F97316">' + fmtEur(iva) + '……' +
                                 '<td style="border:1px solid rgba(168,85,247,0.15);padding:5px 10px;text-align:center">' +
                                     '<div style="display:inline-block;background:' + rColor + ';border-radius:3px;padding:2px 8px;font-size:0.62rem;color:#fff">' +
                                         (pct > 75 ? '[!] ' + _T('ALTO','HIGH') : pct > 45 ? '[^] ' + _T('MED','MED') : '[OK] ' + _T('MOD','LOW')) +
                                     '</div>' +
-                                '</td>' +
-                            '</tr>';
+                                '……' +
+                            '……';
                         }).join('') +
                     '</tbody>' +
-                '</table>' +
+                '–' +
             '</div>' +
             '<div style="margin-top:12px;background:rgba(0,0,0,0.3);border:1px solid rgba(168,85,247,0.2);border-radius:4px;padding:8px 12px;font-size:0.65rem;color:rgba(255,255,255,0.4);line-height:1.6">' +
                 '<strong style="color:rgba(168,85,247,0.8)">⚙ ' + _T('Metodologia Preditiva (NEXUS ATF):', 'Predictive Methodology (NEXUS ATF):') + '</strong> ' +
@@ -589,10 +597,18 @@
 
     function _installATFHook() {
         if (typeof window.openATFModal !== 'function') {
-            setTimeout(_installATFHook, 300);
+            window.addEventListener('UNIFED_CORE_READY', function onReady() {
+                if (typeof window.openATFModal === 'function') {
+                    _installATFHookCore();
+                    window.removeEventListener('UNIFED_CORE_READY', onReady);
+                }
+            });
             return;
         }
+        _installATFHookCore();
+    }
 
+    function _installATFHookCore() {
         var _origOpenATFModal = window.openATFModal;
 
         window.openATFModal = function _nexusOpenATFModal() {
@@ -893,7 +909,10 @@
     function injectBlockchainExplorerUI() {
         var custodyModal = document.getElementById('custodyModal');
         if (!custodyModal) {
-            setTimeout(injectBlockchainExplorerUI, 500);
+            window.addEventListener('UNIFED_CORE_READY', function onReady() {
+                injectBlockchainExplorerUI();
+                window.removeEventListener('UNIFED_CORE_READY', onReady);
+            });
             return;
         }
 
@@ -989,11 +1008,9 @@
     window.injectBlockchainExplorerUI = injectBlockchainExplorerUI;
     window.nexusOpenBlockchainExplorer = _openBlockchainExplorerModal;
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', injectBlockchainExplorerUI);
-    } else {
-        setTimeout(injectBlockchainExplorerUI, 400);
-    }
+    window.addEventListener('UNIFED_CORE_READY', function() {
+        injectBlockchainExplorerUI();
+    }, { once: true });
 
 })();
 
