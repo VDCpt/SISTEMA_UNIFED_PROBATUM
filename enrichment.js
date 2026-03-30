@@ -17,7 +17,7 @@
  *   4. exportDOCX()                  — DOCX Petição Inicial (JSZip + OOXML)
  *   5. NIFAF                         — Delegado à implementação principal em script.js
  *   6. generateTemporalChartImage()  — ATF: Gráfico Canvas para PDF
- *   7. computeTemporalAnalysis()     — ATF: Analytics Engine (2σ · SP · Outliers) com suporte a auditLog
+ *   7. computeTemporalAnalysis()     — ATF: Analytics Engine (2σ · SP · Outliers)
  *   8. openATFModal()                — ATF: Modal Dashboard com Chart.js
  * ============================================================================
  */
@@ -25,7 +25,7 @@
 'use strict';
 
 // ============================================================================
-// UNIFEDSystem.utils — UTILITÁRIOS CENTRALIZADOS (RTR-UNIFED-2026-003)
+// UNIFEDSystem.utils — UTILITÁRIOS CENTRALIZADOS
 // ============================================================================
 (function _installUNIFEDUtils() {
     if (typeof window.UNIFEDSystem === 'undefined') { window.UNIFEDSystem = {}; }
@@ -194,6 +194,11 @@ Seccao D - ESTRATEGIA DE CONTRA-INTERROGATORIO (AI Adversarial Simulator)
 [Para cada discrepancia critica, identifica 2-3 linhas de ataque da contraparte e fornece a resposta tecnica pericial com referencia legal.]
 Maximo 900 palavras. Prosa juridica formal. Sem preambulos.`;
     try {
+        // Se o sistema estiver em modo demo, evitar a chamada externa para não gerar erro DNS
+        if (window.UNIFEDSystem && window.UNIFEDSystem.demoMode === true) {
+            console.info('[UNIFED-AI] Modo demo ativo — usando fallback estático.');
+            return _fallbackNarrative('Modo Demo – IA offline');
+        }
         const response = await fetch('https://api.unifed.com/claude-proxy', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -709,66 +714,46 @@ if (typeof window.NIFAF === 'undefined') {
 }
 
 // ============================================================================
-// 7. ATF - ANALISE TEMPORAL FORENSE (versão com suporte a auditLog)
+// 7. ATF - ANALISE TEMPORAL FORENSE
 // ============================================================================
 function computeTemporalAnalysis(monthlyData, analysis) {
-    // Tenta obter série temporal do auditLog se disponível
-    let series = [];
-    let months = [];
-
-    // Prioridade 1: monthlyData (objeto)
-    if (monthlyData && Object.keys(monthlyData).length > 0) {
-        months = Object.keys(monthlyData).sort();
-        series = months.map(m => {
-            const d = monthlyData[m] || {};
-            return Math.abs((d.despesas || 0) - (d.ganhos || 0));
-        });
-    }
-    // Prioridade 2: UNIFEDSystem.auditLog
-    else if (window.UNIFEDSystem && window.UNIFEDSystem.auditLog && window.UNIFEDSystem.auditLog.length > 0) {
-        const logs = window.UNIFEDSystem.auditLog;
-        months = logs.map(l => l.date.substring(0, 7).replace('-', ''));
-        series = logs.map(l => l.discrepancia || Math.abs((l.despesas || 0) - (l.ganhos || 0)));
-    }
-    // Prioridade 3: analysis.metadata.auditLog
-    else if (analysis && analysis.metadata && analysis.metadata.auditLog && analysis.metadata.auditLog.length > 0) {
-        const logs = analysis.metadata.auditLog;
-        months = logs.map(l => l.date.substring(0, 7).replace('-', ''));
-        series = logs.map(l => l.discrepancia || Math.abs((l.despesas || 0) - (l.ganhos || 0)));
-    }
-
+    var months = Object.keys(monthlyData || {}).sort();
     if (months.length === 0) {
         return {
             months: [], ganhosSeries: [], despesasSeries: [], discrepancySeries: [],
             mean: 0, stdDev: 0, outlierMonths: [],
             persistenceScore: 0,
             persistenceLabel: (typeof window.currentLang !== 'undefined' && window.currentLang === 'en')
-                ? 'Insufficient data. Upload monthly statements or ensure auditLog is present.'
-                : 'Dados insuficientes. Carregue extratos mensais ou verifique auditLog.',
+                ? 'Insufficient data. Upload monthly statements (filename must include YYYYMM).'
+                : 'Dados insuficientes. Carregue extratos mensais (nome AAAAMM).',
             trend: 'neutral', opportunisticPattern: false
         };
     }
-
-    const n = series.length;
-    const mean = series.reduce((a, v) => a + v, 0) / n;
-    const variance = series.reduce((a, v) => a + Math.pow(v - mean, 2), 0) / n;
-    const stdDev = Math.sqrt(variance);
-
-    const outlierMonths = months.filter((_, i) => series[i] > mean + 2 * stdDev);
-
-    // Cálculo de tendência (regressão linear)
-    let sx = 0, sy = 0, sxy = 0, sx2 = 0;
-    series.forEach((v, i) => { sx += i; sy += v; sxy += i * v; sx2 += i * i; });
-    const slope = n > 1 ? (n * sxy - sx * sy) / (n * sx2 - sx * sx) : 0;
-    const trend = slope > 50 ? 'ascending' : slope < -50 ? 'descending' : 'stable';
-
-    const pctDisc = series.filter(v => v > 0.01).length / n;
-    let persistenceScore = Math.min(Math.round(pctDisc * 40 + (trend === 'ascending' ? 25 : trend === 'stable' ? 10 : 0) + Math.min(outlierMonths.length * 10, 25)), 100);
-
-    const _atfLang = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
-    const _atfT = (pt, en) => _atfLang === 'en' ? en : pt;
-
-    let persistenceLabel;
+    var ganhosSeries      = months.map(function(m) { return (monthlyData[m].ganhos    || 0); });
+    var despesasSeries    = months.map(function(m) { return (monthlyData[m].despesas  || 0); });
+    var discrepancySeries = months.map(function(m, i) { return Math.abs(despesasSeries[i] - ganhosSeries[i]); });
+    var n    = discrepancySeries.length;
+    var mean = discrepancySeries.reduce(function(a, v) { return a + v; }, 0) / n;
+    var variance = discrepancySeries.reduce(function(a, v) { return a + Math.pow(v - mean, 2); }, 0) / n;
+    var stdDev   = Math.sqrt(variance);
+    var outlierMonths = months.filter(function(m, i) { return discrepancySeries[i] > mean + 2 * stdDev; });
+    var sx = 0, sy = 0, sxy = 0, sx2 = 0;
+    discrepancySeries.forEach(function(v, i) { sx += i; sy += v; sxy += i * v; sx2 += i * i; });
+    var slope = n > 1 ? (n * sxy - sx * sy) / (n * sx2 - sx * sx) : 0;
+    var trend = slope > 50 ? 'ascending' : slope < -50 ? 'descending' : 'stable';
+    var meanGanhos = ganhosSeries.reduce(function(a, v) { return a + v; }, 0) / n;
+    var opportunisticPattern = months.some(function(m, i) {
+        return outlierMonths.indexOf(m) !== -1 && ganhosSeries[i] > meanGanhos;
+    });
+    var pctDisc  = discrepancySeries.filter(function(v) { return v > 0.01; }).length / n;
+    var spBase   = pctDisc * 40;
+    var spTrend  = trend === 'ascending' ? 25 : trend === 'stable' ? 10 : 0;
+    var spOut    = Math.min(outlierMonths.length * 10, 25);
+    var spOpp    = opportunisticPattern ? 10 : 0;
+    var persistenceScore = Math.min(Math.round(spBase + spTrend + spOut + spOpp), 100);
+    var _atfLang = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
+    var _atfT    = function(pt, en) { return _atfLang === 'en' ? en : pt; };
+    var persistenceLabel;
     if (persistenceScore >= 80) {
         persistenceLabel = _atfT(
             'PADRAO DE OMISSAO SISTEMATICA DETETADO - Comportamento consistente com dolo para efeitos Art. 104.o RGIT.',
@@ -790,13 +775,18 @@ function computeTemporalAnalysis(monthlyData, analysis) {
             'Sporadic omissions - possible operational error.'
         );
     }
-
+    if (opportunisticPattern) {
+        persistenceLabel += ' ' + _atfT(
+            'PADRAO OPORTUNISTICO: omissoes concentradas em meses de maior faturacao.',
+            'OPPORTUNISTIC PATTERN: omissions concentrated in highest-revenue months.'
+        );
+    }
     return {
-        months: months,
-        discrepancySeries: series,
-        mean, stdDev, outlierMonths,
-        trend, persistenceScore, persistenceLabel,
-        opportunisticPattern: false
+        months: months, ganhosSeries: ganhosSeries,
+        despesasSeries: despesasSeries, discrepancySeries: discrepancySeries,
+        mean: mean, stdDev: stdDev, outlierMonths: outlierMonths,
+        trend: trend, persistenceScore: persistenceScore,
+        persistenceLabel: persistenceLabel, opportunisticPattern: opportunisticPattern
     };
 }
 window.computeTemporalAnalysis = computeTemporalAnalysis;
@@ -836,7 +826,7 @@ async function generateTemporalChartImage(monthlyData, analysis) {
     ctx3.moveTo(padL, padT); ctx3.lineTo(padL, padT + cH);
     ctx3.lineTo(padL + cW, padT + cH);
     ctx3.stroke();
-    var allV = atf.discrepancySeries;
+    var allV = atf.ganhosSeries.concat(atf.despesasSeries).concat(atf.discrepancySeries);
     var maxV = Math.max.apply(null, allV.concat([1]));
     var xS   = cW / Math.max(months.length - 1, 1);
     var toX  = function(i) { return padL + i * xS; };
@@ -853,6 +843,16 @@ async function generateTemporalChartImage(monthlyData, analysis) {
         ctx3.fillStyle = 'rgba(239,68,68,0.7)'; ctx3.font = '10px Courier New, monospace';
         ctx3.textAlign = 'left'; ctx3.fillText('2\u03c3', padL + cW + 4, sigY + 4);
     }
+    ctx3.strokeStyle = '#3B82F6'; ctx3.lineWidth = 2;
+    ctx3.beginPath();
+    atf.ganhosSeries.forEach(function(v, i) {
+        if (i === 0) ctx3.moveTo(toX(i), toY(v)); else ctx3.lineTo(toX(i), toY(v));
+    }); ctx3.stroke();
+    ctx3.strokeStyle = '#10B981'; ctx3.lineWidth = 2;
+    ctx3.beginPath();
+    atf.despesasSeries.forEach(function(v, i) {
+        if (i === 0) ctx3.moveTo(toX(i), toY(v)); else ctx3.lineTo(toX(i), toY(v));
+    }); ctx3.stroke();
     ctx3.strokeStyle = '#F59E0B'; ctx3.lineWidth = 2.5;
     ctx3.beginPath();
     atf.discrepancySeries.forEach(function(v, i) {
@@ -873,6 +873,8 @@ async function generateTemporalChartImage(monthlyData, analysis) {
         ctx3.fillText(label, toX(i), padT + cH + 18);
     });
     [
+        { color: '#3B82F6', text: 'Ganhos' },
+        { color: '#10B981', text: 'Despesas' },
         { color: '#F59E0B', text: 'Discrepancia' },
         { color: '#EF4444', text: 'Outlier >2\u03c3' }
     ].forEach(function(lg, i) {
@@ -1032,6 +1034,8 @@ function openATFModal() {
                     data: {
                         labels: monthLabels,
                         datasets: [
+                            { label: _T('Ganhos','Earnings'),    data: atf.ganhosSeries,    borderColor: '#3B82F6', backgroundColor: 'rgba(59,130,246,0.1)',  borderWidth: 2, tension: 0.3, pointRadius: 4 },
+                            { label: _T('Despesas','Expenses'),  data: atf.despesasSeries,  borderColor: '#10B981', backgroundColor: 'rgba(16,185,129,0.1)',  borderWidth: 2, tension: 0.3, pointRadius: 4 },
                             {
                                 label: _T('Discrepância','Discrepancy'), data: atf.discrepancySeries, borderColor: '#F59E0B',
                                 backgroundColor: 'rgba(245,158,11,0.15)', borderWidth: 3, tension: 0.3,

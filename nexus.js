@@ -7,10 +7,10 @@
  * Conformidade: DORA (UE) 2022/2554 · RGPD · ISO/IEC 27037:2012 · Art. 125.o CPP
  *
  * MÓDULOS ELITE:
- * 1. STEALTH NETWORK INTERCEPTOR  — Anti-F12 Protocol (Consola Cirurgicamente Limpa)
- * 2. RAG JURISPRUDENCIAL AVANÇADO — DOCX Upgrade (Citações + Acórdãos STA)
- * 3. MOTOR PREDITIVO ATF          — Forecasting 6M (Regressão Linear + Chart.js)
- * 4. BLOCKCHAIN EVIDENCE EXPLORER — OTS Individual por Ficheiro (SHA-256 + DOM UI)
+ *   1. STEALTH NETWORK INTERCEPTOR  — Anti-F12 Protocol (Consola Cirurgicamente Limpa)
+ *   2. RAG JURISPRUDENCIAL AVANÇADO — DOCX Upgrade (Citações + Acórdãos STA)
+ *   3. MOTOR PREDITIVO ATF          — Forecasting 6M (Regressão Linear + Chart.js)
+ *   4. BLOCKCHAIN EVIDENCE EXPLORER — OTS Individual por Ficheiro (SHA-256 + DOM UI)
  * ============================================================================
  */
 
@@ -548,12 +548,12 @@
             '<div style="overflow-x:auto">' +
                 '<table style="width:100%;border-collapse:collapse;font-size:0.7rem;color:rgba(255,255,255,0.8)">' +
                     '<thead>' +
-                        '<tr>' +
+                        '58tr' +
                             '<th style="border:1px solid rgba(168,85,247,0.25);padding:6px 10px;background:rgba(168,85,247,0.15);color:#A855F7;text-align:left">' + _T('Período','Period') + '</th>' +
                             '<th style="border:1px solid rgba(168,85,247,0.25);padding:6px 10px;background:rgba(168,85,247,0.15);color:#A855F7;text-align:right">' + _T('Omissão Proj.','Proj. Omission') + '</th>' +
                             '<th style="border:1px solid rgba(168,85,247,0.25);padding:6px 10px;background:rgba(168,85,247,0.15);color:#F97316;text-align:right">' + _T('IVA 23% Proj.','VAT 23% Proj.') + '</th>' +
                             '<th style="border:1px solid rgba(168,85,247,0.25);padding:6px 10px;background:rgba(168,85,247,0.15);color:rgba(255,255,255,0.5);text-align:center">' + _T('Risco','Risk') + '</th>' +
-                        'th>' +
+                        '</tr>' +
                     '</thead>' +
                     '<tbody>' +
                         forecast.labels.map(function(lbl, i) {
@@ -563,18 +563,18 @@
                             var pct  = rMax > 0 ? (disc / rMax * 100) : 0;
                             var rColor = pct > 75 ? '#EF4444' : pct > 45 ? '#F59E0B' : '#10B981';
                             return '<tr>' +
-                                '<td style="border:1px solid rgba(168,85,247,0.15);padding:5px 10px;color:#A855F7">' + lbl + '……' +
-                                '<td style="border:1px solid rgba(168,85,247,0.15);padding:5px 10px;text-align:right">' + fmtEur(disc) + '……' +
-                                '<td style="border:1px solid rgba(168,85,247,0.15);padding:5px 10px;text-align:right;color:#F97316">' + fmtEur(iva) + '……' +
+                                '<td style="border:1px solid rgba(168,85,247,0.15);padding:5px 10px;color:#A855F7">' + lbl + '</td>' +
+                                '<td style="border:1px solid rgba(168,85,247,0.15);padding:5px 10px;text-align:right">' + fmtEur(disc) + '</td>' +
+                                '<td style="border:1px solid rgba(168,85,247,0.15);padding:5px 10px;text-align:right;color:#F97316">' + fmtEur(iva) + '</td>' +
                                 '<td style="border:1px solid rgba(168,85,247,0.15);padding:5px 10px;text-align:center">' +
                                     '<div style="display:inline-block;background:' + rColor + ';border-radius:3px;padding:2px 8px;font-size:0.62rem;color:#fff">' +
                                         (pct > 75 ? '[!] ' + _T('ALTO','HIGH') : pct > 45 ? '[^] ' + _T('MED','MED') : '[OK] ' + _T('MOD','LOW')) +
                                     '</div>' +
-                                '……' +
-                            '……';
+                                '</td>' +
+                            '</tr>';
                         }).join('') +
                     '</tbody>' +
-                '–' +
+                '</table>' +
             '</div>' +
             '<div style="margin-top:12px;background:rgba(0,0,0,0.3);border:1px solid rgba(168,85,247,0.2);border-radius:4px;padding:8px 12px;font-size:0.65rem;color:rgba(255,255,255,0.4);line-height:1.6">' +
                 '<strong style="color:rgba(168,85,247,0.8)">⚙ ' + _T('Metodologia Preditiva (NEXUS ATF):', 'Predictive Methodology (NEXUS ATF):') + '</strong> ' +
