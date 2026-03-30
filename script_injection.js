@@ -3,7 +3,7 @@
  * UNIFED - PROBATUM · v13.5.0-PURE · INJEÇÃO DE CASO REAL ANONIMIZADO
  * ============================================================================
  * Ficheiro      : script_injection.js
- * Versão        : 13.5.0-PURE (HASH DINÂMICO)
+ * Versão        : 13.5.0-PURE (FUSÃO ATÓMICA)
  * Sessão de ref.: UNIFED-MMLADX8Q-CV69L
  * Estado        : PRODUÇÃO (demoMode: false)
  * Conformidade  : ISO/IEC 27037:2012 · DORA (UE) 2022/2554 · Art. 125.º CPP
@@ -52,7 +52,6 @@
             },
             verdict: { level: { pt: "RISCO ELEVADO", en: "HIGH RISK" }, key: "high", color: "#EF4444", percent: "89.26%" },
             metadata: {
-                // Dados mensais reutilizados pelo ATF e pelo cálculo do hash
                 monthlyData: [
                     { month: "202409", ganhos: 2031.55, despesas: 489.58, discrepancy: 0 },
                     { month: "202410", ganhos: 3047.32, despesas: 734.37, discrepancy: 0 },
@@ -70,7 +69,7 @@
     };
 
     // ============================================================================
-    // SECÇÃO 2 — MÉTODO DE CARREGAMENTO ATÓMICO
+    // SECÇÃO 2 — MÉTODO DE CARREGAMENTO ATÓMICO (FUSÃO, NÃO SUBSTITUIÇÃO)
     // ============================================================================
     const loadAnonymizedRealCase = async function() {
         if (typeof UNIFEDSystem === 'undefined') {
@@ -86,11 +85,43 @@
             isProduction: !_REAL_CASE_MMLADX8Q.demoMode
         };
 
-        // Transferência de valores para o motor de análise
-        UNIFEDSystem.analysis = Object.assign({}, _REAL_CASE_MMLADX8Q.analysis);
-        UNIFEDSystem.monthlyData = {};
-        // Converter monthlyData do metadata para objeto indexado
+        // GARANTIR que UNIFEDSystem.analysis existe com as estruturas mínimas
+        if (!UNIFEDSystem.analysis) {
+            UNIFEDSystem.analysis = {};
+        }
+
+        // Preservar twoAxis e evidenceIntegrity se já existirem (importante)
+        const preservedTwoAxis = UNIFEDSystem.analysis.twoAxis;
+        const preservedEvidence = UNIFEDSystem.analysis.evidenceIntegrity;
+
+        // Fundir os dados do caso real nas sub‑estruturas existentes
+        UNIFEDSystem.analysis.totals     = Object.assign({}, UNIFEDSystem.analysis.totals,     _REAL_CASE_MMLADX8Q.analysis.totals);
+        UNIFEDSystem.analysis.crossings  = Object.assign({}, UNIFEDSystem.analysis.crossings,  _REAL_CASE_MMLADX8Q.analysis.crossings);
+        UNIFEDSystem.analysis.verdict    = Object.assign({}, UNIFEDSystem.analysis.verdict,    _REAL_CASE_MMLADX8Q.analysis.verdict);
+        UNIFEDSystem.analysis.metadata   = Object.assign({}, UNIFEDSystem.analysis.metadata,   _REAL_CASE_MMLADX8Q.analysis.metadata);
+
+        // Restaurar twoAxis e evidenceIntegrity se existiam (ou criar defaults)
+        if (preservedTwoAxis) {
+            UNIFEDSystem.analysis.twoAxis = preservedTwoAxis;
+        } else {
+            // Cria o objeto padrão caso não exista
+            UNIFEDSystem.analysis.twoAxis = {
+                revenueGap: 0,
+                expenseGap: 0,
+                revenueGapActive: false,
+                expenseGapActive: false
+            };
+        }
+
+        if (preservedEvidence) {
+            UNIFEDSystem.analysis.evidenceIntegrity = preservedEvidence;
+        } else {
+            UNIFEDSystem.analysis.evidenceIntegrity = [];
+        }
+
+        // Dados mensais (monthlyData) e auditLog
         if (_REAL_CASE_MMLADX8Q.analysis.metadata.monthlyData) {
+            UNIFEDSystem.monthlyData = {};
             _REAL_CASE_MMLADX8Q.analysis.metadata.monthlyData.forEach(m => {
                 UNIFEDSystem.monthlyData[m.month] = {
                     ganhos: m.ganhos,
@@ -99,14 +130,13 @@
                 };
             });
         }
-        // Guardar auditLog para uso no ATF
         UNIFEDSystem.auditLog = _REAL_CASE_MMLADX8Q.analysis.metadata.auditLog || [];
 
         // Configuração
         UNIFEDSystem.config = UNIFEDSystem.config || {};
         UNIFEDSystem.config.demoMode = _REAL_CASE_MMLADX8Q.demoMode;
 
-        // Garantir que a função generateForensicSeal existe
+        // Garantir a função generateForensicSeal (se ainda não existir)
         if (typeof UNIFEDSystem.generateForensicSeal !== 'function') {
             UNIFEDSystem.generateForensicSeal = async function() {
                 const encoder = new TextEncoder();
@@ -138,12 +168,12 @@
             };
         }
 
-        // Calcular hash com os dados carregados
+        // Calcular hash dinâmico
         await UNIFEDSystem.generateForensicSeal();
 
-        // Disparar sincronização visual
+        // Sincronizar UI
         _syncPureDashboard();
-        
+
         console.info('[UNIFED-PURE] Sincronização concluída. Master Hash gerado dinamicamente:', UNIFEDSystem.masterHash);
     };
 
