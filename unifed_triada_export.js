@@ -2,7 +2,7 @@
  * UNIFED - PROBATUM · v13.5.0-PURE · MÓDULO DE EXPORTAÇÃO — TRÍADE DOCUMENTAL
  * ============================================================================
  * Ficheiro      : unifed_triada_export.js
- * Versão        : 1.0.14-TRIADA (QR Code + Master Hash Lock)
+ * Versão        : 1.0.15-TRIADA (QR Code + Master Hash Lock + JSON Export + i18n PT/EN)
  * Conformidade  : ISO/IEC 27037:2012 · Art. 125.º CPP · Art. 103.º RGIT
  * ============================================================================
  */
@@ -10,23 +10,27 @@
 'use strict';
 
 (function _unifedTriadaModule() {
-    const _VERSION = '1.0.14-TRIADA';
+    const _VERSION = '1.0.15-TRIADA';
 
     function _log(msg, type = 'log') {
         const timestamp = new Date().toISOString();
         console[type](`[${timestamp}] [TRIADA] ${msg}`);
     }
 
-    // 1. OBTENÇÃO ESTÁVEL DO MASTER HASH (SEM GERAÇÃO DINÂMICA)
+    // 1. OBTENÇÃO ESTÁVEL DO MASTER HASH
+    // Prioridade: activeForensicSession > UNIFEDSystem.masterHash dinâmico > fallback demoMode > PENDING_SEAL
     function getStableMasterHash() {
-        if (window.activeForensicSession && window.activeForensicSession.masterHash) {
+        if (window.activeForensicSession && window.activeForensicSession.masterHash &&
+            window.activeForensicSession.masterHash.length === 64) {
             return window.activeForensicSession.masterHash;
         }
-        if (window.UNIFEDSystem && window.UNIFEDSystem.demoMode) {
-            return "79b032809b9e54ea3504659c37edb9e49e6d462d691c75e4a5afd79d8bb8f86c";
-        }
-        if (window.UNIFEDSystem && window.UNIFEDSystem.masterHash) {
+        if (window.UNIFEDSystem && window.UNIFEDSystem.masterHash &&
+            window.UNIFEDSystem.masterHash.length === 64) {
             return window.UNIFEDSystem.masterHash;
+        }
+        if (window.UNIFEDSystem && window.UNIFEDSystem.demoMode) {
+            // Fallback estático apenas se generateForensicSeal() ainda não correu
+            return "79b032809b9e54ea3504659c37edb9e49e6d462d691c75e4a5afd79d8bb8f86c";
         }
         return "PENDING_SEAL";
     }
@@ -181,39 +185,58 @@
         _log(`✅ Anexo de Custódia gerado com QR Code: ${sessionId}`, 'success');
     }
 
-    // 3. INJEÇÃO DE BOTÕES NA INTERFACE
+    // 3. INJEÇÃO DE BOTÕES NA INTERFACE — v1.0.15 (JSON + i18n PT/EN)
     function initInterface() {
         const container = document.getElementById('triadaButtonsContainer');
         if (!container) return;
 
         container.innerHTML = '';
 
+        const _tLang = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
+        const _tIsEN = (_tLang === 'en');
+        const _tL    = function(pt, en) { return _tIsEN ? en : pt; };
+
         const botoes = [
-            { 
-                id: 'triadaPdfBtn', 
-                label: 'RELATÓRIO PERICIAL FORENSE (MOD. 03-B)', 
-                icon: 'fa-file-pdf', 
-                cor: '#00E5FF',
+            {
+                id:      'triadaPdfBtn',
+                label:   _tL('RELATÓRIO PERICIAL FORENSE (MOD. 03-B)', 'FORENSIC EXPERT REPORT (MOD. 03-B)'),
+                icon:    'fa-file-pdf',
+                cor:     '#00E5FF',
                 handler: () => {
                     if (typeof window.exportPDF === 'function') window.exportPDF();
-                    else alert('Função de exportação PDF não disponível.');
+                    else alert(_tL('Função de exportação PDF não disponível.', 'PDF export function not available.'));
                 }
             },
-            { 
-                id: 'triadaDocxBtn', 
-                label: 'MINUTA DE PETIÇÃO INICIAL', 
-                icon: 'fa-file-word', 
-                cor: '#0EA5E9',
+            {
+                id:      'triadaDocxBtn',
+                label:   _tL('MINUTA DE PETIÇÃO INICIAL', 'INITIAL PLEADING DRAFT'),
+                icon:    'fa-file-word',
+                cor:     '#0EA5E9',
                 handler: () => {
                     if (typeof window.exportDOCX === 'function') window.exportDOCX();
-                    else alert('Função de exportação DOCX não disponível.');
+                    else alert(_tL('Função de exportação DOCX não disponível.', 'DOCX export function not available.'));
                 }
             },
-            { 
-                id: 'triadaCustodiaBtn', 
-                label: 'PROVA MATERIAL DIGITAL', 
-                icon: 'fa-shield-alt', 
-                cor: '#EF4444',
+            {
+                id:      'triadaJsonBtn',
+                label:   _tL('EXPORTAR JSON PERICIAL', 'EXPORT FORENSIC JSON'),
+                icon:    'fa-file-code',
+                cor:     '#10B981',
+                handler: () => {
+                    if (typeof window.exportDataJSON === 'function') {
+                        window.exportDataJSON();
+                    } else if (typeof window.exportCustodyChainJSON === 'function') {
+                        window.exportCustodyChainJSON();
+                    } else {
+                        alert(_tL('Função de exportação JSON não disponível — verificar carregamento de script.js.', 'JSON export function not available — verify script.js is loaded.'));
+                    }
+                }
+            },
+            {
+                id:      'triadaCustodiaBtn',
+                label:   _tL('PROVA MATERIAL DIGITAL', 'DIGITAL MATERIAL EVIDENCE'),
+                icon:    'fa-shield-alt',
+                cor:     '#EF4444',
                 handler: gerarAnexoCustodia
             }
         ];
@@ -232,11 +255,11 @@
 
         // Ocultar botões antigos (exportPDFBtn e exportDOCXBtn) para evitar duplicação
         ['exportPDFBtn', 'exportDOCXBtn'].forEach(id => {
-            const old = document.getElementById(id);
-            if (old) old.style.display = 'none';
+            const oldBtn = document.getElementById(id);
+            if (oldBtn) oldBtn.style.display = 'none';
         });
 
-        _log('Interface Tríade Documental v1.0.14 activada.');
+        _log('Interface Tríade Documental v1.0.15 activada — PT: ' + _tLang.toUpperCase());
     }
 
     // Inicialização por evento de prontidão do núcleo
@@ -244,10 +267,19 @@
         setTimeout(initInterface, 200);
     });
 
+    // Re-inicializar botões ao mudar de língua (para reflectir labels PT/EN)
+    var _triadaPrevSwitch = window.switchLanguage;
+    window.addEventListener('UNIFED_LANG_CHANGED', () => {
+        setTimeout(initInterface, 50);
+    });
+
     // Exposição global
     window.gerarAnexoCustodia = gerarAnexoCustodia;
     window.initTriadaButtons = initInterface;
     window.UNIFEDSystem = window.UNIFEDSystem || {};
     window.UNIFEDSystem.triadaUpdateLabels = initInterface;
+
+    // Expor versão actualizada
+    window.UNIFEDSystem.triadaVersion = '1.0.15-TRIADA';
 
 })();

@@ -150,5 +150,12 @@
     window.UNIFEDSystem.loadAnonymizedRealCase = _syncPureDashboard;
     window._REAL_CASE_MMLADX8Q = Object.freeze(_REAL_CASE_MMLADX8Q);
 
+    // Disparar evento de língua após carregamento para sincronizar Tríade Documental
+    window.addEventListener('UNIFED_CORE_READY', function() {
+        setTimeout(function() {
+            window.dispatchEvent(new CustomEvent('UNIFED_LANG_CHANGED'));
+        }, 300);
+    });
+
     console.info('[UNIFED-PURE] v13.5.0-PURE · Módulo de Injeção pronto (NIF unificado).');
 })();

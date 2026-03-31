@@ -206,8 +206,11 @@
         var pct = (c.percentagemOmissao || 0).toFixed(2);
         var iva = c.ivaFalta || 0;
 
+        var _nLang = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
+        var _nIsEN = (_nLang === 'en');
+        var _nL = function(pt, en) { return _nIsEN ? en : pt; };
         var artRows = [
-            _tr([_tc('Diploma Legal', true, 3000, 'EAF0F8'), _tc('Artigo', true, 2000, 'EAF0F8'), _tc('Enquadramento', true, 4000, 'EAF0F8')])
+            _tr([_tc(_nL('Diploma Legal', 'Legal Instrument'), true, 3000, 'EAF0F8'), _tc(_nL('Artigo', 'Article'), true, 2000, 'EAF0F8'), _tc(_nL('Enquadramento', 'Legal Framework'), true, 4000, 'EAF0F8')])
         ];
 
         Object.values(_JURISPRUDENCE_KB).forEach(function(item) {
@@ -224,7 +227,7 @@
             artRows.join('') + '</w:tbl>';
 
         var acordaoRows = [
-            _tr([_tc('Processo', true, 2500, 'EAF0F8'), _tc('Tribunal / Data', true, 2000, 'EAF0F8'), _tc('Sumario (excerto)', true, 4500, 'EAF0F8')])
+            _tr([_tc(_nL('Processo', 'Case No.'), true, 2500, 'EAF0F8'), _tc(_nL('Tribunal / Data', 'Court / Date'), true, 2000, 'EAF0F8'), _tc(_nL('Sumário (excerto)', 'Summary (excerpt)'), true, 4500, 'EAF0F8')])
         ];
 
         _STA_ACORDAOS.forEach(function(ac) {
@@ -244,23 +247,23 @@
             _para('', false),
             _hr(),
             _para('', false),
-            _para('VI. JURISPRUDENCIA APLICAVEL — CRUZAMENTO RAG · NEXUS v13.5.0-PURE', true, '26', '003366'),
-            _para('Modulo de Jurisprud\u00eancia Pericial \u2014 Cita\u00e7\u00f5es injectadas com base nas anomalias detetadas e qualificacao legal apurada', false, '16', '888888'),
+            _para(_nL('VI. JURISPRUDÊNCIA APLICÁVEL — CRUZAMENTO RAG · NEXUS v13.5.0-PURE', 'VI. APPLICABLE CASE LAW — RAG CROSS-REFERENCE · NEXUS v13.5.0-PURE'), true, '26', '003366'),
+            _para(_nL('Módulo de Jurisprudência Pericial — Citações injectadas com base nas anomalias detectadas e qualificação legal apurada', 'Expert Case Law Module — Citations injected based on detected anomalies and assessed legal qualification'), false, '16', '888888'),
             _para('', false),
 
-            _para('VI.1 · BASE LEGAL DIRETAMENTE APLICAVEL', true, '22', '003366'),
-            _para('Com base na discrepancia de ' + pct + '% apurada (IVA em falta: ' + (function(){ var _u=window.UNIFEDSystem&&window.UNIFEDSystem.utils; return (_u&&_u.formatCurrency)?_u.formatCurrency(iva):(window.formatCurrency?window.formatCurrency(iva):new Intl.NumberFormat((typeof window.currentLang!=='undefined'&&window.currentLang==='en')?'en-GB':'pt-PT',{style:'currency',currency:'EUR'}).format(iva)); })() + '), aplicam-se os seguintes preceitos legais:', false, '20', '333333'),
+            _para(_nL('VI.1 · BASE LEGAL DIRECTAMENTE APLICÁVEL', 'VI.1 · DIRECTLY APPLICABLE LEGAL BASIS'), true, '22', '003366'),
+            _para(_nL('Com base na discrepância de ', 'Based on the discrepancy of ') + pct + _nL('% apurada (IVA em falta: ', '% assessed (missing VAT: ') + (function(){ var _u=window.UNIFEDSystem&&window.UNIFEDSystem.utils; return (_u&&_u.formatCurrency)?_u.formatCurrency(iva):(window.formatCurrency?window.formatCurrency(iva):new Intl.NumberFormat((typeof window.currentLang!=='undefined'&&window.currentLang==='en')?'en-GB':'pt-PT',{style:'currency',currency:'EUR'}).format(iva)); })() + _nL('), aplicam-se os seguintes preceitos legais:', '), the following legal provisions apply:'), false, '20', '333333'),
             _para('', false),
             tblArtigos,
             _para('', false),
 
-            _para('VI.2 · JURISPRUDENCIA DO SUPREMO TRIBUNAL ADMINISTRATIVO', true, '22', '003366'),
-            _para('Acordaos selecionados por cruzamento semantico com as anomalias forenses detetadas (RAG · In-Context Legal Retrieval):', false, '20', '333333'),
+            _para(_nL('VI.2 · JURISPRUDÊNCIA DO SUPREMO TRIBUNAL ADMINISTRATIVO', 'VI.2 · PORTUGUESE SUPREME ADMINISTRATIVE COURT CASE LAW'), true, '22', '003366'),
+            _para(_nL('Acórdãos seleccionados por cruzamento semântico com as anomalias forenses detectadas (RAG · In-Context Legal Retrieval):', 'Judgments selected by semantic cross-referencing with detected forensic anomalies (RAG · In-Context Legal Retrieval):'), false, '20', '333333'),
             _para('', false),
             tblAcordaos,
             _para('', false),
 
-            _para('VI.3 · NOTA DE QUALIFICACAO JURIDICA NEXUS', true, '22', 'CC0000'),
+            _para(_nL('VI.3 · NOTA DE QUALIFICAÇÃO JURÍDICA NEXUS', 'VI.3 · NEXUS LEGAL QUALIFICATION NOTE'), true, '22', 'CC0000'),
             _para(
                 'A conjugacao das discrepancias apuradas com o padrao de sistematicidade documentado configura, prima facie, ' +
                 'o elemento objetivo do tipo de ilicito de fraude fiscal qualificada (Art. 104.o RGIT), ' +
@@ -271,7 +274,7 @@
                 'desta prova digital pericial e qualifica a conduta como penalmente relevante.',
                 false, '20', '333333'),
             _para('', false),
-            _para('[Secao gerada automaticamente pelo Modulo RAG Jurisprudencial — NEXUS v13.5.0-PURE · Art. 125.o CPP]', false, '16', '999999'),
+            _para(_nL('[Secção gerada automaticamente pelo Módulo RAG Jurisprudencial — NEXUS v13.5.0-PURE · Art. 125.º CPP]', '[Section auto-generated by the RAG Case Law Module — NEXUS v13.5.0-PURE · Art. 125 CPP]'), false, '16', '999999'),
             _para('', false)
         ].join('');
     }
@@ -388,8 +391,8 @@
 
         var risco     = forecastDisc.reduce(function(a, v) { return a + v; }, 0);
         var ivaRisco  = forecastIva.reduce(function(a, v) { return a + v; }, 0);
-        var trend     = reg.slope > 50 ? 'ASCENDENTE 🔴' : reg.slope < -50 ? 'DESCENDENTE 🟢' : 'ESTÁVEL 🟡';
-        var confidence = n >= 6 ? 'ALTA (≥6 meses)' : n >= 3 ? 'MODERADA (3-5 meses)' : 'BAIXA (<3 meses)';
+        var trend     = reg.slope > 50 ? (typeof window.currentLang !== 'undefined' && window.currentLang === 'en' ? 'ASCENDING 🔴' : 'ASCENDENTE 🔴') : reg.slope < -50 ? (typeof window.currentLang !== 'undefined' && window.currentLang === 'en' ? 'DESCENDING 🟢' : 'DESCENDENTE 🟢') : (typeof window.currentLang !== 'undefined' && window.currentLang === 'en' ? 'STABLE 🟡' : 'ESTÁVEL 🟡');
+        var confidence = (typeof window.currentLang !== 'undefined' && window.currentLang === 'en') ? (n >= 6 ? 'HIGH (≥6 months)' : n >= 3 ? 'MODERATE (3-5 months)' : 'LOW (<3 months)') : (n >= 6 ? 'ALTA (≥6 meses)' : n >= 3 ? 'MODERADA (3-5 meses)' : 'BAIXA (<3 meses)');
 
         return {
             valid:       true,
@@ -860,12 +863,12 @@
                         'font-family:inherit;font-size:0.72rem;letter-spacing:1px;' +
                         'border-radius:3px;transition:background 0.2s;' +
                     '" onmouseover="this.style.background=\'rgba(0,229,255,0.1)\'" ' +
-                       'onmouseout="this.style.background=\'transparent\'">✕ FECHAR</button>' +
+                       'onmouseout="this.style.background=\'transparent\'">' + (typeof window.currentLang !== 'undefined' && window.currentLang === 'en' ? '✕ CLOSE' : '✕ FECHAR') + '</button>' +
                 '</div>' +
 
                 '<div style="padding:8px 20px;background:rgba(0,0,0,0.2);font-size:0.62rem;color:rgba(255,255,255,0.35);display:flex;gap:20px;flex-wrap:wrap">' +
-                    '<span>🔗 <span style="color:#4ADE80">ANCORADO</span> — Hash registado na cadeia de custódia PROBATUM (Nível 1 ativo)</span>' +
-                    '<span>⏳ <span style="color:#F59E0B">PENDENTE</span> — Hash gerado por NEXUS (sem registo prévio na sessão)</span>' +
+                    '<span>🔗 <span style="color:#4ADE80">' + (typeof window.currentLang !== 'undefined' && window.currentLang === 'en' ? 'ANCHORED' : 'ANCORADO') + '</span> — ' + (typeof window.currentLang !== 'undefined' && window.currentLang === 'en' ? 'Hash registered in PROBATUM chain of custody (Level 1 active)' : 'Hash registado na cadeia de custódia PROBATUM (Nível 1 ativo)') + '</span>' +
+                    '<span>⏳ <span style="color:#F59E0B">' + (typeof window.currentLang !== 'undefined' && window.currentLang === 'en' ? 'PENDING' : 'PENDENTE') + '</span> — ' + (typeof window.currentLang !== 'undefined' && window.currentLang === 'en' ? 'Hash generated by NEXUS (no prior registration in session)' : 'Hash gerado por NEXUS (sem registo prévio na sessão)') + '</span>' +
                 '</div>' +
 
                 '<div style="overflow-y:auto;padding:16px 20px;flex:1">' +
@@ -878,7 +881,7 @@
                     'background:rgba(0,0,0,0.3);' +
                     'font-size:0.6rem;color:rgba(255,255,255,0.3);line-height:1.6;' +
                 '">' +
-                    '⚙ ' + _T('NEXUS Blockchain Explorer · SHA-256 independente por ficheiro · ', 'NEXUS Blockchain Explorer · Individual SHA-256 per file · ') +
+                    '⚙ NEXUS Blockchain Explorer · ' + _T('SHA-256 independente por ficheiro · ', 'Individual SHA-256 per file · ') +
                     'Art. 125.o CPP · ISO/IEC 27037:2012 · DORA (UE) 2022/2554 · Read-Only sobre UNIFEDSystem · ' +
                     new Date().toLocaleString('pt-PT') +
                 '</div>' +
@@ -975,6 +978,8 @@
         ].join('');
 
         btn.innerHTML = '⛓️ ' + _T('VER EXPLORER', 'VIEW EXPLORER');
+        btn.setAttribute('data-pt', '⛓️ VER EXPLORER');
+        btn.setAttribute('data-en', '⛓️ VIEW EXPLORER');
         btn.title = _T('NEXUS Blockchain Evidence Explorer — SHA-256 individual por ficheiro', 'NEXUS Blockchain Evidence Explorer — Individual SHA-256 per file');
 
         btn.addEventListener('mouseenter', function() {
