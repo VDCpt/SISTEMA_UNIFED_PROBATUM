@@ -2,7 +2,7 @@
  * UNIFED - PROBATUM · v13.5.0-PURE · MÓDULO DE EXPORTAÇÃO — TRÍADE DOCUMENTAL
  * ============================================================================
  * Ficheiro      : unifed_triada_export.js
- * Versão        : 1.0.15-TRIADA (QR Code + Master Hash Lock + JSON Export + i18n PT/EN)
+ * Versão        : 1.0.14-TRIADA (QR Code + Master Hash Lock)
  * Conformidade  : ISO/IEC 27037:2012 · Art. 125.º CPP · Art. 103.º RGIT
  * ============================================================================
  */
@@ -10,37 +10,25 @@
 'use strict';
 
 (function _unifedTriadaModule() {
-    const _VERSION = '1.0.15-TRIADA';
+    const _VERSION = '1.0.14-TRIADA';
 
     function _log(msg, type = 'log') {
         const timestamp = new Date().toISOString();
         console[type](`[${timestamp}] [TRIADA] ${msg}`);
     }
 
-    // 1. OBTENÇÃO ESTÁVEL DO MASTER HASH
-    // Prioridade: activeForensicSession > UNIFEDSystem.masterHash dinâmico > HARD FAIL
-    // RETIFICAÇÃO FORENSE CP-01 (2026-03-31): Eliminado fallback estático e PENDING_SEAL.
-    // A emissão de prova com hash pré-definido viola o princípio da não-repudiação
-    // e é impugnável por falsidade informática (Art. 163.º CPP). A função falha
-    // explicitamente caso o Master Hash não tenha sido computado algoritmicamente.
+    // 1. OBTENÇÃO ESTÁVEL DO MASTER HASH (SEM GERAÇÃO DINÂMICA)
     function getStableMasterHash() {
-        if (window.activeForensicSession && window.activeForensicSession.masterHash &&
-            window.activeForensicSession.masterHash.length === 64) {
+        if (window.activeForensicSession && window.activeForensicSession.masterHash) {
             return window.activeForensicSession.masterHash;
         }
-        if (window.UNIFEDSystem && window.UNIFEDSystem.masterHash &&
-            window.UNIFEDSystem.masterHash.length === 64) {
+        if (window.UNIFEDSystem && window.UNIFEDSystem.demoMode) {
+            return "79b032809b9e54ea3504659c37edb9e49e6d462d691c75e4a5afd79d8bb8f86c";
+        }
+        if (window.UNIFEDSystem && window.UNIFEDSystem.masterHash) {
             return window.UNIFEDSystem.masterHash;
         }
-        // HARD FAIL — sem fallback estático ou valor sentinela.
-        // Chamar generateForensicSeal() antes de emitir qualquer documento pericial.
-        console.error('[UNIFED·CP-01] VIOLAÇÃO DE CUSTÓDIA: Master Hash não computado. ' +
-                      'Execute generateForensicSeal() antes de emitir prova.');
-        throw new Error(
-            'VIOLAÇÃO DE CUSTÓDIA: Master Hash não computado algoritmicamente. ' +
-            'Impossível emitir prova válida sem computação SHA-256 real. ' +
-            'Referência: Art. 125.º CPP · ISO/IEC 27037:2012 § 7.4.'
-        );
+        return "PENDING_SEAL";
     }
 
     // 2. ANEXO DE CUSTÓDIA (PROVA MATERIAL DIGITAL) com QR Code
@@ -193,58 +181,39 @@
         _log(`✅ Anexo de Custódia gerado com QR Code: ${sessionId}`, 'success');
     }
 
-    // 3. INJEÇÃO DE BOTÕES NA INTERFACE — v1.0.15 (JSON + i18n PT/EN)
+    // 3. INJEÇÃO DE BOTÕES NA INTERFACE
     function initInterface() {
         const container = document.getElementById('triadaButtonsContainer');
         if (!container) return;
 
         container.innerHTML = '';
 
-        const _tLang = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
-        const _tIsEN = (_tLang === 'en');
-        const _tL    = function(pt, en) { return _tIsEN ? en : pt; };
-
         const botoes = [
-            {
-                id:      'triadaPdfBtn',
-                label:   _tL('RELATÓRIO PERICIAL FORENSE (MOD. 03-B)', 'FORENSIC EXPERT REPORT (MOD. 03-B)'),
-                icon:    'fa-file-pdf',
-                cor:     '#00E5FF',
+            { 
+                id: 'triadaPdfBtn', 
+                label: 'RELATÓRIO PERICIAL FORENSE (MOD. 03-B)', 
+                icon: 'fa-file-pdf', 
+                cor: '#00E5FF',
                 handler: () => {
                     if (typeof window.exportPDF === 'function') window.exportPDF();
-                    else alert(_tL('Função de exportação PDF não disponível.', 'PDF export function not available.'));
+                    else alert('Função de exportação PDF não disponível.');
                 }
             },
-            {
-                id:      'triadaDocxBtn',
-                label:   _tL('MINUTA DE PETIÇÃO INICIAL', 'INITIAL PLEADING DRAFT'),
-                icon:    'fa-file-word',
-                cor:     '#0EA5E9',
+            { 
+                id: 'triadaDocxBtn', 
+                label: 'MINUTA DE PETIÇÃO INICIAL', 
+                icon: 'fa-file-word', 
+                cor: '#0EA5E9',
                 handler: () => {
                     if (typeof window.exportDOCX === 'function') window.exportDOCX();
-                    else alert(_tL('Função de exportação DOCX não disponível.', 'DOCX export function not available.'));
+                    else alert('Função de exportação DOCX não disponível.');
                 }
             },
-            {
-                id:      'triadaJsonBtn',
-                label:   _tL('EXPORTAR JSON PERICIAL', 'EXPORT FORENSIC JSON'),
-                icon:    'fa-file-code',
-                cor:     '#10B981',
-                handler: () => {
-                    if (typeof window.exportDataJSON === 'function') {
-                        window.exportDataJSON();
-                    } else if (typeof window.exportCustodyChainJSON === 'function') {
-                        window.exportCustodyChainJSON();
-                    } else {
-                        alert(_tL('Função de exportação JSON não disponível — verificar carregamento de script.js.', 'JSON export function not available — verify script.js is loaded.'));
-                    }
-                }
-            },
-            {
-                id:      'triadaCustodiaBtn',
-                label:   _tL('PROVA MATERIAL DIGITAL', 'DIGITAL MATERIAL EVIDENCE'),
-                icon:    'fa-shield-alt',
-                cor:     '#EF4444',
+            { 
+                id: 'triadaCustodiaBtn', 
+                label: 'PROVA MATERIAL DIGITAL', 
+                icon: 'fa-shield-alt', 
+                cor: '#EF4444',
                 handler: gerarAnexoCustodia
             }
         ];
@@ -263,11 +232,11 @@
 
         // Ocultar botões antigos (exportPDFBtn e exportDOCXBtn) para evitar duplicação
         ['exportPDFBtn', 'exportDOCXBtn'].forEach(id => {
-            const oldBtn = document.getElementById(id);
-            if (oldBtn) oldBtn.style.display = 'none';
+            const old = document.getElementById(id);
+            if (old) old.style.display = 'none';
         });
 
-        _log('Interface Tríade Documental v1.0.15 activada — PT: ' + _tLang.toUpperCase());
+        _log('Interface Tríade Documental v1.0.14 activada.');
     }
 
     // Inicialização por evento de prontidão do núcleo
@@ -275,41 +244,10 @@
         setTimeout(initInterface, 200);
     });
 
-    // Re-inicializar botões ao mudar de língua (para reflectir labels PT/EN)
-    var _triadaPrevSwitch = window.switchLanguage;
-    window.addEventListener('UNIFED_LANG_CHANGED', () => {
-        setTimeout(initInterface, 50);
-    });
-
     // Exposição global
     window.gerarAnexoCustodia = gerarAnexoCustodia;
     window.initTriadaButtons = initInterface;
     window.UNIFEDSystem = window.UNIFEDSystem || {};
     window.UNIFEDSystem.triadaUpdateLabels = initInterface;
-
-    // EXPOSIÇÃO GLOBAL DE getStableMasterHash — Resolução D-01 (2026-03-31)
-    // Wrapper seguro: leitura directa de propriedades sem invocar o hard-fail
-    // de CP-01. Preserva a blindagem criptográfica: nunca retorna PENDING_SEAL
-    // nem hash estático. Retorna null se hash ainda não foi computado, permitindo
-    // ao caller decidir como reagir (nexus.js M5 usa _safeReadMasterHash).
-    window.getStableMasterHash = function _globalGetStableMasterHash() {
-        if (window.activeForensicSession &&
-            typeof window.activeForensicSession.masterHash === 'string' &&
-            window.activeForensicSession.masterHash.length === 64) {
-            return window.activeForensicSession.masterHash;
-        }
-        if (window.UNIFEDSystem &&
-            typeof window.UNIFEDSystem.masterHash === 'string' &&
-            window.UNIFEDSystem.masterHash.length === 64) {
-            return window.UNIFEDSystem.masterHash;
-        }
-        // Sem hash válido: retorna null — nunca PENDING_SEAL nem hash estático.
-        // O hard-fail de CP-01 (throw Error) permanece na função interna
-        // getStableMasterHash() para o contexto de emissão de documentos periciais.
-        return null;
-    };
-
-    // Expor versão actualizada
-    window.UNIFEDSystem.triadaVersion = '1.0.15-TRIADA';
 
 })();

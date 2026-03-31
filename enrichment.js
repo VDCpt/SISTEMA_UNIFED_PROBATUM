@@ -490,11 +490,7 @@ async function exportDOCX(xmlInject) {
     var t    = sys.analysis.totals    || {};
     var c    = sys.analysis.crossings || {};
     var v    = sys.analysis.verdict   || {};
-    var _lang = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
-    var _isEN = (_lang === 'en');
-    var _L = function(pt, en) { return _isEN ? en : pt; };
-    var date = _isEN ? new Date().toLocaleDateString('en-GB') : new Date().toLocaleDateString('pt-PT');
-    var _verdict_label = (v.level && (_isEN ? v.level.en : v.level.pt)) || 'N/A';
+    var date = new Date().toLocaleDateString('pt-PT');
     var xe = function(s) {
         return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     };
@@ -531,14 +527,14 @@ async function exportDOCX(xmlInject) {
                '<w:spacing w:before="120" w:after="120"/></w:pPr></w:p>';
     };
     var fe = function(val) { return window.UNIFEDSystem.utils.formatCurrency(val); };
-    var discRows = [tr([tc(_L('Indicador Pericial', 'Forensic Indicator'), true, 5000, 'E8F0F8'), tc(_L('Valor Apurado', 'Assessed Value'), true, 4000, 'E8F0F8')])];
-    if (Math.abs(c.discrepanciaCritica || 0) > 0) discRows.push(tr([tc(_L('Omissão de Custos — BTF (Despesas vs Fatura)', 'Cost Omission — BTF (Expenses vs Invoice)'), false, 5000), tc(fe(c.discrepanciaCritica), false, 4000)]));
-    if (Math.abs(c.discrepanciaSaftVsDac7 || 0) > 0) discRows.push(tr([tc(_L('Omissão de Receita — SAF-T vs DAC7', 'Revenue Omission — SAF-T vs DAC7'), false, 5000), tc(fe(c.discrepanciaSaftVsDac7), false, 4000)]));
-    if ((c.ivaFalta || 0) > 0) discRows.push(tr([tc(_L('IVA 23% Omitido (Art. 2.º CIVA)', 'VAT 23% Omitted (Art. 2 CIVA)'), false, 5000), tc(fe(c.ivaFalta), false, 4000)]));
-    if ((c.ivaFalta6 || 0) > 0) discRows.push(tr([tc(_L('IVA 6% Omitido (Transporte — CIVA)', 'VAT 6% Omitted (Transport — CIVA)'), false, 5000), tc(fe(c.ivaFalta6), false, 4000)]));
-    if ((c.ircEstimado || 0) > 0) discRows.push(tr([tc(_L('IRC Estimado Omitido (Art. 17.º CIRC)', 'Estimated Corporation Tax Omitted (Art. 17 CIRC)'), false, 5000), tc(fe(c.ircEstimado), false, 4000)]));
-    if ((c.impactoSeteAnosMercado || 0) > 0) discRows.push(tr([tc(_L('Impacto Macroeconómico 7 Anos', 'Macroeconomic Impact 7 Years'), true, 5000, 'FFF0F0'), tc(fe(c.impactoSeteAnosMercado), true, 4000, 'FFF0F0')]));
-    var srcRows = [tr([tc(_L('Documento', 'Document'), true, 3000, 'E8F0F8'), tc(_L('Tipo', 'Type'), true, 2000, 'E8F0F8'), tc(_L('Hash SHA-256 (64 caracteres)', 'SHA-256 Hash (64 characters)'), true, 4000, 'E8F0F8')])];
+    var discRows = [tr([tc('Indicador Pericial', true, 5000, 'E8F0F8'), tc('Valor Apurado', true, 4000, 'E8F0F8')])];
+    if (Math.abs(c.discrepanciaCritica || 0) > 0) discRows.push(tr([tc('Omissao de Custos - BTF (Despesas vs Fatura)', false, 5000), tc(fe(c.discrepanciaCritica), false, 4000)]));
+    if (Math.abs(c.discrepanciaSaftVsDac7 || 0) > 0) discRows.push(tr([tc('Omissao de Receita - SAF-T vs DAC7', false, 5000), tc(fe(c.discrepanciaSaftVsDac7), false, 4000)]));
+    if ((c.ivaFalta || 0) > 0) discRows.push(tr([tc('IVA 23% Omitido (Art. 2.o CIVA)', false, 5000), tc(fe(c.ivaFalta), false, 4000)]));
+    if ((c.ivaFalta6 || 0) > 0) discRows.push(tr([tc('IVA 6% Omitido (Transporte - CIVA)', false, 5000), tc(fe(c.ivaFalta6), false, 4000)]));
+    if ((c.ircEstimado || 0) > 0) discRows.push(tr([tc('IRC Estimado Omitido (Art. 17.o CIRC)', false, 5000), tc(fe(c.ircEstimado), false, 4000)]));
+    if ((c.impactoSeteAnosMercado || 0) > 0) discRows.push(tr([tc('Impacto Macroeconomico 7 Anos', true, 5000, 'FFF0F0'), tc(fe(c.impactoSeteAnosMercado), true, 4000, 'FFF0F0')]));
+    var srcRows = [tr([tc('Documento', true, 3000, 'E8F0F8'), tc('Tipo', true, 2000, 'E8F0F8'), tc('Hash SHA-256 (64 caracteres)', true, 4000, 'E8F0F8')])];
     (sys.analysis.evidenceIntegrity || []).slice(0, 8).forEach(function(ev) {
         srcRows.push(tr([tc(ev.filename || 'N/A', false, 3000), tc(ev.type || 'N/A', false, 2000), tc(ev.hash || 'N/A', false, 4000)]));
     });
@@ -558,83 +554,83 @@ async function exportDOCX(xmlInject) {
             return para(l, isH, isH ? '22' : '20', isH ? '003366' : '222222');
         });
     var bodyContent = [
-        para(_L('TRIBUNAL JUDICIAL DE COMARCA', 'COURT OF FIRST INSTANCE'), true, '24', '003366', 'center'),
-        para(_L('JUÍZO LOCAL CÍVEL', 'LOCAL CIVIL DIVISION'), false, '20', '555555', 'center'),
+        para('TRIBUNAL JUDICIAL DE COMARCA', true, '24', '003366', 'center'),
+        para('JUIZO LOCAL CIVEL', false, '20', '555555', 'center'),
         para('', false),
-        para(_L('MINUTA DE PETIÇÃO INICIAL', 'INITIAL PLEADING DRAFT'), true, '32', '003366', 'center'),
-        para(_L('PROVA PERICIAL FORENSE FISCAL — TVDE', 'FORENSIC TAX EXPERT EVIDENCE — TVDE'), true, '24', '0066CC', 'center'),
+        para('MINUTA DE PETICAO INICIAL', true, '32', '003366', 'center'),
+        para('PROVA PERICIAL FORENSE FISCAL - TVDE', true, '24', '0066CC', 'center'),
         para('', false), hr(),
-        para(_L('Processo N.º: ', 'Case No.: ') + xe(sys.sessionId || 'UNIFED-PENDING'), false, '20', '333333'),
-        para(_L('Data de Elaboração: ', 'Date of Issue: ') + date, false, '20', '333333'),
-        para(_L('Sistema: UNIFED - PROBATUM v13.5.0-PURE — Admissibilidade Art. 125.º CPP — DORA Compliant', 'System: UNIFED - PROBATUM v13.5.0-PURE — Admissibility Art. 125 CPP — DORA Compliant'), false, '18', '666666'),
-        para(_L('Referência de Integridade — Master Hash SHA-256: ', 'Integrity Reference — Master Hash SHA-256: ') + xe(sys.masterHash || 'N/A'), false, '16', '888888'),
+        para('Processo N.o: ' + xe(sys.sessionId || 'UNIFED-PENDING'), false, '20', '333333'),
+        para('Data de Elaboracao: ' + date, false, '20', '333333'),
+        para('Sistema: UNIFED - PROBATUM v13.5.0-PURE - ADMISSIBILIDADE ART. 125.º CPP - DORA COMPLIANT', false, '18', '666666'),
+        para('Referencia de Integridade: Master Hash SHA-256: ' + xe(sys.masterHash || 'N/A'), false, '16', '888888'),
         hr(), para('', false),
-        para(_L('I. IDENTIFICAÇÃO', 'I. IDENTIFICATION'), true, '26', '003366'), para('', false),
+        para('I. IDENTIFICACAO', true, '26', '003366'), para('', false),
         tbl([
-            tr([tc(_L('Sujeito Passivo', 'Taxpayer'), true, 3000, 'E8F0F8'), tc(sys.client && sys.client.name || 'N/A', false, 6000)]),
-            tr([tc(_L('NIF', 'Tax ID'), true, 3000, 'E8F0F8'), tc(sys.client && sys.client.nif || 'N/A', false, 6000)]),
-            tr([tc(_L('Plataforma', 'Platform'), true, 3000, 'E8F0F8'), tc((sys.selectedPlatform && sys.selectedPlatform !== 'outra') ? sys.selectedPlatform : _L('Plataforma A', 'Platform A'), false, 6000)]),
-            tr([tc(_L('Ano Fiscal', 'Fiscal Year'), true, 3000, 'E8F0F8'), tc(String(sys.selectedYear || new Date().getFullYear()), false, 6000)]),
-            tr([tc(_L('Perito', 'Expert Witness'), true, 3000, 'E8F0F8'), tc(_L('Analista e Consultor Forense Independente', 'Independent Forensic Analyst and Consultant'), false, 6000)]),
-            tr([tc(_L('Veredicto', 'Verdict'), true, 3000, 'FFF0F0'), tc(_verdict_label, true, 6000)])
+            tr([tc('Sujeito Passivo',   true, 3000, 'E8F0F8'), tc(sys.client && sys.client.name || 'N/A', false, 6000)]),
+            tr([tc('NIF',               true, 3000, 'E8F0F8'), tc(sys.client && sys.client.nif  || 'N/A', false, 6000)]),
+            tr([tc('Plataforma',        true, 3000, 'E8F0F8'), tc((sys.selectedPlatform && sys.selectedPlatform !== 'outra') ? sys.selectedPlatform : 'Plataforma A', false, 6000)]),
+            tr([tc('Ano Fiscal',        true, 3000, 'E8F0F8'), tc(String(sys.selectedYear || new Date().getFullYear()), false, 6000)]),
+            tr([tc('Perito',            true, 3000, 'E8F0F8'), tc('Analista e Consultor Forense Independente', false, 6000)]),
+            tr([tc('Veredicto',         true, 3000, 'FFF0F0'), tc((v.level && v.level.pt) || 'N/A', true, 6000)])
         ]),
         para('', false), hr(), para('', false),
-        para(_L('I-A. CONFORMIDADE E EVIDÊNCIA DIGITAL', 'I-A. COMPLIANCE AND DIGITAL EVIDENCE'), true, '26', '003366'), para('', false),
-        para(_L('Objeto: Análise de Discrepâncias de Terceiros (Plataformas Digitais) actuando sob monopólio de faturação (Art. 36.º, n.º 11 CIVA).', 'Subject: Analysis of Third-Party Discrepancies (Digital Platforms) operating under billing monopoly (Art. 36, para. 11 CIVA).'), false, '20', '333333'),
-        para(_L('Fundamentação: Art. 104.º n.º 2 RGIT (Fraude Qualificada) e Art. 125.º CPP.', 'Legal Basis: Art. 104(2) RGIT (Aggravated Tax Fraud) and Art. 125 CPP.'), false, '20', '333333'),
-        para(_L('Evidência: Omissão de base tributável por divergência entre Ganhos Reais efectivos (Ledger/Extrato) e o Reporte Fiscal submetido pela plataforma (SAF-T/DAC7).', 'Evidence: Omission of taxable base due to divergence between actual earnings (Ledger/Statement) and the fiscal report submitted by the platform (SAF-T/DAC7).'), false, '20', '333333'),
-        para(_L('Conclusão Pericial: A retenção sistemática de percentagens em comissões sem a devida faturação constitui apropriação indevida e indicia crime tributário de omissão de proveitos por parte da entidade processadora.', 'Expert Conclusion: The systematic retention of commission percentages without proper invoicing constitutes misappropriation and indicates a tax crime of revenue omission by the processing entity.'), true, '20', 'CC0000'),
+        para('I-A. CONFORMIDADE E EVIDENCIA DIGITAL', true, '26', '003366'), para('', false),
+        para('Objeto: Analise de Discrepancias de Terceiros (Plataformas Digitais) atuando sob monopolio de faturacao (Art. 36.o, n.o 11 CIVA).', false, '20', '333333'),
+        para('Fundamentacao: Art. 104.o n.o 2 RGIT (Fraude Qualificada) e Art. 125.o CPP.', false, '20', '333333'),
+        para('Evidencia: Omissao de base tributavel por divergencia entre Ganhos Reais efetivos (Ledger/Extrato) e o Reporte Fiscal submetido pela plataforma (SAF-T/DAC7).', false, '20', '333333'),
+        para('Conclusao Pericial: A retencao sistematica de percentagens em comissoes sem a devida faturacao constitui apropriacao indevida e indicia crime tributario de omissao de proveitos por parte da entidade processadora.', true, '20', 'CC0000'),
         para('', false), hr(), para('', false),
-        para(_L('II. FACTOS PROVADOS — DISCREPÂNCIAS APURADAS', 'II. ESTABLISHED FACTS — IDENTIFIED DISCREPANCIES'), true, '26', '003366'), para('', false),
-        para(_L('Com base na análise pericial das evidências digitais certificadas, foram apuradas as seguintes discrepâncias:', 'Based on the forensic analysis of certified digital evidence, the following discrepancies were identified:'), false, '20', '333333'),
+        para('II. FACTOS PROVADOS - DISCREPANCIAS APURADAS', true, '26', '003366'), para('', false),
+        para('Com base na analise pericial das evidencias digitais certificadas, foram apuradas as seguintes discrepancias:', false, '20', '333333'),
         para('', false), tbl(discRows), para('', false),
-        para(_L('Percentagem de Omissão de Custos: ', 'Cost Omission Percentage: ') + (c.percentagemOmissao || 0).toFixed(2) + '%', true, '20', 'CC0000'),
-        para(_L('Percentagem Discrepância SAF-T vs DAC7: ', 'SAF-T vs DAC7 Discrepancy Percentage: ') + (c.percentagemSaftVsDac7 || 0).toFixed(2) + '%', true, '20', 'CC0000'),
+        para('Percentagem de Omissao de Custos: ' + (c.percentagemOmissao || 0).toFixed(2) + '%', true, '20', 'CC0000'),
+        para('Percentagem Discrepancia SAF-T vs DAC7: ' + (c.percentagemSaftVsDac7 || 0).toFixed(2) + '%', true, '20', 'CC0000'),
         para('', false), hr(), para('', false),
-        para(_L('III. CADEIA DE CUSTÓDIA — EVIDÊNCIAS DIGITAIS', 'III. CHAIN OF CUSTODY — DIGITAL EVIDENCE'), true, '26', '003366'), para('', false),
-        para(_L('As evidências digitais foram certificadas com hash SHA-256 nos termos do Art. 125.º do CPP:', 'Digital evidence was certified with SHA-256 hash pursuant to Art. 125 of the CPP:'), false, '20', '333333'),
+        para('III. CADEIA DE CUSTODIA - EVIDENCIAS DIGITAIS', true, '26', '003366'), para('', false),
+        para('As evidencias digitais foram certificadas com hash SHA-256 nos termos do Art. 125.o do CPP:', false, '20', '333333'),
         para('', false), tbl(srcRows), para('', false), hr(), para('', false),
-        para(_L('III-A. QUALIFICAÇÃO JURÍDICA — CRIMINALIDADE DE COLARINHO BRANCO', 'III-A. LEGAL CLASSIFICATION — WHITE-COLLAR CRIME'), true, '26', '6B0099'), para('', false),
-        para(_L('A engenharia algorítmica da plataforma cria uma zona cinzenta premeditada entre o ganho real retido na fonte e o valor reportado em SAF-T/DAC7. Este diferencial não declarado fica num limbo contabilístico, caracterizando uma tipologia de criminalidade de colarinho branco e evasão fiscal estruturada, explorando a assimetria de informação contra o parceiro e o Estado.', 'The platform\'s algorithmic engineering creates a premeditated grey area between the actual earnings retained at source and the value reported in SAF-T/DAC7. This undeclared differential remains in an accounting limbo, characterising a typology of white-collar crime and structured tax evasion, exploiting the information asymmetry against the partner and the State.'), false, '20', '333333'),
+        para('III-A. QUALIFICACAO JURIDICA — CRIMINALIDADE DE COLARINHO BRANCO', true, '26', '6B0099'), para('', false),
+        para('A engenharia algoritmica da plataforma cria uma zona cinzenta premeditada entre o ganho real retido na fonte e o valor reportado em SAF-T/DAC7. Este diferencial nao declarado fica num limbo contabilistico, caracterizando uma tipologia de criminalidade de colarinho branco e evasao fiscal estruturada, explorando a assimetria de informacao contra o parceiro e o Estado.', false, '20', '333333'),
         para('', false), hr(), para('', false),
-        para(_L('III-B. PERDA DE CHANCE E DANO REPUTACIONAL', 'III-B. LOSS OF CHANCE AND REPUTATIONAL DAMAGE'), true, '26', 'B85000'), para('', false),
-        para(_L('Dano Reputacional e Perda de Chance: O reporte viciado da plataforma à Autoridade Tributária (discrepância detectada de ' + fe(c.discrepanciaSaftVsDac7) + ') contamina directamente o perfil de risco (Risk Scoring) do parceiro. Sendo a plataforma a detentora do monopólio de emissão documental (Art. 36.º n.º 11 CIVA), o sujeito passivo é penalizado sem dolo. Esta adulteração do perfil fiscal gera lucros cessantes mensuráveis, inibindo o acesso a financiamento bancário, linhas de crédito e benefícios fiscais, constituindo fundamento para indemnização por responsabilidade civil extracontratual.', 'Reputational Damage and Loss of Chance: The platform\'s corrupted report to the Tax Authority (discrepancy detected: ' + fe(c.discrepanciaSaftVsDac7) + ') directly contaminates the partner\'s risk profile (AT Risk Scoring). As the platform holds the documentary issuance monopoly (Art. 36(11) CIVA), the taxpayer is penalised without fault. This fiscal profile adulteration generates measurable lost profits, inhibiting access to bank financing, credit lines and tax benefits, constituting grounds for tortious liability.'), false, '20', '333333'),
+        para('III-B. PERDA DE CHANCE E DANO REPUTACIONAL', true, '26', 'B85000'), para('', false),
+        para('Dano Reputacional e Perda de Chance: O reporte viciado da plataforma a Autoridade Tributaria (com uma discrepancia detetada de ' + fe(c.discrepanciaSaftVsDac7) + ') contamina diretamente o perfil de risco (Risk Scoring) do parceiro. Sendo a plataforma a detentora do monopolio de emissao documental (Art. 36.o n.o 11 CIVA), o sujeito passivo e penalizado sem dolo. Esta adulteracao do perfil fiscal gera lucros cessantes mensuraveis, inibindo o acesso a financiamento bancario, linhas de credito e beneficios fiscais, constituindo fundamento para indemnizacao por responsabilidade civil extracontratual.', false, '20', '333333'),
         para('', false), hr(), para('', false),
-        para(_L('IV. SÍNTESE JURÍDICA PERICIAL — ANÁLISE DETERMINÍSTICA', 'IV. FORENSIC LEGAL SYNTHESIS — DETERMINISTIC ANALYSIS'), true, '26', '003366'),
-        para(_L('Elaborada sob metodologia forense UNIFED-PROBATUM v13.5.0-PURE. Análise algorítmica de base determinística (non-probabilistic). Conformidade: Art. 125.º CPP · ISO/IEC 27037:2012 · DORA (UE) 2022/2554.', 'Produced under UNIFED-PROBATUM v13.5.0-PURE forensic methodology. Deterministic algorithmic analysis (non-probabilistic). Compliance: Art. 125 CPP · ISO/IEC 27037:2012 · DORA (EU) 2022/2554.'), false, '16', '555555'),
-        para(_L('NOTA: A jurisprudência citada constitui referência doutrinária para orientação do advogado mandatário. Toda a referência a acórdãos deve ser validada pelo advogado antes de qualquer uso processual. O perito responsabiliza-se pelos dados forenses e pela metodologia UNIFED-PROBATUM.', 'NOTE: Case law cited constitutes doctrinal reference for the instructed solicitor. All references to judgments must be validated by the lawyer before any procedural use. The expert is accountable for the forensic data and UNIFED-PROBATUM methodology.'), false, '16', '888888'),
+        para('IV. SÍNTESE JURÍDICA PERICIAL — ANÁLISE DETERMINÍSTICA', true, '26', '003366'),
+        para('Elaborada sob metodologia forense UNIFED-PROBATUM v13.5.0-PURE. Análise algorítmica de base determinística (non-probabilistic). Conformidade: Art. 125.º CPP · ISO/IEC 27037:2012 · DORA (UE) 2022/2554.', false, '16', '555555'),
+        para('NOTA: A jurisprudência citada constitui referência doutrinária para orientação do advogado mandatário. Toda a referência a acórdãos deve ser validada pelo advogado antes de qualquer uso processual. O perito responsabiliza-se pelos dados forenses e pela metodologia UNIFED-PROBATUM.', false, '16', '888888'),
         para('', false)
     ].concat(narrativeParas).concat([
         para('', false), hr(), para('', false),
-        para(_L('V. CLÁUSULA DE CONDENAÇÃO — PETIÇÃO CONSOLIDADA (PERDA DE CHANCE)', 'V. CONDEMNATION CLAUSE — CONSOLIDATED PETITION (LOSS OF CHANCE)'), true, '26', '003366'), para('', false),
-        para(_L('NOTA METODOLÓGICA OBRIGATÓRIA: O UNIFED-PROBATUM não realiza contabilidade. Realiza RECONSTITUIÇÃO DA VERDADE MATERIAL DIGITAL — um processo forense de engenharia reversa sobre os fluxos de caixa reais vs. reportados, com o objetivo de estabelecer a verdade material dos factos para efeitos processuais. Esta distinção é juridicamente relevante para a admissibilidade da prova pericial (Art. 125.º CPP · ISO/IEC 27037:2012).', 'MANDATORY METHODOLOGICAL NOTE: UNIFED-PROBATUM does not perform accounting. It performs DIGITAL MATERIAL TRUTH RECONSTRUCTION — a forensic reverse-engineering process on real vs. reported cash flows, with the objective of establishing the material truth of facts for procedural purposes. This distinction is legally relevant for the admissibility of expert evidence (Art. 125 CPP · ISO/IEC 27037:2012).'), true, '18', '003366'),
+        para('V. CLÁUSULA DE CONDENAÇÃO — PETIÇÃO CONSOLIDADA (PERDA DE CHANCE)', true, '26', '003366'), para('', false),
+        para('NOTA METODOLÓGICA OBRIGATÓRIA: O UNIFED-PROBATUM não realiza contabilidade. Realiza RECONSTITUIÇÃO DA VERDADE MATERIAL DIGITAL — um processo forense de engenharia reversa sobre os fluxos de caixa reais vs. reportados, com o objetivo de estabelecer a verdade material dos factos para efeitos processuais. Esta distinção é juridicamente relevante para a admissibilidade da prova pericial (Art. 125.º CPP · ISO/IEC 27037:2012).', true, '18', '003366'),
         para('', false),
         tbl([
-            tr([tc(_L('Componente de Condenação', 'Condemnation Component'), true, 4000, 'E8F0F8'), tc(_L('Fórmula / Quantificação', 'Formula / Quantification'), true, 5000, 'E8F0F8')]),
-            tr([tc(_L('Indemnização por Perda de Chance (principal)', 'Loss of Chance Compensation (principal)'), false, 4000), tc(_L('A liquidar em execução de sentença — correspondente ao diferencial de juros bancários agravados pelo vício no cadastro fiscal (Risk Scoring AT) causado pela Ré, calculado desde a data de início das omissões até efectivo ressarcimento.', 'To be quantified in enforcement proceedings — corresponding to the differential of aggravated bank interest rates caused by the defect in the fiscal register (AT Risk Scoring) caused by the Defendant, calculated from the date of commencement of omissions until full redress.'), false, 5000)]),
-            tr([tc(_L('Omissão de IVA 23% (retenção indevida)', 'VAT 23% Omission (undue retention)'), false, 4000), tc(fe(c.ivaFalta) + _L(' — Art. 2.º n.º 1 al. i) CIVA · Autoliquidação em falta', ' — Art. 2(1)(i) CIVA · Self-assessment outstanding'), false, 5000)]),
-            tr([tc(_L('Omissão de IVA 6% (transporte)', 'VAT 6% Omission (transport)'), false, 4000), tc(fe(c.ivaFalta6) + _L(' — Art. 18.º n.º 1 al. b) CIVA · Taxa Reduzida Transporte', ' — Art. 18(1)(b) CIVA · Reduced Rate Transport'), false, 5000)]),
-            tr([tc(_L('Omissão de Faturação (C2 — Smoking Gun)', 'Billing Omission (C2 — Smoking Gun)'), true, 4000, 'FFF0F0'), tc(fe(c.discrepanciaCritica) + ' (' + (c.percentagemOmissao || 0).toFixed(2) + '%) — ' + _L('Discrepância Despesas/Fatura (BTOR vs BTF)', 'Expenses/Invoice Discrepancy (BTOR vs BTF)'), true, 5000, 'FFF0F0')]),
-            tr([tc(_L('Dano Reputacional / Risk Scoring AT', 'Reputational Damage / AT Risk Scoring'), false, 4000), tc(_L('Exposição ao risco: ', 'Risk exposure: ') + fe(c.discrepanciaSaftVsDac7) + _L(' (omissão SAF-T vs DAC7) — agravamento injustificado do perfil fiscal que inibe acesso a crédito e benefícios fiscais.', ' (SAF-T vs DAC7 omission) — unjustified aggravation of fiscal profile inhibiting access to credit and tax benefits.'), false, 5000)]),
-            tr([tc(_L('IRC Estimado Omitido (21%)', 'Estimated Corporation Tax Omitted (21%)'), false, 4000), tc(fe(c.ircEstimado) + _L(' — Art. 17.º CIRC · Agravamento anual', ' — Art. 17 CIRC · Annual aggravation'), false, 5000)]),
-            tr([tc(_L('Juros de Mora / Sanções CIVA', 'Default Interest / CIVA Penalties'), false, 4000), tc(_L('A liquidar — Art. 108.º CIVA · Art. 103.º/104.º RGIT · prazo de prescrição 7 anos (Art. 45.º LGT)', 'To be assessed — Art. 108 CIVA · Art. 103/104 RGIT · 7-year limitation period (Art. 45 LGT)'), false, 5000)]),
-            tr([tc(_L('IMPACTO MACROECONÓMICO (7 Anos · 38.000 condutores PT)', 'MACROECONOMIC IMPACT (7 Years · 38,000 PT drivers)'), true, 4000, 'FFF0F0'), tc(fe(c.impactoSeteAnosMercado) + _L(' — Relevância sistémica para litígio especializado', ' — Systemic relevance for specialist litigation'), true, 5000, 'FFF0F0')])
+            tr([tc('Componente de Condenação', true, 4000, 'E8F0F8'), tc('Fórmula / Quantificação', true, 5000, 'E8F0F8')]),
+            tr([tc('Indemnização por Perda de Chance (principal)', false, 4000), tc('A liquidar em execução de sentença — correspondente ao diferencial de juros bancários agravados pelo vício no cadastro fiscal (Risk Scoring AT) causado pela Ré, calculado desde a data de início das omissões até efectivo ressarcimento.', false, 5000)]),
+            tr([tc('Omissão de IVA 23% (retenção indevida)', false, 4000), tc(fe(c.ivaFalta) + ' — Art. 2.º n.º 1 al. i) CIVA · Autoliquidação em falta', false, 5000)]),
+            tr([tc('Omissão de IVA 6% (transporte)', false, 4000), tc(fe(c.ivaFalta6) + ' — Art. 18.º n.º 1 al. b) CIVA · Taxa Reduzida Transporte', false, 5000)]),
+            tr([tc('Omissão de Faturação (C2 — Smoking Gun)', true, 4000, 'FFF0F0'), tc(fe(c.discrepanciaCritica) + ' (' + (c.percentagemOmissao || 0).toFixed(2) + '%) — Discrepância Despesas/Fatura (BTOR vs BTF)', true, 5000, 'FFF0F0')]),
+            tr([tc('Dano Reputacional / Risk Scoring AT', false, 4000), tc('Exposição ao risco: ' + fe(c.discrepanciaSaftVsDac7) + ' (omissão SAF-T vs DAC7) — agravamento injustificado do perfil fiscal que inibe acesso a crédito e benefícios fiscais.', false, 5000)]),
+            tr([tc('IRC Estimado Omitido (21%)', false, 4000), tc(fe(c.ircEstimado) + ' — Art. 17.º CIRC · Agravamento anual', false, 5000)]),
+            tr([tc('Juros de Mora / Sanções CIVA', false, 4000), tc('A liquidar — Art. 108.º CIVA · Art. 103.º/104.º RGIT · prazo de prescrição 7 anos (Art. 45.º LGT)', false, 5000)]),
+            tr([tc('IMPACTO MACROECONÓMICO (7 Anos · 38.000 condutores PT)', true, 4000, 'FFF0F0'), tc(fe(c.impactoSeteAnosMercado) + ' — Relevância sistémica para litígio especializado', true, 5000, 'FFF0F0')])
         ]),
         para('', false),
-        para(_L('Cláusula de Redação Processual (para peça autónoma do advogado mandatário):', 'Procedural Drafting Clause (for the instructed solicitor\'s autonomous pleading):'), true, '18', '003366'),
+        para('Cláusula de Redação Processual (para peça autónoma do advogado mandatário):', true, '18', '003366'),
         para('"Deve a Ré ser condenada a pagar ao Autor: (I) indemnização a liquidar em execução de sentença, correspondente ao diferencial de juros bancários agravados pelo vício no cadastro fiscal (Risk Scoring) causado pela conduta omissiva da Ré, imputável à subdeclaração sistemática de rendimentos perante a Autoridade Tributária; (II) o valor apurado de ' + fe(c.discrepanciaCritica) + ' a título de omissão de faturação de comissões retidas sem suporte documental; (III) IVA em falta no montante de ' + fe((c.ivaFalta || 0) + (c.ivaFalta6 || 0)) + '; (IV) juros de mora e acréscimos legais sobre todos os montantes, desde a data de início das omissões até integral pagamento — tudo nos termos dos Arts. 103.º/104.º RGIT, Art. 36.º n.º 11 CIVA, e Art. 483.º CC."', false, '20', '333333'),
         para('', false), hr(), para('', false),
-        para(_L('V-A. DECLARAÇÃO DO PERITO', 'V-A. EXPERT WITNESS DECLARATION'), true, '26', '003366'), para('', false),
-        para(_L('Declaro, sob compromisso de honra, que o presente documento foi elaborado em qualidade de Consultor Técnico Independente, assumindo os deveres de independência, objectividade e imparcialidade previstos no artigo 153.º do Código de Processo Penal Português.', 'I declare, on my honour, that this document was prepared in my capacity as Independent Technical Consultant, assuming the duties of independence, objectivity and impartiality set out in Article 153 of the Portuguese Code of Criminal Procedure.'), false, '20', '333333'),
+        para('V-A. DECLARACAO DO PERITO', true, '26', '003366'), para('', false),
+        para('Declaro, sob compromisso de honra, que o presente documento foi elaborado em qualidade de Consultor Tecnico Independente, assumindo os deveres de independencia, objetividade e imparcialidade previstos no artigo 153.o do Codigo de Processo Penal Portugues.', false, '20', '333333'),
         para('', false),
-        para(_L('O presente estudo constitui RECONSTITUIÇÃO DA VERDADE MATERIAL DIGITAL — não contabilidade. O sistema UNIFED-PROBATUM aplica metodologia de engenharia reversa forense sobre fluxos de caixa reais vs. reportados (BTOR vs BTF), com rastreabilidade criptográfica completa (SHA-256 + RFC 3161 + AES-256), sendo os resultados plenamente admissíveis como prova técnica pericial (Art. 125.º CPP · ISO/IEC 27037:2012 · DORA UE 2022/2554).', 'This study constitutes DIGITAL MATERIAL TRUTH RECONSTRUCTION — not accounting. The UNIFED-PROBATUM system applies forensic reverse-engineering methodology to real vs. reported cash flows (BTOR vs BTF), with full cryptographic traceability (SHA-256 + RFC 3161 + AES-256), the results being fully admissible as technical expert evidence (Art. 125 CPP · ISO/IEC 27037:2012 · DORA EU 2022/2554).'), false, '20', '555555'),
+        para('O presente estudo constitui RECONSTITUIÇÃO DA VERDADE MATERIAL DIGITAL — nao contabilidade. O sistema UNIFED-PROBATUM aplica metodologia de engenharia reversa forense sobre fluxos de caixa reais vs. reportados (BTOR vs BTF), com rastreabilidade criptografica completa (SHA-256 + RFC 3161 + AES-256), sendo os resultados plenamente admissiveis como prova tecnica pericial (Art. 125.o CPP · ISO/IEC 27037:2012 · DORA UE 2022/2554).', false, '20', '555555'),
         para('', false),
-        para(_L('Porto, ', 'Porto, ') + date, false, '20', '333333'), para('', false),
+        para('Porto, ' + date, false, '20', '333333'), para('', false),
         para('_____________________________________________', false, '20', '333333'),
-        para(_L('Analista e Consultor Forense Independente — UNIFED — PROBATUM v13.5.0-PURE', 'Independent Forensic Analyst and Consultant — UNIFED — PROBATUM v13.5.0-PURE'), false, '18', '555555'),
-        para(_L('Reconstituição da Verdade Material Digital · Art. 153.º CPP · ISO/IEC 27037:2012', 'Digital Material Truth Reconstruction · Art. 153 CPP · ISO/IEC 27037:2012'), false, '16', '888888'),
+        para('Analista e Consultor Forense Independente - UNIFED - PROBATUM v13.5.0-PURE', false, '18', '555555'),
+        para('Reconstituicao da Verdade Material Digital · Art. 153.o CPP · ISO/IEC 27037:2012', false, '16', '888888'),
         para('', false),
-        para(_L('AVISO: Esta minuta é destinada ao advogado mandatário. Não constitui por si só peça processual.', 'WARNING: This draft is intended for the instructed solicitor. It does not, in itself, constitute a procedural document.'), false, '16', 'AA0000')
+        para('AVISO: Esta minuta e destinada ao advogado mandatario. Nao constitui por si so peca processual.', false, '16', 'AA0000')
     ]).join('');
     var contentTypes = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' +
         '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">\n' +
@@ -1087,44 +1083,6 @@ window.renderSankeyToImage     = renderSankeyToImage;
 function generateBurdenOfProofSection(discrepancyValue) {
     if (!discrepancyValue || discrepancyValue <= 0) return '';
     var _fmtVal = window.UNIFEDSystem.utils.formatCurrency(discrepancyValue);
-    var _bLang  = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
-    var _bIsEN  = (_bLang === 'en');
-    var _bL     = function(pt, en) { return _bIsEN ? en : pt; };
-
-    if (_bIsEN) {
-        return (
-            '---------------------------------------------------------------------------\n' +
-            '[!] HIGH LEGAL INTELLIGENCE ADDENDUM: REVERSAL OF BURDEN OF PROOF\n' +
-            '    Art. 344(2) Civil Code · Principle of Proximity of Evidence\n' +
-            '---------------------------------------------------------------------------\n' +
-            '\n' +
-            'GROUNDS FOR REVERSAL OF BURDEN OF PROOF (Art. 344(2) CC)\n' +
-            '\n' +
-            'Subject: Impossibility of Counter-Evidence by the Taxpayer due to\n' +
-            'Information Asymmetry.\n' +
-            '\n' +
-            'Technical Analysis: UNIFED-PROBATUM identified a structural divergence ' +
-            'between the Actual Cash Flow (Ledger) and the Fiscal Report (SAF-T/DAC7). ' +
-            'Since the platform holds the Documentary Issuance Monopoly ' +
-            '(Art. 36(11) CIVA) and exclusive control over the commission calculation ' +
-            'algorithm, the partner finds itself in a position of technical defencelessness. ' +
-            'The platform operates as a fiscal "Black Box" — the taxpayer has no access ' +
-            'to the source code or raw transaction logs that generate the delegated invoicing.\n' +
-            '\n' +
-            'Expert Conclusion: The platform\'s conduct, by corrupting the documentary ' +
-            'report and failing to provide access to raw transaction logs, makes negative ' +
-            'proof impossible for the partner. By virtue of the Principle of Proximity of ' +
-            'Evidence (STJ Judgment of 11/07/2013) and Art. 344(2) CC, the Reversal of ' +
-            'Burden of Proof operates: it falls upon the platform to demonstrate the ' +
-            'integrity of the retained values (' + _fmtVal + '), failing which, implicit ' +
-            'confession of misappropriation and the tax fraud evidenced herein shall arise.\n' +
-            '\n' +
-            'PROCEDURAL STRATEGY: This expert report constitutes "Prima Facie Material Evidence". ' +
-            'It falls upon the Platform — not the taxpayer — to prove the absence of intent ' +
-            'in the retention of the assessed discrepancy of ' + _fmtVal + '.\n' +
-            '---------------------------------------------------------------------------'
-        );
-    }
     return (
         '---------------------------------------------------------------------------\n' +
         '[!] ADENDA DE ALTA INTELIGÊNCIA JURÍDICA: INVERSÃO DO ÓNUS DA PROVA\n' +
