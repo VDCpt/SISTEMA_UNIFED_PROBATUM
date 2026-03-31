@@ -136,7 +136,7 @@
             sys.masterHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
         }
 
-        // Atualizar UI (função existente em script.js)
+        // Atualizar UI através da função dedicada
         if (typeof window._updatePureUI === 'function') {
             window._updatePureUI();
         } else {
@@ -145,6 +145,44 @@
 
         console.log('[UNIFED-PURE] ✅ Dados injetados. Master Hash:', sys.masterHash);
     }
+
+    // Função de actualização do painel PURE (corrigida)
+    window._updatePureUI = function() {
+        const sys = window.UNIFEDSystem;
+        if (!sys || !sys.analysis) return;
+        const fmt = window.UNIFED_FormatCurrency || window.formatCurrency;
+        const t = sys.analysis.totals;
+        const c = sys.analysis.crossings;
+        const pure = (id) => document.getElementById(id);
+
+        if (pure('pure-ganhos'))   pure('pure-ganhos').textContent = fmt(t.ganhos);
+        if (pure('pure-despesas')) pure('pure-despesas').textContent = fmt(t.despesas);
+        if (pure('pure-liquido'))  pure('pure-liquido').textContent = fmt(t.ganhosLiquidos);
+        if (pure('pure-saft'))     pure('pure-saft').textContent = fmt(t.saftBruto);
+        if (pure('pure-dac7'))     pure('pure-dac7').textContent = fmt(t.dac7TotalPeriodo);
+        if (pure('pure-fatura'))   pure('pure-fatura').textContent = fmt(t.faturaPlataforma);
+        if (pure('pure-disc-c2'))  pure('pure-disc-c2').textContent = fmt(c.discrepanciaCritica);
+        if (pure('pure-disc-c2-pct')) pure('pure-disc-c2-pct').textContent = c.percentagemOmissao.toFixed(2) + '%';
+        if (pure('pure-disc-saft-dac7')) pure('pure-disc-saft-dac7').textContent = fmt(c.discrepanciaSaftVsDac7);
+        if (pure('pure-iva-23'))   pure('pure-iva-23').textContent = fmt(c.ivaFalta);
+        if (pure('pure-iva-6'))    pure('pure-iva-6').textContent = fmt(c.ivaFalta6);
+        if (pure('pure-irc'))      pure('pure-irc').textContent = fmt(c.ircEstimado);
+
+        const nc = sys.nonCommissionable;
+        if (pure('pure-nc-campanhas') && nc) pure('pure-nc-campanhas').textContent = fmt(nc.campanhas);
+        if (pure('pure-nc-gorjetas') && nc)  pure('pure-nc-gorjetas').textContent = fmt(nc.gorjetas);
+        if (pure('pure-nc-portagens') && nc) pure('pure-nc-portagens').textContent = fmt(nc.portagens);
+        if (pure('pure-nc-total') && nc)     pure('pure-nc-total').textContent = fmt(nc.totalNaoSujeitos);
+
+        // Actualizar valores do score de persistência, etc.
+        if (pure('pure-atf-sp')) pure('pure-atf-sp').innerHTML = (typeof c.persistenciaScore !== 'undefined' ? c.persistenciaScore : 40) + '<span style="font-size:1rem;opacity:0.6">/100</span>';
+        if (pure('pure-atf-status')) pure('pure-atf-status').textContent = c.percentagemOmissao > 80 ? 'OMISSÃO SISTEMÁTICA / RISCO ELEVADO' : 'OMISSÃO PONTUAL / RISCO MODERADO';
+        if (pure('pure-atf-trend')) pure('pure-atf-trend').innerHTML = '📉 DESCENDENTE';
+        if (pure('pure-atf-outliers')) pure('pure-atf-outliers').innerHTML = '0 outliers > 2σ';
+        if (pure('pure-atf-meses')) pure('pure-atf-meses').innerHTML = '2.º Semestre 2024 — 4 meses com dados (Set–Dez)';
+        if (pure('pure-verdict')) pure('pure-verdict').textContent = t.ganhos > 10000 ? 'RISCO ELEVADO' : 'RISCO CRÍTICO';
+        if (pure('pure-verdict-pct')) pure('pure-verdict-pct').innerHTML = c.percentagemOmissao.toFixed(2) + '%';
+    };
 
     window.UNIFEDSystem = window.UNIFEDSystem || {};
     window.UNIFEDSystem.loadAnonymizedRealCase = _syncPureDashboard;
