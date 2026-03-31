@@ -43,22 +43,32 @@ export default {
      */
     async fetch(request, env, ctx) {
 
-        // ── 1. PRE-FLIGHT CORS (OPTIONS) ──────────────────────────────────────
-        // O browser envia um pedido OPTIONS antes do POST real.
-        // Responder com os cabeçalhos CORS correctos para que o browser
-        // autorize o pedido real em cross-origin.
         if (request.method === 'OPTIONS') {
-            return new Response(null, {
-                status: 204,
-                headers: _corsHeaders(request)
-            });
+            const corsH = _corsHeaders(request);
+            if (!corsH) {
+                return new Response(JSON.stringify({ error: 'Origin not allowed.' }), {
+                    status: 403,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+            return new Response(null, { status: 204, headers: corsH });
         }
 
         // ── 2. VALIDAÇÃO DO MÉTODO ─────────────────────────────────────────────
         if (request.method !== 'POST') {
+            const corsH = _corsHeaders(request);
             return new Response(JSON.stringify({ error: 'Method Not Allowed' }), {
                 status: 405,
-                headers: { ..._corsHeaders(request), 'Content-Type': 'application/json' }
+                headers: { ...(corsH || {}), 'Content-Type': 'application/json' }
+            });
+        }
+
+        // ── 2-B. VALIDAÇÃO DE ORIGEM (POST) ───────────────────────────────────
+        const _postCors = _corsHeaders(request);
+        if (!_postCors) {
+            return new Response(JSON.stringify({ error: 'Origin not allowed.' }), {
+                status: 403,
+                headers: { 'Content-Type': 'application/json' }
             });
         }
 
@@ -123,10 +133,8 @@ export default {
         const responseBody    = await upstreamResponse.arrayBuffer();
         const responseHeaders = new Headers(upstreamResponse.headers);
 
-        // Injectar cabeçalhos CORS na resposta — substitui ou adiciona
-        const cors = _corsHeaders(request);
-        Object.keys(cors).forEach(function(key) {
-            responseHeaders.set(key, cors[key]);
+        Object.keys(_postCors).forEach(function(key) {
+            responseHeaders.set(key, _postCors[key]);
         });
 
         return new Response(responseBody, {
@@ -151,25 +159,31 @@ export default {
 // ============================================================================
 function _corsHeaders(request) {
     // ── Whitelist de origens permitidas ───────────────────────────────────────
-    // Produção: restringir ao domínio do front-end.
-    // Desenvolvimento: adicionar 'http://localhost:*' conforme necessário.
+    // RETIFICAÇÃO RT-04 (2026-03-31): Rejeição 403 para origens não autorizadas.
+    // O fallback anterior (_ALLOWED_ORIGINS[0]) era permissivo: qualquer origem
+    // recebia uma resposta, podendo consumir o saldo da API Anthropic.
     const _ALLOWED_ORIGINS = [
         'https://app.unifed.com',
         'https://unifed.com',
-        'https://www.unifed.com',   // www variant
-        // 'http://localhost:5500',   // Descomentar para desenvolvimento local / Uncomment for local development
-        // 'http://127.0.0.1:5500',   // Descomentar para desenvolvimento local / Uncomment for local development
+        'https://www.unifed.com',
+        // 'http://localhost:5500',   // Descomentar para desenvolvimento local
+        // 'http://127.0.0.1:5500',   // Descomentar para desenvolvimento local
     ];
 
-    const origin  = (request && request.headers) ? request.headers.get('Origin') : null;
-    const allowed = origin && _ALLOWED_ORIGINS.includes(origin) ? origin : _ALLOWED_ORIGINS[0];
+    const origin = (request && request.headers) ? request.headers.get('Origin') : null;
+
+    if (!origin || !_ALLOWED_ORIGINS.includes(origin)) {
+        // Origem ausente ou não autorizada — rejeitar com 403.
+        // Não expor cabeçalhos CORS: o browser não deve saber que o endpoint existe.
+        return null; // sinal para o caller retornar 403
+    }
 
     return {
-        'Access-Control-Allow-Origin':      allowed,
+        'Access-Control-Allow-Origin':      origin,
         'Access-Control-Allow-Methods':     'POST, OPTIONS',
         'Access-Control-Allow-Headers':     'Content-Type, Authorization',
-        'Access-Control-Max-Age':           '86400',   // 24h cache do pre-flight
-        'Vary':                             'Origin'   // Obrigatório para CDN correcta
+        'Access-Control-Max-Age':           '86400',
+        'Vary':                             'Origin'
     };
 }
 

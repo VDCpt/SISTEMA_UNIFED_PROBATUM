@@ -287,6 +287,28 @@
     window.UNIFEDSystem = window.UNIFEDSystem || {};
     window.UNIFEDSystem.triadaUpdateLabels = initInterface;
 
+    // EXPOSIÇÃO GLOBAL DE getStableMasterHash — Resolução D-01 (2026-03-31)
+    // Wrapper seguro: leitura directa de propriedades sem invocar o hard-fail
+    // de CP-01. Preserva a blindagem criptográfica: nunca retorna PENDING_SEAL
+    // nem hash estático. Retorna null se hash ainda não foi computado, permitindo
+    // ao caller decidir como reagir (nexus.js M5 usa _safeReadMasterHash).
+    window.getStableMasterHash = function _globalGetStableMasterHash() {
+        if (window.activeForensicSession &&
+            typeof window.activeForensicSession.masterHash === 'string' &&
+            window.activeForensicSession.masterHash.length === 64) {
+            return window.activeForensicSession.masterHash;
+        }
+        if (window.UNIFEDSystem &&
+            typeof window.UNIFEDSystem.masterHash === 'string' &&
+            window.UNIFEDSystem.masterHash.length === 64) {
+            return window.UNIFEDSystem.masterHash;
+        }
+        // Sem hash válido: retorna null — nunca PENDING_SEAL nem hash estático.
+        // O hard-fail de CP-01 (throw Error) permanece na função interna
+        // getStableMasterHash() para o contexto de emissão de documentos periciais.
+        return null;
+    };
+
     // Expor versão actualizada
     window.UNIFEDSystem.triadaVersion = '1.0.15-TRIADA';
 

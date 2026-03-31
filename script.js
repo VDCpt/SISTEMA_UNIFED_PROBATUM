@@ -40,8 +40,47 @@ console.log('UNIFED - PROBATUM SCRIPT v13.5.0-PURE · DORA COMPLIANT · ATF · I
 })();
 
 // ============================================================================
-// 1. CONFIGURAÇÃO DO PDF.JS
+// 0-A. INICIALIZAÇÃO ATÓMICA DE SESSÃO FORENSE — RT-03 (2026-03-31)
+// Session Lock antecipado: garante que nenhum cálculo ocorre sem identificador
+// de sessão criptograficamente seguro.
+// CORRECÇÃO D-02: Math.random() substituído por crypto.getRandomValues() —
+// geração de ID não-determinística e auditável conforme FIPS 140-2.
 // ============================================================================
+function initializeForensicSession(fileHash) {
+    const _randomBytes = new Uint8Array(8);
+    crypto.getRandomValues(_randomBytes);
+    const _randomId = Array.from(_randomBytes)
+        .map(function(b) { return b.toString(16).padStart(2, '0'); })
+        .join('')
+        .toUpperCase();
+
+    window.activeForensicSession = Object.seal({
+        sessionId:       'UNIFED-' + _randomId,
+        fileOriginHash:  (typeof fileHash === 'string' && fileHash.length === 64)
+                             ? fileHash
+                             : 'HASH_FICHEIRO_PENDENTE',
+        startTime:       Date.now(),
+        masterHash:      null  // Populado por generateForensicSeal() após processamento
+    });
+
+    try {
+        sessionStorage.setItem('currentSession', JSON.stringify({
+            sessionId: window.activeForensicSession.sessionId,
+            startTime: window.activeForensicSession.startTime
+        }));
+    } catch (_e) { /* sessionStorage indisponível em alguns contextos de auditoria */ }
+
+    console.info(
+        '[UNIFED·SESSION] ✅ Sessão Forense inicializada\n' +
+        '  ID       : ' + window.activeForensicSession.sessionId + '\n' +
+        '  FileHash : ' + window.activeForensicSession.fileOriginHash.substring(0, 16) + '...\n' +
+        '  Timestamp: ' + new Date(window.activeForensicSession.startTime).toISOString()
+    );
+    return window.activeForensicSession;
+}
+window.initializeForensicSession = initializeForensicSession;
+
+
 const pdfjsLib = window['pdfjs-dist/build/pdf'];
 if (pdfjsLib) {
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -5456,8 +5495,9 @@ async function exportPDF() {
         doc.text('Cadeia de Custódia Forense: Ativa', doc.internal.pageSize.getWidth() - left, y - 5, { align: 'right' });
         const _afs = (typeof window.activeForensicSession !== 'undefined') ? window.activeForensicSession : {};
         const _pdfSessionId = _afs.sessionId || UNIFEDSystem.sessionId || 'UNIFED-MMLADX8Q-CV69L';
-        const _pdfMasterHashRaw = _afs.masterHash || UNIFEDSystem.masterHash || '5150e7674b891d5d07ca990e4c7124fc66af40488452759aeebdf84976eaa8f6';
-        const _pdfMasterHash = (_pdfMasterHashRaw && _pdfMasterHashRaw.length === 64) ? _pdfMasterHashRaw : '5150e7674b891d5d07ca990e4c7124fc66af40488452759aeebdf84976eaa8f6';
+        const _pdfMasterHashRaw = _afs.masterHash || UNIFEDSystem.masterHash || null;
+        // CORRECÇÃO D-03b (2026-03-31): Eliminado hash estático '5150e767...' do segundo exportador PDF.
+        const _pdfMasterHash = (_pdfMasterHashRaw && _pdfMasterHashRaw.length === 64) ? _pdfMasterHashRaw : '[MASTER HASH NÃO COMPUTADO — EXPORTAÇÃO INVÁLIDA PARA FINS PERICIAIS]';
         doc.text(`PROCESSO N.º: ${_pdfSessionId}`, left, y, { lineHeightFactor: 1.5 }); y += 5;
         doc.text(`DATA: ${new Date().toLocaleDateString('pt-PT')}`, left, y, { lineHeightFactor: 1.5 }); y += 5;
         doc.text(`OBJETO: RECONSTITUIÇÃO DA VERDADE MATERIAL DIGITAL / ART. 103.º RGIT`, left, y, { lineHeightFactor: 1.5 }); y += 4;
@@ -7393,8 +7433,10 @@ async function exportPDF() {
         const _pw  = doc.internal.pageSize.getWidth();
         const _ph  = doc.internal.pageSize.getHeight();
         const _mg  = 14;
-        const _mhFullRaw = (typeof window.activeForensicSession !== 'undefined' && window.activeForensicSession.masterHash) ? window.activeForensicSession.masterHash : (UNIFEDSystem.masterHash || '5150e7674b891d5d07ca990e4c7124fc66af40488452759aeebdf84976eaa8f6');
-        const _mhFull = (_mhFullRaw && _mhFullRaw.length === 64) ? _mhFullRaw : '5150e7674b891d5d07ca990e4c7124fc66af40488452759aeebdf84976eaa8f6';
+        const _mhFullRaw = (typeof window.activeForensicSession !== 'undefined' && window.activeForensicSession.masterHash) ? window.activeForensicSession.masterHash : (UNIFEDSystem.masterHash || null);
+        // CORRECÇÃO D-03 (2026-03-31): Eliminados hashes estáticos '5150e767...' do exportador PDF.
+        // Se masterHash não estiver disponível, o rodapé exibe aviso explícito em vez de hash pré-fabricado.
+        const _mhFull = (_mhFullRaw && _mhFullRaw.length === 64) ? _mhFullRaw : '[MASTER HASH NÃO COMPUTADO — EXPORTAÇÃO INVÁLIDA PARA FINS PERICIAIS]';
 
         for (let _p = 1; _p <= realTotalPages; _p++) {
             doc.setPage(_p);

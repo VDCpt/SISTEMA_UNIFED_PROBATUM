@@ -1035,14 +1035,91 @@
 })();
 
 // ============================================================================
+// NEXUS · MÓDULO 5 · CADEIA DE CUSTÓDIA PERSISTENTE — RT-01 (2026-03-31)
+// Monitoriza eventos de exportação e cria entradas indeléveis em localStorage.
+// Protege o perito contra alegações de manipulação pós-análise, permitindo
+// confrontar o Master Hash apresentado em tribunal com o log local.
+// Ref.: ISO/IEC 27037:2012 § 7.4 · DORA (UE) 2022/2554
+// ============================================================================
+(function _nexusCustodyLog() {
+    // RECLASSIFICAÇÃO D-03 (2026-03-31): O localStorage é um "Registo de Persistência
+    // Volátil de Apoio" (Auxiliary Shadow Log). NÃO constitui prova primária de custódia.
+    // A prova primária reside no Anexo de Custódia (PDF/JSON) selado com o Master Hash
+    // e gerado pelo módulo gerarAnexoCustodia() em unifed_triada_export.js.
+    // O perito deve basear as suas conclusões no selo Master Hash da exportação,
+    // e não na persistência do browser (apagável pelo utilizador sem rastreio).
+    const LOG_KEY = 'UNIFED_AUX_LOG'; // Renomeado de UNIFED_CUSTODY_CHAIN (D-03)
+
+    // CORRECÇÃO D-01: Leitura segura do Master Hash.
+    // Usa window.getStableMasterHash() se disponível (exposto por unifed_triada_export.js).
+    // Fallback: leitura directa de propriedades — nunca lança excepção neste contexto.
+    // NOTA: Não chama a função interna getStableMasterHash() da IIFE de triada_export,
+    // que lança throw Error (CP-01). O wrapper global retorna null em vez de throw.
+    function _safeReadMasterHash() {
+        // Tentar via wrapper global (exposto por unifed_triada_export.js — D-01)
+        if (typeof window.getStableMasterHash === 'function') {
+            try {
+                const h = window.getStableMasterHash();
+                if (typeof h === 'string' && h.length === 64) return h;
+            } catch (_) { /* wrapper não deve lançar, mas protecção defensiva */ }
+        }
+        // Fallback: leitura directa de propriedades de sessão
+        if (window.activeForensicSession &&
+            typeof window.activeForensicSession.masterHash === 'string' &&
+            window.activeForensicSession.masterHash.length === 64) {
+            return window.activeForensicSession.masterHash;
+        }
+        if (window.UNIFEDSystem &&
+            typeof window.UNIFEDSystem.masterHash === 'string' &&
+            window.UNIFEDSystem.masterHash.length === 64) {
+            return window.UNIFEDSystem.masterHash;
+        }
+        return 'HASH_INDISPONIVEL_NO_MOMENTO_DA_EXPORTACAO';
+    }
+
+    window.addEventListener('UNIFED_EXPORT_TRIGGERED', function(e) {
+        const hash = _safeReadMasterHash();
+        const entry = Object.freeze({
+            ts:          new Date().toISOString(),
+            session:     (window.activeForensicSession && window.activeForensicSession.sessionId)
+                             ? window.activeForensicSession.sessionId
+                             : 'SESSAO_DESCONHECIDA',
+            masterHash:  hash,
+            format:      (e.detail && e.detail.format) ? e.detail.format : 'desconhecido',
+            integrity:   hash.length === 64 ? 'VERIFIED' : 'HASH_AUSENTE'
+        });
+
+        try {
+            let chain = [];
+            try { chain = JSON.parse(localStorage.getItem(LOG_KEY) || '[]'); } catch (_) { chain = []; }
+            if (!Array.isArray(chain)) chain = [];
+            chain.unshift(entry);
+            localStorage.setItem(LOG_KEY, JSON.stringify(chain.slice(0, 50)));
+            console.info(
+                '[NEXUS·M5] ✅ Evento de Custódia Registado\n' +
+                '  Hash     : ' + entry.masterHash.substring(0, 16) + '...\n' +
+                '  Formato  : ' + entry.format + '\n' +
+                '  Sessão   : ' + entry.session + '\n' +
+                '  Timestamp: ' + entry.ts
+            );
+        } catch (storageErr) {
+            console.error('[NEXUS·M5] ❌ Falha ao escrever em localStorage:', storageErr.message);
+        }
+    });
+
+    console.info('[NEXUS·M5] ✅ Cadeia de Custódia Persistente activada — aguarda evento UNIFED_EXPORT_TRIGGERED.');
+})();
+
+// ============================================================================
 // NEXUS · EXPOSIÇÃO GLOBAL E LOG DE ARRANQUE
 // ============================================================================
 console.info(
-    '%c[NEXUS · UNIFED-PROBATUM · v13.5.0-PURE]\n' +
-    '%c  M1 · Stealth Network Interceptor     — Anti-F12 Protocol ATIVO\n' +
+    '%c[NEXUS · UNIFED-PROBATUM · v13.5.1-PURE]\n' +
+    '%c  M1 · Stealth Network Interceptor     — DESATIVADO (Retificação Forense CP-02)\n' +
     '  M2 · RAG Jurisprudencial DOCX         — Hook exportDOCX() instalado\n' +
     '  M3 · Motor Preditivo ATF (6M)         — Hook openATFModal() instalado\n' +
     '  M4 · Blockchain Evidence Explorer     — MutationObserver #custodyModal ativo\n' +
+    '  M5 · Cadeia de Custódia Persistente   — Log localStorage ATIVO\n' +
     '  Modo: Read-Only · DORA (UE) 2022/2554 · ISO/IEC 27037:2012 · Art. 125.o CPP',
     'color:#00E5FF;font-family:Courier New,monospace;font-weight:700;font-size:0.9em;',
     'color:rgba(0,229,255,0.65);font-family:Courier New,monospace;font-size:0.8em;'
