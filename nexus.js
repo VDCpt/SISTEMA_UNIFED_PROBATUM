@@ -20,6 +20,22 @@
 // ============================================================================
 (function _nexusStealthInterceptor() {
 
+    // ── RETIFICAÇÃO FORENSE CP-02 (2026-03-31) ────────────────────────────────
+    // DESATIVADO PARA SESSÃO FORENSE.
+    // A ocultação de erros de rede (unhandledrejection, CORS, Fetch) impede a
+    // auditabilidade exigida pela ISO/IEC 27037:2012 § 7.3 e compromete a
+    // demonstração de que os dados não sofreram adulteração em trânsito (MITM local).
+    // Um perito independente deve conseguir mapear TODAS as falhas de I/O de rede
+    // nativamente no painel DevTools para certificar a integridade dos dados.
+    // Para reativar em ambiente de produção não-forense: remover o return abaixo.
+    console.warn(
+        '[NEXUS·M1·FORENSIC] Stealth Network Interceptor DESATIVADO.\n' +
+        '  Modo  : Sessão Forense — Auditabilidade Total\n' +
+        '  Ref.  : ISO/IEC 27037:2012 § 7.3 · RETIFICAÇÃO CP-02 (2026-03-31)'
+    );
+    return;
+    // ── FIM DA RETIFICAÇÃO CP-02 — código abaixo preservado para histórico ───
+
     var _STEALTH_PATTERNS = [
         'CORS', 'cors', 'Cross-Origin', 'cross-origin',
         'Access-Control', 'access-control',

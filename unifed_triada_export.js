@@ -18,7 +18,11 @@
     }
 
     // 1. OBTENÇÃO ESTÁVEL DO MASTER HASH
-    // Prioridade: activeForensicSession > UNIFEDSystem.masterHash dinâmico > fallback demoMode > PENDING_SEAL
+    // Prioridade: activeForensicSession > UNIFEDSystem.masterHash dinâmico > HARD FAIL
+    // RETIFICAÇÃO FORENSE CP-01 (2026-03-31): Eliminado fallback estático e PENDING_SEAL.
+    // A emissão de prova com hash pré-definido viola o princípio da não-repudiação
+    // e é impugnável por falsidade informática (Art. 163.º CPP). A função falha
+    // explicitamente caso o Master Hash não tenha sido computado algoritmicamente.
     function getStableMasterHash() {
         if (window.activeForensicSession && window.activeForensicSession.masterHash &&
             window.activeForensicSession.masterHash.length === 64) {
@@ -28,11 +32,15 @@
             window.UNIFEDSystem.masterHash.length === 64) {
             return window.UNIFEDSystem.masterHash;
         }
-        if (window.UNIFEDSystem && window.UNIFEDSystem.demoMode) {
-            // Fallback estático apenas se generateForensicSeal() ainda não correu
-            return "79b032809b9e54ea3504659c37edb9e49e6d462d691c75e4a5afd79d8bb8f86c";
-        }
-        return "PENDING_SEAL";
+        // HARD FAIL — sem fallback estático ou valor sentinela.
+        // Chamar generateForensicSeal() antes de emitir qualquer documento pericial.
+        console.error('[UNIFED·CP-01] VIOLAÇÃO DE CUSTÓDIA: Master Hash não computado. ' +
+                      'Execute generateForensicSeal() antes de emitir prova.');
+        throw new Error(
+            'VIOLAÇÃO DE CUSTÓDIA: Master Hash não computado algoritmicamente. ' +
+            'Impossível emitir prova válida sem computação SHA-256 real. ' +
+            'Referência: Art. 125.º CPP · ISO/IEC 27037:2012 § 7.4.'
+        );
     }
 
     // 2. ANEXO DE CUSTÓDIA (PROVA MATERIAL DIGITAL) com QR Code
