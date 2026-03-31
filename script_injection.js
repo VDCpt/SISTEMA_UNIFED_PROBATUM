@@ -136,12 +136,50 @@
             sys.masterHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
         }
 
-        // Atualizar UI (função existente em script.js)
-        if (typeof window._updatePureUI === 'function') {
-            window._updatePureUI();
-        } else {
-            console.warn('[UNIFED-PURE] _updatePureUI não definido – UI pode não refletir dados.');
-        }
+        // Atualizar UI - Mapeamento Direto ao DOM do Painel PURE e Dashboard Principal
+        window._updatePureUI = function() {
+            const fC = window.UNIFEDSystem.utils ? window.UNIFEDSystem.utils.formatCurrency : window.formatCurrency;
+            if (!fC) return;
+            
+            const setT = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+            const ana = window.UNIFEDSystem.analysis;
+            
+            // Atualizar Painel Específico PURE (panel.html)
+            setT('pure-ganhos', fC(ana.totals.ganhos));
+            setT('pure-despesas', fC(ana.totals.despesas));
+            setT('pure-liquido', fC(ana.totals.ganhosLiquidos));
+            setT('pure-saft', fC(ana.totals.bruto));
+            setT('pure-dac7', fC(ana.totals.dac7TotalPeriodo));
+            setT('pure-fatura', fC(ana.totals.faturaPlataforma));
+            
+            setT('pure-sg1-saft-val', fC(ana.totals.bruto));
+            setT('pure-sg1-dac7-val', fC(ana.totals.dac7TotalPeriodo));
+            setT('pure-disc-saft-dac7', fC(ana.crossings.discrepanciaSaftVsDac7));
+            setT('pure-disc-saft-pct', ana.crossings.percentagemSaftVsDac7.toFixed(2) + '%');
+            
+            setT('pure-sg2-btor-val', fC(ana.totals.despesas));
+            setT('pure-sg2-btf-val', fC(ana.totals.faturaPlataforma));
+            setT('pure-disc-c2', fC(ana.crossings.discrepanciaCritica));
+            setT('pure-disc-c2-pct', ana.crossings.percentagemOmissao.toFixed(2) + '%');
+            
+            setT('pure-iva-23', fC(ana.crossings.ivaFalta));
+            setT('pure-iva-6', fC(ana.crossings.ivaFalta6));
+            setT('pure-irc', fC(ana.crossings.ircEstimado));
+            
+            const lang = window.currentLang || 'pt';
+            setT('pure-verdict', ana.verdict.level[lang]);
+            setT('pure-verdict-pct', ana.crossings.percentagemOmissao.toFixed(2) + '%');
+            
+            // Forçar atualização do Dashboard Principal (script.js)
+            if (typeof window.updateDashboard === 'function') window.updateDashboard();
+            if (typeof window.updateModulesUI === 'function') window.updateModulesUI();
+            if (typeof window.showTwoAxisAlerts === 'function') window.showTwoAxisAlerts();
+            if (typeof window.showAlerts === 'function') window.showAlerts();
+            if (typeof window.renderChart === 'function') window.renderChart();
+            if (typeof window.renderDiscrepancyChart === 'function') window.renderDiscrepancyChart();
+        };
+
+        window._updatePureUI();
 
         console.log('[UNIFED-PURE] ✅ Dados injetados. Master Hash:', sys.masterHash);
     }
