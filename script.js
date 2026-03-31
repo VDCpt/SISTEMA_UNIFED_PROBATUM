@@ -2971,6 +2971,14 @@ const UNIFEDSystem = {
     }
 };
 
+// *** CORREÇÃO APLICADA: Método assíncrono para selagem forense ***
+UNIFEDSystem.generateForensicSeal = async function() {
+    if (typeof this.generateMasterHash === 'function') {
+        this.generateMasterHash();
+    }
+    return Promise.resolve(this.masterHash);
+};
+
 let lastLogTime = 0;
 const LOG_THROTTLE = 100;
 
@@ -4046,7 +4054,6 @@ function activateDemoMode() {
 
     ForensicLogger.addEntry('DEMO_MODE_ACTIVATED');
 
-    // Invoca o injetor central (script_injection.js)
     if (typeof window.UNIFEDSystem.loadAnonymizedRealCase === 'function') {
         window.UNIFEDSystem.loadAnonymizedRealCase();
     } else {
@@ -4055,18 +4062,15 @@ function activateDemoMode() {
         return;
     }
 
-    // Atualiza campos de input para refletir os dados (já injetados)
     const client = UNIFEDSystem.client;
     if (client) {
         const nameInput = document.getElementById('clientNameFixed');
         const nifInput = document.getElementById('clientNIFFixed');
         if (nameInput) nameInput.value = client.name;
         if (nifInput) nifInput.value = client.nif;
-        // Força validação
-        registerClient(); // reutiliza validação e atualiza status
+        registerClient();
     }
 
-    // Atualiza elementos visuais do painel (já feita internamente)
     setTimeout(() => {
         UNIFEDSystem.processing = false;
         const demoBtn = document.getElementById('demoModeBtn');
@@ -5166,7 +5170,6 @@ async function exportPDF() {
         return showToast('Erro de sistema (jsPDF)', 'error');
     }
 
-    // Calcular hash dinâmico antes de gerar o PDF
     if (typeof UNIFEDSystem.generateForensicSeal === 'function') {
         try {
             await UNIFEDSystem.generateForensicSeal();
@@ -5296,7 +5299,6 @@ async function exportPDF() {
             }
         }
 
-        // Função de rodapé com Master Hash completo e QR code na última página
         const addFooter = (doc, pageNum, isLastPage = false) => {
             const pageWidth = doc.internal.pageSize.getWidth();
             const pageHeight = doc.internal.pageSize.getHeight();
@@ -5313,12 +5315,10 @@ async function exportPDF() {
             doc.setTextColor(120, 120, 120);
             doc.text(sessionLabel, pageWidth - margin, 8, { align: 'right' });
 
-            // RODAPÉ PERSISTENTE: Master Hash SHA-256 completo em todas as páginas
             const _mhFull = (typeof window.activeForensicSession !== 'undefined' && window.activeForensicSession.masterHash)
                 ? window.activeForensicSession.masterHash
                 : (UNIFEDSystem.masterHash || '');
             if (_mhFull) {
-                // Dividir hash em duas linhas para melhor legibilidade
                 const _hashLines = doc.splitTextToSize(`SHA-256: ${_mhFull}`, pageWidth - margin * 2);
                 doc.setFontSize(5);
                 doc.setFont('courier', 'normal');
@@ -5333,7 +5333,6 @@ async function exportPDF() {
                     pageWidth / 2, pageHeight - 8, { align: 'center' });
             }
 
-            // QR CODE MINIATURA em todas as páginas (15×15 mm, canto inf. dir.)
             const _qrMiniSize = 15;
             const _qrMiniX = pageWidth - margin - _qrMiniSize;
             const _qrMiniY = pageHeight - margin - _qrMiniSize + 2;
@@ -5345,7 +5344,6 @@ async function exportPDF() {
                 doc.text('PROBATUM', _qrMiniX + _qrMiniSize / 2, _qrMiniY + _qrMiniSize + 2, { align: 'center' });
             }
 
-            // QR CODE GRANDE na última página (canto inferior direito)
             if (isLastPage) {
                 const boxSize = 50;
                 const qrSize = 26;
@@ -8205,12 +8203,10 @@ function setupDualScreenDetection() {
 // ============================================================================
 window.UNIFEDSystem = UNIFEDSystem;
 
-// ── UTILS CENTRAL: função de formatação monetária locale-aware ────────────────
 UNIFEDSystem.utils = {
     formatCurrency: window.formatCurrency
 };
 
-// Expor a função global para consumo por outros módulos
 window.UNIFED_FormatCurrency = window.formatCurrency;
 
 window.ValueSource = ValueSource;
@@ -8247,9 +8243,6 @@ window.resetAuxiliaryData = resetAuxiliaryData;
     console.info('[UNIFED-PURE] ✅ Sistema Consolidado com Sucesso.');
 })();
 
-// ============================================================================
-// DISPATCH DE EVENTO UNIFED_CORE_READY
-// ============================================================================
 if (typeof window.dispatchEvent === 'function') {
     window.dispatchEvent(new CustomEvent('UNIFED_CORE_READY', {
         detail: {
