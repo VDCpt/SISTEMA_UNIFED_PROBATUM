@@ -297,7 +297,6 @@ function _fallbackNarrative(reason) {
         'da Diretiva. A ignorancia da lei nao aproveita (Art. 6.o CC).'
     ].join('\n');
 }
-
 // ============================================================================
 // 3. renderSankeyToImage() — Dynamic Canvas-to-PDF Injection
 // ============================================================================

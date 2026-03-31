@@ -2,7 +2,7 @@
  * UNIFED - PROBATUM · v13.5.0-PURE · MÓDULO DE EXPORTAÇÃO — TRÍADE DOCUMENTAL
  * ============================================================================
  * Ficheiro      : unifed_triada_export.js
- * Versão        : 1.0.13-TRIADA (MASTER HASH LOCK)
+ * Versão        : 1.0.14-TRIADA (QR Code + Master Hash Lock)
  * Conformidade  : ISO/IEC 27037:2012 · Art. 125.º CPP · Art. 103.º RGIT
  * ============================================================================
  */
@@ -10,7 +10,7 @@
 'use strict';
 
 (function _unifedTriadaModule() {
-    const _VERSION = '1.0.13-TRIADA';
+    const _VERSION = '1.0.14-TRIADA';
 
     function _log(msg, type = 'log') {
         const timestamp = new Date().toISOString();
@@ -31,7 +31,7 @@
         return "PENDING_SEAL";
     }
 
-    // 2. ANEXO DE CUSTÓDIA (PROVA MATERIAL DIGITAL)
+    // 2. ANEXO DE CUSTÓDIA (PROVA MATERIAL DIGITAL) com QR Code
     async function gerarAnexoCustodia() {
         const masterHash = getStableMasterHash();
         const sessionId = window.UNIFEDSystem?.sessionId || window.activeForensicSession?.sessionId || 'UNIFED-SESSION';
@@ -98,7 +98,7 @@
             currentY += 10;
         } else {
             evidences.slice(0, 20).forEach((ev, idx) => {
-                if (currentY > pageHeight - 30) {
+                if (currentY > pageHeight - 50) {
                     addFooter(doc.internal.getNumberOfPages() + 1, 0);
                     doc.addPage();
                     currentY = 25;
@@ -112,33 +112,73 @@
             });
         }
 
-        const totalPages = doc.internal.getNumberOfPages();
-        for (let p = 1; p <= totalPages; p++) {
+        const totalPages = doc.internal.getNumberOfPages() + 1; // vamos adicionar mais uma página para o QR
+        for (let p = 1; p <= totalPages - 1; p++) {
             doc.setPage(p);
             addFooter(p, totalPages);
         }
 
-        // QR Code na última página
+        // Página adicional para o QR Code (última página)
+        doc.addPage();
+        const lastPageNum = totalPages;
+        currentY = 20;
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.text('SELO DE INTEGRIDADE E AUTENTICIDADE', marginX, currentY);
+        currentY += 8;
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.text('O código QR abaixo contém o Master Hash SHA-256 e o identificador da sessão,', marginX, currentY);
+        currentY += 5;
+        doc.text('permitindo a verificação imediata da integridade do documento.', marginX, currentY);
+        currentY += 12;
+
+        // Geração do QR Code
         try {
+            const qrPayload = `UNIFED|${sessionId}|${masterHash}`;
             const qrCanvas = document.createElement('canvas');
             if (typeof QRCode !== 'undefined') {
-                const qrPayload = `UNIFED|${sessionId}|${masterHash}`;
-                QRCode.toCanvas(qrCanvas, qrPayload, { width: 40, margin: 1 }, function(error) {
-                    if (!error) {
-                        const qrImgData = qrCanvas.toDataURL('image/png');
-                        doc.addImage(qrImgData, 'PNG', 150, pageHeight - 55, 35, 35);
-                        doc.save(`UNIFED_ANEXO_CUSTODIA_${sessionId}.pdf`);
-                    } else {
-                        doc.save(`UNIFED_ANEXO_CUSTODIA_${sessionId}.pdf`);
-                    }
+                await new Promise((resolve) => {
+                    QRCode.toCanvas(qrCanvas, qrPayload, { width: 200, margin: 2 }, function(error) {
+                        if (!error) {
+                            const qrImgData = qrCanvas.toDataURL('image/png');
+                            const qrSize = 45; // mm
+                            const qrX = (doc.internal.pageSize.getWidth() - qrSize) / 2;
+                            doc.addImage(qrImgData, 'PNG', qrX, currentY, qrSize, qrSize);
+                            currentY += qrSize + 8;
+                        } else {
+                            doc.text('(QR Code indisponível)', marginX, currentY);
+                            currentY += 10;
+                        }
+                        resolve();
+                    });
                 });
             } else {
-                doc.save(`UNIFED_ANEXO_CUSTODIA_${sessionId}.pdf`);
+                doc.text('(QR Code não suportado)', marginX, currentY);
+                currentY += 10;
             }
         } catch (e) {
-            _log('Falha na renderização do QR Code: ' + e.message, 'warn');
-            doc.save(`UNIFED_ANEXO_CUSTODIA_${sessionId}.pdf`);
+            _log('Erro na geração do QR Code: ' + e.message, 'warn');
+            doc.text('(QR Code indisponível)', marginX, currentY);
+            currentY += 10;
         }
+
+        doc.setFont('courier', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(100, 100, 100);
+        doc.text('Verifique este código QR com qualquer leitor padrão. O hash impresso no rodapé', marginX, currentY);
+        currentY += 4;
+        doc.text('de todas as páginas deve coincidir com o código QR.', marginX, currentY);
+        currentY += 8;
+        doc.text('Qualquer alteração no documento resultará numa hash divergente.', marginX, currentY);
+
+        // Rodapé da última página
+        addFooter(lastPageNum, totalPages);
+
+        // Salvar PDF
+        doc.save(`UNIFED_ANEXO_CUSTODIA_${sessionId}.pdf`);
+        _log(`✅ Anexo de Custódia gerado com QR Code: ${sessionId}`, 'success');
     }
 
     // 3. INJEÇÃO DE BOTÕES NA INTERFACE
@@ -196,7 +236,7 @@
             if (old) old.style.display = 'none';
         });
 
-        _log('Interface Tríade Documental v1.0.13 activada.');
+        _log('Interface Tríade Documental v1.0.14 activada.');
     }
 
     // Inicialização por evento de prontidão do núcleo

@@ -1,5 +1,4 @@
 /**
- * ============================================================================
  * UNIFED - PROBATUM · NEXUS LAYER · v13.5.0-PURE
  * ============================================================================
  * Arquitetura : Adaptive Extension Layer — carregado APÓS enrichment.js
@@ -548,7 +547,7 @@
             '<div style="overflow-x:auto">' +
                 '<table style="width:100%;border-collapse:collapse;font-size:0.7rem;color:rgba(255,255,255,0.8)">' +
                     '<thead>' +
-                        '58tr' +
+                        '<tr>' +
                             '<th style="border:1px solid rgba(168,85,247,0.25);padding:6px 10px;background:rgba(168,85,247,0.15);color:#A855F7;text-align:left">' + _T('Período','Period') + '</th>' +
                             '<th style="border:1px solid rgba(168,85,247,0.25);padding:6px 10px;background:rgba(168,85,247,0.15);color:#A855F7;text-align:right">' + _T('Omissão Proj.','Proj. Omission') + '</th>' +
                             '<th style="border:1px solid rgba(168,85,247,0.25);padding:6px 10px;background:rgba(168,85,247,0.15);color:#F97316;text-align:right">' + _T('IVA 23% Proj.','VAT 23% Proj.') + '</th>' +

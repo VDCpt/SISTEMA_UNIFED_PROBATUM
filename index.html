@@ -23,7 +23,6 @@
         var CDN_SECONDARY = 'https://cdn.jsdelivr.net/npm/javascript-opentimestamps@0.0.12/dist/opentimestamps.min.js';
 
         function normalizeOTS() {
-            // SHIM integrado: normaliza o global independentemente do nome UMD exposto
             if (typeof window.OpenTimestamps === 'undefined') {
                 if (typeof window.opentimestamps !== 'undefined') {
                     window.OpenTimestamps = window.opentimestamps;
@@ -36,15 +35,12 @@
         function injectScript(src, onSuccess, onError) {
             var s = document.createElement('script');
             s.src = src;
-            // async:true — não bloqueia o parser; script.js usa window.load para
-            // verificar OTS, garantindo que a sequência de execução é respeitada.
             s.async = true;
             s.onload  = onSuccess;
             s.onerror = onError;
             document.head.appendChild(s);
         }
 
-        // Se já em cache (reload), normalizar e sair imediatamente
         if (typeof window.OpenTimestamps !== 'undefined' ||
             typeof window.opentimestamps  !== 'undefined') {
             normalizeOTS();
@@ -52,7 +48,6 @@
             return;
         }
 
-        // Tentativa 1: CDN primário (unpkg)
         injectScript(CDN_PRIMARY,
             function() {
                 normalizeOTS();
@@ -60,16 +55,12 @@
             },
             function() {
                 console.info('[UNIFED-OTS] ⚙ Operação em Modo de Segurança Forense — CDN primário indisponível. A activar mirror jsdelivr automaticamente...');
-                // Tentativa 2: CDN espelho (jsdelivr)
                 injectScript(CDN_SECONDARY,
                     function() {
                         normalizeOTS();
                         console.log('[UNIFED-OTS] ✅ CDN secundário (jsdelivr) — window.OpenTimestamps ✓');
                     },
                     function() {
-                        // Ambos os CDN indisponíveis — degradação graciosa
-                        // O sistema opera em Nível 1 (PROBATUM INTERNAL SEAL).
-                        // A Cadeia de Custódia SHA-256 não é interrompida.
                         console.info('[UNIFED-OTS] ⚙ Operação em Modo de Segurança Forense — Nível 1 (PROBATUM INTERNAL SEAL) activo. ' +
                             'Selagem de Nível 1 Ativa: Conformidade assegurada por Hash SHA-256 interno (Art.º 125.º CPP). ' +
                             'OTS/Blockchain em standby até restauro de conectividade.');
@@ -344,7 +335,7 @@
                 
                 <!-- TOOLBAR -->
                 <div class="toolbar-section">
-                    <div class="toolbar-grid">
+                    <div class="toolbar-grid" id="export-tools-container">
                         <button id="exportPDFBtn" class="btn-tool" disabled>
                             <i class="fas fa-file-pdf"></i> <span id="btnPDF">PARECER TÉCNICO</span>
                         </button>
