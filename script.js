@@ -4038,125 +4038,45 @@ function updateCounters() {
 }
 
 // ============================================================================
-// 21. MODO DEMO — v13.1.2-GOLD · DADOS FIXOS PARA APRESENTAÇÃO
+// 21. MODO DEMO — v13.1.2-GOLD · DADOS FIXOS PARA APRESENTAÇÃO (NIF unificado)
 // ============================================================================
 function activateDemoMode() {
     if (UNIFEDSystem.processing) return;
-    UNIFEDSystem.demoMode = true;
-    UNIFEDSystem.casoRealAnonimizado = true;
     UNIFEDSystem.processing = true;
 
     ForensicLogger.addEntry('DEMO_MODE_ACTIVATED');
 
-    window.activeForensicSession = { sessionId: 'UNIFED-MMLADX8Q-CV69L', masterHash: '5150e7674b891d5d07ca990e4c7124fc66af40488452759aeebdf84976eaa8f6' };
-    try { sessionStorage.setItem('currentSession', JSON.stringify(window.activeForensicSession)); } catch (_e) { }
-
-    if (typeof window._activatePurePanel === 'function') {
-        window._activatePurePanel();
-    }
-
-    const demoBtn = document.getElementById('demoModeBtn');
-    if (demoBtn) {
-        demoBtn.disabled = true;
-        demoBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + (currentLang === 'en' ? 'LOADING...' : 'CARREGANDO...');
-    }
-
-    logAudit(currentLang === 'en'
-        ? '🚀 ACTIVATING REAL CASE (ANONYMISED) v13.5.0-PURE · TAXPAYER ALFA · 2024 · 2nd SEM...'
-        : '🚀 ATIVANDO CASO REAL (ANONIMIZADO) v13.5.0-PURE · SUJEITO PASSIVO ALFA · 2024 · 2.º SEM...', 'info');
-    const _tsChk = new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    console.info(`[${_tsChk}] ✅ INTEGRITY CHECK: Dashboard Hash matches PDF Hash. Synchronization confirmed.`);
-
-    document.getElementById('clientNameFixed').value = 'SUJEITO PASSIVO ALFA (ANONIMIZADO)';
-    document.getElementById('clientNIFFixed').value = '999 999 990';
-    registerClient();
-    if (!UNIFEDSystem.client) UNIFEDSystem.client = {};
-    UNIFEDSystem.client.name = 'SUJEITO PASSIVO ALFA (ANONIMIZADO)';
-    UNIFEDSystem.client.nif = '999 999 990';
-    UNIFEDSystem.selectedPlatform = 'outra';
-    const _platElAnon = document.getElementById('selPlatformFixed');
-    if (_platElAnon) _platElAnon.value = 'outra';
-
-    UNIFEDSystem.selectedYear = 2024;
-    const anoFiscalEl = document.getElementById('anoFiscal');
-    if (anoFiscalEl) anoFiscalEl.value = '2024';
-
-    UNIFEDSystem.selectedPeriodo = '2s';
-    const periodoEl = document.getElementById('periodoAnalise');
-    if (periodoEl) periodoEl.value = '2s';
-
-    UNIFEDSystem.selectedPlatform = 'outra';
-    const platformEl = document.getElementById('selPlatformFixed');
-    if (platformEl) platformEl.value = 'outra';
-
-    ['202409', '202410', '202411', '202412'].forEach(m => UNIFEDSystem.dataMonths.add(m));
-
-    simulateUpload('control', 4);
-    simulateUpload('saft', 4);
-    simulateUpload('invoices', 2);
-    simulateUpload('statements', 4);
-    simulateUpload('dac7', 1);
-
-    setTimeout(() => {
-        UNIFEDSystem.documents.saft.totals.bruto = 10157.73;
-        UNIFEDSystem.documents.saft.totals.iliquido = 8519.94;
-        UNIFEDSystem.documents.saft.totals.iva = 1637.79;
-
-        UNIFEDSystem.documents.statements.totals.ganhos = 10157.73;
-        UNIFEDSystem.documents.statements.totals.despesas = 2447.89;
-        UNIFEDSystem.documents.statements.totals.ganhosLiquidos = 7709.84;
-
-        UNIFEDSystem.documents.invoices.totals.invoiceValue = 262.94;
-
-        UNIFEDSystem.documents.dac7.totals.q1 = 0;
-        UNIFEDSystem.documents.dac7.totals.q2 = 0;
-        UNIFEDSystem.documents.dac7.totals.q3 = 0;
-        UNIFEDSystem.documents.dac7.totals.q4 = 7755.16;
-        UNIFEDSystem.documents.dac7.totals.dac7TotalPeriodo = 7755.16;
-        UNIFEDSystem.documents.dac7.totals.receitaAnual = 7755.16;
-
-        ValueSource.registerValue('saftBrutoValue', 10157.73, 'demo_saft_set-dez_2024.csv', 'soma direta coluna Bruto (Set-Dez 2024)');
-        ValueSource.registerValue('stmtGanhosValue', 10157.73, 'demo_extrato_set-dez_2024.pdf', 'soma 4 extratos — ganhos reais auditados');
-        ValueSource.registerValue('stmtDespesasValue', 2447.89, 'demo_extrato_set-dez_2024.pdf', 'comissões retidas em extrato — valor real');
-        ValueSource.registerValue('stmtGanhosLiquidosValue', 7709.84, 'demo_extrato_set-dez_2024.pdf', '10157.73 - 2447.89 = 7709.84');
-        ValueSource.registerValue('dac7Q4Value', 7755.16, 'demo_dac7_2024.pdf', 'DAC7 Gmail — Alocação total Q4');
-
-        UNIFEDSystem.auxiliaryData.campanhas = 405.00;
-        UNIFEDSystem.auxiliaryData.portagens = 0.15;
-        UNIFEDSystem.auxiliaryData.gorjetas = 46.00;
-        UNIFEDSystem.auxiliaryData.cancelamentos = 58.10;
-        UNIFEDSystem.auxiliaryData.totalNaoSujeitos = 451.15;
-        UNIFEDSystem.auxiliaryData.extractedAt = new Date().toISOString();
-        UNIFEDSystem.auxiliaryData.processedFrom = ['demo_extrato_set-dez_2024.pdf'];
-        ValueSource.registerValue('auxCampanhasValue', 405.00, 'demo_extrato_set-dez_2024.pdf', 'Ganhos da campanha — Set/Out/Nov/Dez 2024');
-        ValueSource.registerValue('auxPortagensValue', 0.15, 'demo_extrato_set-dez_2024.pdf', 'Reembolso operacional — portagens 2024');
-        ValueSource.registerValue('auxGorjetasValue', 46.00, 'demo_extrato_set-dez_2024.pdf', 'Gorjetas dos passageiros — período 2.º Sem 2024');
-        ValueSource.registerValue('auxCancelValue', 58.10, 'demo_extrato_set-dez_2024.pdf', 'Taxas de cancelamento — incluídas em Despesas');
-        ValueSource.registerValue('auxTotalNSValue', 451.15, 'demo_extrato_set-dez_2024.pdf', 'Total não sujeitos: 405,00 + 0,15 + 46,00');
-        if (typeof _updateAuxiliaryBoxes === 'function') _updateAuxiliaryBoxes();
-
-        if (typeof filterDAC7ByPeriod === 'function') filterDAC7ByPeriod();
-
-        performAudit();
-
-        logAudit(currentLang === 'en'
-            ? '✅ REAL CASE (ANONYMISED) completed — TAXPAYER ALFA · NIF 999 999 990 · 2024 · 2nd Semester.'
-            : '✅ CASO REAL (ANONIMIZADO) concluído — SUJEITO PASSIVO ALFA · NIF 999 999 990 · 2024 · 2.º Semestre.', 'success');
+    // Invoca o injetor central (script_injection.js)
+    if (typeof window.UNIFEDSystem.loadAnonymizedRealCase === 'function') {
+        window.UNIFEDSystem.loadAnonymizedRealCase();
+    } else {
+        console.error('[UNIFED] loadAnonymizedRealCase não encontrado.');
         UNIFEDSystem.processing = false;
+        return;
+    }
+
+    // Atualiza campos de input para refletir os dados (já injetados)
+    const client = UNIFEDSystem.client;
+    if (client) {
+        const nameInput = document.getElementById('clientNameFixed');
+        const nifInput = document.getElementById('clientNIFFixed');
+        if (nameInput) nameInput.value = client.name;
+        if (nifInput) nifInput.value = client.nif;
+        // Força validação
+        registerClient(); // reutiliza validação e atualiza status
+    }
+
+    // Atualiza elementos visuais do painel (já feita internamente)
+    setTimeout(() => {
+        UNIFEDSystem.processing = false;
+        const demoBtn = document.getElementById('demoModeBtn');
         if (demoBtn) {
             demoBtn.disabled = false;
             demoBtn.innerHTML = `<i class="fas fa-flask"></i> ${translations[currentLang].navDemo}`;
         }
-
         forensicDataSynchronization();
-        ForensicLogger.addEntry('DEMO_MODE_COMPLETED', {
-            client: 'SUJEITO PASSIVO ALFA (ANONIMIZADO)',
-            nif: '123456789',
-            ano: 2024,
-            periodo: '2s',
-            platform: 'outra'
-        });
-    }, 1500);
+        logAudit('✅ Caso Real (Anonimizado) carregado com sucesso.', 'success');
+    }, 500);
 }
 
 function simulateUpload(type, count) {
@@ -5237,7 +5157,7 @@ async function exportDataJSON() {
 }
 
 // ============================================================================
-// 24. EXPORTAÇÃO PDF (v12.8.9 - Atualizada para novos campos)
+// 24. EXPORTAÇÃO PDF (v12.8.9 - Atualizada para novos campos) - CÓDIGO COMPLETO
 // ============================================================================
 async function exportPDF() {
     if (!UNIFEDSystem.client) return showToast('Sem sujeito passivo para gerar parecer.', 'error');
