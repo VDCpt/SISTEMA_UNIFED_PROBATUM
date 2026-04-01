@@ -8240,6 +8240,46 @@ window.resetAuxiliaryData = resetAuxiliaryData;
         };
     }
 
+    // [FIX-B] Stub de bootstrap para window._updatePureUI com _version=1.
+    // O script_injection.js define a versão completa com _version=2 (18 campos).
+    // Este stub só é registado se ainda não existir versão superior, garantindo
+    // que a versão de maior cobertura prevalece independentemente da ordem de
+    // carregamento dos ficheiros em index.html.
+    if (
+        typeof window._updatePureUI === 'undefined' ||
+        !window._updatePureUI._version ||
+        window._updatePureUI._version < 1
+    ) {
+        window._updatePureUI = function _updatePureUI_v1_bootstrap() {
+            const sys = window.UNIFEDSystem;
+            if (!sys || !sys.analysis) return;
+            const t   = sys.analysis.totals;
+            const c   = sys.analysis.crossings;
+            const fmt = (typeof window.formatCurrency === 'function')
+                ? window.formatCurrency
+                : (v) => new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(v || 0);
+            const fields = {
+                'pure-ganhos':      fmt(t.ganhos || t.bruto || 0),
+                'pure-despesas':    fmt(t.despesas || 0),
+                'pure-liquido':     fmt(t.ganhosLiquidos || 0),
+                'pure-saft':        fmt(t.saftBruto || t.bruto || 0),
+                'pure-dac7':        fmt(t.dac7TotalPeriodo || 0),
+                'pure-disc-c2':     fmt(c.discrepanciaCritica || 0),
+                'pure-disc-c2-pct': ((c.percentagemOmissao || 0).toFixed(2)) + '%'
+            };
+            Object.entries(fields).forEach(([id, val]) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = val;
+            });
+            if (sys.masterHash) {
+                const h = document.getElementById('pure-hash-prefix-verdict');
+                if (h) h.textContent = sys.masterHash.substring(0, 16).toUpperCase();
+            }
+        };
+        window._updatePureUI._version = 1;
+        console.info('[UNIFED-PURE] _updatePureUI v1 (bootstrap) registado — script_injection.js substituirá por v2.');
+    }
+
     console.info('[UNIFED-PURE] ✅ Sistema Consolidado com Sucesso.');
 })();
 
