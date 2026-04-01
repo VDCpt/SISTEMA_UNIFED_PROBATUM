@@ -553,19 +553,25 @@ async function exportDOCX(xmlInject) {
             var isH = /^Secc?[a-z]o [A-D]|^SINTESE/.test(l);
             return para(l, isH, isH ? '22' : '20', isH ? '003366' : '222222');
         });
+    // ── Tradutor ternário local (Achado A5 — i18n DOCX) ─────────────────────
+    // Desacopla os títulos do documento do locale PT hardcoded.
+    // Padrão idêntico ao utilizado noutras funções de enrichment.js (_T local).
+    var _docLang = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
+    var _T = function(pt, en) { return _docLang === 'en' ? en : pt; };
+
     var bodyContent = [
-        para('TRIBUNAL JUDICIAL DE COMARCA', true, '24', '003366', 'center'),
-        para('JUIZO LOCAL CIVEL', false, '20', '555555', 'center'),
+        para(_T('TRIBUNAL JUDICIAL DE COMARCA', 'DISTRICT JUDICIAL COURT'), true, '24', '003366', 'center'),
+        para(_T('JUIZO LOCAL CIVEL', 'LOCAL CIVIL COURT'), false, '20', '555555', 'center'),
         para('', false),
-        para('MINUTA DE PETICAO INICIAL', true, '32', '003366', 'center'),
-        para('PROVA PERICIAL FORENSE FISCAL - TVDE', true, '24', '0066CC', 'center'),
+        para(_T('MINUTA DE PETICAO INICIAL', 'STATEMENT OF CLAIM DRAFT'), true, '32', '003366', 'center'),
+        para(_T('PROVA PERICIAL FORENSE FISCAL - TVDE', 'FORENSIC FISCAL EXPERT EVIDENCE - TVDE'), true, '24', '0066CC', 'center'),
         para('', false), hr(),
-        para('Processo N.o: ' + xe(sys.sessionId || 'UNIFED-PENDING'), false, '20', '333333'),
-        para('Data de Elaboracao: ' + date, false, '20', '333333'),
-        para('Sistema: UNIFED - PROBATUM v13.5.0-PURE - ADMISSIBILIDADE ART. 125.º CPP - DORA COMPLIANT', false, '18', '666666'),
-        para('Referencia de Integridade: Master Hash SHA-256: ' + xe(sys.masterHash || 'N/A'), false, '16', '888888'),
+        para(_T('Processo N.o: ', 'Case Ref.: ') + xe(sys.sessionId || 'UNIFED-PENDING'), false, '20', '333333'),
+        para(_T('Data de Elaboracao: ', 'Date of Preparation: ') + date, false, '20', '333333'),
+        para('Sistema: UNIFED - PROBATUM v13.5.0-PURE - ' + _T('ADMISSIBILIDADE ART. 125.º CPP', 'ADMISSIBILITY ART. 125 CPP') + ' - DORA COMPLIANT', false, '18', '666666'),
+        para(_T('Referencia de Integridade: Master Hash SHA-256: ', 'Integrity Reference: Master Hash SHA-256: ') + xe(sys.masterHash || 'N/A'), false, '16', '888888'),
         hr(), para('', false),
-        para('I. IDENTIFICACAO', true, '26', '003366'), para('', false),
+        para(_T('I. IDENTIFICACAO', 'I. IDENTIFICATION'), true, '26', '003366'), para('', false),
         tbl([
             tr([tc('Sujeito Passivo',   true, 3000, 'E8F0F8'), tc(sys.client && sys.client.name || 'N/A', false, 6000)]),
             tr([tc('NIF',               true, 3000, 'E8F0F8'), tc(sys.client && sys.client.nif  || 'N/A', false, 6000)]),

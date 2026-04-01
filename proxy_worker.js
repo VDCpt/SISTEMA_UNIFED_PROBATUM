@@ -139,37 +139,53 @@ export default {
 
 // ============================================================================
 // UTILITÁRIO: _corsHeaders(request)
-// Gera os cabeçalhos CORS correctos.
+// Gera os cabeçalhos CORS correctos com Whitelisting estrito de origens.
 //
-// Access-Control-Allow-Origin:
-//   Em produção, restringir ao domínio exacto do front-end UNIFED-PROBATUM
-//   para evitar uso indevido do proxy por terceiros.
-//   Alterar '*' para 'https://app.unifed.com' (ou domínio de produção).
+// CORS HARDENING (Achado A7 — Auditoria AUDIT-2ND-2026-04-01):
+//   O comportamento anterior usava _ALLOWED_ORIGINS[0] como fallback silencioso
+//   para pedidos com Origin: null ou origem não autorizada. Isto permitia que
+//   chamadas automatizadas (curl, scripts server-side) sem cabeçalho Origin
+//   não fossem bloqueadas a nível do Worker.
 //
-// Se necessitar de suportar múltiplos origens (ex: localhost + produção),
-// implementar whitelist dinâmica com base em request.headers.get('Origin').
+//   Implementação corrigida:
+//   · Pedidos com Origin ausente (null) → Early Return sem cabeçalho ACAO.
+//     O browser rejeita a resposta; scripts server-side recebem apenas
+//     um corpo sem permissão CORS explícita.
+//   · Pedidos com Origin divergente da whitelist → Early Return idêntico.
+//   · Apenas origens explicitamente listadas recebem o cabeçalho ACAO.
+//
+// CONFORMIDADE: DORA (UE) 2022/2554 · OWASP CORS Security Cheat Sheet
 // ============================================================================
 function _corsHeaders(request) {
-    // ── Whitelist de origens permitidas ───────────────────────────────────────
-    // Produção: restringir ao domínio do front-end.
-    // Desenvolvimento: adicionar 'http://localhost:*' conforme necessário.
+    // ── Whitelist de origens permitidas (produção) ────────────────────────────
     const _ALLOWED_ORIGINS = [
         'https://app.unifed.com',
         'https://unifed.com',
-        'https://www.unifed.com',   // www variant
-        // 'http://localhost:5500',   // Descomentar para desenvolvimento local / Uncomment for local development
-        // 'http://127.0.0.1:5500',   // Descomentar para desenvolvimento local / Uncomment for local development
+        'https://www.unifed.com',
+        // 'http://localhost:5500',   // Descomentar para desenvolvimento local
+        // 'http://127.0.0.1:5500',   // Descomentar para desenvolvimento local
     ];
 
-    const origin  = (request && request.headers) ? request.headers.get('Origin') : null;
-    const allowed = origin && _ALLOWED_ORIGINS.includes(origin) ? origin : _ALLOWED_ORIGINS[0];
+    // ── EARLY RETURN: Origin ausente ou não autorizada ────────────────────────
+    // Sem cabeçalho ACAO → o browser bloqueia a resposta em cross-origin.
+    // Scripts server-side sem Origin recebem resposta mas sem permissão CORS.
+    const origin = (request && request.headers) ? request.headers.get('Origin') : null;
 
+    if (!origin || !_ALLOWED_ORIGINS.includes(origin)) {
+        // Retornar apenas Vary: Origin para que proxies/CDN não façam cache
+        // de respostas sem ACAO para origens autorizadas subsequentes.
+        return {
+            'Vary': 'Origin'
+        };
+    }
+
+    // ── Origem autorizada: cabeçalhos CORS completos ──────────────────────────
     return {
-        'Access-Control-Allow-Origin':      allowed,
+        'Access-Control-Allow-Origin':      origin,       // espelhar a origem exacta (não wildcard)
         'Access-Control-Allow-Methods':     'POST, OPTIONS',
         'Access-Control-Allow-Headers':     'Content-Type, Authorization',
-        'Access-Control-Max-Age':           '86400',   // 24h cache do pre-flight
-        'Vary':                             'Origin'   // Obrigatório para CDN correcta
+        'Access-Control-Max-Age':           '86400',       // 24h cache do pre-flight
+        'Vary':                             'Origin'       // obrigatório para CDN correcta
     };
 }
 

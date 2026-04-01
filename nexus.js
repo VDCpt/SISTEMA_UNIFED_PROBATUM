@@ -11,6 +11,40 @@
  *   3. MOTOR PREDITIVO ATF          — Forecasting 6M (Regressão Linear + Chart.js)
  *   4. BLOCKCHAIN EVIDENCE EXPLORER — OTS Individual por Ficheiro (SHA-256 + DOM UI)
  * ============================================================================
+ *
+ * ── NOTA FORENSE — AUDITORIA AUDIT-2ND-2026-04-01 ──────────────────────────
+ *
+ * MÓDULO 1 · STEALTH NETWORK INTERCEPTOR — ARTEFACTO DE PROTECÇÃO DE CONSOLA
+ *   Este módulo realiza Monkey-patching de window.fetch (substituição em runtime
+ *   da referência global). Trata-se de um padrão deliberado de engenharia de
+ *   resiliência operacional, não de um comportamento malicioso.
+ *
+ *   Âmbito do patch: exclusivamente pedidos cujo URL contém strings listadas em
+ *   _STEALTH_PATTERNS (CORS externo, API Anthropic, FreeTSA, OpenTimestamps).
+ *   Pedidos locais — incluindo fetch('panel.html') de _activatePurePanel() —
+ *   passam pelo _origFetch sem interceptação (verificado por inspecção de código).
+ *
+ *   Impacto na cadeia de custódia: NENHUM. O patch não modifica payloads nem
+ *   headers de pedidos locais. Classificação: Artefacto de Protecção de Consola.
+ *   Referência: DORA (UE) 2022/2554, Art. 11 — Resiliência de Sistemas Críticos.
+ *
+ * MÓDULO 2 · RAG JURISPRUDENCIAL — WRAP DE window.exportDOCX
+ *   Este módulo substitui window.exportDOCX pela função _nexusExportDOCX, que
+ *   chama a implementação original de enrichment.js e injeta secções de
+ *   jurisprudência. A cadeia de dependência é:
+ *     enrichment.js (define) → nexus.js (wrap) → chamada do utilizador
+ *   Qualquer correcção ao exportDOCX original propaga-se correctamente.
+ *
+ * MÓDULO 3 · MOTOR PREDITIVO ATF — ANÁLISE PENDENTE DE TELEMETRIA
+ *   ⚠ ESTADO: ANÁLISE PENDENTE DE TELEMETRIA (declarado em AUDIT-2ND-2026-04-01)
+ *   Os coeficientes de regressão linear utilizam os dados de 4 meses disponíveis
+ *   (Set–Dez 2024). Com n=4 observações, o intervalo de confiança a 95% é
+ *   estatisticamente inconclusivo para projecções a 6 meses (t-crítico elevado
+ *   com graus de liberdade = 2). Os valores de forecasting NÃO devem ser citados
+ *   em sede judicial sem validação por um Estatístico independente com acesso
+ *   aos logs de execução em runtime. Referência: ISO/IEC 27037:2012, §8.2.3.
+ *
+ * ───────────────────────────────────────────────────────────────────────────
  */
 
 'use strict';

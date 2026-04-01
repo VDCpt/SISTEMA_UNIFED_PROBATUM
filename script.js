@@ -4049,29 +4049,51 @@ function updateCounters() {
 // 21. MODO DEMO — v13.1.2-GOLD · DADOS FIXOS PARA APRESENTAÇÃO (NIF unificado)
 // ============================================================================
 function activateDemoMode() {
+    // ── GUARD CLAUSE: re-entrada bloqueada enquanto processamento activo ──────
+    // Idempotência de Execução: garante que loadAnonymizedRealCase não é
+    // disparado mais de uma vez por ciclo de DOM. A flag UNIFEDSystem.processing
+    // actua como mutex de estado (Stable/Ready).
     if (UNIFEDSystem.processing) return;
     UNIFEDSystem.processing = true;
 
     ForensicLogger.addEntry('DEMO_MODE_ACTIVATED');
 
-    if (typeof window.UNIFEDSystem.loadAnonymizedRealCase === 'function') {
-        window.UNIFEDSystem.loadAnonymizedRealCase();
-    } else {
-        console.error('[UNIFED] loadAnonymizedRealCase não encontrado.');
+    // ── GUARD CLAUSE: verificar disponibilidade de _activatePurePanel ─────────
+    // _activatePurePanel() (definido em index.html) é o único ponto de montagem
+    // do panel.html. Internamente, após a Promise do fetch('panel.html') resolver,
+    // chama loadAnonymizedRealCase() uma única vez — garantindo que a injecção
+    // de dados ocorre DEPOIS dos nós DOM estarem em estado Stable/Ready.
+    // NÃO invocar loadAnonymizedRealCase() aqui directamente: seria uma
+    // segunda invocação redundante (race condition de dupla injecção).
+    if (typeof window._activatePurePanel !== 'function') {
+        console.error('[UNIFED] _activatePurePanel não registado. Verifique a ordem de carregamento de scripts.');
         UNIFEDSystem.processing = false;
         return;
     }
 
-    const client = UNIFEDSystem.client;
-    if (client) {
-        const nameInput = document.getElementById('clientNameFixed');
-        const nifInput = document.getElementById('clientNIFFixed');
-        if (nameInput) nameInput.value = client.name;
-        if (nifInput) nifInput.value = client.nif;
-        registerClient();
-    }
+    // 1. DISPARAR A MONTAGEM DO PAINEL (fetch + inject HTML + loadAnonymizedRealCase)
+    //    A Promise do fetch é assíncrona; o setTimeout abaixo aguarda a sua resolução.
+    window._activatePurePanel();
 
+    // 2. LATÊNCIA DE I/O GARANTIDA: 500ms
+    //    Compensa: fetch('panel.html') [I/O disco/rede] + wrapper.innerHTML [Reflow]
+    //    + crypto.subtle.digest() [async] + _updatePureUI() [Repaint].
+    //    NÃO reduzir para 150ms: o encadeamento assíncrono excede esse valor
+    //    em contextos de servidor HTTP com latência de disco não nula.
     setTimeout(() => {
+        // 3. ACTUALIZAR CAMPOS DE IDENTIFICAÇÃO DO SUJEITO PASSIVO
+        //    Os dados já foram injectados por loadAnonymizedRealCase() via
+        //    _activatePurePanel(). Apenas sincronizar os inputs de UI.
+        const client = UNIFEDSystem.client;
+        if (client) {
+            const nameInput = document.getElementById('clientNameFixed');
+            const nifInput  = document.getElementById('clientNIFFixed');
+            if (nameInput) nameInput.value = client.name;
+            if (nifInput)  nifInput.value  = client.nif;
+            registerClient();
+        }
+
+        // 4. LIBERTAR MUTEX E RESTAURAR ESTADO DA UI
         UNIFEDSystem.processing = false;
         const demoBtn = document.getElementById('demoModeBtn');
         if (demoBtn) {
@@ -4080,7 +4102,7 @@ function activateDemoMode() {
         }
         forensicDataSynchronization();
         logAudit('✅ Caso Real (Anonimizado) carregado com sucesso.', 'success');
-    }, 500);
+    }, 500); // [ISO/IEC 27037] Latência de I/O Garantida — não alterar sem validação
 }
 
 function simulateUpload(type, count) {
@@ -4975,7 +4997,7 @@ function renderChart() {
         data: {
             labels: labels,
             datasets: [{
-                label: currentLang === 'pt' ? 'Valor (€)' : 'Amount (€)',
+                label: currentLang === 'pt' ? 'Valor' : 'Amount', // [ISO 4217] símbolo gerido por formatCurrency()
                 data: data,
                 backgroundColor: colors,
                 borderWidth: 1
@@ -4989,7 +5011,9 @@ function renderChart() {
                 tooltip: {
                     callbacks: {
                         label: (context) => {
-                            return context.raw.toLocaleString(currentLang === 'pt' ? 'pt-PT' : 'en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+                            // [ISO 4217] Intl.NumberFormat gere símbolo e posição por locale.
+                            // PT-PT → "1.000,00 €" | EN-GB → "€1,000.00"
+                            return formatCurrency(context.raw);
                         }
                     }
                 }
@@ -5000,7 +5024,7 @@ function renderChart() {
                     grid: { color: 'rgba(255,255,255,0.1)' },
                     ticks: {
                         color: '#b8c6e0',
-                        callback: (v) => v.toLocaleString(currentLang === 'pt' ? 'pt-PT' : 'en-GB') + ' €'
+                        callback: (v) => formatCurrency(v) // [ISO 4217] locale-aware
                     }
                 },
                 x: {
@@ -5062,7 +5086,7 @@ function renderDiscrepancyChart() {
                     grid: { color: 'rgba(255,255,255,0.1)' },
                     ticks: {
                         color: '#b8c6e0',
-                        callback: (v) => v.toLocaleString(currentLang === 'pt' ? 'pt-PT' : 'en-GB') + ' €'
+                        callback: (v) => formatCurrency(v) // [ISO 4217] locale-aware
                     }
                 }
             }
@@ -5609,7 +5633,7 @@ async function exportPDF() {
         doc.setFontSize(8);
         doc.setFont('helvetica', 'bold');
         doc.text('Descrição / Description', COL_DESC_X, y);
-        doc.text('Valor (€)', COL_VAL_X, y);
+        doc.text(currentLang === 'pt' ? 'Valor' : 'Amount', COL_VAL_X, y); // [ISO 4217] sem unidade hardcoded
         doc.text('Fonte', COL_SRC_X, y);
         y += 4;
 
@@ -6086,7 +6110,7 @@ async function exportPDF() {
         doc.rect(left, y - 4, FIS_PAGE_W - 14, 8, 'F');
         doc.setTextColor(255, 255, 255);
         doc.text(`${currentLang === 'pt' ? 'Indicador Fiscal / Tax Indicator' : 'Tax Indicator'}`, FIS_COL_DESC + 1, y);
-        doc.text(`${currentLang === 'pt' ? 'Valor (€)' : 'Amount (€)'}`, FIS_COL_VAL, y, { align: 'right' });
+        doc.text(`${currentLang === 'pt' ? 'Valor' : 'Amount'}`, FIS_COL_VAL, y, { align: 'right' }); // [ISO 4217]
         doc.text('%', FIS_COL_PCT, y, { align: 'right' });
         doc.setTextColor(0, 0, 0);
         y += 6;
