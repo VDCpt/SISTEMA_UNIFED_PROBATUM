@@ -45,7 +45,7 @@
             percentagemSaftVsDac7: 23.65,              // (2402.57 / 10157.73) * 100
             agravamentoBrutoIRC: 2184.95,
             ircEstimado: 458.84,                      // 21% sobre 2184.95
-            impactoSeteAnosMercado: 0,                 // Não aplicável neste caso
+            impactoSeteAnosMercado: 0,
             impactoMensalMercado: 0,
             impactoAnualMercado: 0,
             discrepancia5IMT: 0
@@ -117,7 +117,7 @@
         // Monthly Data (vazio, para não induzir em erro)
         sys.monthlyData = {};
 
-        // Atualizar campos da sidebar (cliente)
+        // ── 1. Data-Binding Post-Injection ───────────────────────────────────
         var clientStatusDiv = document.getElementById('clientStatusFixed');
         var clientNameSpan = document.getElementById('clientNameDisplayFixed');
         var clientNifSpan = document.getElementById('clientNifDisplayFixed');
@@ -132,6 +132,53 @@
             clientStatusDiv.style.display = 'flex';
         }
 
+        // ── 2. Stateful UI Synchronization ───────────────────────────────────
+        // Sincronizar ano fiscal
+        var anoFiscalSelect = document.getElementById('anoFiscal');
+        if (anoFiscalSelect && sys.selectedYear) {
+            anoFiscalSelect.value = sys.selectedYear;
+        }
+        // Sincronizar período
+        var periodoSelect = document.getElementById('periodoAnalise');
+        if (periodoSelect && sys.selectedPeriodo) {
+            periodoSelect.value = sys.selectedPeriodo;
+            // Forçar visibilidade do seletor trimestral
+            var triContainer = document.getElementById('trimestralSelectorContainer');
+            if (triContainer) {
+                triContainer.style.display = sys.selectedPeriodo === 'trimestral' ? 'flex' : 'none';
+                triContainer.classList.toggle('show', sys.selectedPeriodo === 'trimestral');
+            }
+        }
+        // Sincronizar trimestre (se existir)
+        var triSelector = document.getElementById('trimestralSelector');
+        if (triSelector && sys.selectedTrimestre) {
+            triSelector.value = sys.selectedTrimestre;
+        }
+
+        // ── 3. Evidence Counter Reconciliation ───────────────────────────────
+        if (typeof window.forensicDataSynchronization === 'function') {
+            window.forensicDataSynchronization();
+        } else {
+            // Fallback manual
+            var total = sys.analysis.evidenceIntegrity.length;
+            var counterEl = document.getElementById('evidenceCountTotal');
+            if (counterEl) counterEl.textContent = total;
+        }
+
+        // ── 4. Asynchronous Identity Validation Hook ─────────────────────────
+        if (typeof window.validateNIF === 'function') {
+            var nifValid = window.validateNIF(sys.client.nif);
+            if (!nifValid) {
+                console.warn('[UNIFED-PURE] NIF do cliente não é válido segundo o checksum.');
+            }
+        }
+
+        // ── 5. Session Token Collision Remediation ───────────────────────────
+        var sessionIdSpan = document.getElementById('sessionIdDisplay');
+        if (sessionIdSpan) sessionIdSpan.textContent = sys.sessionId;
+        var verdictSessionSpan = document.getElementById('verdictSessionId');
+        if (verdictSessionSpan) verdictSessionSpan.textContent = sys.sessionId;
+
         // Atualizar QR Code e hash
         if (typeof window.generateQRCode === 'function') window.generateQRCode();
         var masterHashEl = document.getElementById('masterHashValue');
@@ -140,7 +187,7 @@
         // Atualizar painel #pureDashboard (se existir)
         if (typeof window._updatePureUI === 'function') window._updatePureUI();
 
-        // 7. Sincronização do Dashboard Clássico (Top Widgets)  ← CRÍTICO
+        // 7. Sincronização do Dashboard Clássico (Top Widgets)
         if (typeof window.updateDashboard === 'function') window.updateDashboard();
         if (typeof window.updateModulesUI === 'function') window.updateModulesUI();
         if (typeof window.renderChart === 'function') window.renderChart();
@@ -185,7 +232,7 @@
         set('pure-dac7',            fmt(t.dac7TotalPeriodo));
         set('pure-fatura',          fmt(t.faturaPlataforma));
         
-        // Binding Smoking Guns (Faltantes) ← ADICIONADO
+        // Binding Smoking Guns (Faltantes)
         set('pure-sg2-btor-val',    fmt(t.despesas));
         set('pure-sg2-btf-val',     fmt(t.faturaPlataforma));
         set('pure-sg1-saft-val',    fmt(t.saftBruto));
