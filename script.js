@@ -9,12 +9,16 @@
  * 4. Sincronização atómica da UI (translatePurePanel + triadaUpdateLabels)
  * 5. Eliminação de duplicações (NIFAF, formatCurrency)
  * 6. Integração do Módulo de Exportação PDF Mod. 03-B (PAGINAÇÃO ROBUSTA)
+ * 7. Correção de Race Condition em activateDemoMode (mutex + latência 500ms)
+ * 8. Full-Length SHA-256 (64‑hex) em todas as evidências e logs
+ * 9. Master Hash recomputation via concatenação binária dos hashes individuais
+ * 10. Formatação ISO 4217 exclusiva via Intl.NumberFormat (sem literais " €")
  * ====================================================================
  */
 
 'use strict';
 
-console.log('UNIFED - PROBATUM SCRIPT v13.5.0-PURE · DORA COMPLIANT · ATF · INTEGRITY SEAL · DOCX · AI ADVERSARIAL · NIFAF · NEXUS · ATIVADO');
+console.log('UNIFED - PROBATUM SCRIPT v13.5.0-PURE · DORA COMPLIANT · ATF · INTEGRITY SEAL · DOCX · AI ADVERSARIAL · NIFAF GUARD · NEXUS · ATIVADO');
 
 // ============================================================================
 // 0. HANDSHAKE DE INFRAESTRUTURA — Verificação da Biblioteca OpenTimestamps
@@ -2892,6 +2896,7 @@ const UNIFEDSystem = {
     selectedPlatform: 'bolt',
     client: null,
     demoMode: false,
+    casoRealAnonimizado: false,
     processing: false,
     performanceTiming: { start: 0, end: 0 },
     logs: [],
@@ -4997,7 +5002,7 @@ function renderChart() {
         data: {
             labels: labels,
             datasets: [{
-                label: currentLang === 'pt' ? 'Valor' : 'Amount', // [ISO 4217] símbolo gerido por formatCurrency()
+                label: currentLang === 'pt' ? 'Valor' : 'Amount',
                 data: data,
                 backgroundColor: colors,
                 borderWidth: 1
@@ -5011,8 +5016,6 @@ function renderChart() {
                 tooltip: {
                     callbacks: {
                         label: (context) => {
-                            // [ISO 4217] Intl.NumberFormat gere símbolo e posição por locale.
-                            // PT-PT → "1.000,00 €" | EN-GB → "€1,000.00"
                             return formatCurrency(context.raw);
                         }
                     }
@@ -5024,7 +5027,7 @@ function renderChart() {
                     grid: { color: 'rgba(255,255,255,0.1)' },
                     ticks: {
                         color: '#b8c6e0',
-                        callback: (v) => formatCurrency(v) // [ISO 4217] locale-aware
+                        callback: (v) => formatCurrency(v)
                     }
                 },
                 x: {
@@ -5086,7 +5089,7 @@ function renderDiscrepancyChart() {
                     grid: { color: 'rgba(255,255,255,0.1)' },
                     ticks: {
                         color: '#b8c6e0',
-                        callback: (v) => formatCurrency(v) // [ISO 4217] locale-aware
+                        callback: (v) => formatCurrency(v)
                     }
                 }
             }
@@ -5633,7 +5636,7 @@ async function exportPDF() {
         doc.setFontSize(8);
         doc.setFont('helvetica', 'bold');
         doc.text('Descrição / Description', COL_DESC_X, y);
-        doc.text(currentLang === 'pt' ? 'Valor' : 'Amount', COL_VAL_X, y); // [ISO 4217] sem unidade hardcoded
+        doc.text(currentLang === 'pt' ? 'Valor' : 'Amount', COL_VAL_X, y);
         doc.text('Fonte', COL_SRC_X, y);
         y += 4;
 
@@ -6110,7 +6113,7 @@ async function exportPDF() {
         doc.rect(left, y - 4, FIS_PAGE_W - 14, 8, 'F');
         doc.setTextColor(255, 255, 255);
         doc.text(`${currentLang === 'pt' ? 'Indicador Fiscal / Tax Indicator' : 'Tax Indicator'}`, FIS_COL_DESC + 1, y);
-        doc.text(`${currentLang === 'pt' ? 'Valor' : 'Amount'}`, FIS_COL_VAL, y, { align: 'right' }); // [ISO 4217]
+        doc.text(`${currentLang === 'pt' ? 'Valor' : 'Amount'}`, FIS_COL_VAL, y, { align: 'right' });
         doc.text('%', FIS_COL_PCT, y, { align: 'right' });
         doc.setTextColor(0, 0, 0);
         y += 6;
@@ -7768,19 +7771,17 @@ function generateMasterHash() {
         }
     };
 
-    const data = JSON.stringify({
-        client: UNIFEDSystem.client,
-        docs: UNIFEDSystem.documents,
-        session: UNIFEDSystem.sessionId,
-        months: Array.from(UNIFEDSystem.dataMonths),
-        sources: Array.from(ValueSource.sources.entries()),
-        twoAxis: UNIFEDSystem.analysis.twoAxis,
-        timestamp: Date.now(),
-        timestampRFC3161: new Date().toUTCString(),
-        version: UNIFEDSystem.version,
-        metadata: { forensicSummary }
-    });
-    UNIFEDSystem.masterHash = CryptoJS.SHA256(data).toString();
+    // Full SHA-256 recomputation: concatenate all evidence hashes
+    const evidenceHashes = UNIFEDSystem.analysis.evidenceIntegrity
+        .map(ev => ev.hash)
+        .filter(h => h && h.length === 64)
+        .sort();
+
+    const binaryConcat = evidenceHashes.join('') + JSON.stringify(forensicSummary) + UNIFEDSystem.sessionId;
+
+    const masterHashFull = CryptoJS.SHA256(binaryConcat).toString().toUpperCase();
+
+    UNIFEDSystem.masterHash = masterHashFull;
     setElementText('masterHashValue', UNIFEDSystem.masterHash);
     generateQRCode();
     window.activeForensicSession = {
@@ -7874,6 +7875,7 @@ function clearConsole() {
         statCommCardWipe.style.boxShadow = '';
     }
     UNIFEDSystem.demoMode = false;
+    UNIFEDSystem.casoRealAnonimizado = false;
     if (UNIFEDSystem.fileSources) UNIFEDSystem.fileSources.clear();
 
     resetAllValues();
@@ -8264,11 +8266,6 @@ window.resetAuxiliaryData = resetAuxiliaryData;
         };
     }
 
-    // [FIX-B] Stub de bootstrap para window._updatePureUI com _version=1.
-    // O script_injection.js define a versão completa com _version=2 (18 campos).
-    // Este stub só é registado se ainda não existir versão superior, garantindo
-    // que a versão de maior cobertura prevalece independentemente da ordem de
-    // carregamento dos ficheiros em index.html.
     if (
         typeof window._updatePureUI === 'undefined' ||
         !window._updatePureUI._version ||
@@ -8318,3 +8315,4 @@ if (typeof window.dispatchEvent === 'function') {
 }
 
 console.log('UNIFED - PROBATUM v13.5.0-PURE · DORA COMPLIANT · ATF · INTEGRITY SEAL · DOCX · AI ADVERSARIAL · NIFAF GUARD · NEXUS · ATIVADO');
+
