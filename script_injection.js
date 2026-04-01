@@ -15,36 +15,36 @@
 (function() {
     // ── DADOS REAIS EXTRAÍDOS DO PDF (IFDE-MNBWZSD5-F2C60) ───────────────────
     const _PDF_CASE = {
-        sessionId: "UNIFED-MNGFN3C0-X57MO",          // Sessão da DEMO
+        sessionId: "UNIFED-MNGFN3C0-X57MO",
         masterHash: "a3f8c9e2d5b6a7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1",
         client: {
             name: "Demo Driver, Lda",
-            nif: "123456789",                         // NIF válido (checksum OK)
-            platform: "bolt"
+            nif: "123456789",
+            platform: "outra"          // → "Plataforma A" (opção anónima)
         },
         totals: {
-            ganhos: 10157.73,                         // Ganhos Brutos (Extrato)
-            ganhosLiquidos: 7709.84,                  // Ganhos - Despesas
-            saftBruto: 10157.73,                      // Igual ao Ganhos (Bruto Auditado)
-            despesas: 2447.89,                        // Comissões Retidas (BTOR)
-            faturaPlataforma: 262.94,                 // Comissões Faturadas (BTF)
-            dac7TotalPeriodo: 7755.16,                // Total DAC7 (Q1+Q2+Q3+Q4)
-            dac7Q1: 1938.79,                          // Distribuição uniforme
-            dac7Q2: 1938.79,
-            dac7Q3: 1938.79,
-            dac7Q4: 1938.79
+            ganhos: 10157.73,
+            ganhosLiquidos: 7709.84,
+            saftBruto: 10157.73,
+            despesas: 2447.89,
+            faturaPlataforma: 262.94,
+            dac7TotalPeriodo: 7755.16,
+            dac7Q1: 0,
+            dac7Q2: 0,
+            dac7Q3: 0,
+            dac7Q4: 7755.16            // Apenas Q4 com o total DAC7
         },
         crossings: {
-            discrepanciaCritica: 2184.95,              // Despesas - Fatura (C2)
-            percentagemOmissao: 89.26,                 // (2184.95 / 2447.89) * 100
-            ivaFalta: 502.54,                         // 23% sobre 2184.95
-            ivaFalta6: 131.10,                        // 6% sobre 2184.95
+            discrepanciaCritica: 2184.95,
+            percentagemOmissao: 89.26,
+            ivaFalta: 502.54,
+            ivaFalta6: 131.10,
             btor: 2447.89,
             btf: 262.94,
-            discrepanciaSaftVsDac7: 2402.57,           // Ganhos - DAC7 (C1)
-            percentagemSaftVsDac7: 23.65,              // (2402.57 / 10157.73) * 100
+            discrepanciaSaftVsDac7: 2402.57,
+            percentagemSaftVsDac7: 23.65,
             agravamentoBrutoIRC: 2184.95,
-            ircEstimado: 458.84,                      // 21% sobre 2184.95
+            ircEstimado: 458.84,
             impactoSeteAnosMercado: 0,
             impactoMensalMercado: 0,
             impactoAnualMercado: 0,
@@ -81,13 +81,17 @@
                 timestamp: "2024-12-31 23:59:59"
             }
         ],
-        monthlyData: {}                               // Dados mensais não disponíveis no PDF
+        monthlyData: {}   // Sem decomposição mensal no PDF
     };
 
     // ── SISTEMA DE INJEÇÃO ATÓMICA ─────────────────────────────────────────────
-    window._syncPureDashboard = function() {
+    function _syncPureDashboard() {
         var sys = window.UNIFEDSystem;
-        if (!sys) return;
+        if (!sys) {
+            console.warn('[UNIFED-PURE] UNIFEDSystem ainda não disponível – aguardando...');
+            setTimeout(_syncPureDashboard, 50);
+            return;
+        }
 
         // Garantir que as propriedades essenciais existem
         if (!sys.analysis) sys.analysis = {};
@@ -101,6 +105,12 @@
         sys.masterHash = _PDF_CASE.masterHash;
         sys.client = _PDF_CASE.client;
         sys.selectedPlatform = _PDF_CASE.client.platform;
+        sys.demoMode = true;          // Para activar a redacção nas exportações
+        sys.casoRealAnonimizado = true;   // Activa o modo de anonimização
+
+        // Configurar o período para mostrar apenas o 4.º trimestre (DAC7 Q4)
+        sys.selectedPeriodo = "trimestral";
+        sys.selectedTrimestre = 4;
 
         // Totais
         Object.assign(sys.analysis.totals, _PDF_CASE.totals);
@@ -114,7 +124,7 @@
         Object.assign(sys.auxiliaryData, _PDF_CASE.auxiliaryData);
         // Evidence Integrity
         sys.analysis.evidenceIntegrity = _PDF_CASE.evidenceIntegrity;
-        // Monthly Data (vazio, para não induzir em erro)
+        // Monthly Data
         sys.monthlyData = {};
 
         // ── 1. Data-Binding Post-Injection ───────────────────────────────────
@@ -138,7 +148,7 @@
         if (anoFiscalSelect && sys.selectedYear) {
             anoFiscalSelect.value = sys.selectedYear;
         }
-        // Sincronizar período
+        // Sincronizar período para trimestral
         var periodoSelect = document.getElementById('periodoAnalise');
         if (periodoSelect && sys.selectedPeriodo) {
             periodoSelect.value = sys.selectedPeriodo;
@@ -149,17 +159,22 @@
                 triContainer.classList.toggle('show', sys.selectedPeriodo === 'trimestral');
             }
         }
-        // Sincronizar trimestre (se existir)
+        // Sincronizar trimestre
         var triSelector = document.getElementById('trimestralSelector');
         if (triSelector && sys.selectedTrimestre) {
             triSelector.value = sys.selectedTrimestre;
+        }
+
+        // ── Plataforma Anonimizada ──
+        var platformSelect = document.getElementById('selPlatformFixed');
+        if (platformSelect) {
+            platformSelect.value = "outra";   // "Plataforma A"
         }
 
         // ── 3. Evidence Counter Reconciliation ───────────────────────────────
         if (typeof window.forensicDataSynchronization === 'function') {
             window.forensicDataSynchronization();
         } else {
-            // Fallback manual
             var total = sys.analysis.evidenceIntegrity.length;
             var counterEl = document.getElementById('evidenceCountTotal');
             if (counterEl) counterEl.textContent = total;
@@ -184,10 +199,15 @@
         var masterHashEl = document.getElementById('masterHashValue');
         if (masterHashEl) masterHashEl.textContent = sys.masterHash;
 
+        // ── Forçar a actualização do DAC7 (mostrar apenas Q4) ────────────────
+        if (typeof window.filterDAC7ByPeriod === 'function') {
+            window.filterDAC7ByPeriod();
+        }
+
         // Atualizar painel #pureDashboard (se existir)
         if (typeof window._updatePureUI === 'function') window._updatePureUI();
 
-        // 7. Sincronização do Dashboard Clássico (Top Widgets)
+        // 6. Sincronização do Dashboard Clássico (Top Widgets)
         if (typeof window.updateDashboard === 'function') window.updateDashboard();
         if (typeof window.updateModulesUI === 'function') window.updateModulesUI();
         if (typeof window.renderChart === 'function') window.renderChart();
@@ -195,13 +215,13 @@
         if (typeof window.showTwoAxisAlerts === 'function') window.showTwoAxisAlerts();
 
         console.log('[UNIFED-PURE] ✅ Dados do PDF injetados e dashboard sincronizado.');
-    };
+    }
 
     // ── EXPOSIÇÃO GLOBAL DO MÉTODO DE CARREGAMENTO ────────────────────────────
     window.UNIFEDSystem = window.UNIFEDSystem || {};
     window.UNIFEDSystem.loadAnonymizedRealCase = function() {
         console.log('[UNIFED-PURE] Carregando dados do PDF (IFDE-MNBWZSD5-F2C60)...');
-        window._syncPureDashboard();
+        _syncPureDashboard();
     };
 
     // ── FUNÇÃO DE ATUALIZAÇÃO DO PAINEL PURE (v2) ─────────────────────────────
@@ -277,6 +297,6 @@
 
     // Tentar sincronizar imediatamente se o UNIFEDSystem já estiver disponível
     if (typeof window.UNIFEDSystem !== 'undefined' && window.UNIFEDSystem.analysis) {
-        window._syncPureDashboard();
+        _syncPureDashboard();
     }
 })();
