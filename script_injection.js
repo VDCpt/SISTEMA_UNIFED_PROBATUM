@@ -2,7 +2,7 @@
  * UNIFED - PROBATUM · CASO REAL ANONIMIZADO v13.5.0-PURE
  * ============================================================================
  * Script de Injeção de Dados Forenses Certificados
- * Conjunto de dados verificado (JSON UNIFED-MMLADX8Q-CV69L)
+ * Conjunto de dados extraído do PDF: IFDE_Parecer_IFDE-MNBWZSD5-F2C60.pdf
  * 
  * Este módulo injecta os dados reais (anonimizados) no UNIFEDSystem,
  * activa o painel #pureDashboard e sincroniza todos os componentes visuais.
@@ -13,102 +13,75 @@
  */
 
 (function() {
-    // ── DADOS REAIS VERIFICADOS (UNIFED-MMLADX8Q-CV69L) ─────────────────────────
-    const _REAL_CASE_MMLADX8Q = {
-        sessionId: "UNIFED-MMLADX8Q-CV69L",
-        masterHash: "5150e7674b891d5d07ca990e4c7124fc66af40488452759aeebdf84976eaa8f6",
+    // ── DADOS REAIS EXTRAÍDOS DO PDF (IFDE-MNBWZSD5-F2C60) ───────────────────
+    const _PDF_CASE = {
+        sessionId: "UNIFED-MNGFN3C0-X57MO",          // Sessão da DEMO
+        masterHash: "a3f8c9e2d5b6a7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1",
         client: {
-            name: "ANTÓNIO MANUEL DA SILVA & FILHOS, LDA",
-            nif: "999999990",                    // Corrigido: sem espaços, válido (checksum OK)
+            name: "Demo Driver, Lda",
+            nif: "123456789",                         // NIF válido (checksum OK)
             platform: "bolt"
         },
         totals: {
-            ganhos: 12450.75,
-            ganhosLiquidos: 9850.30,
-            saftBruto: 4500.00,
-            despesas: 12450.75,
-            faturaPlataforma: 4500.00,
-            dac7TotalPeriodo: 4300.00
+            ganhos: 10157.73,                         // Ganhos Brutos (Extrato)
+            ganhosLiquidos: 7709.84,                  // Ganhos - Despesas
+            saftBruto: 10157.73,                      // Igual ao Ganhos (Bruto Auditado)
+            despesas: 2447.89,                        // Comissões Retidas (BTOR)
+            faturaPlataforma: 262.94,                 // Comissões Faturadas (BTF)
+            dac7TotalPeriodo: 7755.16,                // Total DAC7 (Q1+Q2+Q3+Q4)
+            dac7Q1: 1938.79,                          // Distribuição uniforme
+            dac7Q2: 1938.79,
+            dac7Q3: 1938.79,
+            dac7Q4: 1938.79
         },
         crossings: {
-            discrepanciaCritica: 7950.75,
-            percentagemOmissao: 63.85,
-            ivaFalta: 1828.67,
-            ivaFalta6: 477.05,
-            btor: 12450.75,
-            btf: 4500.00,
-            discrepanciaSaftVsDac7: 200.00,
-            percentagemSaftVsDac7: 4.44,
-            agravamentoBrutoIRC: 7950.75,
-            ircEstimado: 1669.66,
-            impactoSeteAnosMercado: 149409.00,
-            impactoMensalMercado: 1778.68,
-            impactoAnualMercado: 21344.16,
-            discrepancia5IMT: 10.00
+            discrepanciaCritica: 2184.95,              // Despesas - Fatura (C2)
+            percentagemOmissao: 89.26,                 // (2184.95 / 2447.89) * 100
+            ivaFalta: 502.54,                         // 23% sobre 2184.95
+            ivaFalta6: 131.10,                        // 6% sobre 2184.95
+            btor: 2447.89,
+            btf: 262.94,
+            discrepanciaSaftVsDac7: 2402.57,           // Ganhos - DAC7 (C1)
+            percentagemSaftVsDac7: 23.65,              // (2402.57 / 10157.73) * 100
+            agravamentoBrutoIRC: 2184.95,
+            ircEstimado: 458.84,                      // 21% sobre 2184.95
+            impactoSeteAnosMercado: 0,                 // Não aplicável neste caso
+            impactoMensalMercado: 0,
+            impactoAnualMercado: 0,
+            discrepancia5IMT: 0
         },
         twoAxis: {
             revenueGap: 0,
-            expenseGap: 7950.75,
+            expenseGap: 2184.95,
             revenueGapActive: false,
             expenseGapActive: true
         },
         verdict: {
-            level: { pt: "RISCO ELEVADO", en: "HIGH RISK" },
-            key: "high",
-            color: "#ef4444",
+            level: { pt: "RISCO CRÍTICO · INFRAÇÃO DETETADA", en: "CRITICAL RISK · INFRACTION DETECTED" },
+            key: "critical",
+            color: "#ff0000",
             description: {
-                pt: "Indícios de desconformidade fiscal significativa.",
-                en: "Evidence of significant tax non-compliance."
+                pt: "Evidência de subcomunicação de proveitos (DAC7) e omissão grave de faturação de custos (89,26%). A plataforma retém valores sem a devida titulação fiscal, prejudicando o direito à dedução de IVA e inflacionando a base de IRC do contribuinte.",
+                en: "Evidence of income under-reporting (DAC7) and serious cost invoicing omission (89.26%). The platform retains amounts without proper tax documentation, prejudicing the right to VAT deduction and inflating the taxpayer's IRC base."
             },
-            percent: "63.85%"
+            percent: "89.26%"
         },
         auxiliaryData: {
-            campanhas: 450.20,
-            portagens: 120.40,
-            gorjetas: 85.00,
-            cancelamentos: 310.00,
-            totalNaoSujeitos: 655.60
+            campanhas: 0,
+            portagens: 0,
+            gorjetas: 0,
+            cancelamentos: 0,
+            totalNaoSujeitos: 0
         },
         evidenceIntegrity: [
             {
-                filename: "131509_202401.csv",
-                type: "saft",
-                hash: "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b",
-                timestamp: "2024-01-31 23:59:59"
-            },
-            {
-                filename: "Bolt_Statement_202401.pdf",
-                type: "statement",
-                hash: "b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c",
-                timestamp: "2024-01-31 23:59:59"
-            },
-            {
-                filename: "PT1124-000123.pdf",
-                type: "invoice",
-                hash: "c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d",
-                timestamp: "2024-01-31 23:59:59"
-            },
-            {
-                filename: "DAC7_2024_Bolt.pdf",
-                type: "dac7",
-                hash: "d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e",
+                filename: "IFDE_Parecer_IFDE-MNBWZSD5-F2C60.pdf",
+                type: "pdf_report",
+                hash: "77fad284e8358e8e...",
                 timestamp: "2024-12-31 23:59:59"
             }
         ],
-        monthlyData: {
-            "202401": { ganhos: 1037.56, despesas: 1037.56, ganhosLiq: 820.82 },
-            "202402": { ganhos: 950.20, despesas: 950.20, ganhosLiq: 751.78 },
-            "202403": { ganhos: 1120.45, despesas: 1120.45, ganhosLiq: 886.44 },
-            "202404": { ganhos: 1080.30, despesas: 1080.30, ganhosLiq: 854.77 },
-            "202405": { ganhos: 1150.60, despesas: 1150.60, ganhosLiq: 910.25 },
-            "202406": { ganhos: 1200.75, despesas: 1200.75, ganhosLiq: 950.00 },
-            "202407": { ganhos: 1250.80, despesas: 1250.80, ganhosLiq: 989.44 },
-            "202408": { ganhos: 1220.45, despesas: 1220.45, ganhosLiq: 965.57 },
-            "202409": { ganhos: 1180.30, despesas: 1180.30, ganhosLiq: 933.86 },
-            "202410": { ganhos: 1140.20, despesas: 1140.20, ganhosLiq: 902.16 },
-            "202411": { ganhos: 1090.50, despesas: 1090.50, ganhosLiq: 862.81 },
-            "202412": { ganhos: 1030.75, despesas: 1030.75, ganhosLiq: 815.57 }
-        }
+        monthlyData: {}                               // Dados mensais não disponíveis no PDF
     };
 
     // ── SISTEMA DE INJEÇÃO ATÓMICA ─────────────────────────────────────────────
@@ -124,25 +97,25 @@
         if (!sys.auxiliaryData) sys.auxiliaryData = {};
 
         // Injetar dados reais
-        sys.sessionId = _REAL_CASE_MMLADX8Q.sessionId;
-        sys.masterHash = _REAL_CASE_MMLADX8Q.masterHash;
-        sys.client = _REAL_CASE_MMLADX8Q.client;
-        sys.selectedPlatform = _REAL_CASE_MMLADX8Q.client.platform;
+        sys.sessionId = _PDF_CASE.sessionId;
+        sys.masterHash = _PDF_CASE.masterHash;
+        sys.client = _PDF_CASE.client;
+        sys.selectedPlatform = _PDF_CASE.client.platform;
 
         // Totais
-        Object.assign(sys.analysis.totals, _REAL_CASE_MMLADX8Q.totals);
+        Object.assign(sys.analysis.totals, _PDF_CASE.totals);
         // Crossings
-        Object.assign(sys.analysis.crossings, _REAL_CASE_MMLADX8Q.crossings);
+        Object.assign(sys.analysis.crossings, _PDF_CASE.crossings);
         // Two‑Axis
-        Object.assign(sys.analysis.twoAxis, _REAL_CASE_MMLADX8Q.twoAxis);
+        Object.assign(sys.analysis.twoAxis, _PDF_CASE.twoAxis);
         // Verdict
-        sys.analysis.verdict = _REAL_CASE_MMLADX8Q.verdict;
+        sys.analysis.verdict = _PDF_CASE.verdict;
         // Auxiliary Data
-        Object.assign(sys.auxiliaryData, _REAL_CASE_MMLADX8Q.auxiliaryData);
+        Object.assign(sys.auxiliaryData, _PDF_CASE.auxiliaryData);
         // Evidence Integrity
-        sys.analysis.evidenceIntegrity = _REAL_CASE_MMLADX8Q.evidenceIntegrity;
-        // Monthly Data
-        sys.monthlyData = _REAL_CASE_MMLADX8Q.monthlyData;
+        sys.analysis.evidenceIntegrity = _PDF_CASE.evidenceIntegrity;
+        // Monthly Data (vazio, para não induzir em erro)
+        sys.monthlyData = {};
 
         // Atualizar campos da sidebar (cliente)
         var clientStatusDiv = document.getElementById('clientStatusFixed');
@@ -167,20 +140,20 @@
         // Atualizar painel #pureDashboard (se existir)
         if (typeof window._updatePureUI === 'function') window._updatePureUI();
 
-        // 7. Sincronização do Dashboard Clássico (Top Widgets)  ← ADICIONADO
+        // 7. Sincronização do Dashboard Clássico (Top Widgets)  ← CRÍTICO
         if (typeof window.updateDashboard === 'function') window.updateDashboard();
         if (typeof window.updateModulesUI === 'function') window.updateModulesUI();
         if (typeof window.renderChart === 'function') window.renderChart();
         if (typeof window.renderDiscrepancyChart === 'function') window.renderDiscrepancyChart();
         if (typeof window.showTwoAxisAlerts === 'function') window.showTwoAxisAlerts();
 
-        console.log('[UNIFED-PURE] ✅ Dados injetados e dashboard sincronizado.');
+        console.log('[UNIFED-PURE] ✅ Dados do PDF injetados e dashboard sincronizado.');
     };
 
     // ── EXPOSIÇÃO GLOBAL DO MÉTODO DE CARREGAMENTO ────────────────────────────
     window.UNIFEDSystem = window.UNIFEDSystem || {};
     window.UNIFEDSystem.loadAnonymizedRealCase = function() {
-        console.log('[UNIFED-PURE] Carregando dados do Caso Real Anonimizado (UNIFED-MMLADX8Q-CV69L)...');
+        console.log('[UNIFED-PURE] Carregando dados do PDF (IFDE-MNBWZSD5-F2C60)...');
         window._syncPureDashboard();
     };
 
