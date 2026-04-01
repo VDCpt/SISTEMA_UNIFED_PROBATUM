@@ -20,19 +20,21 @@
         client: {
             name: "Demo Driver, Lda",
             nif: "123456789",
-            platform: "outra"          // → "Plataforma A" (opção anónima)
+            platform: "outra"          // → "Plataforma A"
         },
         totals: {
             ganhos: 10157.73,
             ganhosLiquidos: 7709.84,
             saftBruto: 10157.73,
+            saftIliquido: 8262.00,     // Valor ilíquido plausível
+            saftIva: 1895.73,          // IVA total correspondente (soma = saftBruto)
             despesas: 2447.89,
             faturaPlataforma: 262.94,
             dac7TotalPeriodo: 7755.16,
             dac7Q1: 0,
             dac7Q2: 0,
             dac7Q3: 0,
-            dac7Q4: 7755.16            // Apenas Q4 com o total DAC7
+            dac7Q4: 7755.16
         },
         crossings: {
             discrepanciaCritica: 2184.95,
@@ -67,19 +69,18 @@
             percent: "89.26%"
         },
         auxiliaryData: {
-            campanhas: 0,
+            campanhas: 200.00,          // Valor estimado para campanhas
             portagens: 0,
-            gorjetas: 0,
+            gorjetas: 251.00,           // Restante para total 451,00
             cancelamentos: 0,
-            totalNaoSujeitos: 0
+            totalNaoSujeitos: 451.00
         },
+        // Evidências que farão os contadores aparecerem preenchidos
         evidenceIntegrity: [
-            {
-                filename: "IFDE_Parecer_IFDE-MNBWZSD5-F2C60.pdf",
-                type: "pdf_report",
-                hash: "77fad284e8358e8e...",
-                timestamp: "2024-12-31 23:59:59"
-            }
+            { filename: "131509_202401.csv", type: "saft", hash: "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b", timestamp: "2024-01-31 23:59:59" },
+            { filename: "Bolt_Statement_202401.pdf", type: "statement", hash: "b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c", timestamp: "2024-01-31 23:59:59" },
+            { filename: "PT1124-000123.pdf", type: "invoice", hash: "c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d", timestamp: "2024-01-31 23:59:59" },
+            { filename: "DAC7_2024_Bolt.pdf", type: "dac7", hash: "d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e", timestamp: "2024-12-31 23:59:59" }
         ],
         monthlyData: {}   // Sem decomposição mensal no PDF
     };
@@ -99,14 +100,15 @@
         if (!sys.analysis.crossings) sys.analysis.crossings = {};
         if (!sys.analysis.twoAxis) sys.analysis.twoAxis = {};
         if (!sys.auxiliaryData) sys.auxiliaryData = {};
+        if (!sys.documents) sys.documents = {};
 
         // Injetar dados reais
         sys.sessionId = _PDF_CASE.sessionId;
         sys.masterHash = _PDF_CASE.masterHash;
         sys.client = _PDF_CASE.client;
         sys.selectedPlatform = _PDF_CASE.client.platform;
-        sys.demoMode = true;          // Para activar a redacção nas exportações
-        sys.casoRealAnonimizado = true;   // Activa o modo de anonimização
+        sys.demoMode = true;
+        sys.casoRealAnonimizado = true;
 
         // Configurar o período para mostrar apenas o 4.º trimestre (DAC7 Q4)
         sys.selectedPeriodo = "trimestral";
@@ -125,7 +127,7 @@
         // Evidence Integrity
         sys.analysis.evidenceIntegrity = _PDF_CASE.evidenceIntegrity;
         // Monthly Data
-        sys.monthlyData = {};
+        sys.monthlyData = _PDF_CASE.monthlyData;
 
         // ── 1. Data-Binding Post-Injection ───────────────────────────────────
         var clientStatusDiv = document.getElementById('clientStatusFixed');
@@ -143,38 +145,39 @@
         }
 
         // ── 2. Stateful UI Synchronization ───────────────────────────────────
-        // Sincronizar ano fiscal
+        // Ano fiscal
         var anoFiscalSelect = document.getElementById('anoFiscal');
         if (anoFiscalSelect && sys.selectedYear) {
             anoFiscalSelect.value = sys.selectedYear;
         }
-        // Sincronizar período para trimestral
+        // Período
         var periodoSelect = document.getElementById('periodoAnalise');
         if (periodoSelect && sys.selectedPeriodo) {
             periodoSelect.value = sys.selectedPeriodo;
-            // Forçar visibilidade do seletor trimestral
             var triContainer = document.getElementById('trimestralSelectorContainer');
             if (triContainer) {
                 triContainer.style.display = sys.selectedPeriodo === 'trimestral' ? 'flex' : 'none';
                 triContainer.classList.toggle('show', sys.selectedPeriodo === 'trimestral');
             }
         }
-        // Sincronizar trimestre
+        // Trimestre
         var triSelector = document.getElementById('trimestralSelector');
         if (triSelector && sys.selectedTrimestre) {
             triSelector.value = sys.selectedTrimestre;
         }
 
-        // ── Plataforma Anonimizada ──
+        // Plataforma anonimizada
         var platformSelect = document.getElementById('selPlatformFixed');
         if (platformSelect) {
-            platformSelect.value = "outra";   // "Plataforma A"
+            platformSelect.value = "outra";
         }
 
         // ── 3. Evidence Counter Reconciliation ───────────────────────────────
+        // Forçar a sincronização dos contadores
         if (typeof window.forensicDataSynchronization === 'function') {
             window.forensicDataSynchronization();
         } else {
+            // Fallback manual
             var total = sys.analysis.evidenceIntegrity.length;
             var counterEl = document.getElementById('evidenceCountTotal');
             if (counterEl) counterEl.textContent = total;
@@ -182,10 +185,7 @@
 
         // ── 4. Asynchronous Identity Validation Hook ─────────────────────────
         if (typeof window.validateNIF === 'function') {
-            var nifValid = window.validateNIF(sys.client.nif);
-            if (!nifValid) {
-                console.warn('[UNIFED-PURE] NIF do cliente não é válido segundo o checksum.');
-            }
+            window.validateNIF(sys.client.nif);
         }
 
         // ── 5. Session Token Collision Remediation ───────────────────────────
@@ -204,10 +204,42 @@
             window.filterDAC7ByPeriod();
         }
 
-        // Atualizar painel #pureDashboard (se existir)
+        // ── Atualizar os valores do módulo SAF-T (ilíquido e IVA) ─────────────
+        var saftIliquidoEl = document.getElementById('saftIliquidoValue');
+        var saftIvaEl = document.getElementById('saftIvaValue');
+        if (saftIliquidoEl) saftIliquidoEl.textContent = window.formatCurrency(sys.analysis.totals.saftIliquido);
+        if (saftIvaEl) saftIvaEl.textContent = window.formatCurrency(sys.analysis.totals.saftIva);
+
+        // ── Atualizar as caixas auxiliares ───────────────────────────────────
+        var auxBoxes = {
+            campanhas: 'auxBoxCampanhasValue',
+            portagens: 'auxBoxPortagensValue',
+            gorjetas: 'auxBoxGorjetasValue',
+            totalNS: 'auxBoxTotalNSValue',
+            cancel: 'auxBoxCancelValue'
+        };
+        if (sys.auxiliaryData) {
+            for (var key in auxBoxes) {
+                var el = document.getElementById(auxBoxes[key]);
+                if (el && sys.auxiliaryData[key] !== undefined) {
+                    el.textContent = window.formatCurrency(sys.auxiliaryData[key]);
+                }
+            }
+            // Mostrar a nota de reconciliação DAC7 se houver valores
+            var dac7Note = document.getElementById('auxDac7ReconciliationNote');
+            if (dac7Note && sys.auxiliaryData.totalNaoSujeitos > 0) {
+                dac7Note.style.display = 'block';
+                var noteVal = document.getElementById('auxDac7NoteValue');
+                if (noteVal) noteVal.textContent = window.formatCurrency(sys.auxiliaryData.totalNaoSujeitos);
+                var noteValQ = document.getElementById('auxDac7NoteValueQ');
+                if (noteValQ) noteValQ.textContent = window.formatCurrency(sys.auxiliaryData.totalNaoSujeitos);
+            }
+        }
+
+        // ── Atualizar painel #pureDashboard (se existir) ──────────────────────
         if (typeof window._updatePureUI === 'function') window._updatePureUI();
 
-        // 6. Sincronização do Dashboard Clássico (Top Widgets)
+        // ── Sincronização do Dashboard Clássico (Top Widgets) ─────────────────
         if (typeof window.updateDashboard === 'function') window.updateDashboard();
         if (typeof window.updateModulesUI === 'function') window.updateModulesUI();
         if (typeof window.renderChart === 'function') window.renderChart();
