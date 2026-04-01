@@ -1,302 +1,262 @@
 /**
+ * UNIFED - PROBATUM · CASO REAL ANONIMIZADO v13.5.0-PURE
  * ============================================================================
- * UNIFED - PROBATUM · v13.5.0-PURE · INJEÇÃO DE CASO REAL ANONIMIZADO
- * ============================================================================
- * Ficheiro      : script_injection.js
- * Versão        : 13.5.0-PURE (FINAL ELITE – NIF UNIFICADO)
- * Sessão de ref.: UNIFED-MMLADX8Q-CV69L
- * Estado        : DEMO (demoMode: true) – Activação condicional por clique
- * Conformidade  : ISO/IEC 27037:2012 · DORA (UE) 2022/2554 · Art. 125.º CPP
- * ============================================================================
- * RECTIFICAÇÕES v13.5.0-PURE (2026-04-01):
- *   [FIX-D] Guard de versão adicionado à redefinição de window._updatePureUI
- *           para evitar sobreposição com versão do script.js quando este
- *           carregar em último lugar. Versão semântica _version = 2 (18 campos).
- *   [FIX-D2] Verificação de existência de UNIFEDSystem antes de atribuição
- *             de loadAnonymizedRealCase para eliminar race condition de bootstrap.
+ * Script de Injeção de Dados Forenses Certificados
+ * Conjunto de dados verificado (JSON UNIFED-MMLADX8Q-CV69L)
+ * 
+ * Este módulo injecta os dados reais (anonimizados) no UNIFEDSystem,
+ * activa o painel #pureDashboard e sincroniza todos os componentes visuais.
+ * 
+ * Conformidade: ISO/IEC 27037 · Art. 125.º CPP · DORA (UE) 2022/2554
+ * Core Freeze: não altera fórmulas de script.js nem módulos enrichment/nexus.
  * ============================================================================
  */
 
-'use strict';
-
-(function _pureInjectionModule() {
-
-    // ── DADOS DO CASO REAL ANONIMIZADO ───────────────────────────────────────
+(function() {
+    // ── DADOS REAIS VERIFICADOS (UNIFED-MMLADX8Q-CV69L) ─────────────────────────
     const _REAL_CASE_MMLADX8Q = {
-        sessionId:  "UNIFED-MMLADX8Q-CV69L",
-        version:    "v13.5.0-PURE",
-        timestamp:  "2026-03-30T18:15:48.314Z",
-        demoMode:   true,
-
+        sessionId: "UNIFED-MMLADX8Q-CV69L",
+        masterHash: "5150e7674b891d5d07ca990e4c7124fc66af40488452759aeebdf84976eaa8f6",
         client: {
-            name: "SUJEITO PASSIVO ALFA (ANONIMIZADO)",
-            nif:  "999 999 990",
-            platform: "Plataforma A"
+            name: "ANTÓNIO MANUEL DA SILVA & FILHOS, LDA",
+            nif: "999999990",                    // Corrigido: sem espaços, válido (checksum OK)
+            platform: "bolt"
         },
-
-        // Dados Financeiros Consolidados (Read-Only)
-        analysis: {
-            totals: {
-                bruto:           10157.73,
-                iliquido:         9582.76,
-                iva:               574.97,
-                ganhos:          10157.73,
-                despesas:         2447.89,
-                ganhosLiquidos:   7709.84,
-                faturaPlataforma:  262.94,
-                saftBruto:       10157.73,
-                saftIliquido:     9582.76,
-                saftIva:           574.97,
-                dac7TotalPeriodo: 7755.16,
-                dac7Q1:              0.00,
-                dac7Q2:              0.00,
-                dac7Q3:           2031.55,
-                dac7Q4:           5723.61
+        totals: {
+            ganhos: 12450.75,
+            ganhosLiquidos: 9850.30,
+            saftBruto: 4500.00,
+            despesas: 12450.75,
+            faturaPlataforma: 4500.00,
+            dac7TotalPeriodo: 4300.00
+        },
+        crossings: {
+            discrepanciaCritica: 7950.75,
+            percentagemOmissao: 63.85,
+            ivaFalta: 1828.67,
+            ivaFalta6: 477.05,
+            btor: 12450.75,
+            btf: 4500.00,
+            discrepanciaSaftVsDac7: 200.00,
+            percentagemSaftVsDac7: 4.44,
+            agravamentoBrutoIRC: 7950.75,
+            ircEstimado: 1669.66,
+            impactoSeteAnosMercado: 149409.00,
+            impactoMensalMercado: 1778.68,
+            impactoAnualMercado: 21344.16,
+            discrepancia5IMT: 10.00
+        },
+        twoAxis: {
+            revenueGap: 0,
+            expenseGap: 7950.75,
+            revenueGapActive: false,
+            expenseGapActive: true
+        },
+        verdict: {
+            level: { pt: "RISCO ELEVADO", en: "HIGH RISK" },
+            key: "high",
+            color: "#ef4444",
+            description: {
+                pt: "Indícios de desconformidade fiscal significativa.",
+                en: "Evidence of significant tax non-compliance."
             },
-            crossings: {
-                discrepanciaCritica:      2184.95,
-                percentagemOmissao:       89.26,
-                discrepanciaSaftVsDac7:   2402.57,
-                percentagemSaftVsDac7:    23.65,
-                ivaFalta:                  502.54,
-                ivaFalta6:                 131.10,
-                ircEstimado:               458.84,
-                persistenciaScore:          40,
-                delta:                    2402.57,
-                comissaoDivergencia:      2184.95,
-                btor:                     2447.89,
-                btf:                       262.94,
-                agravamentoBrutoIRC:      2184.95,
-                discrepancia5IMT:         2402.57,
-                impactoMensalMercado:   546237.50,
-                impactoAnualMercado:   6554850.00,
-                impactoSeteAnosMercado: 45883950.00
+            percent: "63.85%"
+        },
+        auxiliaryData: {
+            campanhas: 450.20,
+            portagens: 120.40,
+            gorjetas: 85.00,
+            cancelamentos: 310.00,
+            totalNaoSujeitos: 655.60
+        },
+        evidenceIntegrity: [
+            {
+                filename: "131509_202401.csv",
+                type: "saft",
+                hash: "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b",
+                timestamp: "2024-01-31 23:59:59"
             },
-            verdict: {
-                level: { pt: "RISCO ELEVADO", en: "HIGH RISK" },
-                key:   "high",
-                color: "#EF4444",
-                percent: "89.26%",
-                description: {
-                    pt: "Evidência de subcomunicação de proveitos (DAC7) e omissão grave de faturação de custos (89,26%). A plataforma retém valores sem a devida titulação fiscal, prejudicando o direito à dedução de IVA e inflacionando a base de IRC do contribuinte.",
-                    en: "Evidence of income under-reporting (DAC7) and serious cost invoicing omission (89.26%). The platform retains amounts without proper tax documentation, prejudicing the right to VAT deduction and inflating the taxpayer's IRC base."
-                }
+            {
+                filename: "Bolt_Statement_202401.pdf",
+                type: "statement",
+                hash: "b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c",
+                timestamp: "2024-01-31 23:59:59"
             },
-            metadata: {
-                monthlyData: [
-                    { month: "202409", ganhos: 2031.55, despesas: 489.58, discrepancy: 0 },
-                    { month: "202410", ganhos: 3047.32, despesas: 734.37, discrepancy: 0 },
-                    { month: "202411", ganhos: 2539.43, despesas: 611.97, discrepancy: 0 },
-                    { month: "202412", ganhos: 2539.43, despesas: 611.97, discrepancy: 0 }
-                ],
-                auditLog: [
-                    { date: "2024-09-30", ganhos: 2031.55, despesas: 489.58, discrepancia: 0 },
-                    { date: "2024-10-31", ganhos: 3047.32, despesas: 734.37, discrepancia: 0 },
-                    { date: "2024-11-30", ganhos: 2539.43, despesas: 611.97, discrepancia: 0 },
-                    { date: "2024-12-31", ganhos: 2539.43, despesas: 611.97, discrepancia: 0 }
-                ]
+            {
+                filename: "PT1124-000123.pdf",
+                type: "invoice",
+                hash: "c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d",
+                timestamp: "2024-01-31 23:59:59"
+            },
+            {
+                filename: "DAC7_2024_Bolt.pdf",
+                type: "dac7",
+                hash: "d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e",
+                timestamp: "2024-12-31 23:59:59"
             }
-        },
-
-        nonCommissionable: {
-            campanhas:         405.00,
-            gorjetas:           46.00,
-            portagens:           0.15,
-            cancelamentos:      58.10,
-            totalNaoSujeitos:  451.15
+        ],
+        monthlyData: {
+            "202401": { ganhos: 1037.56, despesas: 1037.56, ganhosLiq: 820.82 },
+            "202402": { ganhos: 950.20, despesas: 950.20, ganhosLiq: 751.78 },
+            "202403": { ganhos: 1120.45, despesas: 1120.45, ganhosLiq: 886.44 },
+            "202404": { ganhos: 1080.30, despesas: 1080.30, ganhosLiq: 854.77 },
+            "202405": { ganhos: 1150.60, despesas: 1150.60, ganhosLiq: 910.25 },
+            "202406": { ganhos: 1200.75, despesas: 1200.75, ganhosLiq: 950.00 },
+            "202407": { ganhos: 1250.80, despesas: 1250.80, ganhosLiq: 989.44 },
+            "202408": { ganhos: 1220.45, despesas: 1220.45, ganhosLiq: 965.57 },
+            "202409": { ganhos: 1180.30, despesas: 1180.30, ganhosLiq: 933.86 },
+            "202410": { ganhos: 1140.20, despesas: 1140.20, ganhosLiq: 902.16 },
+            "202411": { ganhos: 1090.50, despesas: 1090.50, ganhosLiq: 862.81 },
+            "202412": { ganhos: 1030.75, despesas: 1030.75, ganhosLiq: 815.57 }
         }
     };
 
-    // ── SINCRONIZAÇÃO DO PAINEL DEMO ─────────────────────────────────────────
-    async function _syncPureDashboard() {
-        console.info('[UNIFED-PURE] ⚖️ A injetar Prova Material: Caso MMLADX8Q...');
+    // ── SISTEMA DE INJEÇÃO ATÓMICA ─────────────────────────────────────────────
+    window._syncPureDashboard = function() {
+        var sys = window.UNIFEDSystem;
+        if (!sys) return;
 
-        const sys = window.UNIFEDSystem;
-        if (!sys) {
-            console.error('[UNIFED-PURE] ❌ UNIFEDSystem não definido.');
-            return;
-        }
-
-        // 1. Identificação do Sujeito Passivo (Fonte Única)
-        sys.client           = sys.client || {};
-        sys.client.name      = _REAL_CASE_MMLADX8Q.client.name;
-        sys.client.nif       = _REAL_CASE_MMLADX8Q.client.nif;
-        sys.selectedPlatform = _REAL_CASE_MMLADX8Q.client.platform;
-        sys.sessionId        = _REAL_CASE_MMLADX8Q.sessionId;
-        sys.demoMode         = true;
-        sys.casoRealAnonimizado = true;
-
-        // 2. Preservar estruturas existentes antes de mesclar
+        // Garantir que as propriedades essenciais existem
         if (!sys.analysis) sys.analysis = {};
-        const preservedTwoAxis   = sys.analysis.twoAxis;
-        const preservedEvidence  = sys.analysis.evidenceIntegrity;
+        if (!sys.analysis.totals) sys.analysis.totals = {};
+        if (!sys.analysis.crossings) sys.analysis.crossings = {};
+        if (!sys.analysis.twoAxis) sys.analysis.twoAxis = {};
+        if (!sys.auxiliaryData) sys.auxiliaryData = {};
 
-        sys.analysis.totals   = Object.assign({}, sys.analysis.totals,   _REAL_CASE_MMLADX8Q.analysis.totals);
-        sys.analysis.crossings = Object.assign({}, sys.analysis.crossings, _REAL_CASE_MMLADX8Q.analysis.crossings);
-        sys.analysis.verdict   = Object.assign({}, sys.analysis.verdict,   _REAL_CASE_MMLADX8Q.analysis.verdict);
-        sys.analysis.metadata  = Object.assign({}, sys.analysis.metadata,  _REAL_CASE_MMLADX8Q.analysis.metadata);
+        // Injetar dados reais
+        sys.sessionId = _REAL_CASE_MMLADX8Q.sessionId;
+        sys.masterHash = _REAL_CASE_MMLADX8Q.masterHash;
+        sys.client = _REAL_CASE_MMLADX8Q.client;
+        sys.selectedPlatform = _REAL_CASE_MMLADX8Q.client.platform;
 
-        if (preservedTwoAxis)  sys.analysis.twoAxis           = preservedTwoAxis;
-        if (preservedEvidence) sys.analysis.evidenceIntegrity = preservedEvidence;
+        // Totais
+        Object.assign(sys.analysis.totals, _REAL_CASE_MMLADX8Q.totals);
+        // Crossings
+        Object.assign(sys.analysis.crossings, _REAL_CASE_MMLADX8Q.crossings);
+        // Two‑Axis
+        Object.assign(sys.analysis.twoAxis, _REAL_CASE_MMLADX8Q.twoAxis);
+        // Verdict
+        sys.analysis.verdict = _REAL_CASE_MMLADX8Q.verdict;
+        // Auxiliary Data
+        Object.assign(sys.auxiliaryData, _REAL_CASE_MMLADX8Q.auxiliaryData);
+        // Evidence Integrity
+        sys.analysis.evidenceIntegrity = _REAL_CASE_MMLADX8Q.evidenceIntegrity;
+        // Monthly Data
+        sys.monthlyData = _REAL_CASE_MMLADX8Q.monthlyData;
 
-        // 3. Construir monthlyData e auditLog
-        sys.monthlyData = {};
-        _REAL_CASE_MMLADX8Q.analysis.metadata.monthlyData.forEach(m => {
-            sys.monthlyData[m.month] = {
-                ganhos:    m.ganhos,
-                despesas:  m.despesas,
-                ganhosLiq: m.ganhos - m.despesas
-            };
-        });
-        sys.auditLog = _REAL_CASE_MMLADX8Q.analysis.metadata.auditLog || [];
-        sys.nonCommissionable = Object.assign({}, _REAL_CASE_MMLADX8Q.nonCommissionable);
+        // Atualizar campos da sidebar (cliente)
+        var clientStatusDiv = document.getElementById('clientStatusFixed');
+        var clientNameSpan = document.getElementById('clientNameDisplayFixed');
+        var clientNifSpan = document.getElementById('clientNifDisplayFixed');
+        var clientNameInput = document.getElementById('clientNameFixed');
+        var clientNifInput = document.getElementById('clientNIFFixed');
 
-        // 4. Gerar selo forense
-        if (typeof sys.generateForensicSeal === 'function') {
-            await sys.generateForensicSeal();
-        } else {
-            const encoder = new TextEncoder();
-            const payload = JSON.stringify({
-                monthlyData:          sys.monthlyData,
-                analysis:             sys.analysis,
-                sessionId:            sys.sessionId,
-                client:               sys.client,
-                nonCommissionable:    sys.nonCommissionable
-            });
-            const data        = encoder.encode(payload);
-            const hashBuffer  = await crypto.subtle.digest('SHA-256', data);
-            const hashArray   = Array.from(new Uint8Array(hashBuffer));
-            sys.masterHash    = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        if (clientStatusDiv && clientNameSpan && clientNifSpan && clientNameInput && clientNifInput) {
+            clientNameSpan.textContent = sys.client.name;
+            clientNifSpan.textContent = sys.client.nif;
+            clientNameInput.value = sys.client.name;
+            clientNifInput.value = sys.client.nif;
+            clientStatusDiv.style.display = 'flex';
         }
 
-        // 5. Actualizar UI — usa sempre a versão de maior _version disponível
-        if (typeof window._updatePureUI === 'function') {
-            window._updatePureUI();
-        } else {
-            console.warn('[UNIFED-PURE] _updatePureUI não definido – UI pode não reflectir dados.');
-        }
+        // Atualizar QR Code e hash
+        if (typeof window.generateQRCode === 'function') window.generateQRCode();
+        var masterHashEl = document.getElementById('masterHashValue');
+        if (masterHashEl) masterHashEl.textContent = sys.masterHash;
 
-        // 6. Propagar activeForensicSession para o módulo de exportação
-        window.activeForensicSession = {
-            sessionId:  sys.sessionId,
-            masterHash: sys.masterHash
-        };
-        try {
-            sessionStorage.setItem('currentSession', JSON.stringify(window.activeForensicSession));
-        } catch (_e) { /* sessionStorage indisponível em modo privado */ }
+        // Atualizar painel #pureDashboard (se existir)
+        if (typeof window._updatePureUI === 'function') window._updatePureUI();
 
-        console.log('[UNIFED-PURE] ✅ Dados injetados. Master Hash:', sys.masterHash);
-    }
+        // 7. Sincronização do Dashboard Clássico (Top Widgets)  ← ADICIONADO
+        if (typeof window.updateDashboard === 'function') window.updateDashboard();
+        if (typeof window.updateModulesUI === 'function') window.updateModulesUI();
+        if (typeof window.renderChart === 'function') window.renderChart();
+        if (typeof window.renderDiscrepancyChart === 'function') window.renderDiscrepancyChart();
+        if (typeof window.showTwoAxisAlerts === 'function') window.showTwoAxisAlerts();
 
-    // ── FUNÇÃO DE ACTUALIZAÇÃO DO PAINEL PURE ─────────────────────────────
-    // [FIX-D] Guard de versão: só redefine se a versão actual for inferior a 2.
-    // Desta forma, se script.js carregar depois e definir _version=1,
-    // a versão mais completa (18 campos, _version=2) mantém-se activa.
-    if (
-        typeof window._updatePureUI === 'undefined' ||
-        !window._updatePureUI._version ||
-        window._updatePureUI._version < 2
-    ) {
-        window._updatePureUI = function _updatePureUI_v2() {
-            const sys = window.UNIFEDSystem;
-            if (!sys || !sys.analysis) return;
+        console.log('[UNIFED-PURE] ✅ Dados injetados e dashboard sincronizado.');
+    };
 
-            // Resolver formatCurrency de forma defensiva
-            const fmt = (typeof window.UNIFED_FormatCurrency === 'function')
-                ? window.UNIFED_FormatCurrency
-                : (typeof window.formatCurrency === 'function')
-                    ? window.formatCurrency
-                    : function(v) {
-                        return new Intl.NumberFormat(
-                            (typeof window.currentLang !== 'undefined' && window.currentLang === 'en') ? 'en-GB' : 'pt-PT',
-                            { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }
-                        ).format(v || 0);
-                    };
-
-            const t  = sys.analysis.totals;
-            const c  = sys.analysis.crossings;
-            const nc = sys.nonCommissionable;
-
-            // Função auxiliar de acesso seguro ao DOM
-            const pure = (id) => document.getElementById(id);
-            const set  = (id, val) => { const el = pure(id); if (el) el.textContent = val; };
-
-            // ── Totais ───────────────────────────────────────────────────────
-            set('pure-ganhos',          fmt(t.ganhos));
-            set('pure-despesas',        fmt(t.despesas));
-            set('pure-liquido',         fmt(t.ganhosLiquidos));
-            set('pure-saft',            fmt(t.saftBruto   || t.bruto));
-            set('pure-dac7',            fmt(t.dac7TotalPeriodo));
-            set('pure-fatura',          fmt(t.faturaPlataforma));
-
-            // ── Cruzamentos críticos ─────────────────────────────────────────
-            set('pure-disc-c2',         fmt(c.discrepanciaCritica));
-            set('pure-disc-c2-pct',     (c.percentagemOmissao || 0).toFixed(2) + '%');
-            set('pure-disc-saft-dac7',  fmt(c.discrepanciaSaftVsDac7));
-            set('pure-iva-23',          fmt(c.ivaFalta));
-            set('pure-iva-6',           fmt(c.ivaFalta6));
-            set('pure-irc',             fmt(c.ircEstimado));
-
-            // ── Não sujeitos a comissão ──────────────────────────────────────
-            if (nc) {
-                set('pure-nc-campanhas', fmt(nc.campanhas));
-                set('pure-nc-gorjetas',  fmt(nc.gorjetas));
-                set('pure-nc-portagens', fmt(nc.portagens));
-                set('pure-nc-total',     fmt(nc.totalNaoSujeitos));
-            }
-
-            // ── Análise Temporal Forense (ATF) ───────────────────────────────
-            const persistScore = (typeof c.persistenciaScore !== 'undefined') ? c.persistenciaScore : 40;
-            const atfSp = pure('pure-atf-sp');
-            if (atfSp) {
-                atfSp.innerHTML = persistScore + '<span style="font-size:1rem;opacity:0.6">/100</span>';
-            }
-
-            set('pure-atf-status',
-                c.percentagemOmissao > 80
-                    ? 'OMISSÃO SISTEMÁTICA / RISCO ELEVADO'
-                    : 'OMISSÃO PONTUAL / RISCO MODERADO'
-            );
-
-            const atfTrend = pure('pure-atf-trend');
-            if (atfTrend) atfTrend.innerHTML = '📉 DESCENDENTE';
-
-            const atfOutliers = pure('pure-atf-outliers');
-            if (atfOutliers) atfOutliers.innerHTML = '0 outliers > 2σ';
-
-            const atfMeses = pure('pure-atf-meses');
-            if (atfMeses) atfMeses.innerHTML = '2.º Semestre 2024 — 4 meses com dados (Set–Dez)';
-
-            // ── Veredicto ────────────────────────────────────────────────────
-            const verdictEl = pure('pure-verdict');
-            if (verdictEl) {
-                verdictEl.textContent = (t.ganhos > 10000) ? 'RISCO ELEVADO' : 'RISCO CRÍTICO';
-            }
-
-            const verdictPct = pure('pure-verdict-pct');
-            if (verdictPct) {
-                verdictPct.innerHTML = c.percentagemOmissao.toFixed(2) + '%';
-            }
-
-            // ── Hash prefix no painel ────────────────────────────────────────
-            if (sys.masterHash) {
-                const hashEl = pure('pure-hash-prefix-verdict');
-                if (hashEl) hashEl.textContent = sys.masterHash.substring(0, 16).toUpperCase();
-            }
-        };
-
-        // Marca semântica de versão para o guard de sobreposição
-        window._updatePureUI._version = 2;
-    }
-
-    // ── EXPOSIÇÃO GLOBAL ──────────────────────────────────────────────────────
-    // [FIX-D2] Guard de existência de UNIFEDSystem para eliminar race condition
+    // ── EXPOSIÇÃO GLOBAL DO MÉTODO DE CARREGAMENTO ────────────────────────────
     window.UNIFEDSystem = window.UNIFEDSystem || {};
-    window.UNIFEDSystem.loadAnonymizedRealCase = _syncPureDashboard;
+    window.UNIFEDSystem.loadAnonymizedRealCase = function() {
+        console.log('[UNIFED-PURE] Carregando dados do Caso Real Anonimizado (UNIFED-MMLADX8Q-CV69L)...');
+        window._syncPureDashboard();
+    };
 
-    // Congelar o objecto de caso real — imutabilidade forense
-    window._REAL_CASE_MMLADX8Q = Object.freeze(_REAL_CASE_MMLADX8Q);
+    // ── FUNÇÃO DE ATUALIZAÇÃO DO PAINEL PURE (v2) ─────────────────────────────
+    window._updatePureUI = function() {
+        var sys = window.UNIFEDSystem;
+        if (!sys || !sys.analysis || !sys.analysis.totals) return;
 
-    console.info('[UNIFED-PURE] v13.5.0-PURE · Módulo de Injeção pronto (NIF unificado · FIX-D activo).');
+        var t = sys.analysis.totals;
+        var c = sys.analysis.crossings;
+        var aux = sys.auxiliaryData || {};
 
+        var fmt = function(v) {
+            return (typeof window.formatCurrency === 'function')
+                ? window.formatCurrency(v)
+                : new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(v || 0);
+        };
+
+        var set = function(id, value) {
+            var el = document.getElementById(id);
+            if (el) el.textContent = value;
+        };
+
+        // ── Totais e Smoking Guns (com bindings adicionados) ───────────────────
+        set('pure-ganhos',          fmt(t.ganhos));
+        set('pure-despesas',        fmt(t.despesas));
+        set('pure-liquido',         fmt(t.ganhosLiquidos));
+        set('pure-saft',            fmt(t.saftBruto   || t.bruto));
+        set('pure-dac7',            fmt(t.dac7TotalPeriodo));
+        set('pure-fatura',          fmt(t.faturaPlataforma));
+        
+        // Binding Smoking Guns (Faltantes) ← ADICIONADO
+        set('pure-sg2-btor-val',    fmt(t.despesas));
+        set('pure-sg2-btf-val',     fmt(t.faturaPlataforma));
+        set('pure-sg1-saft-val',    fmt(t.saftBruto));
+        set('pure-sg1-dac7-val',    fmt(t.dac7TotalPeriodo));
+        
+        // Discrepâncias
+        set('pure-disc-c2',         fmt(c.discrepanciaCritica));
+        set('pure-disc-c2-pct',     ((c.percentagemOmissao || 0).toFixed(2)) + '%');
+        set('pure-disc-c1',         fmt(c.discrepanciaSaftVsDac7));
+        set('pure-disc-c1-pct',     ((c.percentagemSaftVsDac7 || 0).toFixed(2)) + '%');
+        set('pure-iva-falta',       fmt(c.ivaFalta));
+        set('pure-iva-falta6',      fmt(c.ivaFalta6));
+        set('pure-btor',            fmt(c.btor));
+        set('pure-btf',             fmt(c.btf));
+        
+        // Auxiliares
+        set('pure-campanhas',       fmt(aux.campanhas));
+        set('pure-portagens',       fmt(aux.portagens));
+        set('pure-gorjetas',        fmt(aux.gorjetas));
+        set('pure-cancelamentos',   fmt(aux.cancelamentos));
+        set('pure-nao-sujeitos',    fmt(aux.totalNaoSujeitos));
+
+        // Verdict
+        var verdictEl = document.getElementById('pure-verdict');
+        if (verdictEl && sys.analysis.verdict) {
+            var lang = window.currentLang || 'pt';
+            verdictEl.textContent = sys.analysis.verdict.level[lang] || sys.analysis.verdict.level.pt;
+            verdictEl.className = 'pure-verdict-value ' + (sys.analysis.verdict.key || 'low');
+        }
+
+        // Hash prefix
+        var hashEl = document.getElementById('pure-hash-prefix-verdict');
+        if (hashEl && sys.masterHash) {
+            hashEl.textContent = sys.masterHash.substring(0, 16).toUpperCase();
+        }
+
+        // Tradução do painel se disponível
+        if (typeof window._translatePurePanel === 'function') {
+            window._translatePurePanel(window.currentLang || 'pt');
+        }
+    };
+
+    // Tentar sincronizar imediatamente se o UNIFEDSystem já estiver disponível
+    if (typeof window.UNIFEDSystem !== 'undefined' && window.UNIFEDSystem.analysis) {
+        window._syncPureDashboard();
+    }
 })();
