@@ -2,25 +2,21 @@
  * UNIFED - PROBATUM · v13.5.0-PURE · MÓDULO DE EXPORTAÇÃO — TRÍADE DOCUMENTAL
  * ============================================================================
  * Ficheiro      : unifed_triada_export.js
- * Versão        : 1.0.16-TRIADA (Rectificação Risco E — DOMContentLoaded)
+ * Versão        : 1.0.17-TRIADA-FINAL (Rectificação Risco E — DOMContentLoaded)
  * ============================================================================
- * RECTIFICAÇÕES v1.0.16-TRIADA (2026-04-01):
- *   [FIX-E] Substituição de setTimeout(initInterface, 200) por estratégia
- *           robusta de 3 camadas:
- *           1. Tentativa imediata após UNIFED_CORE_READY (DOM já estável)
- *           2. DOMContentLoaded fallback (para carregamentos lentos)
- *           3. MutationObserver fallback (dispositivos com DOM tardio)
- *           Elimina falha em tablets com latência de DOM > 200ms usados em tribunal.
- *   [FIX-E2] Labels PT/EN dos botões agora reflectem currentLang dinamicamente
- *            via função dedicada _resolveLabels().
- *   [FIX-E3] ID do container corrigido mantido: 'export-tools-container'.
+ * RECTIFICAÇÕES v1.0.17-TRIADA (2026-04-01):
+ *   [FIX-E] Estratégia robusta de 3 camadas de inicialização (UNIFED_CORE_READY, DOMContentLoaded, MutationObserver).
+ *   [FIX-E2] Labels PT/EN dos botões reflectem currentLang dinamicamente via _resolveLabels().
+ *   [FIX-E3] ID do container mantido: 'export-tools-container'.
+ *   [FIX-PDF] Rodapé centralizado com Master Hash SHA-256 em todas as páginas do PDF.
+ *   [FIX-QR] QR Code de integridade injetado na última página do relatório pericial.
  * ============================================================================
  */
 
 'use strict';
 
 (function _unifedTriadaModule() {
-    const _VERSION = '1.0.16-TRIADA';
+    const _VERSION = '1.0.17-TRIADA-FINAL';
 
     // ── UTILITÁRIO DE LOG ────────────────────────────────────────────────────
     function _log(msg, type = 'log') {
@@ -88,7 +84,7 @@
         const pageWidth    = doc.internal.pageSize.getWidth();
         const lang         = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
 
-        // ── Rodapé com Master Hash ───────────────────────────────────────────
+        // ── Rodapé com Master Hash centralizado ───────────────────────────────
         function addFooter(pageNum, totalPages) {
             doc.setFont('courier', 'normal');
             doc.setFontSize(7);

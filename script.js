@@ -8315,4 +8315,3 @@ if (typeof window.dispatchEvent === 'function') {
 }
 
 console.log('UNIFED - PROBATUM v13.5.0-PURE · DORA COMPLIANT · ATF · INTEGRITY SEAL · DOCX · AI ADVERSARIAL · NIFAF GUARD · NEXUS · ATIVADO');
-
