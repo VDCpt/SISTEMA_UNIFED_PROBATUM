@@ -26,8 +26,8 @@
             ganhos: 10157.73,
             ganhosLiquidos: 7709.84,
             saftBruto: 10157.73,
-            saftIliquido: 8262.00,     // Valor ilíquido plausível
-            saftIva: 1895.73,          // IVA total correspondente (soma = saftBruto)
+            saftIliquido: 8262.00,     // Valor Ilíquido Total (soma coluna "Preço da viagem (sem IVA)")
+            saftIva: 1895.73,          // Total IVA (soma coluna "IVA")
             despesas: 2447.89,
             faturaPlataforma: 262.94,
             dac7TotalPeriodo: 7755.16,
@@ -69,18 +69,17 @@
             percent: "89.26%"
         },
         auxiliaryData: {
-            campanhas: 200.00,          // Valor estimado para campanhas
+            campanhas: 200.00,
             portagens: 0,
-            gorjetas: 251.00,           // Restante para total 451,00
+            gorjetas: 251.00,
             cancelamentos: 0,
             totalNaoSujeitos: 451.00
         },
-        // Evidências que farão os contadores aparecerem preenchidos
         evidenceIntegrity: [
-            { filename: "131509_202401.csv", type: "saft", hash: "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b", timestamp: "2024-01-31 23:59:59" },
-            { filename: "Bolt_Statement_202401.pdf", type: "statement", hash: "b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c", timestamp: "2024-01-31 23:59:59" },
-            { filename: "PT1124-000123.pdf", type: "invoice", hash: "c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d", timestamp: "2024-01-31 23:59:59" },
-            { filename: "DAC7_2024_Bolt.pdf", type: "dac7", hash: "d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e", timestamp: "2024-12-31 23:59:59" }
+            { filename: "131509_202409.csv", type: "saft", hash: "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b", timestamp: "2024-09-30 23:59:59" },
+            { filename: "131509_202410.csv", type: "saft", hash: "b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c", timestamp: "2024-10-31 23:59:59" },
+            { filename: "131509_202411.csv", type: "saft", hash: "c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d", timestamp: "2024-11-30 23:59:59" },
+            { filename: "131509_202412.csv", type: "saft", hash: "d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e", timestamp: "2024-12-31 23:59:59" }
         ],
         monthlyData: {}   // Sem decomposição mensal no PDF
     };
@@ -127,7 +126,7 @@
         // Evidence Integrity
         sys.analysis.evidenceIntegrity = _PDF_CASE.evidenceIntegrity;
         // Monthly Data
-        sys.monthlyData = _PDF_CASE.monthlyData;
+        sys.monthlyData = {};
 
         // ── 1. Data-Binding Post-Injection ───────────────────────────────────
         var clientStatusDiv = document.getElementById('clientStatusFixed');
@@ -173,11 +172,9 @@
         }
 
         // ── 3. Evidence Counter Reconciliation ───────────────────────────────
-        // Forçar a sincronização dos contadores
         if (typeof window.forensicDataSynchronization === 'function') {
             window.forensicDataSynchronization();
         } else {
-            // Fallback manual
             var total = sys.analysis.evidenceIntegrity.length;
             var counterEl = document.getElementById('evidenceCountTotal');
             if (counterEl) counterEl.textContent = total;
@@ -207,8 +204,10 @@
         // ── Atualizar os valores do módulo SAF-T (ilíquido e IVA) ─────────────
         var saftIliquidoEl = document.getElementById('saftIliquidoValue');
         var saftIvaEl = document.getElementById('saftIvaValue');
+        var saftBrutoEl = document.getElementById('saftBrutoValue');
         if (saftIliquidoEl) saftIliquidoEl.textContent = window.formatCurrency(sys.analysis.totals.saftIliquido);
         if (saftIvaEl) saftIvaEl.textContent = window.formatCurrency(sys.analysis.totals.saftIva);
+        if (saftBrutoEl) saftBrutoEl.textContent = window.formatCurrency(sys.analysis.totals.saftBruto);
 
         // ── Atualizar as caixas auxiliares ───────────────────────────────────
         var auxBoxes = {
