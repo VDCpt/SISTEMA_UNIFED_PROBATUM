@@ -26,8 +26,8 @@
             ganhos: 10157.73,
             ganhosLiquidos: 7709.84,
             saftBruto: 10157.73,
-            saftIliquido: 8262.00,     // Valor Ilíquido Total (soma coluna "Preço da viagem (sem IVA)")
-            saftIva: 1895.73,          // Total IVA (soma coluna "IVA")
+            saftIliquido: 8262.00,
+            saftIva: 1895.73,
             despesas: 2447.89,
             faturaPlataforma: 262.94,
             dac7TotalPeriodo: 7755.16,
@@ -69,11 +69,11 @@
             percent: "89.26%"
         },
         auxiliaryData: {
-            campanhas: 200.00,
-            portagens: 0,
-            gorjetas: 251.00,
-            cancelamentos: 0,
-            totalNaoSujeitos: 451.00
+            campanhas: 405.00,        // Soma dos 4 meses: 0+205+180+20
+            portagens: 0.15,          // Soma dos 4 meses: 0,15+0+0+0
+            gorjetas: 46.00,          // Soma dos 4 meses: 0+19,50+17,50+9
+            cancelamentos: 58.10,     // Soma dos 4 meses: 3,50+24,20+14,80+15,60
+            totalNaoSujeitos: 451.15  // Campanhas + Gorjetas + Portagens = 405+46+0,15
         },
         evidenceIntegrity: [
             { filename: "131509_202409.csv", type: "saft", hash: "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b", timestamp: "2024-09-30 23:59:59" },
