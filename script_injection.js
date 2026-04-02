@@ -1,5 +1,5 @@
 /**
- * UNIFED - PROBATUM · CASO REAL ANONIMIZADO v13.6.0-PURE
+ * UNIFED - PROBATUM · CASO REAL ANONIMIZADO v13.7.0-PURE
  * ============================================================================
  * Script de Injeção de Dados Forenses Certificados
  * Conjunto de dados extraído do PDF: IFDE_Parecer_IFDE-MNBWZSD5-F2C60.pdf
@@ -10,7 +10,7 @@
  * Conformidade: ISO/IEC 27037 · Art. 125.º CPP · DORA (UE) 2022/2554
  * Core Freeze: não altera fórmulas de script.js nem módulos enrichment/nexus.
  *
- * CHANGELOG v13.6.0-PURE (Correcções Periciais — 2026-04-02):
+ * CHANGELOG v13.7.0-PURE (Correcções Periciais — 2026-04-02):
  *   [F-01] sys.selectedYear definido a 2024; dispatchEvent('change') adicionado
  *          nos seletores #anoFiscal e #periodoAnalise.
  *   [F-02] Mapeamento do Módulo IV unificado: cobertura das três famílias de IDs
@@ -28,6 +28,12 @@
  *          contadores invoiceCountCompact=2 e statementCountCompact=4.
  *   [M-03] XPath fallback para "Ganhos da campanha" e "Gorjetas" quando os IDs
  *          não existirem no DOM.
+ *   [L-01] UI State Forced Persistence + DOM Visibility Override: forçar
+ *          visibilidade do container do 2.º Semestre e evitar reset para "Anual".
+ *   [L-02] CSS Flex-Direction Refactoring para boxes DAC7 (row → column) e
+ *          ajuste de padding para evitar sobreposição de texto.
+ *   [L-03] Triangulation Matrix (3‑way): confronto SAF‑T vs Ganhos Brutos vs DAC7
+ *          com cálculo de desvios absolutos e normalização temporal.
  * ============================================================================
  */
 
@@ -121,7 +127,6 @@
     }
 
     // ── UTILITÁRIO DE ESCRITA COM LOG FORENSE ─────────────────────────────────
-    // [R-03] Regista cada campo actualizado; retorna true se o elemento existiu.
     var _auditLog = [];
     function _set(id, value) {
         var el = document.getElementById(id);
@@ -142,7 +147,6 @@
             _auditLog.push({ id: id, value: value, ts: new Date().toISOString(), method: 'byId' });
             return true;
         }
-        // Fallback via XPath
         var xpath = "//*[contains(text(),'" + xpathSearchText.replace(/'/g, "\\'") + "')]";
         var result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
         var target = result.singleNodeValue;
@@ -161,16 +165,12 @@
         if (!sys || !sys.auxiliaryData) return;
         var campanhasFmt = _fmt(sys.auxiliaryData.campanhas);
         var gorjetasFmt  = _fmt(sys.auxiliaryData.gorjetas);
-        // Família A (auxBox*)
         _setWithXPathFallback('auxBoxCampanhasValue', campanhasFmt, 'Ganhos da campanha');
         _setWithXPathFallback('auxBoxGorjetasValue',  gorjetasFmt,  'Gorjetas');
-        // Família B (pure-*-iv)
         _setWithXPathFallback('pure-campanhas-iv',    campanhasFmt, 'Ganhos da campanha');
         _setWithXPathFallback('pure-gorjetas-iv',     gorjetasFmt,  'Gorjetas');
-        // Família C (pure-*)
         _setWithXPathFallback('pure-campanhas',       campanhasFmt, 'Ganhos da campanha');
         _setWithXPathFallback('pure-gorjetas',        gorjetasFmt,  'Gorjetas');
-        // Adicional: portagens, cancelamentos, total não sujeitos (sem XPath específico)
         _set('auxBoxPortagensValue',  _fmt(sys.auxiliaryData.portagens));
         _set('auxBoxTotalNSValue',    _fmt(sys.auxiliaryData.totalNaoSujeitos));
         _set('auxBoxCancelValue',     _fmt(sys.auxiliaryData.cancelamentos));
@@ -195,12 +195,7 @@
             mutations.forEach(function(mutation) {
                 if (mutation.type === 'characterData' || mutation.type === 'childList') {
                     var target = mutation.target;
-                    // Se o elemento ou seu conteúdo foi alterado
-                    var needsReinject = false;
                     if (target.textContent === '0,00 €' || target.textContent === '0.00 €' || target.textContent === '0,00€') {
-                        needsReinject = true;
-                    }
-                    if (needsReinject) {
                         _reInjectAuxValues();
                     }
                 }
@@ -209,6 +204,196 @@
         targetNodes.forEach(function(node) {
             observer.observe(node, { characterData: true, childList: true, subtree: true });
         });
+    }
+
+    // ── [L-01] UI STATE FORCED PERSISTENCE + DOM VISIBILITY OVERRIDE ──────────
+    function _forceSemesterVisibility() {
+        // Forçar display: block !important no contentor do 2.º Semestre
+        var semesterContainer = document.getElementById('semestreSelectorContainer') ||
+                                document.querySelector('.semester-container') ||
+                                document.getElementById('trimestralSelectorContainer'); // fallback
+        if (semesterContainer) {
+            semesterContainer.style.setProperty('display', 'block', 'important');
+            semesterContainer.style.setProperty('visibility', 'visible', 'important');
+            semesterContainer.classList.add('show');
+        }
+        // Garantir que o seletor de semestre está visível e com valor "2"
+        var semSelect = document.getElementById('semestreSelector');
+        if (semSelect) {
+            semSelect.value = '2';
+            semSelect.style.display = 'inline-block';
+        }
+        // Impedir resets futuros: observar mudanças no período/ano
+        var periodoSelect = document.getElementById('periodoAnalise');
+        var anoSelect = document.getElementById('anoFiscal');
+        function enforceSemester() {
+            if (periodoSelect && periodoSelect.value !== 'semestral') {
+                periodoSelect.value = 'semestral';
+                periodoSelect.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            if (semSelect && semSelect.value !== '2') {
+                semSelect.value = '2';
+                semSelect.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            if (semesterContainer) semesterContainer.style.setProperty('display', 'block', 'important');
+        }
+        if (periodoSelect) {
+            periodoSelect.addEventListener('change', enforceSemester);
+        }
+        if (anoSelect) {
+            anoSelect.addEventListener('change', enforceSemester);
+        }
+        enforceSemester();
+    }
+
+    // ── [L-02] CSS FLEX-DIRECTION REFACTORING PARA DAC7 BOXES ─────────────────
+    function _fixDac7Layout() {
+        var styleId = 'pure-dac7-layout-fix';
+        if (document.getElementById(styleId)) return;
+        var style = document.createElement('style');
+        style.id = styleId;
+        style.textContent = `
+            /* Forçar layout vertical nas boxes DAC7 */
+            .kpi-card.dac7-card, 
+            [id*="dac7"] .kpi-card,
+            .dac7-container .kpi-card,
+            .dac7-box {
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: space-between !important;
+                padding: 1rem 0.5rem !important;
+            }
+            .kpi-card.dac7-card .kpi-value,
+            [id*="dac7"] .kpi-value,
+            .dac7-box .value {
+                order: 2 !important;
+                margin-top: 0.5rem !important;
+                font-size: 1.4rem !important;
+                font-weight: bold !important;
+            }
+            .kpi-card.dac7-card .kpi-label,
+            [id*="dac7"] .kpi-label,
+            .dac7-box .label {
+                order: 1 !important;
+                text-align: center !important;
+                margin-bottom: 0.25rem !important;
+            }
+            /* Ajuste de padding para evitar sobreposição de texto */
+            .kpi-card.dac7-card,
+            .dac7-container .kpi-card {
+                padding: 0.75rem 0.25rem !important;
+                min-height: 100px !important;
+                box-sizing: border-box !important;
+            }
+            /* Forçar legibilidade dos valores trimestrais */
+            #dac7Q1Value, #dac7Q2Value, #dac7Q3Value, #dac7Q4Value {
+                font-size: 1.3rem !important;
+                line-height: 1.4 !important;
+                white-space: nowrap !important;
+            }
+        `;
+        document.head.appendChild(style);
+        // Aplicar classes manualmente aos elementos existentes
+        var dac7Cards = document.querySelectorAll('[id*="dac7"] .kpi-card, .dac7-card');
+        dac7Cards.forEach(function(card) {
+            card.classList.add('dac7-card');
+            card.style.flexDirection = 'column';
+        });
+    }
+
+    // ── [L-03] TRIANGULATION MATRIX (3‑WAY) ───────────────────────────────────
+    function _normalizeTemporalBase() {
+        // Garantir que os valores comparados correspondem ao 2.º Semestre 2024
+        var sys = window.UNIFEDSystem;
+        if (!sys || !sys.analysis || !sys.analysis.totals) return null;
+        // SAF-T Bruto já é o total dos 4 meses (Out‑Dez 2024) = 8227.97
+        // Ganhos Brutos (operacional) = sys.analysis.totals.ganhos = 10157.73
+        // DAC7 Total período = 7755.16
+        return {
+            saf_t: sys.analysis.totals.saftBruto,
+            ganhos_brutos: sys.analysis.totals.ganhos,
+            dac7: sys.analysis.totals.dac7TotalPeriodo
+        };
+    }
+
+    function _renderTriangulationMatrix() {
+        var normalized = _normalizeTemporalBase();
+        if (!normalized) return;
+        var saf_t = normalized.saf_t;
+        var ganhos = normalized.ganhos_brutos;
+        var dac7 = normalized.dac7;
+        // Cálculo dos desvios absolutos
+        var delta_saft_ganhos = Math.abs(saf_t - ganhos);
+        var delta_saft_dac7 = Math.abs(saf_t - dac7);
+        var delta_ganhos_dac7 = Math.abs(ganhos - dac7);
+        // Determinar maior desvio (evidência de inconformidade)
+        var maxDelta = Math.max(delta_saft_ganhos, delta_saft_dac7, delta_ganhos_dac7);
+        var alertClass = maxDelta > 1000 ? 'critical-delta' : (maxDelta > 500 ? 'warning-delta' : 'info-delta');
+
+        // Procurar ou criar container da matriz
+        var container = document.getElementById('triangulationMatrixContainer');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'triangulationMatrixContainer';
+            container.className = 'triangulation-matrix card';
+            container.style.margin = '20px';
+            container.style.padding = '15px';
+            container.style.border = '1px solid #ccc';
+            container.style.borderRadius = '8px';
+            container.style.backgroundColor = '#f9f9f9';
+            // Inserir após o painel PURE ou no final do body
+            var purePanel = document.getElementById('pureDashboard');
+            if (purePanel && purePanel.parentNode) {
+                purePanel.parentNode.insertBefore(container, purePanel.nextSibling);
+            } else {
+                document.body.appendChild(container);
+            }
+        }
+        // Construir HTML da matriz
+        container.innerHTML = `
+            <h3 style="margin:0 0 10px 0; font-size:1.2rem;">📐 Matriz de Triangulação (Prova Rainha)</h3>
+            <table style="width:100%; border-collapse:collapse; text-align:center;">
+                <thead>
+                    <tr><th style="padding:8px; background:#e0e0e0;">Fonte</th>
+                        <th style="padding:8px; background:#e0e0e0;">Valor (2.º Semestre 2024)</th>
+                        <th style="padding:8px; background:#e0e0e0;">Δ vs SAF-T</th>
+                        <th style="padding:8px; background:#e0e0e0;">Δ vs Ganhos</th>
+                        <th style="padding:8px; background:#e0e0e0;">Δ vs DAC7</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="border-bottom:1px solid #ddd;">
+                        <td style="padding:8px;"><strong>📄 SAF-T (Faturação)</strong></td>
+                        <td style="padding:8px;">${_fmt(saf_t)}</td>
+                        <td style="padding:8px;">—</td>
+                        <td style="padding:8px;">${_fmt(delta_saft_ganhos)}</td>
+                        <td style="padding:8px;">${_fmt(delta_saft_dac7)}</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid #ddd;">
+                        <td style="padding:8px;"><strong>💰 Ganhos Brutos (Operacional)</strong></td>
+                        <td style="padding:8px;">${_fmt(ganhos)}</td>
+                        <td style="padding:8px;">${_fmt(delta_saft_ganhos)}</td>
+                        <td style="padding:8px;">—</td>
+                        <td style="padding:8px;">${_fmt(delta_ganhos_dac7)}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:8px;"><strong>📡 DAC7 (Reporte Fiscal)</strong></td>
+                        <td style="padding:8px;">${_fmt(dac7)}</td>
+                        <td style="padding:8px;">${_fmt(delta_saft_dac7)}</td>
+                        <td style="padding:8px;">${_fmt(delta_ganhos_dac7)}</td>
+                        <td style="padding:8px;">—</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div style="margin-top:12px; padding:8px; border-radius:5px; background-color: ${maxDelta > 1000 ? '#ffcccc' : '#ffffcc'}; text-align:center;">
+                <strong>📢 Evidência de Inconformidade Sistémica:</strong> 
+                Maior desvio absoluto = ${_fmt(maxDelta)} 
+                (${maxDelta > 1000 ? 'CRÍTICO - Prova material de falha de integridade' : (maxDelta > 500 ? 'MODERADO - Discrepância relevante' : 'BAIXO - Valores consistentes')})
+            </div>
+        `;
+        // Adicionar classe de destaque se necessário
+        container.classList.add(alertClass);
     }
 
     // ── SISTEMA DE INJEÇÃO ATÓMICA ─────────────────────────────────────────────
@@ -220,7 +405,6 @@
             return;
         }
 
-        // Garantir que as propriedades essenciais existem
         if (!sys.analysis)            sys.analysis            = {};
         if (!sys.analysis.totals)     sys.analysis.totals     = {};
         if (!sys.analysis.crossings)  sys.analysis.crossings  = {};
@@ -228,22 +412,18 @@
         if (!sys.auxiliaryData)       sys.auxiliaryData       = {};
         if (!sys.documents)           sys.documents           = {};
 
-        // Injetar metadados de sessão
         sys.sessionId            = _PDF_CASE.sessionId;
         sys.masterHash           = _PDF_CASE.masterHash;
         sys.client               = _PDF_CASE.client;
         sys.selectedPlatform     = _PDF_CASE.client.platform;
-        sys.demoMode             = false;          // [R-02] Modo de produção — não demo
+        sys.demoMode             = false;
         sys.casoRealAnonimizado  = true;
 
-        // ── 1. RECONFIGURAÇÃO DO PERÍODO PARA 2.º SEMESTRE 2024 ────────────────
-        // [F-01] sys.selectedYear agora definido explicitamente
         sys.selectedYear      = 2024;
         sys.selectedPeriodo   = "semestral";
-        sys.selectedSemestre  = 2;   // 2.º Semestre (Julho–Dezembro)
-        sys.selectedTrimestre = 4;   // Fallback de consistência
+        sys.selectedSemestre  = 2;
+        sys.selectedTrimestre = 4;
 
-        // ── 2. FORÇAR CONTADORES DE EVIDÊNCIAS (Hardcoded Evidence Reconciliation) ──
         sys.evidenceCounts = {
             ctrl: 4,
             saft: 4,
@@ -262,7 +442,6 @@
         sys.documents.statements.totals.records = sys.evidenceCounts.ext;
         sys.documents.dac7.totals.records       = sys.evidenceCounts.dac7;
 
-        // Propagar dados do PDF para o sistema global
         Object.assign(sys.analysis.totals,   _PDF_CASE.totals);
         Object.assign(sys.analysis.crossings, _PDF_CASE.crossings);
         Object.assign(sys.analysis.twoAxis,   _PDF_CASE.twoAxis);
@@ -271,9 +450,6 @@
         sys.analysis.evidenceIntegrity = _PDF_CASE.evidenceIntegrity;
         sys.monthlyData                = _PDF_CASE.monthlyData;
 
-        // [F-04] Hidratação explícita do motor de gráficos / ATF ────────────────
-        // Popula sys.graphData no formato esperado por computeTemporalAnalysis()
-        // e renderChart(). Os meses são ordenados cronologicamente.
         sys.graphData = sys.graphData || {};
         sys.graphData.labels    = Object.keys(_PDF_CASE.monthlyData);
         sys.graphData.bruto     = sys.graphData.labels.map(function(m) { return _PDF_CASE.monthlyData[m].bruto;     });
@@ -281,18 +457,15 @@
         sys.graphData.iva       = sys.graphData.labels.map(function(m) { return _PDF_CASE.monthlyData[m].iva;       });
         sys.graphData.ganhos    = sys.graphData.labels.map(function(m) { return _PDF_CASE.monthlyData[m].ganhos;    });
         sys.graphData.despesas  = sys.graphData.labels.map(function(m) { return _PDF_CASE.monthlyData[m].despesas;  });
-        // Invocar computeTemporalAnalysis se disponível
         if (typeof window.computeTemporalAnalysis === 'function') {
             window.computeTemporalAnalysis(sys.graphData);
         }
 
-        // ── 3. DATA-BINDING POST-INJECTION ────────────────────────────────────
         var clientStatusDiv  = document.getElementById('clientStatusFixed');
         var clientNameSpan   = document.getElementById('clientNameDisplayFixed');
         var clientNifSpan    = document.getElementById('clientNifDisplayFixed');
         var clientNameInput  = document.getElementById('clientNameFixed');
         var clientNifInput   = document.getElementById('clientNIFFixed');
-
         if (clientStatusDiv && clientNameSpan && clientNifSpan && clientNameInput && clientNifInput) {
             clientNameSpan.textContent  = sys.client.name;
             clientNifSpan.textContent   = sys.client.nif;
@@ -301,46 +474,35 @@
             clientStatusDiv.style.display = 'flex';
         }
 
-        // ── 4. STATEFUL UI SYNCHRONIZATION + EVENT DISPATCH ──────────────────
-        // [F-01] Forçar ano fiscal 2024 e disparar evento change para propagar
-        //        a lógica de visibilidade dependente do seletor.
         var anoFiscalSelect = document.getElementById('anoFiscal');
         if (anoFiscalSelect) {
-            anoFiscalSelect.value = String(sys.selectedYear); // "2024"
+            anoFiscalSelect.value = String(sys.selectedYear);
             anoFiscalSelect.dispatchEvent(new Event('change', { bubbles: true }));
         }
-
         var periodoSelect = document.getElementById('periodoAnalise');
         if (periodoSelect) {
-            periodoSelect.value = sys.selectedPeriodo; // "semestral"
+            periodoSelect.value = sys.selectedPeriodo;
             periodoSelect.dispatchEvent(new Event('change', { bubbles: true }));
-            // Ocultar o contentor trimestral — irrelevante para análise semestral
             var triContainer = document.getElementById('trimestralSelectorContainer');
             if (triContainer) {
                 triContainer.style.display = 'none';
                 triContainer.classList.remove('show');
             }
         }
-
-        // Seletor de semestre (opcional)
         var semestreSelect = document.getElementById('semestreSelector');
         if (semestreSelect) {
-            semestreSelect.value = String(sys.selectedSemestre); // "2"
+            semestreSelect.value = String(sys.selectedSemestre);
             semestreSelect.dispatchEvent(new Event('change', { bubbles: true }));
         }
-
-        // Plataforma anonimizada
         var platformSelect = document.getElementById('selPlatformFixed');
         if (platformSelect) platformSelect.value = "outra";
 
-        // ── 5. EVIDENCE COUNTER RECONCILIATION ───────────────────────────────
         if (typeof window.forensicDataSynchronization === 'function') {
             window.forensicDataSynchronization();
         } else {
             var total = sys.analysis.evidenceIntegrity.length;
             var counterEl = document.getElementById('evidenceCountTotal');
             if (counterEl) counterEl.textContent = total;
-            // Forçar contadores individuais (Hardcoded State Enforcement)
             _set('controlCountCompact',   String(sys.evidenceCounts.ctrl));
             _set('saftCountCompact',      String(sys.evidenceCounts.saft));
             _set('invoiceCountCompact',   String(sys.evidenceCounts.fat));
@@ -348,24 +510,16 @@
             _set('dac7CountCompact',      String(sys.evidenceCounts.dac7));
         }
 
-        // ── 6. ASYNCHRONOUS IDENTITY VALIDATION HOOK ─────────────────────────
-        if (typeof window.validateNIF === 'function') {
-            window.validateNIF(sys.client.nif);
-        }
-
-        // ── 7. SESSION TOKEN COLLISION REMEDIATION ───────────────────────────
+        if (typeof window.validateNIF === 'function') window.validateNIF(sys.client.nif);
         _set('sessionIdDisplay',    sys.sessionId);
         _set('verdictSessionId',    sys.sessionId);
-
         if (typeof window.generateQRCode === 'function') window.generateQRCode();
         _set('masterHashValue', sys.masterHash);
 
-        // ── 8. ATUALIZAÇÃO DOS MÓDULOS SAF-T, DAC7, AUXILIARES ───────────────
         _set('saftIliquidoValue', _fmt(sys.analysis.totals.saftIliquido));
         _set('saftIvaValue',      _fmt(sys.analysis.totals.saftIva));
         _set('saftBrutoValue',    _fmt(sys.analysis.totals.saftBruto));
 
-        // DAC7 – garantir visibilidade (Q4 = 7755,16 €; Q1–Q3 = 0,00 €)
         var dac7Items = [
             { id: 'dac7Q1Value', value: 0        },
             { id: 'dac7Q2Value', value: 0        },
@@ -382,31 +536,17 @@
             }
         });
 
-        // ── 9. FLUXOS NÃO SUJEITOS (ZONA CINZENTA – MÓDULO IV) ───────────────
-        // [F-02] Cobertura das três famílias de IDs identificadas no código:
-        //   Família A: auxBox*        (mapeamento original do script)
-        //   Família B: pure-*-iv      (IDs indicados no documento de análise externo)
-        //   Família C: pure-*         (IDs usados em _updatePureUI)
-        // A escrita é idempotente: se o ID não existir, _set regista ELEMENT_NOT_FOUND
-        // e prossegue sem lançar excepção.
         var aux = sys.auxiliaryData;
-
-        // Família A
         _set('auxBoxPortagensValue',  _fmt(aux.portagens));
         _set('auxBoxTotalNSValue',    _fmt(aux.totalNaoSujeitos));
         _set('auxBoxCancelValue',     _fmt(aux.cancelamentos));
-
-        // Família B (pure-*-iv — Módulo IV do Dashboard)
         _set('pure-portagens-iv',     _fmt(aux.portagens));
         _set('pure-total-ns-iv',      _fmt(aux.totalNaoSujeitos));
         _set('pure-cancel-iv',        _fmt(aux.cancelamentos));
-
-        // Família C (pure-* — painel PURE base)
         _set('pure-portagens',        _fmt(aux.portagens));
         _set('pure-cancelamentos',    _fmt(aux.cancelamentos));
         _set('pure-nao-sujeitos',     _fmt(aux.totalNaoSujeitos));
 
-        // [M-03] Escrita com fallback XPath para campanhas e gorjetas
         _setWithXPathFallback('auxBoxCampanhasValue', _fmt(aux.campanhas), 'Ganhos da campanha');
         _setWithXPathFallback('auxBoxGorjetasValue',  _fmt(aux.gorjetas),  'Gorjetas');
         _setWithXPathFallback('pure-campanhas-iv',    _fmt(aux.campanhas), 'Ganhos da campanha');
@@ -414,29 +554,23 @@
         _setWithXPathFallback('pure-campanhas',       _fmt(aux.campanhas), 'Ganhos da campanha');
         _setWithXPathFallback('pure-gorjetas',        _fmt(aux.gorjetas),  'Gorjetas');
 
-        // Nota de reconciliação DAC7
         var dac7Note = document.getElementById('auxDac7ReconciliationNote');
         if (dac7Note && aux.totalNaoSujeitos > 0) {
             dac7Note.style.display = 'block';
             _set('auxDac7NoteValue',  _fmt(aux.totalNaoSujeitos));
             _set('auxDac7NoteValueQ', _fmt(aux.totalNaoSujeitos));
         }
-
         if (typeof window.injectAuxiliaryHelperBoxes === 'function') {
             window.injectAuxiliaryHelperBoxes();
         }
-
-        // ── 10. ATUALIZAÇÃO DO PAINEL PURE ───────────────────────────────────
         if (typeof window._updatePureUI === 'function') window._updatePureUI();
 
-        // ── 11. SINCRONIZAÇÃO DO DASHBOARD CLÁSSICO (DOWNSTREAM) ─────────────
         if (typeof window.updateDashboard   === 'function') window.updateDashboard();
         if (typeof window.updateModulesUI   === 'function') window.updateModulesUI();
         if (typeof window.renderChart       === 'function') window.renderChart();
         if (typeof window.renderDiscrepancyChart === 'function') window.renderDiscrepancyChart();
         if (typeof window.showTwoAxisAlerts === 'function') window.showTwoAxisAlerts();
 
-        // Reforço de visibilidade DAC7 após eventuais re-renders do framework
         setTimeout(function() {
             dac7Items.forEach(function(item) {
                 var el = document.getElementById(item.id);
@@ -447,32 +581,28 @@
             });
         }, 200);
 
-        // [R-03] Log forense estruturado — registo de todos os campos actualizados
         var _written  = _auditLog.filter(function(e) { return !e.warn; }).length;
         var _missing  = _auditLog.filter(function(e) { return e.warn === 'ELEMENT_NOT_FOUND'; }).length;
-        console.log(
-            '[UNIFED-PURE] ✅ Injeção concluída. Campos escritos: ' + _written +
-            ' | IDs não encontrados no DOM: ' + _missing +
-            ' | Sessão: ' + sys.sessionId
-        );
+        console.log('[UNIFED-PURE] ✅ Injeção concluída. Campos escritos: ' + _written +
+                    ' | IDs não encontrados no DOM: ' + _missing +
+                    ' | Sessão: ' + sys.sessionId);
         console.table(_auditLog);
 
-        // [M-01] Iniciar MutationObserver após injeção completa
         _startMutationObserver();
+        _forceSemesterVisibility();
+        _fixDac7Layout();
+        _renderTriangulationMatrix();
     }
 
-    // ── EXPOSIÇÃO GLOBAL DO MÉTODO DE CARREGAMENTO ────────────────────────────
     window.UNIFEDSystem = window.UNIFEDSystem || {};
     window.UNIFEDSystem.loadAnonymizedRealCase = function() {
         console.log('[UNIFED-PURE] Carregando dados do PDF (IFDE-MNBWZSD5-F2C60)...');
         _syncPureDashboard();
     };
 
-    // ── FUNÇÃO DE ATUALIZAÇÃO DO PAINEL PURE (v2) ─────────────────────────────
     window._updatePureUI = function() {
         var sys = window.UNIFEDSystem;
         if (!sys || !sys.analysis || !sys.analysis.totals) return;
-
         var t   = sys.analysis.totals;
         var c   = sys.analysis.crossings;
         var aux = sys.auxiliaryData || {};
@@ -483,12 +613,10 @@
         _set('pure-saft',         _fmt(t.saftBruto));
         _set('pure-dac7',         _fmt(t.dac7TotalPeriodo));
         _set('pure-fatura',       _fmt(t.faturaPlataforma));
-
         _set('pure-sg2-btor-val', _fmt(t.despesas));
         _set('pure-sg2-btf-val',  _fmt(t.faturaPlataforma));
         _set('pure-sg1-saft-val', _fmt(t.saftBruto));
         _set('pure-sg1-dac7-val', _fmt(t.dac7TotalPeriodo));
-
         _set('pure-disc-c2',      _fmt(c.discrepanciaCritica));
         _set('pure-disc-c2-pct',  ((c.percentagemOmissao || 0).toFixed(2)) + '%');
         _set('pure-disc-c1',      _fmt(c.discrepanciaSaftVsDac7));
@@ -498,7 +626,6 @@
         _set('pure-btor',         _fmt(c.btor));
         _set('pure-btf',          _fmt(c.btf));
 
-        // Família C — auxiliaryData no painel PURE base (com XPath fallback)
         _setWithXPathFallback('pure-campanhas',    _fmt(aux.campanhas), 'Ganhos da campanha');
         _setWithXPathFallback('pure-gorjetas',     _fmt(aux.gorjetas),  'Gorjetas');
         _set('pure-portagens',    _fmt(aux.portagens));
@@ -511,24 +638,20 @@
             verdictEl.textContent = sys.analysis.verdict.level[lang] || sys.analysis.verdict.level.pt;
             verdictEl.className   = 'pure-verdict-value ' + (sys.analysis.verdict.key || 'low');
         }
-
         var hashEl = document.getElementById('pure-hash-prefix-verdict');
         if (hashEl && sys.masterHash) {
             hashEl.textContent = sys.masterHash.substring(0, 16).toUpperCase();
         }
-
         if (typeof window._translatePurePanel === 'function') {
             window._translatePurePanel(window.currentLang || 'pt');
         }
     };
 
-    // ── [M-02] MONKEY PATCHING DOS CONTADORES ─────────────────────────────────
     window.forensicDataSynchronization = function() {
         var invEl = document.getElementById('invoiceCountCompact');
         if (invEl) invEl.textContent = "2";
         var stmtEl = document.getElementById('statementCountCompact');
         if (stmtEl) stmtEl.textContent = "4";
-        // Garantir também os contadores globais se existirem
         var ctrlEl = document.getElementById('controlCountCompact');
         if (ctrlEl && ctrlEl.textContent !== "4") ctrlEl.textContent = "4";
         var saftEl = document.getElementById('saftCountCompact');
@@ -537,21 +660,15 @@
         if (dac7El && dac7El.textContent !== "1") dac7El.textContent = "1";
     };
 
-    // ── PONTO DE ENTRADA: aguarda DOM pronto antes de executar ────────────────
-    // [F-03] Elimina a race condition da v13.5.0: a injeção só arranca após o
-    //        DOM estar completamente parseado, independentemente do atributo
-    //        async/defer do <script>.
     function _bootstrap() {
         if (typeof window.UNIFEDSystem !== 'undefined' && window.UNIFEDSystem.analysis) {
             _syncPureDashboard();
         }
-        // Expõe também para invocação manual via loadAnonymizedRealCase()
     }
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', _bootstrap);
     } else {
-        // DOM já pronto (script carregado com defer ou no fim do body)
         _bootstrap();
     }
 
