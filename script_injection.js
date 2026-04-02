@@ -93,46 +93,43 @@
         const styleFix = document.createElement('style');
         styleFix.id = 'pure-dac7-layout-fix-v4';
         styleFix.innerHTML = `
-            .dac7-box-item, #pure-dac7-module .box, 
-            .kpi-card.dac7-card, [id*="dac7"] .kpi-card,
-            .dac7-container .kpi-card, .dac7-box {
+            .pure-data-block {
                 display: flex !important;
                 flex-direction: column !important;
                 height: auto !important;
-                min-height: 80px !important;
+                min-height: 110px !important;
                 padding-bottom: 10px !important;
                 align-items: center !important;
                 justify-content: space-between !important;
+                overflow: visible !important;
             }
-            .dac7-value-label, 
-            .kpi-card.dac7-card .kpi-value,
-            [id*="dac7"] .kpi-value {
+            .pure-data-block .pure-data-value,
+            .pure-data-block .pure-value-neutral,
+            .pure-data-block .pure-value-danger {
                 margin-top: 5px !important;
                 order: 2 !important;
                 font-size: 1.4rem !important;
                 font-weight: bold !important;
             }
-            .dac7-label, 
-            .kpi-card.dac7-card .kpi-label,
-            [id*="dac7"] .kpi-label {
+            .pure-data-block .pure-data-label {
                 order: 1 !important;
                 margin-bottom: 5px !important;
             }
         `;
         document.head.appendChild(styleFix);
-        console.log('[UNIFED-PURE] CSS de correção DAC7 injetado (flex column, ordem corrigida).');
+        console.log('[UNIFED-PURE] CSS de correção DAC7 injetado (.pure-data-block, min-height: 110px).');
     }
 
     // ── CORREÇÃO 3: FORÇAR 2.º SEMESTRE E FLUXOS (IMUTABILIDADE) ─────────────
     function _forceSemesterAndFlows() {
         try {
-            // 1. Forçar período para semestral
+            // 1. Forçar período para 2.º Semestre (valor correto: '2s')
             const periodoSelect = document.getElementById('periodoAnalise');
-            if (periodoSelect && periodoSelect.value !== 'semestral') {
-                periodoSelect.value = 'semestral';
+            if (periodoSelect && periodoSelect.value !== '2s') {
+                periodoSelect.value = '2s';
                 periodoSelect.dispatchEvent(new Event('change', { bubbles: true }));
                 periodoSelect.dispatchEvent(new Event('input', { bubbles: true }));
-                console.log('[UNIFED-PURE] Período forçado para "semestral".');
+                console.log('[UNIFED-PURE] Período forçado para "2s" (2.º Semestre).');
             }
             // 2. Forçar semestre 2 (via clique simulado ou direto)
             const semestreSelect = document.getElementById('semestreSelector');
@@ -140,27 +137,33 @@
                 semestreSelect.value = '2';
                 semestreSelect.dispatchEvent(new Event('change', { bubbles: true }));
                 semestreSelect.dispatchEvent(new Event('input', { bubbles: true }));
-                // Clique simulado para garantir
                 const option = Array.from(semestreSelect.options).find(opt => opt.value === '2');
                 if (option) option.dispatchEvent(new MouseEvent('click', { bubbles: true }));
                 console.log('[UNIFED-PURE] Semestre forçado para "2".');
             }
-            // 3. Fixar Fluxos Não Sujeitos com valor hardcoded e tentativa de imutabilidade
-            const fluxosBox = document.getElementById('pure-nao-sujeitos');
-            if (fluxosBox) {
-                const valorFixo = _fmt(HARDCODED_NON_TAXABLE);
-                fluxosBox.textContent = valorFixo;
-                fluxosBox.style.color = "#2ecc71"; // Verde pericial
-                fluxosBox.style.fontWeight = "bold";
-                // Tentativa de lock (não impede reassign por outros scripts, mas dificulta)
-                if (Object.freeze && typeof fluxosBox.textContent !== 'undefined') {
-                    try { Object.freeze(fluxosBox.textContent); } catch(e) {}
+            // 3. Fixar Fluxos Não Sujeitos nos IDs reais do panel.html
+            const valorFixo = _fmt(HARDCODED_NON_TAXABLE);
+            const idsFluxos = [
+                'pure-nc-total',
+                'pure-nc-campanhas',
+                'pure-nc-gorjetas',
+                'auxBoxCampanhasValue',
+                'auxBoxGorjetasValue',
+                'auxBoxTotalNSValue'
+            ];
+            idsFluxos.forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) {
+                    el.textContent = valorFixo;
+                    el.style.color = "#2ecc71";
+                    el.style.fontWeight = "bold";
                 }
-                console.log(`[UNIFED-PURE] Fluxos Não Sujeitos fixado em ${valorFixo} (verde pericial).`);
-            }
-            // Também força outros seletores
-            const altBoxes = document.querySelectorAll('.fluxos-nao-sujeitos-value, #fluxosNaoSujeitosValue, .aux-total-ns');
-            altBoxes.forEach(box => { box.textContent = _fmt(HARDCODED_NON_TAXABLE); box.style.color = "#2ecc71"; });
+            });
+            console.log('[UNIFED-PURE] Fluxos Não Sujeitos fixados nos IDs reais (verde pericial).');
+
+            // Também força seletores alternativos
+            const altBoxes = document.querySelectorAll('.fluxos-nao-sujeitos-value, .aux-total-ns');
+            altBoxes.forEach(box => { box.textContent = valorFixo; box.style.color = "#2ecc71"; });
         } catch(e) {
             console.error('[UNIFED-PURE] Erro ao forçar semestre/fluxos:', e);
         }
@@ -191,24 +194,29 @@
 
     function _injectHardcodedNonTaxableFlows() {
         var value405 = _fmt(HARDCODED_NON_TAXABLE);
-        var selectors = ['.pericial-box-footer', '.fluxos-nao-sujeitos-value', '#fluxosNaoSujeitosValue', '.non-taxable-value', '.aux-total-ns'];
-        var injected = false;
+        // IDs reais do panel.html (Módulo IV — Zona Cinzenta)
+        var realIds = [
+            'pure-nc-total',
+            'pure-nc-campanhas',
+            'pure-nc-gorjetas',
+            'auxBoxCampanhasValue',
+            'auxBoxGorjetasValue',
+            'auxBoxTotalNSValue'
+        ];
+        realIds.forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) { el.textContent = value405; el.style.color = "#2ecc71"; }
+        });
+        // Seletores de classe alternativos
+        var selectors = ['.pericial-box-footer', '.fluxos-nao-sujeitos-value', '.non-taxable-value', '.aux-total-ns'];
         for (var i = 0; i < selectors.length; i++) {
             var elements = document.querySelectorAll(selectors[i]);
             for (var j = 0; j < elements.length; j++) {
                 elements[j].textContent = value405;
-                injected = true;
             }
         }
-        if (!injected) {
-            var xpath = "//*[contains(text(),'Fluxos Não Sujeitos') or contains(text(),'Não sujeitos')]/following-sibling::*[1]";
-            var result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-            var target = result.singleNodeValue;
-            if (target) target.textContent = value405;
-        }
         _set('auxBoxTotalNSValue', value405);
-        _set('pure-total-ns-iv', value405);
-        _set('pure-nao-sujeitos', value405);
+        _set('pure-nc-total', value405);
     }
 
     function _throttledReInject() {
@@ -311,7 +319,7 @@
             Object.assign(sys, {
                 sessionId: _PDF_CASE.sessionId, masterHash: _PDF_CASE.masterHash, client: _PDF_CASE.client,
                 selectedPlatform: _PDF_CASE.client.platform, demoMode: false, casoRealAnonimizado: true,
-                selectedYear: 2024, selectedPeriodo: "semestral", selectedSemestre: 2, selectedTrimestre: 4,
+                selectedYear: 2024, selectedPeriodo: "2s", selectedSemestre: 2, selectedTrimestre: 4,
                 evidenceCounts: { ctrl: 4, saft: 4, fat: 2, ext: 4, dac7: 1 }
             });
             Object.assign(sys.analysis.totals, _PDF_CASE.totals);
@@ -358,43 +366,40 @@
 
         const _sync = () => {
             try {
-                // 1. Forçar Semestre com bloqueio de estado
+                // 1. Forçar 2.º Semestre com valor correto e bloqueio de estado
                 const sem = document.getElementById('periodoAnalise');
                 if (sem) {
-                    sem.value = "semestral";
+                    sem.value = "2s";
                     sem.dispatchEvent(new Event('change', { bubbles: true }));
-                    // Bloqueia re-escrita pelo sistema original
-                    Object.defineProperty(sem, 'value', { value: 'semestral', writable: false });
+                    Object.defineProperty(sem, 'value', { value: '2s', writable: false });
                 }
 
-                // 2. Garantir Fluxos Não Sujeitos (405,00 €)
-                const fluxos = document.getElementById('pure-nao-sujeitos');
-                if (fluxos) {
-                    fluxos.textContent = HARDCODED_NON_TAXABLE;
-                    fluxos.style.cssText = "color: #2ecc71 !important; font-weight: bold !important;";
-                }
+                // 2. Garantir Fluxos Não Sujeitos nos IDs reais do panel.html
+                const idsFluxos = [
+                    'pure-nc-total',
+                    'pure-nc-campanhas',
+                    'pure-nc-gorjetas',
+                    'auxBoxCampanhasValue',
+                    'auxBoxGorjetasValue',
+                    'auxBoxTotalNSValue'
+                ];
+                idsFluxos.forEach(function(id) {
+                    var el = document.getElementById(id);
+                    if (el) {
+                        el.textContent = HARDCODED_NON_TAXABLE;
+                        el.style.cssText = "color: #2ecc71 !important; font-weight: bold !important;";
+                    }
+                });
 
                 console.info("[UNIFED-PURE] Sincronização Estabilizada.");
             } catch (e) { console.error("[UNIFED-PURE] Erro na injeção:", e); }
         };
 
-        // Execução após estabilização do DOM para evitar riscas vermelhas
+        // Execução isolada após estabilização do DOM — sem chamada dupla a _syncPureDashboard
         if (document.readyState === 'complete') {
             setTimeout(_sync, 800);
         } else {
-            window.addEventListener('load', () => setTimeout(_sync, 800));
-        }
-
-        // Bootstrap original
-        try {
-            console.log("🔬 UNIFED-PROBATUM: A iniciar estabilização...");
-            if (document.readyState === 'complete') {
-                _syncPureDashboard();
-            } else {
-                window.addEventListener('load', _syncPureDashboard);
-            }
-        } catch (e) {
-            console.error("⚠️ FALHA DE INJEÇÃO: Sistema protegido ou ID ausente.", e);
+            window.addEventListener('load', function() { setTimeout(_sync, 800); });
         }
     })();
 
