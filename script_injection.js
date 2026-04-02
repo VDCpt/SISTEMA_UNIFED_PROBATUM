@@ -82,7 +82,13 @@
             { filename: "131509_202411.csv", type: "saft", hash: "c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d", timestamp: "2024-11-30 23:59:59" },
             { filename: "131509_202412.csv", type: "saft", hash: "d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e", timestamp: "2024-12-31 23:59:59" }
         ],
-        monthlyData: {}
+        // ── DADOS MENSAIS PARA ATF (2.º SEMESTRE 2024) ──
+        monthlyData: {
+            "2024-09": { bruto: 0, dac7: 0, iva: 0, ganhos: 0, despesas: 0 },
+            "2024-10": { bruto: 2742.65, dac7: 2585.05, iva: 155.10, ganhos: 2742.65, despesas: 661.10 },
+            "2024-11": { bruto: 2742.66, dac7: 2585.05, iva: 155.10, ganhos: 2742.66, despesas: 661.10 },
+            "2024-12": { bruto: 2742.66, dac7: 2585.06, iva: 156.10, ganhos: 2742.66, despesas: 661.10 }
+        }
     };
 
     // ── SISTEMA DE INJEÇÃO ATÓMICA ─────────────────────────────────────────────
@@ -110,9 +116,30 @@
         sys.demoMode = true;
         sys.casoRealAnonimizado = true;
 
-        // Configurar o período para mostrar apenas o 4.º trimestre (DAC7 Q4)
-        sys.selectedPeriodo = "trimestral";
-        sys.selectedTrimestre = 4;
+        // ── 1. RECONFIGURAÇÃO DO PERÍODO PARA 2.º SEMESTRE ─────────────────────
+        sys.selectedPeriodo = "semestral";
+        sys.selectedSemestre = 2;          // 2.º Semestre (Julho a Dezembro)
+        sys.selectedTrimestre = 4;          // Manter consistência para fallback
+
+        // ── 2. FORÇAR CONTADORES DE EVIDÊNCIAS (Hardcoded Evidence Reconciliation) ──
+        sys.evidenceCounts = {
+            ctrl: 4,
+            saft: 4,
+            fat: 2,
+            ext: 4,
+            dac7: 1
+        };
+        // Reflectir nos documentos
+        if (!sys.documents.control) sys.documents.control = { files: [], totals: { records: 0 } };
+        if (!sys.documents.saft) sys.documents.saft = { files: [], totals: { records: 0 } };
+        if (!sys.documents.invoices) sys.documents.invoices = { files: [], totals: { records: 0 } };
+        if (!sys.documents.statements) sys.documents.statements = { files: [], totals: { records: 0 } };
+        if (!sys.documents.dac7) sys.documents.dac7 = { files: [], totals: { records: 0 } };
+        sys.documents.control.totals.records = sys.evidenceCounts.ctrl;
+        sys.documents.saft.totals.records = sys.evidenceCounts.saft;
+        sys.documents.invoices.totals.records = sys.evidenceCounts.fat;
+        sys.documents.statements.totals.records = sys.evidenceCounts.ext;
+        sys.documents.dac7.totals.records = sys.evidenceCounts.dac7;
 
         // Totais
         Object.assign(sys.analysis.totals, _PDF_CASE.totals);
@@ -124,12 +151,12 @@
         sys.analysis.verdict = _PDF_CASE.verdict;
         // Auxiliary Data
         Object.assign(sys.auxiliaryData, _PDF_CASE.auxiliaryData);
-        // Evidence Integrity
+        // Evidence Integrity (lista de ficheiros)
         sys.analysis.evidenceIntegrity = _PDF_CASE.evidenceIntegrity;
-        // Monthly Data
-        sys.monthlyData = {};
+        // Monthly Data (para ATF)
+        sys.monthlyData = _PDF_CASE.monthlyData;
 
-        // ── 1. Data-Binding Post-Injection ───────────────────────────────────
+        // ── 3. DATA-BINDING POST-INJECTION ───────────────────────────────────
         var clientStatusDiv = document.getElementById('clientStatusFixed');
         var clientNameSpan = document.getElementById('clientNameDisplayFixed');
         var clientNifSpan = document.getElementById('clientNifDisplayFixed');
@@ -144,7 +171,7 @@
             clientStatusDiv.style.display = 'flex';
         }
 
-        // ── 2. Stateful UI Synchronization ───────────────────────────────────
+        // ── 4. STATEFUL UI SYNCHRONIZATION ───────────────────────────────────
         var anoFiscalSelect = document.getElementById('anoFiscal');
         if (anoFiscalSelect && sys.selectedYear) {
             anoFiscalSelect.value = sys.selectedYear;
@@ -154,36 +181,45 @@
             periodoSelect.value = sys.selectedPeriodo;
             var triContainer = document.getElementById('trimestralSelectorContainer');
             if (triContainer) {
-                triContainer.style.display = sys.selectedPeriodo === 'trimestral' ? 'flex' : 'none';
-                triContainer.classList.toggle('show', sys.selectedPeriodo === 'trimestral');
+                triContainer.style.display = 'none'; // Semestre não mostra trimestres
+                triContainer.classList.remove('show');
             }
         }
-        var triSelector = document.getElementById('trimestralSelector');
-        if (triSelector && sys.selectedTrimestre) {
-            triSelector.value = sys.selectedTrimestre;
+        // Se existir seletor de semestre (opcional)
+        var semestreSelect = document.getElementById('semestreSelector');
+        if (semestreSelect && sys.selectedSemestre) {
+            semestreSelect.value = sys.selectedSemestre;
         }
 
         // Plataforma anonimizada
         var platformSelect = document.getElementById('selPlatformFixed');
-        if (platformSelect) {
-            platformSelect.value = "outra";
-        }
+        if (platformSelect) platformSelect.value = "outra";
 
-        // ── 3. Evidence Counter Reconciliation ───────────────────────────────
+        // ── 5. EVIDENCE COUNTER RECONCILIATION ───────────────────────────────
         if (typeof window.forensicDataSynchronization === 'function') {
             window.forensicDataSynchronization();
         } else {
             var total = sys.analysis.evidenceIntegrity.length;
             var counterEl = document.getElementById('evidenceCountTotal');
             if (counterEl) counterEl.textContent = total;
+            // Forçar contadores individuais
+            var setCounter = function(id, val) {
+                var el = document.getElementById(id);
+                if (el) el.textContent = val;
+            };
+            setCounter('controlCountCompact', sys.evidenceCounts.ctrl);
+            setCounter('saftCountCompact', sys.evidenceCounts.saft);
+            setCounter('invoiceCountCompact', sys.evidenceCounts.fat);
+            setCounter('statementCountCompact', sys.evidenceCounts.ext);
+            setCounter('dac7CountCompact', sys.evidenceCounts.dac7);
         }
 
-        // ── 4. Asynchronous Identity Validation Hook ─────────────────────────
+        // ── 6. ASYNCHRONOUS IDENTITY VALIDATION HOOK ─────────────────────────
         if (typeof window.validateNIF === 'function') {
             window.validateNIF(sys.client.nif);
         }
 
-        // ── 5. Session Token Collision Remediation ───────────────────────────
+        // ── 7. SESSION TOKEN COLLISION REMEDIATION ───────────────────────────
         var sessionIdSpan = document.getElementById('sessionIdDisplay');
         if (sessionIdSpan) sessionIdSpan.textContent = sys.sessionId;
         var verdictSessionSpan = document.getElementById('verdictSessionId');
@@ -193,12 +229,15 @@
         var masterHashEl = document.getElementById('masterHashValue');
         if (masterHashEl) masterHashEl.textContent = sys.masterHash;
 
-        // ── Forçar a actualização do DAC7 (mostrar apenas Q4) ────────────────
-        if (typeof window.filterDAC7ByPeriod === 'function') {
-            window.filterDAC7ByPeriod();
-        }
+        // ── 8. ATUALIZAÇÃO DOS MÓDULOS SAF-T, DAC7, AUXILIARES ───────────────
+        var saftIliquidoEl = document.getElementById('saftIliquidoValue');
+        var saftIvaEl = document.getElementById('saftIvaValue');
+        var saftBrutoEl = document.getElementById('saftBrutoValue');
+        if (saftIliquidoEl) saftIliquidoEl.textContent = window.formatCurrency(sys.analysis.totals.saftIliquido);
+        if (saftIvaEl) saftIvaEl.textContent = window.formatCurrency(sys.analysis.totals.saftIva);
+        if (saftBrutoEl) saftBrutoEl.textContent = window.formatCurrency(sys.analysis.totals.saftBruto);
 
-        // ── GARANTIR VISIBILIDADE E VALORES CORRECTOS DO DAC7 ────────────────
+        // DAC7 – garantir visibilidade (Q4 = 7755.16, restantes 0)
         var dac7Items = [
             { id: 'dac7Q1Value', value: 0 },
             { id: 'dac7Q2Value', value: 0 },
@@ -210,65 +249,49 @@
             if (el) {
                 el.textContent = window.formatCurrency(item.value);
                 var parentCard = el.closest('.kpi-card');
-                if (parentCard) {
-                    parentCard.style.display = 'flex';
-                    parentCard.style.visibility = 'visible';
-                }
+                if (parentCard) parentCard.style.display = 'flex';
             }
         });
-        // Garantir que o módulo inteiro não está oculto
-        var dac7Module = document.querySelector('.module-card:has(h4#moduleDac7Title)');
-        if (dac7Module) dac7Module.style.display = 'block';
 
-        // ── Atualizar os valores do módulo SAF-T (corrigidos) ─────────────────
-        var saftIliquidoEl = document.getElementById('saftIliquidoValue');
-        var saftIvaEl = document.getElementById('saftIvaValue');
-        var saftBrutoEl = document.getElementById('saftBrutoValue');
-        if (saftIliquidoEl) saftIliquidoEl.textContent = window.formatCurrency(sys.analysis.totals.saftIliquido);
-        if (saftIvaEl) saftIvaEl.textContent = window.formatCurrency(sys.analysis.totals.saftIva);
-        if (saftBrutoEl) saftBrutoEl.textContent = window.formatCurrency(sys.analysis.totals.saftBruto);
-
-        // ── Atualizar as caixas auxiliares ───────────────────────────────────
-        var auxBoxes = {
+        // ── 9. FLUXOS NÃO SUJEITOS (ZONA CINZENTA – MÓDULO IV) ────────────────
+        var auxMapping = {
             campanhas: 'auxBoxCampanhasValue',
             portagens: 'auxBoxPortagensValue',
             gorjetas: 'auxBoxGorjetasValue',
-            totalNS: 'auxBoxTotalNSValue',
-            cancel: 'auxBoxCancelValue'
+            totalNaoSujeitos: 'auxBoxTotalNSValue',
+            cancelamentos: 'auxBoxCancelValue'
         };
-        if (sys.auxiliaryData) {
-            for (var key in auxBoxes) {
-                var el = document.getElementById(auxBoxes[key]);
-                if (el && sys.auxiliaryData[key] !== undefined) {
-                    el.textContent = window.formatCurrency(sys.auxiliaryData[key]);
-                }
-            }
-            var dac7Note = document.getElementById('auxDac7ReconciliationNote');
-            if (dac7Note && sys.auxiliaryData.totalNaoSujeitos > 0) {
-                dac7Note.style.display = 'block';
-                var noteVal = document.getElementById('auxDac7NoteValue');
-                if (noteVal) noteVal.textContent = window.formatCurrency(sys.auxiliaryData.totalNaoSujeitos);
-                var noteValQ = document.getElementById('auxDac7NoteValueQ');
-                if (noteValQ) noteValQ.textContent = window.formatCurrency(sys.auxiliaryData.totalNaoSujeitos);
+        for (var key in auxMapping) {
+            var el = document.getElementById(auxMapping[key]);
+            if (el && sys.auxiliaryData[key] !== undefined) {
+                el.textContent = window.formatCurrency(sys.auxiliaryData[key]);
             }
         }
-
-        // ── Garantir que as caixas de apoio pericial são injectadas ──────────
+        // Nota de reconciliação DAC7
+        var dac7Note = document.getElementById('auxDac7ReconciliationNote');
+        if (dac7Note && sys.auxiliaryData.totalNaoSujeitos > 0) {
+            dac7Note.style.display = 'block';
+            var noteVal = document.getElementById('auxDac7NoteValue');
+            if (noteVal) noteVal.textContent = window.formatCurrency(sys.auxiliaryData.totalNaoSujeitos);
+            var noteValQ = document.getElementById('auxDac7NoteValueQ');
+            if (noteValQ) noteValQ.textContent = window.formatCurrency(sys.auxiliaryData.totalNaoSujeitos);
+        }
+        // Garantir injeção das caixas de apoio pericial
         if (typeof window.injectAuxiliaryHelperBoxes === 'function') {
             window.injectAuxiliaryHelperBoxes();
         }
 
-        // ── Atualizar painel #pureDashboard (se existir) ──────────────────────
+        // ── 10. ATUALIZAÇÃO DO PAINEL PURE ────────────────────────────────────
         if (typeof window._updatePureUI === 'function') window._updatePureUI();
 
-        // ── Sincronização do Dashboard Clássico (Top Widgets) ─────────────────
+        // ── 11. SINCRONIZAÇÃO DO DASHBOARD CLÁSSICO (DOWNSTREAM) ──────────────
         if (typeof window.updateDashboard === 'function') window.updateDashboard();
         if (typeof window.updateModulesUI === 'function') window.updateModulesUI();
         if (typeof window.renderChart === 'function') window.renderChart();
         if (typeof window.renderDiscrepancyChart === 'function') window.renderDiscrepancyChart();
         if (typeof window.showTwoAxisAlerts === 'function') window.showTwoAxisAlerts();
 
-        // Reforço de segurança para manter os trimestres visíveis
+        // Reforço para manter DAC7 visível após eventuais alterações
         setTimeout(function() {
             dac7Items.forEach(function(item) {
                 var el = document.getElementById(item.id);
@@ -279,7 +302,7 @@
             });
         }, 200);
 
-        console.log('[UNIFED-PURE] ✅ Dados do PDF injetados e dashboard sincronizado.');
+        console.log('[UNIFED-PURE] ✅ Dados do PDF injetados e dashboard sincronizado (2.º Semestre).');
     }
 
     // ── EXPOSIÇÃO GLOBAL DO MÉTODO DE CARREGAMENTO ────────────────────────────
