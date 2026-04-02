@@ -231,6 +231,11 @@
             }
         }
 
+        // ── Garantir que as caixas de apoio pericial são injectadas ──────────
+        if (typeof window.injectAuxiliaryHelperBoxes === 'function') {
+            window.injectAuxiliaryHelperBoxes();
+        }
+
         // ── Atualizar painel #pureDashboard (se existir) ──────────────────────
         if (typeof window._updatePureUI === 'function') window._updatePureUI();
 
