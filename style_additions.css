@@ -521,3 +521,43 @@
    FIM: style.css additions · v13.5.0-PURE · UNIFED-PROBATUM
    Escopo: #pureDashboard · Sem colisões com CSS base.
    ============================================================================ */
+
+/* ============================================================================
+   ADIÇÕES v13.10.1-PURE · 2026-04-02
+   CORR-4: Triangulação — texto invisível (branco herdado sobre fundo claro)
+   CORR-5: #pureDashboard — reset de herança de cor do documento principal
+   ============================================================================ */
+
+/* ── CORR-5: Garantir herança de cor correcta dentro de #pureDashboard ──────── */
+/* O documento principal define color:rgba(255,255,255,0.9) (branco) via :root.  */
+/* O #pureDashboard herda essa cor, que é correcta sobre os seus fundos escuros. */
+/* A regra abaixo garante que nenhum elemento filho recebe color:transparent ou  */
+/* uma cor de versão anterior ("ghost style") sem ser explicitamente sobreposto. */
+#pureDashboard *:not([style*="color"]) {
+    color: inherit;
+}
+
+/* ── CORR-4: Matriz de Triangulação — contraste forçado ─────────────────────── */
+/* Container gerado por _renderTriangulationMatrix() com background:#f9f9f9.     */
+/* Sem color explícito, herdava branco do documento → texto invisível.            */
+/* Todas as células recebem color:#1a1a2e via inline style no JS (CORR-4).        */
+/* Esta regra CSS actua como salvaguarda (fallback) caso o inline não seja        */
+/* aplicado — garante rácio de contraste WCAG AA (4.5:1) sobre #f9f9f9.          */
+#triangulationMatrixContainer,
+#triangulationMatrixContainer th,
+#triangulationMatrixContainer td,
+#triangulationMatrixContainer h3,
+#triangulationMatrixContainer strong,
+#triangulationMatrixContainer div {
+    color: #1a1a2e !important;
+}
+
+/* Delta crítico — override de cor para manter legibilidade do alerta vermelho */
+#triangulationMatrixContainer .delta-critical,
+#triangulationMatrixContainer td[style*="b71c1c"] {
+    color: #b71c1c !important;
+}
+
+/* ============================================================================
+   FIM ADIÇÕES v13.10.1-PURE
+   ============================================================================ */
