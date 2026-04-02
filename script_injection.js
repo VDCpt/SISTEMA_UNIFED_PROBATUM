@@ -13,7 +13,7 @@
  */
 
 (function() {
-    // ── DADOS REAIS EXTRAÍDOS DO PDF (IFDE-MNBWZSD5-F2C60) ───────────────────
+    // ── DADOS REAIS EXTRAÍDOS DO PDF (IFDE-MNBWZSD5-F2C60) E SOMAS LINHA A LINHA DOS CSVS ──
     const _PDF_CASE = {
         sessionId: "UNIFED-MNGFN3C0-X57MO",
         masterHash: "a3f8c9e2d5b6a7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1",
@@ -25,9 +25,10 @@
         totals: {
             ganhos: 10157.73,
             ganhosLiquidos: 7709.84,
-            saftBruto: 10157.73,
-            saftIliquido: 8262.00,
-            saftIva: 1895.73,
+            // SAF-T corrigido (soma linha a linha dos CSVs)
+            saftBruto: 8227.97,        // Preço da viagem (total 4 meses)
+            saftIliquido: 7761.67,     // Preço da viagem (sem IVA)
+            saftIva: 466.30,           // IVA (total 4 meses)
             despesas: 2447.89,
             faturaPlataforma: 262.94,
             dac7TotalPeriodo: 7755.16,
@@ -69,11 +70,11 @@
             percent: "89.26%"
         },
         auxiliaryData: {
-            campanhas: 405.00,        // Soma dos 4 meses: 0+205+180+20
-            portagens: 0.15,          // Soma dos 4 meses: 0,15+0+0+0
-            gorjetas: 46.00,          // Soma dos 4 meses: 0+19,50+17,50+9
-            cancelamentos: 58.10,     // Soma dos 4 meses: 3,50+24,20+14,80+15,60
-            totalNaoSujeitos: 451.15  // Campanhas + Gorjetas + Portagens = 405+46+0,15
+            campanhas: 405.00,
+            portagens: 0.15,
+            gorjetas: 46.00,
+            cancelamentos: 58.10,
+            totalNaoSujeitos: 451.15
         },
         evidenceIntegrity: [
             { filename: "131509_202409.csv", type: "saft", hash: "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b", timestamp: "2024-09-30 23:59:59" },
@@ -81,7 +82,7 @@
             { filename: "131509_202411.csv", type: "saft", hash: "c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d", timestamp: "2024-11-30 23:59:59" },
             { filename: "131509_202412.csv", type: "saft", hash: "d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e", timestamp: "2024-12-31 23:59:59" }
         ],
-        monthlyData: {}   // Sem decomposição mensal no PDF
+        monthlyData: {}
     };
 
     // ── SISTEMA DE INJEÇÃO ATÓMICA ─────────────────────────────────────────────
@@ -144,12 +145,10 @@
         }
 
         // ── 2. Stateful UI Synchronization ───────────────────────────────────
-        // Ano fiscal
         var anoFiscalSelect = document.getElementById('anoFiscal');
         if (anoFiscalSelect && sys.selectedYear) {
             anoFiscalSelect.value = sys.selectedYear;
         }
-        // Período
         var periodoSelect = document.getElementById('periodoAnalise');
         if (periodoSelect && sys.selectedPeriodo) {
             periodoSelect.value = sys.selectedPeriodo;
@@ -159,7 +158,6 @@
                 triContainer.classList.toggle('show', sys.selectedPeriodo === 'trimestral');
             }
         }
-        // Trimestre
         var triSelector = document.getElementById('trimestralSelector');
         if (triSelector && sys.selectedTrimestre) {
             triSelector.value = sys.selectedTrimestre;
@@ -191,7 +189,6 @@
         var verdictSessionSpan = document.getElementById('verdictSessionId');
         if (verdictSessionSpan) verdictSessionSpan.textContent = sys.sessionId;
 
-        // Atualizar QR Code e hash
         if (typeof window.generateQRCode === 'function') window.generateQRCode();
         var masterHashEl = document.getElementById('masterHashValue');
         if (masterHashEl) masterHashEl.textContent = sys.masterHash;
@@ -201,7 +198,7 @@
             window.filterDAC7ByPeriod();
         }
 
-        // ── Atualizar os valores do módulo SAF-T (ilíquido e IVA) ─────────────
+        // ── Atualizar os valores do módulo SAF-T (corrigidos) ─────────────────
         var saftIliquidoEl = document.getElementById('saftIliquidoValue');
         var saftIvaEl = document.getElementById('saftIvaValue');
         var saftBrutoEl = document.getElementById('saftBrutoValue');
@@ -224,7 +221,6 @@
                     el.textContent = window.formatCurrency(sys.auxiliaryData[key]);
                 }
             }
-            // Mostrar a nota de reconciliação DAC7 se houver valores
             var dac7Note = document.getElementById('auxDac7ReconciliationNote');
             if (dac7Note && sys.auxiliaryData.totalNaoSujeitos > 0) {
                 dac7Note.style.display = 'block';
@@ -275,21 +271,18 @@
             if (el) el.textContent = value;
         };
 
-        // ── Totais e Smoking Guns (com bindings adicionados) ───────────────────
         set('pure-ganhos',          fmt(t.ganhos));
         set('pure-despesas',        fmt(t.despesas));
         set('pure-liquido',         fmt(t.ganhosLiquidos));
-        set('pure-saft',            fmt(t.saftBruto   || t.bruto));
+        set('pure-saft',            fmt(t.saftBruto));
         set('pure-dac7',            fmt(t.dac7TotalPeriodo));
         set('pure-fatura',          fmt(t.faturaPlataforma));
         
-        // Binding Smoking Guns (Faltantes)
         set('pure-sg2-btor-val',    fmt(t.despesas));
         set('pure-sg2-btf-val',     fmt(t.faturaPlataforma));
         set('pure-sg1-saft-val',    fmt(t.saftBruto));
         set('pure-sg1-dac7-val',    fmt(t.dac7TotalPeriodo));
         
-        // Discrepâncias
         set('pure-disc-c2',         fmt(c.discrepanciaCritica));
         set('pure-disc-c2-pct',     ((c.percentagemOmissao || 0).toFixed(2)) + '%');
         set('pure-disc-c1',         fmt(c.discrepanciaSaftVsDac7));
@@ -299,14 +292,12 @@
         set('pure-btor',            fmt(c.btor));
         set('pure-btf',             fmt(c.btf));
         
-        // Auxiliares
         set('pure-campanhas',       fmt(aux.campanhas));
         set('pure-portagens',       fmt(aux.portagens));
         set('pure-gorjetas',        fmt(aux.gorjetas));
         set('pure-cancelamentos',   fmt(aux.cancelamentos));
         set('pure-nao-sujeitos',    fmt(aux.totalNaoSujeitos));
 
-        // Verdict
         var verdictEl = document.getElementById('pure-verdict');
         if (verdictEl && sys.analysis.verdict) {
             var lang = window.currentLang || 'pt';
@@ -314,19 +305,16 @@
             verdictEl.className = 'pure-verdict-value ' + (sys.analysis.verdict.key || 'low');
         }
 
-        // Hash prefix
         var hashEl = document.getElementById('pure-hash-prefix-verdict');
         if (hashEl && sys.masterHash) {
             hashEl.textContent = sys.masterHash.substring(0, 16).toUpperCase();
         }
 
-        // Tradução do painel se disponível
         if (typeof window._translatePurePanel === 'function') {
             window._translatePurePanel(window.currentLang || 'pt');
         }
     };
 
-    // Tentar sincronizar imediatamente se o UNIFEDSystem já estiver disponível
     if (typeof window.UNIFEDSystem !== 'undefined' && window.UNIFEDSystem.analysis) {
         _syncPureDashboard();
     }
