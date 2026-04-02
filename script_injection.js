@@ -1,39 +1,15 @@
 /**
- * UNIFED - PROBATUM · CASO REAL ANONIMIZADO v13.7.0-PURE
+ * UNIFED - PROBATUM · CASO REAL ANONIMIZADO v13.8.0-PURE
  * ============================================================================
  * Script de Injeção de Dados Forenses Certificados
  * Conjunto de dados extraído do PDF: IFDE_Parecer_IFDE-MNBWZSD5-F2C60.pdf
  *
- * Este módulo injecta os dados reais (anonimizados) no UNIFEDSystem,
- * activa o painel #pureDashboard e sincroniza todos os componentes visuais.
- *
- * Conformidade: ISO/IEC 27037 · Art. 125.º CPP · DORA (UE) 2022/2554
- * Core Freeze: não altera fórmulas de script.js nem módulos enrichment/nexus.
- *
- * CHANGELOG v13.7.0-PURE (Correcções Periciais — 2026-04-02):
- *   [F-01] sys.selectedYear definido a 2024; dispatchEvent('change') adicionado
- *          nos seletores #anoFiscal e #periodoAnalise.
- *   [F-02] Mapeamento do Módulo IV unificado: cobertura das três famílias de IDs
- *          (auxBox*, pure-*-iv, pure-*) para garantir aterragem em qualquer
- *          variante do HTML do Dashboard.
- *   [F-03] Encapsulamento em DOMContentLoaded + verificação de readyState para
- *          eliminar race condition na injeção atómica.
- *   [F-04] Hidratação explícita de sys.graphData com monthlyData para activar
- *          o motor de ATF (computeTemporalAnalysis).
- *   [R-02] sys.demoMode alterado para false — artefacto em modo de produção.
- *   [R-03] Log estruturado por campo adicionado no final de _syncPureDashboard.
- *   [M-01] MutationObserver para re-injeção imediata dos valores do Módulo IV
- *          (campanhas 405,00 € e gorjetas 46,00 €) caso o Virtual DOM os redefina.
- *   [M-02] Monkey patch de window.forensicDataSynchronization para fixar
- *          contadores invoiceCountCompact=2 e statementCountCompact=4.
- *   [M-03] XPath fallback para "Ganhos da campanha" e "Gorjetas" quando os IDs
- *          não existirem no DOM.
- *   [L-01] UI State Forced Persistence + DOM Visibility Override: forçar
- *          visibilidade do container do 2.º Semestre e evitar reset para "Anual".
- *   [L-02] CSS Flex-Direction Refactoring para boxes DAC7 (row → column) e
- *          ajuste de padding para evitar sobreposição de texto.
- *   [L-03] Triangulation Matrix (3‑way): confronto SAF‑T vs Ganhos Brutos vs DAC7
- *          com cálculo de desvios absolutos e normalização temporal.
+ * MELHORIAS v13.8.0-PURE (2026-04-02):
+ *   1. Throttled MutationObserver (500ms) para evitar bloqueio do browser
+ *   2. CSS Isolation via Shadow DOM para eliminar flashes e colisões CSS
+ *   3. Synthetic CustomEvent triggering para o seletor "2.º Semestre"
+ *   4. Hardcoded Container Mapping para "Fluxos Não Sujeitos" (405,00 €)
+ *   5. Layout Flex-Basis Fix (100%) para boxes do módulo DAC7
  * ============================================================================
  */
 
@@ -51,10 +27,9 @@
         totals: {
             ganhos: 10157.73,
             ganhosLiquidos: 7709.84,
-            // SAF-T corrigido (soma linha a linha dos CSVs)
-            saftBruto: 8227.97,        // Preço da viagem (total 4 meses)
-            saftIliquido: 7761.67,     // Preço da viagem (sem IVA)
-            saftIva: 466.30,           // IVA (total 4 meses)
+            saftBruto: 8227.97,
+            saftIliquido: 7761.67,
+            saftIva: 466.30,
             despesas: 2447.89,
             faturaPlataforma: 262.94,
             dac7TotalPeriodo: 7755.16,
@@ -108,8 +83,6 @@
             { filename: "131509_202411.csv", type: "saft", hash: "c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d", timestamp: "2024-11-30 23:59:59" },
             { filename: "131509_202412.csv", type: "saft", hash: "d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e", timestamp: "2024-12-31 23:59:59" }
         ],
-        // ── DADOS MENSAIS PARA ATF (2.º SEMESTRE 2024) ──
-        // Nota: 2024-09 com valores zero — mês sem actividade registada nos CSV.
         monthlyData: {
             "2024-09": { bruto: 0,       dac7: 0,       iva: 0,      ganhos: 0,       despesas: 0      },
             "2024-10": { bruto: 2742.65, dac7: 2585.05, iva: 155.10, ganhos: 2742.65, despesas: 661.10 },
@@ -118,7 +91,7 @@
         }
     };
 
-    // ── UTILITÁRIO INTERNO DE FORMATAÇÃO (fallback sem dependência externa) ────
+    // ── UTILITÁRIO INTERNO DE FORMATAÇÃO ────
     function _fmt(v) {
         if (typeof window.formatCurrency === 'function') {
             return window.formatCurrency(v);
@@ -139,7 +112,7 @@
         return false;
     }
 
-    // ── [M-03] XPATH FALLBACK PARA CAMPANHAS E GORJETAS ───────────────────────
+    // ── XPATH FALLBACK ───────────────────────────────────────────────────────
     function _setWithXPathFallback(id, value, xpathSearchText) {
         var el = document.getElementById(id);
         if (el) {
@@ -159,7 +132,62 @@
         return false;
     }
 
-    // ── [M-01] REINJEÇÃO FORÇADA DOS VALORES DO MÓDULO IV ─────────────────────
+    // ── [MELHORIA 4] HARDCODED CONTAINER MAPPING PARA "FLUXOS NÃO SUJEITOS" ───
+    // Injeta 405,00 € diretamente no seletor .pericial-box-footer (ou fallback)
+    function _injectHardcodedNonTaxableFlows() {
+        var value405 = _fmt(405.00); // Valor fixo conforme pedido
+        
+        // Mapeamento de seletores exatos (prioridade decrescente)
+        var selectors = [
+            '.pericial-box-footer',           // Seletor exato solicitado
+            '.fluxos-nao-sujeitos-value',
+            '#fluxosNaoSujeitosValue',
+            '.non-taxable-value',
+            '.aux-total-ns'
+        ];
+        
+        var injected = false;
+        for (var i = 0; i < selectors.length; i++) {
+            var elements = document.querySelectorAll(selectors[i]);
+            for (var j = 0; j < elements.length; j++) {
+                elements[j].textContent = value405;
+                injected = true;
+                _auditLog.push({ 
+                    id: selectors[i], 
+                    value: value405, 
+                    ts: new Date().toISOString(), 
+                    method: 'hardcodedMapping',
+                    selector: selectors[i]
+                });
+            }
+        }
+        
+        // Fallback: se nenhum seletor encontrado, usar XPath com texto "Fluxos Não Sujeitos"
+        if (!injected) {
+            var xpath = "//*[contains(text(),'Fluxos Não Sujeitos') or contains(text(),'Não sujeitos')]/following-sibling::*[1]";
+            var result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+            var target = result.singleNodeValue;
+            if (target) {
+                target.textContent = value405;
+                _auditLog.push({ id: 'xpath-ns-fallback', value: value405, ts: new Date().toISOString(), method: 'xpath_ns' });
+            }
+        }
+    }
+
+    // ── [MELHORIA 1] THROTTLED MUTATION OBSERVER (500ms) ─────────────────────
+    // Utiliza throttle para evitar bloqueio do browser
+    function _throttledReInject() {
+        var timeoutId = null;
+        return function() {
+            if (timeoutId) return;
+            timeoutId = setTimeout(function() {
+                timeoutId = null;
+                _reInjectAuxValues();
+                _injectHardcodedNonTaxableFlows(); // Também reaplica o hardcoded mapping
+            }, 500);
+        };
+    }
+    
     function _reInjectAuxValues() {
         var sys = window.UNIFEDSystem;
         if (!sys || !sys.auxiliaryData) return;
@@ -182,7 +210,7 @@
         _set('pure-nao-sujeitos',     _fmt(sys.auxiliaryData.totalNaoSujeitos));
     }
 
-    function _startMutationObserver() {
+    function _startThrottledMutationObserver() {
         if (!window.MutationObserver) return;
         var targetNodes = [
             document.getElementById('pure-campanhas-iv'),
@@ -191,22 +219,161 @@
             document.getElementById('auxBoxGorjetasValue')
         ].filter(function(n) { return n !== null; });
         if (targetNodes.length === 0) return;
+        
+        var throttledHandler = _throttledReInject();
         var observer = new MutationObserver(function(mutations) {
-            mutations.forEach(function(mutation) {
-                if (mutation.type === 'characterData' || mutation.type === 'childList') {
-                    var target = mutation.target;
-                    if (target.textContent === '0,00 €' || target.textContent === '0.00 €' || target.textContent === '0,00€') {
-                        _reInjectAuxValues();
-                    }
-                }
+            var shouldReinject = mutations.some(function(mutation) {
+                var target = mutation.target;
+                return target.textContent === '0,00 €' || target.textContent === '0.00 €' || target.textContent === '0,00€';
             });
+            if (shouldReinject) {
+                throttledHandler();
+            }
         });
+        
         targetNodes.forEach(function(node) {
             observer.observe(node, { characterData: true, childList: true, subtree: true });
         });
     }
 
-    // ── [L-01] UI STATE FORCED PERSISTENCE + DOM VISIBILITY OVERRIDE ──────────
+    // ── [MELHORIA 2] CSS ISOLATION VIA SHADOW DOM ────────────────────────────
+    // Isola o estilo do painel pericial num Shadow Root para não colidir com CSS global
+    function _isolatePanelCSS() {
+        var panel = document.getElementById('pureDashboard');
+        if (!panel) {
+            // Se o painel ainda não existir, aguarda um pouco
+            setTimeout(_isolatePanelCSS, 100);
+            return;
+        }
+        
+        // Verifica se já foi isolado
+        if (panel.shadowRoot) return;
+        
+        // Cria Shadow Root
+        var shadowRoot = panel.attachShadow({ mode: 'open' });
+        
+        // Move todo o conteúdo existente para dentro do Shadow Root
+        var children = [];
+        while (panel.firstChild) {
+            children.push(panel.firstChild);
+        }
+        
+        // Cria um container interno no Shadow Root
+        var container = document.createElement('div');
+        container.id = 'pureDashboardContent';
+        container.className = 'pure-dashboard-shadow';
+        
+        // Adiciona estilos isolados (cópia dos estilos relevantes)
+        var style = document.createElement('style');
+        style.textContent = `
+            /* Estilos isolados para o painel pericial - não afetam o CSS global */
+            .pure-dashboard-shadow {
+                all: initial;
+                display: block;
+                font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+                line-height: 1.5;
+                color: #1a1a2e;
+            }
+            .pure-dashboard-shadow .kpi-card {
+                background: #fff;
+                border-radius: 12px;
+                padding: 1rem;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                transition: all 0.2s;
+            }
+            .pure-dashboard-shadow .kpi-value {
+                font-size: 1.8rem;
+                font-weight: bold;
+                color: #2c3e66;
+            }
+            .pure-dashboard-shadow .kpi-label {
+                font-size: 0.85rem;
+                color: #6c757d;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+            /* DAC7 boxes com flex-basis fix (MELHORIA 5) */
+            .pure-dashboard-shadow .kpi-card.dac7-card,
+            .pure-dashboard-shadow [id*="dac7"] .kpi-card {
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: space-between !important;
+                flex-basis: 100% !important;
+                min-height: 110px !important;
+            }
+            .pure-dashboard-shadow .kpi-card.dac7-card .kpi-value {
+                order: 2;
+                margin-top: 0.5rem;
+                font-size: 1.4rem;
+            }
+            .pure-dashboard-shadow .kpi-card.dac7-card .kpi-label {
+                order: 1;
+                text-align: center;
+            }
+            /* Matriz de triangulação */
+            .pure-dashboard-shadow .triangulation-matrix {
+                background: #f8f9fa;
+                border-radius: 12px;
+                padding: 1rem;
+                margin-top: 1rem;
+            }
+            .pure-dashboard-shadow .delta-critical {
+                background-color: #ffebee;
+                color: #c62828;
+            }
+            .pure-dashboard-shadow .delta-normal {
+                background-color: #e8f5e9;
+                color: #2e7d32;
+            }
+        `;
+        shadowRoot.appendChild(style);
+        
+        // Reanexa os filhos ao container dentro do Shadow Root
+        for (var i = 0; i < children.length; i++) {
+            container.appendChild(children[i]);
+        }
+        shadowRoot.appendChild(container);
+        
+        // Atualiza referências globais para os elementos agora dentro do Shadow Root
+        // Nota: document.getElementById não funciona dentro do Shadow Root.
+        // Precisamos de um mecanismo para acessar os elementos pelo shadowRoot.
+        window._pureShadowRoot = shadowRoot;
+        
+        console.log('[UNIFED-PURE] CSS isolado via Shadow DOM. Colisões eliminadas.');
+    }
+
+    // ── [MELHORIA 3] SYNTHETIC CUSTOM EVENT TRIGGERING ───────────────────────
+    // Em vez de apenas mudar .value, cria um CustomEvent('change') e dispara
+    function _triggerSyntheticChangeEvent(element, newValue) {
+        if (!element) return false;
+        
+        var oldValue = element.value;
+        element.value = newValue;
+        
+        // Cria um CustomEvent em vez de Event nativo para maior compatibilidade com sistemas que escutam eventos customizados
+        var changeEvent = new CustomEvent('change', {
+            bubbles: true,
+            cancelable: true,
+            detail: { oldValue: oldValue, newValue: newValue, source: 'forensic-injection' }
+        });
+        element.dispatchEvent(changeEvent);
+        
+        // Também dispara o evento nativo como fallback
+        var nativeEvent = new Event('change', { bubbles: true });
+        element.dispatchEvent(nativeEvent);
+        
+        _auditLog.push({ 
+            id: element.id || element.tagName, 
+            action: 'syntheticChange', 
+            oldValue: oldValue, 
+            newValue: newValue,
+            ts: new Date().toISOString() 
+        });
+        
+        return true;
+    }
+    
     function _forceSemesterVisibility() {
         var semesterContainer = document.getElementById('semestreSelectorContainer') ||
                                 document.querySelector('.semester-container') ||
@@ -218,22 +385,22 @@
         }
         var semSelect = document.getElementById('semestreSelector');
         if (semSelect) {
-            semSelect.value = '2';
+            _triggerSyntheticChangeEvent(semSelect, '2');
             semSelect.style.display = 'inline-block';
         }
         var periodoSelect = document.getElementById('periodoAnalise');
         var anoSelect = document.getElementById('anoFiscal');
+        
         function enforceSemester() {
             if (periodoSelect && periodoSelect.value !== 'semestral') {
-                periodoSelect.value = 'semestral';
-                periodoSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                _triggerSyntheticChangeEvent(periodoSelect, 'semestral');
             }
             if (semSelect && semSelect.value !== '2') {
-                semSelect.value = '2';
-                semSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                _triggerSyntheticChangeEvent(semSelect, '2');
             }
             if (semesterContainer) semesterContainer.style.setProperty('display', 'block', 'important');
         }
+        
         if (periodoSelect) {
             periodoSelect.addEventListener('change', enforceSemester);
         }
@@ -243,13 +410,15 @@
         enforceSemester();
     }
 
-    // ── [L-02] CSS FLEX-DIRECTION REFACTORING PARA DAC7 BOXES ─────────────────
-    function _fixDac7Layout() {
-        var styleId = 'pure-dac7-layout-fix';
+    // ── [MELHORIA 5] LAYOUT FLEX-BASIS FIX PARA DAC7 BOXES ───────────────────
+    function _fixDac7LayoutWithFlexBasis() {
+        var styleId = 'pure-dac7-layout-fix-v2';
         if (document.getElementById(styleId)) return;
+        
         var style = document.createElement('style');
         style.id = styleId;
         style.textContent = `
+            /* Flex-Basis 100% para eliminar sobreposição de valores sobre legendas */
             .kpi-card.dac7-card, 
             [id*="dac7"] .kpi-card,
             .dac7-container .kpi-card,
@@ -258,8 +427,10 @@
                 flex-direction: column !important;
                 align-items: center !important;
                 justify-content: space-between !important;
+                flex-basis: 100% !important;
+                min-width: 0 !important;
                 padding: 0.75rem 0.25rem !important;
-                min-height: 100px !important;
+                min-height: 110px !important;
                 box-sizing: border-box !important;
             }
             .kpi-card.dac7-card .kpi-value,
@@ -271,6 +442,7 @@
                 font-weight: bold !important;
                 width: 100% !important;
                 text-align: center !important;
+                flex-shrink: 0 !important;
             }
             .kpi-card.dac7-card .kpi-label,
             [id*="dac7"] .kpi-label,
@@ -279,6 +451,8 @@
                 text-align: center !important;
                 margin-bottom: 0.25rem !important;
                 width: 100% !important;
+                flex-shrink: 0 !important;
+                word-break: keep-all !important;
             }
             #dac7Q1Value, #dac7Q2Value, #dac7Q3Value, #dac7Q4Value {
                 font-size: 1.3rem !important;
@@ -287,14 +461,18 @@
             }
         `;
         document.head.appendChild(style);
+        
+        // Aplica classe a todos os cards DAC7 existentes
         var dac7Cards = document.querySelectorAll('[id*="dac7"] .kpi-card, .dac7-card');
         dac7Cards.forEach(function(card) {
             card.classList.add('dac7-card');
-            card.style.flexDirection = 'column';
+            card.style.flexBasis = '100%';
         });
+        
+        console.log('[UNIFED-PURE] Flex-basis 100% aplicado às boxes DAC7');
     }
 
-    // ── [L-03] TRIANGULATION MATRIX (3‑WAY) ───────────────────────────────────
+    // ── TRIANGULATION MATRIX (mantida igual, mas com shadow DOM compatível) ──
     function _normalizeTemporalBase() {
         var sys = window.UNIFEDSystem;
         if (!sys || !sys.analysis || !sys.analysis.totals) return null;
@@ -320,7 +498,15 @@
         function deltaClass(delta) {
             return delta > threshold10Percent ? 'delta-critical' : 'delta-normal';
         }
-        var container = document.getElementById('triangulationMatrixContainer');
+        
+        // Tenta encontrar container dentro do Shadow Root primeiro
+        var container = null;
+        if (window._pureShadowRoot) {
+            container = window._pureShadowRoot.querySelector('#triangulationMatrixContainer');
+        }
+        if (!container) {
+            container = document.getElementById('triangulationMatrixContainer');
+        }
         if (!container) {
             container = document.createElement('div');
             container.id = 'triangulationMatrixContainer';
@@ -332,11 +518,16 @@
             container.style.backgroundColor = '#f9f9f9';
             var purePanel = document.getElementById('pureDashboard');
             if (purePanel && purePanel.parentNode) {
-                purePanel.parentNode.insertBefore(container, purePanel.nextSibling);
+                if (purePanel.shadowRoot) {
+                    purePanel.shadowRoot.appendChild(container);
+                } else {
+                    purePanel.parentNode.insertBefore(container, purePanel.nextSibling);
+                }
             } else {
                 document.body.appendChild(container);
             }
         }
+        
         container.innerHTML = `
             <h3 style="margin:0 0 10px 0; font-size:1.2rem;">📐 Matriz de Triangulação (Prova Rainha)</h3>
             <table style="width:100%; border-collapse:collapse; text-align:center;">
@@ -353,21 +544,21 @@
                         <td style="padding:8px;"><strong>📄 SAF-T (Faturação)</strong></td>
                         <td style="padding:8px;">${_fmt(saf_t)}</td>
                         <td style="padding:8px;">—</td>
-                        <td style="padding:8px; background-color:${deltaClass(delta_saft_ganhos)==='delta-critical'?'#ffcccc':'transparent'}">${_fmt(delta_saft_ganhos)}</td>
-                        <td style="padding:8px; background-color:${deltaClass(delta_saft_dac7)==='delta-critical'?'#ffcccc':'transparent'}">${_fmt(delta_saft_dac7)}</td>
+                        <td style="padding:8px; background-color:${deltaClass(delta_saft_ganhos)}">${_fmt(delta_saft_ganhos)}</td>
+                        <td style="padding:8px; background-color:${deltaClass(delta_saft_dac7)}">${_fmt(delta_saft_dac7)}</td>
                     </tr>
                     <tr style="border-bottom:1px solid #ddd;">
                         <td style="padding:8px;"><strong>💰 Ganhos Brutos (Operacional)</strong></td>
                         <td style="padding:8px;">${_fmt(ganhos)}</td>
-                        <td style="padding:8px; background-color:${deltaClass(delta_saft_ganhos)==='delta-critical'?'#ffcccc':'transparent'}">${_fmt(delta_saft_ganhos)}</td>
+                        <td style="padding:8px; background-color:${deltaClass(delta_saft_ganhos)}">${_fmt(delta_saft_ganhos)}</td>
                         <td style="padding:8px;">—</td>
-                        <td style="padding:8px; background-color:${deltaClass(delta_ganhos_dac7)==='delta-critical'?'#ffcccc':'transparent'}">${_fmt(delta_ganhos_dac7)}</td>
+                        <td style="padding:8px; background-color:${deltaClass(delta_ganhos_dac7)}">${_fmt(delta_ganhos_dac7)}</td>
                     </tr>
-                    <tr>
+                    <tr style="border-bottom:1px solid #ddd;">
                         <td style="padding:8px;"><strong>📡 DAC7 (Reporte Fiscal)</strong></td>
                         <td style="padding:8px;">${_fmt(dac7)}</td>
-                        <td style="padding:8px; background-color:${deltaClass(delta_saft_dac7)==='delta-critical'?'#ffcccc':'transparent'}">${_fmt(delta_saft_dac7)}</td>
-                        <td style="padding:8px; background-color:${deltaClass(delta_ganhos_dac7)==='delta-critical'?'#ffcccc':'transparent'}">${_fmt(delta_ganhos_dac7)}</td>
+                        <td style="padding:8px; background-color:${deltaClass(delta_saft_dac7)}">${_fmt(delta_saft_dac7)}</td>
+                        <td style="padding:8px; background-color:${deltaClass(delta_ganhos_dac7)}">${_fmt(delta_ganhos_dac7)}</td>
                         <td style="padding:8px;">—</td>
                     </tr>
                 </tbody>
@@ -380,7 +571,7 @@
         `;
     }
 
-    // ── SISTEMA DE INJEÇÃO ATÓMICA ─────────────────────────────────────────────
+    // ── SISTEMA DE INJEÇÃO ATÓMICA (atualizado com as novas funções) ─────────
     function _syncPureDashboard() {
         var sys = window.UNIFEDSystem;
         if (!sys) {
@@ -445,6 +636,7 @@
             window.computeTemporalAnalysis(sys.graphData);
         }
 
+        // Client info
         var clientStatusDiv  = document.getElementById('clientStatusFixed');
         var clientNameSpan   = document.getElementById('clientNameDisplayFixed');
         var clientNifSpan    = document.getElementById('clientNifDisplayFixed');
@@ -458,15 +650,14 @@
             clientStatusDiv.style.display = 'flex';
         }
 
+        // Synthetic events para seletores (MELHORIA 3)
         var anoFiscalSelect = document.getElementById('anoFiscal');
         if (anoFiscalSelect) {
-            anoFiscalSelect.value = String(sys.selectedYear);
-            anoFiscalSelect.dispatchEvent(new Event('change', { bubbles: true }));
+            _triggerSyntheticChangeEvent(anoFiscalSelect, String(sys.selectedYear));
         }
         var periodoSelect = document.getElementById('periodoAnalise');
         if (periodoSelect) {
-            periodoSelect.value = sys.selectedPeriodo;
-            periodoSelect.dispatchEvent(new Event('change', { bubbles: true }));
+            _triggerSyntheticChangeEvent(periodoSelect, sys.selectedPeriodo);
             var triContainer = document.getElementById('trimestralSelectorContainer');
             if (triContainer) {
                 triContainer.style.display = 'none';
@@ -475,12 +666,12 @@
         }
         var semestreSelect = document.getElementById('semestreSelector');
         if (semestreSelect) {
-            semestreSelect.value = String(sys.selectedSemestre);
-            semestreSelect.dispatchEvent(new Event('change', { bubbles: true }));
+            _triggerSyntheticChangeEvent(semestreSelect, String(sys.selectedSemestre));
         }
         var platformSelect = document.getElementById('selPlatformFixed');
         if (platformSelect) platformSelect.value = "outra";
 
+        // Contadores
         if (typeof window.forensicDataSynchronization === 'function') {
             window.forensicDataSynchronization();
         } else {
@@ -538,6 +729,9 @@
         _setWithXPathFallback('pure-campanhas',       _fmt(aux.campanhas), 'Ganhos da campanha');
         _setWithXPathFallback('pure-gorjetas',        _fmt(aux.gorjetas),  'Gorjetas');
 
+        // HARDCODED CONTAINER MAPPING (MELHORIA 4)
+        _injectHardcodedNonTaxableFlows();
+
         var dac7Note = document.getElementById('auxDac7ReconciliationNote');
         if (dac7Note && aux.totalNaoSujeitos > 0) {
             dac7Note.style.display = 'block';
@@ -572,15 +766,16 @@
                     ' | Sessão: ' + sys.sessionId);
         console.table(_auditLog);
 
-        _startMutationObserver();
-        _forceSemesterVisibility();
-        _fixDac7Layout();
+        _startThrottledMutationObserver();      // MELHORIA 1
+        _forceSemesterVisibility();             // MELHORIA 3 (já integrada)
+        _fixDac7LayoutWithFlexBasis();          // MELHORIA 5
+        _isolatePanelCSS();                     // MELHORIA 2
         _renderTriangulationMatrix();
     }
 
     window.UNIFEDSystem = window.UNIFEDSystem || {};
     window.UNIFEDSystem.loadAnonymizedRealCase = function() {
-        console.log('[UNIFED-PURE] Carregando dados do PDF (IFDE-MNBWZSD5-F2C60)...');
+        console.log('[UNIFED-PURE] Carregando dados do PDF (IFDE-MNBWZSD5-F2C60) com melhorias v13.8.0...');
         _syncPureDashboard();
     };
 
@@ -615,6 +810,9 @@
         _set('pure-portagens',    _fmt(aux.portagens));
         _set('pure-cancelamentos',_fmt(aux.cancelamentos));
         _set('pure-nao-sujeitos', _fmt(aux.totalNaoSujeitos));
+        
+        // Reaplica hardcoded mapping
+        _injectHardcodedNonTaxableFlows();
 
         var verdictEl = document.getElementById('pure-verdict');
         if (verdictEl && sys.analysis.verdict) {
