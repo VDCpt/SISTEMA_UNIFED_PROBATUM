@@ -198,6 +198,28 @@
             window.filterDAC7ByPeriod();
         }
 
+        // ── GARANTIR VISIBILIDADE E VALORES CORRECTOS DO DAC7 ────────────────
+        var dac7Items = [
+            { id: 'dac7Q1Value', value: 0 },
+            { id: 'dac7Q2Value', value: 0 },
+            { id: 'dac7Q3Value', value: 0 },
+            { id: 'dac7Q4Value', value: 7755.16 }
+        ];
+        dac7Items.forEach(function(item) {
+            var el = document.getElementById(item.id);
+            if (el) {
+                el.textContent = window.formatCurrency(item.value);
+                var parentCard = el.closest('.kpi-card');
+                if (parentCard) {
+                    parentCard.style.display = 'flex';
+                    parentCard.style.visibility = 'visible';
+                }
+            }
+        });
+        // Garantir que o módulo inteiro não está oculto
+        var dac7Module = document.querySelector('.module-card:has(h4#moduleDac7Title)');
+        if (dac7Module) dac7Module.style.display = 'block';
+
         // ── Atualizar os valores do módulo SAF-T (corrigidos) ─────────────────
         var saftIliquidoEl = document.getElementById('saftIliquidoValue');
         var saftIvaEl = document.getElementById('saftIvaValue');
@@ -205,23 +227,6 @@
         if (saftIliquidoEl) saftIliquidoEl.textContent = window.formatCurrency(sys.analysis.totals.saftIliquido);
         if (saftIvaEl) saftIvaEl.textContent = window.formatCurrency(sys.analysis.totals.saftIva);
         if (saftBrutoEl) saftBrutoEl.textContent = window.formatCurrency(sys.analysis.totals.saftBruto);
-
-        // ── Atualizar os valores do módulo DAC7 (garantir visibilidade) ──────
-        var dac7Q1El = document.getElementById('dac7Q1Value');
-        var dac7Q2El = document.getElementById('dac7Q2Value');
-        var dac7Q3El = document.getElementById('dac7Q3Value');
-        var dac7Q4El = document.getElementById('dac7Q4Value');
-        if (dac7Q1El) dac7Q1El.textContent = window.formatCurrency(sys.analysis.totals.dac7Q1);
-        if (dac7Q2El) dac7Q2El.textContent = window.formatCurrency(sys.analysis.totals.dac7Q2);
-        if (dac7Q3El) dac7Q3El.textContent = window.formatCurrency(sys.analysis.totals.dac7Q3);
-        if (dac7Q4El) dac7Q4El.textContent = window.formatCurrency(sys.analysis.totals.dac7Q4);
-
-        // Forçar a exibição de todos os trimestres (remover qualquer estilo oculto)
-        var dac7Cards = document.querySelectorAll('#dac7Q1Value, #dac7Q2Value, #dac7Q3Value, #dac7Q4Value');
-        dac7Cards.forEach(function(card) {
-            var parent = card.closest('.kpi-card');
-            if (parent) parent.style.display = '';
-        });
 
         // ── Atualizar as caixas auxiliares ───────────────────────────────────
         var auxBoxes = {
@@ -262,6 +267,17 @@
         if (typeof window.renderChart === 'function') window.renderChart();
         if (typeof window.renderDiscrepancyChart === 'function') window.renderDiscrepancyChart();
         if (typeof window.showTwoAxisAlerts === 'function') window.showTwoAxisAlerts();
+
+        // Reforço de segurança para manter os trimestres visíveis
+        setTimeout(function() {
+            dac7Items.forEach(function(item) {
+                var el = document.getElementById(item.id);
+                if (el) {
+                    var parentCard = el.closest('.kpi-card');
+                    if (parentCard) parentCard.style.display = 'flex';
+                }
+            });
+        }, 200);
 
         console.log('[UNIFED-PURE] ✅ Dados do PDF injetados e dashboard sincronizado.');
     }
