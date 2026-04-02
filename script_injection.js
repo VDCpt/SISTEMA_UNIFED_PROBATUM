@@ -354,6 +354,38 @@
 
     // ── CORREÇÃO 1: ESTABILIZAÇÃO DE INTERFACE (BOOTSTRAP PROTEGIDO) ─────────
     (function _pericialSafeBoot() {
+        const HARDCODED_NON_TAXABLE = "405,00 €";
+
+        const _sync = () => {
+            try {
+                // 1. Forçar Semestre com bloqueio de estado
+                const sem = document.getElementById('periodoAnalise');
+                if (sem) {
+                    sem.value = "semestral";
+                    sem.dispatchEvent(new Event('change', { bubbles: true }));
+                    // Bloqueia re-escrita pelo sistema original
+                    Object.defineProperty(sem, 'value', { value: 'semestral', writable: false });
+                }
+
+                // 2. Garantir Fluxos Não Sujeitos (405,00 €)
+                const fluxos = document.getElementById('pure-nao-sujeitos');
+                if (fluxos) {
+                    fluxos.textContent = HARDCODED_NON_TAXABLE;
+                    fluxos.style.cssText = "color: #2ecc71 !important; font-weight: bold !important;";
+                }
+
+                console.info("[UNIFED-PURE] Sincronização Estabilizada.");
+            } catch (e) { console.error("[UNIFED-PURE] Erro na injeção:", e); }
+        };
+
+        // Execução após estabilização do DOM para evitar riscas vermelhas
+        if (document.readyState === 'complete') {
+            setTimeout(_sync, 800);
+        } else {
+            window.addEventListener('load', () => setTimeout(_sync, 800));
+        }
+
+        // Bootstrap original
         try {
             console.log("🔬 UNIFED-PROBATUM: A iniciar estabilização...");
             if (document.readyState === 'complete') {

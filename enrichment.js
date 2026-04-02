@@ -716,6 +716,10 @@ if (typeof window.NIFAF === 'undefined') {
 // 7. ATF - ANALISE TEMPORAL FORENSE
 // ============================================================================
 function computeTemporalAnalysis(monthlyData, analysis) {
+    if (window.PURE_MODE_ACTIVE) {
+        console.warn("[ENRICHMENT] Análise temporal suspensa: Modo de Prova Ativo.");
+        return;
+    }
     var months = Object.keys(monthlyData || {}).sort();
     if (months.length === 0) {
         return {

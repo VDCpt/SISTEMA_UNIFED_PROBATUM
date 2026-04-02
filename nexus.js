@@ -1042,7 +1042,14 @@
     window.nexusOpenBlockchainExplorer = _openBlockchainExplorerModal;
 
     window.addEventListener('UNIFED_CORE_READY', function() {
-        injectBlockchainExplorerUI();
+        if (window.requestIdleCallback) {
+            requestIdleCallback(() => {
+                injectBlockchainExplorerUI();
+                console.log("[NEXUS] Ativado em modo de baixa prioridade para estabilidade UI.");
+            });
+        } else {
+            setTimeout(injectBlockchainExplorerUI, 2000);
+        }
     }, { once: true });
 
 })();

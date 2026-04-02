@@ -3556,3 +3556,24 @@ body.dual-screen .stat-card p {
 }
 
 /* ══ FIM — v13.5.0-PURE CSS Integration · UNIFED - PROBATUM ══════════════ */
+
+/* ============================================================================
+   RETIFICAÇÃO CIRÚRGICA v13.10.1 — Módulo DAC7 e Wrapper
+   ============================================================================ */
+#pure-dac7-module, .pure-card-dac7 {
+    height: auto !important;
+    min-height: 120px !important;
+    overflow: visible !important;
+    display: block !important;
+}
+
+.pure-card-grid .box {
+    flex: 1 1 100% !important;
+    margin-bottom: 15px !important;
+}
+
+/* Elimina o flash branco de transição */
+#pureDashboardWrapper {
+    background: #020617 !important;
+    transition: opacity 0.2s ease-in !important;
+}
