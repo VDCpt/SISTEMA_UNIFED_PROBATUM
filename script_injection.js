@@ -206,6 +206,23 @@
         if (saftIvaEl) saftIvaEl.textContent = window.formatCurrency(sys.analysis.totals.saftIva);
         if (saftBrutoEl) saftBrutoEl.textContent = window.formatCurrency(sys.analysis.totals.saftBruto);
 
+        // ── Atualizar os valores do módulo DAC7 (garantir visibilidade) ──────
+        var dac7Q1El = document.getElementById('dac7Q1Value');
+        var dac7Q2El = document.getElementById('dac7Q2Value');
+        var dac7Q3El = document.getElementById('dac7Q3Value');
+        var dac7Q4El = document.getElementById('dac7Q4Value');
+        if (dac7Q1El) dac7Q1El.textContent = window.formatCurrency(sys.analysis.totals.dac7Q1);
+        if (dac7Q2El) dac7Q2El.textContent = window.formatCurrency(sys.analysis.totals.dac7Q2);
+        if (dac7Q3El) dac7Q3El.textContent = window.formatCurrency(sys.analysis.totals.dac7Q3);
+        if (dac7Q4El) dac7Q4El.textContent = window.formatCurrency(sys.analysis.totals.dac7Q4);
+
+        // Forçar a exibição de todos os trimestres (remover qualquer estilo oculto)
+        var dac7Cards = document.querySelectorAll('#dac7Q1Value, #dac7Q2Value, #dac7Q3Value, #dac7Q4Value');
+        dac7Cards.forEach(function(card) {
+            var parent = card.closest('.kpi-card');
+            if (parent) parent.style.display = '';
+        });
+
         // ── Atualizar as caixas auxiliares ───────────────────────────────────
         var auxBoxes = {
             campanhas: 'auxBoxCampanhasValue',
