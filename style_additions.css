@@ -1,5 +1,5 @@
 /* ============================================================================
-   UNIFED - PROBATUM · v13.11.2-PURE · ESTILOS DO PAINEL DE CASO REAL
+   UNIFED - PROBATUM · v13.11.5-PURE · ESTILOS DO PAINEL DE CASO REAL
    ============================================================================
    Escopo      : Seletor raiz #pureDashboard — sem conflito com estilos base.
    Variáveis   : Consume as CSS custom properties existentes em style.css base.
@@ -545,25 +545,50 @@ html, body {
     color: inherit;
 }
 
-/* ── CORR-4: Matriz de Triangulação — contraste forçado ─────────────────────── */
-/* Container gerado por _renderTriangulationMatrix() com background:#f9f9f9.     */
-/* Sem color explícito, herdava branco do documento → texto invisível.            */
-/* Todas as células recebem color:#1a1a2e via inline style no JS (CORR-4).        */
-/* Esta regra CSS actua como salvaguarda (fallback) caso o inline não seja        */
-/* aplicado — garante rácio de contraste WCAG AA (4.5:1) sobre #f9f9f9.          */
-#triangulationMatrixContainer,
-#triangulationMatrixContainer th,
-#triangulationMatrixContainer td,
+/* ── CORR-B v13.11.5: dark mode + largura completa na Matriz de Triangulação ─ */
+/* Substitui as regras anteriores (fallback claro) por dark mode forçado,       */
+/* alinhado ao tema forense do painel. max-width:none elimina a restrição       */
+/* de 1200px que quebrava o layout em viewports intermédios.                    */
+#triangulationMatrixContainer {
+    width: 100% !important;
+    max-width: none !important;
+    background: #1e293b !important;  /* Slate 800 — dark forense */
+    border-color: rgba(0, 229, 255, 0.25) !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    box-sizing: border-box !important;
+}
+
 #triangulationMatrixContainer h3,
 #triangulationMatrixContainer strong,
 #triangulationMatrixContainer div {
-    color: #1a1a2e !important;
+    color: #f8fafc !important;       /* Slate 50 — contraste máximo sobre #1e293b */
 }
 
-/* Delta crítico — override de cor para manter legibilidade do alerta vermelho */
+#triangulationMatrixContainer table {
+    color: #f8fafc !important;
+}
+
+#triangulationMatrixContainer th {
+    background: rgba(0, 229, 255, 0.12) !important;
+    color: #00E5FF !important;
+    border-color: rgba(0, 229, 255, 0.2) !important;
+    padding: 8px 10px;
+    font-weight: 700;
+}
+
+#triangulationMatrixContainer td {
+    color: #f8fafc !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    padding: 8px 10px;
+}
+
+/* Delta crítico — vermelho pericial sobre dark */
 #triangulationMatrixContainer .delta-critical,
 #triangulationMatrixContainer td[style*="b71c1c"] {
-    color: #b71c1c !important;
+    background: rgba(239, 68, 68, 0.15) !important;
+    color: #fca5a5 !important;        /* vermelho claro legível sobre dark */
+    font-weight: 700 !important;
 }
 
 /* ============================================================================
@@ -692,4 +717,32 @@ html, body {
 
 /* ============================================================================
    FIM ADIÇÕES v13.11.2-PURE
+   ============================================================================ */
+
+/* ============================================================================
+   ADIÇÕES v13.11.5-PURE · 2026-04-03
+   CORR-B: Triangulação dark mode + largura 100% (elimina fundo branco e overflow)
+   ============================================================================ */
+
+/* pure-subject-* — identificação do sujeito passivo no cabeçalho do painel */
+#pureDashboard .pure-subject-value,
+#pureDashboard [id^="pure-subject-"] {
+    color: var(--pure-accent, #00E5FF);
+    font-family: var(--pure-font-mono, 'Courier New', monospace);
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+/* pure-dac7-box[display:none] — supressão limpa sem reflow visível */
+.pure-dac7-box[style*="display: none"],
+.pure-dac7-box[style*="display:none"] {
+    height: 0;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+
+/* ============================================================================
+   FIM ADIÇÕES v13.11.5-PURE
    ============================================================================ */

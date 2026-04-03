@@ -1,5 +1,5 @@
 /**
- * UNIFED - PROBATUM · CASO REAL ANONIMIZADO v13.11.4-PURE
+ * UNIFED - PROBATUM · CASO REAL ANONIMIZADO v13.11.5-PURE
  * ============================================================================
  * Script de Injeção de Dados Forenses Certificados
  * Conjunto de dados extraído do PDF: IFDE_Parecer_IFDE-MNBWZSD5-F2C60.pdf
@@ -29,16 +29,21 @@
  *  15.  .pure-metric-card.warning e .pure-legal-notice em CSS.
  *
  * CORREÇÕES CIRÚRGICAS v13.11.4-PURE (2026-04-02):
- *  16. [JS] Eliminado _pericialSafeBoot() auto-executor. Sincronização
- *      activada exclusivamente via UNIFEDSystem.loadAnonymizedRealCase()
- *      chamado pelo index.html após fetch() do panel.html — elimina race
- *      condition entre injecção do DOM e tentativa de preenchimento.
- *  17. [JS] Mapeamento massivo: 24 IDs das Secções I, II e IV preenchidos
- *      via objecto map em _syncPureDashboard() — elimina zeros residuais.
- *  18. [JS] _renderTriangulationMatrix() ancorada dentro de
- *      #pureDashboardWrapper / #pureDashboard — proibido render fora do painel.
- *  19. [JS] _forceSemesterAndFlows() simplificada: lê directamente de
- *      _PDF_CASE (sem dependência de sys.auxiliaryData em runtime).
+ *  16. [JS] Eliminado _pericialSafeBoot() auto-executor.
+ *  17. [JS] Mapeamento massivo: 24 IDs das Secções I, II e IV.
+ *  18. [JS] _renderTriangulationMatrix() ancorada dentro do wrapper.
+ *  19. [JS] _forceSemesterAndFlows() lê directamente de _PDF_CASE.
+ *
+ * CORREÇÕES CIRÚRGICAS v13.11.5-PURE (2026-04-03):
+ *  A. [JS] map expandido: Identificação (pure-subject-name/nif, pure-periodo,
+ *     pure-session-id, pure-hash-prefix), Módulo IV completo (pure-nc-total-geral,
+ *     pure-taxas-cancel), Custódia (total-evidencias, ctrl-count) — eliminação
+ *     de todos os campos em branco restantes no painel.
+ *  B. [CSS] #triangulationMatrixContainer: dark mode forçado (background #1e293b,
+ *     color #f8fafc), largura 100%, max-width:none — elimina fundo branco e
+ *     quebra de layout em viewports <1200px.
+ *  C. [JS] Supressão de DAC7 boxes com valor zero (Q1/Q2/Q3): display:none
+ *     aplicado via querySelectorAll('.pure-dac7-box') após preenchimento do map.
  * ============================================================================
  */
 
@@ -218,7 +223,7 @@
             var c = _PDF_CASE.crossings;
             var a = _PDF_CASE.auxiliaryData;
 
-            // CORR-17: Mapeamento massivo — 24 IDs das Secções I, II e IV
+            // CORR-17: Mapeamento massivo — Secções I, II, IV + v13.11.5 expansão
             var map = {
                 // ── Secção I — Reconstituição Financeira ────────────────────
                 'pure-ganhos':    _fmt(p.ganhos),
@@ -251,11 +256,37 @@
                 'pure-nc-portagens':     _fmt(a.portagens),
                 'pure-nc-cancelamentos': _fmt(a.cancelamentos),
                 'pure-nc-total':         _fmt(a.totalNaoSujeitos),
+                'pure-nc-total-geral':   _fmt(a.totalNaoSujeitos),
                 'pure-zc-amount':        _fmt(a.totalNaoSujeitos),
-                'pure-nao-sujeitos':     _fmt(a.totalNaoSujeitos)
+                'pure-nao-sujeitos':     _fmt(a.totalNaoSujeitos),
+                'pure-taxas-cancel':     _fmt(a.cancelamentos),
+
+                // ── CORR-A v13.11.5: Identificação do Sujeito Passivo ─────────
+                'pure-subject-name': _PDF_CASE.client.name,
+                'pure-subject-nif':  _PDF_CASE.client.nif,
+                'pure-periodo':      '2.º Semestre',
+                'pure-session-id':   _PDF_CASE.sessionId,
+                'pure-hash-prefix':  _PDF_CASE.masterHash.substring(0, 8) + '...',
+                'pure-hash-prefix-verdict': _PDF_CASE.masterHash.substring(0, 8) + '...',
+
+                // ── CORR-A v13.11.5: Gestão de Custódia (contadores) ──────────
+                'total-evidencias': '15',
+                'ctrl-count':       '4'
             };
 
             Object.keys(map).forEach(function(id) { _set(id, map[id]); });
+
+            // CORR-C v13.11.5: Suprimir cards DAC7 com valor zero (Q1/Q2/Q3)
+            // Evita exibição de trimestres vazios que induzem erro de leitura pericial
+            document.querySelectorAll('.pure-dac7-box').forEach(function(box) {
+                var valEl = box.querySelector('.pure-metric-value, .pure-data-value, .kpi-value');
+                if (valEl) {
+                    var txt = valEl.textContent.trim();
+                    if (txt === '0,00 €' || txt === '0.00 €' || txt === '--' || txt === '0') {
+                        box.style.display = 'none';
+                    }
+                }
+            });
 
             // ── IDs legados do dashboard principal ────────────────────────────
             _set('saftIliquidoValue', _fmt(p.saftIliquido));
@@ -292,7 +323,7 @@
             var _wrapper = document.getElementById('pureDashboardWrapper');
             if (_wrapper) _wrapper.classList.add('pure-visible');
 
-            console.log('[UNIFED-PURE] ✅ v13.11.4 — Domínio visual estabilizado. DORA Compliant.');
+            console.log('[UNIFED-PURE] ✅ v13.11.5 — Domínio visual estabilizado. DORA Compliant.');
 
         } catch(e) { console.error('[UNIFED-PURE] ERRO FATAL em _syncPureDashboard:', e); }
     }
