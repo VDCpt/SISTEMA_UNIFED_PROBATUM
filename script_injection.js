@@ -1,5 +1,5 @@
 /**
- * UNIFED - PROBATUM · CASO REAL ANONIMIZADO v13.10.1-PURE
+ * UNIFED - PROBATUM · CASO REAL ANONIMIZADO v13.11.2-PURE
  * ============================================================================
  * Script de Injeção de Dados Forenses Certificados
  * Conjunto de dados extraído do PDF: IFDE_Parecer_IFDE-MNBWZSD5-F2C60.pdf
@@ -21,6 +21,31 @@
  *   7. [LÓGICA] Módulo IV — soma Campanhas + Gorjetas corrigida: totalNaoSujeitos
  *      (€451,15) substitui HARDCODED_NON_TAXABLE (€405,00) em todos os pontos
  *      de injeção; eliminada inconformidade de somatório detectada em auditoria.
+ *
+ * CORREÇÕES CIRÚRGICAS v13.11.0-PURE (2026-04-02):
+ *   8. [CSS/JS] Flash de conteúdo — #pureDashboardWrapper arranca com
+ *      visibility:hidden; classe .pure-visible injectada via classList.add()
+ *      no final de _syncPureDashboard(), garantindo render-blocking seguro.
+ *   9. [JS] Label dinâmica — selector [data-pt*="Discrepância Reportada"]
+ *      actualizado para "Diferencial de Fluxo Financeiro Auditado".
+ *  10. [CSS] pure-metric-card / pure-metric-value — novas classes definidas
+ *      em style_additions.css para o bloco de painel adicionado em panel.html.
+ *  11. [ENRICH] generateLegalNarrative — override com narrativa estática de
+ *      convencimento jurídico referenciando Art. 103.º RGIT e ónus da prova.
+ *
+ * CORRECÇÕES AO LOTE v13.11.0 (erros detectados antes de integração):
+ *   E01: _VALORES_REAIS.gorjetas corrigido de 405.00 → 46.00 (valor real extrato).
+ *   E02: sys.analysis.auxiliaryValues corrigido para sys.auxiliaryData (path válido).
+ *   E03: _VALORES_REAIS.portagens corrigido de 0.00 → 0.15 (fidelidade documental).
+ *
+ * CORREÇÕES CIRÚRGICAS v13.11.2-PURE (2026-04-02):
+ *  12. [JS] Cálculo IVA 6% (Verba 2.18 Lista I CIVA) sobre saftBruto injectado
+ *      em #pure-iva-devido — alerta "Asfixia Financeira" activo no dashboard.
+ *  13. [JS] Art. 405.º C. Civil integrado na narrativa de injúria contratual:
+ *      comissão plataforma incide sobre Bruto (IVA incluído) — demonstrado no DOM.
+ *  14. [panel.html] Grid 3 colunas: pure-disc-c2, pure-asfixia-container
+ *      (pure-iva-devido), pure-nao-sujeitos inseridos após bloco Impacto Fiscal.
+ *  15. [CSS] .pure-metric-card.warning e .pure-legal-notice adicionados.
  * ============================================================================
  */
 
@@ -429,6 +454,27 @@
             [['dac7Q1Value',0],['dac7Q2Value',0],['dac7Q3Value',0],['dac7Q4Value',7755.16]].forEach(([id,v]) => { let el = document.getElementById(id); if(el) el.textContent = _fmt(v); });
             _safeReInjectAuxValues();
 
+            // CORR-12/13 (v13.11.2): IVA 6% (Verba 2.18 Lista I CIVA) sobre SAF-T Bruto
+            // Art. 405.º C. Civil: comissão plataforma incide sobre valor bruto (IVA incluído).
+            // Demonstração da "Asfixia Financeira": operador paga comissão sobre imposto alheio.
+            (function _injectIva6Alert() {
+                try {
+                    var _saftBruto = (sys.analysis && sys.analysis.totals && sys.analysis.totals.saftBruto)
+                        ? sys.analysis.totals.saftBruto : _PDF_CASE.totals.saftBruto;
+                    var _iva6 = _saftBruto * 0.06;
+                    var _elIva = document.getElementById('pure-iva-devido');
+                    if (_elIva) {
+                        _elIva.textContent = _fmt(_iva6);
+                        _elIva.style.color = '#FACC15';
+                    }
+                    // Também preenche o total Não Sujeitos no novo grid (pure-nao-sujeitos)
+                    var _totalNS = (sys.auxiliaryData && sys.auxiliaryData.totalNaoSujeitos)
+                        ? sys.auxiliaryData.totalNaoSujeitos : _PDF_CASE.auxiliaryData.totalNaoSujeitos;
+                    var _elNS = document.getElementById('pure-nao-sujeitos');
+                    if (_elNS) _elNS.textContent = _fmt(_totalNS);
+                } catch(_e) { console.warn('[UNIFED-PURE] IVA6 inject:', _e.message); }
+            })();
+
             // CORREÇÃO 3: Forçar 2.º Semestre e Fluxos (com atraso para garantir DOM estável)
             setTimeout(_forceSemesterAndFlows, 1500);
 
@@ -442,6 +488,18 @@
             _injectDac7LayoutFix();           // CORREÇÃO 2
             _isolatePanelCSSClosed();
             _renderTriangulationMatrix();
+
+            // CORR-8 (v13.11.0): label dinâmica — terminologia jurídica blindada
+            var labelDisc = document.querySelector('[data-pt*="Discrepância Reportada"]');
+            if (labelDisc) {
+                labelDisc.textContent = 'Diferencial de Fluxo Financeiro Auditado';
+                labelDisc.setAttribute('data-pt', 'Diferencial de Fluxo Financeiro Auditado');
+                labelDisc.setAttribute('data-en', 'Audited Financial Flow Differential');
+            }
+
+            // CORR-8 (v13.11.0): eliminar flash — revelar wrapper após sincronização completa
+            var _wrapper = document.getElementById('pureDashboardWrapper');
+            if (_wrapper) _wrapper.classList.add('pure-visible');
 
             console.log('[UNIFED-PURE] Sincronização concluída.');
         } catch(e) { console.error('[UNIFED-PURE] ERRO FATAL:', e); }

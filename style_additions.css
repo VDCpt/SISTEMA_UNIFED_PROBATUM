@@ -1,5 +1,5 @@
 /* ============================================================================
-   UNIFED - PROBATUM · v13.5.0-PURE · ESTILOS DO PAINEL DE CASO REAL
+   UNIFED - PROBATUM · v13.11.2-PURE · ESTILOS DO PAINEL DE CASO REAL
    ============================================================================
    Escopo      : Seletor raiz #pureDashboard — sem conflito com estilos base.
    Variáveis   : Consume as CSS custom properties existentes em style.css base.
@@ -560,4 +560,118 @@
 
 /* ============================================================================
    FIM ADIÇÕES v13.10.1-PURE
+   ============================================================================ */
+
+/* ============================================================================
+   ADIÇÕES v13.11.0-PURE · 2026-04-02
+   CORR-8: Eliminação de Flash de Conteúdo (render-blocking seguro)
+   CORR-10: Novas classes pure-metric-card / pure-metric-value (panel.html)
+   ============================================================================ */
+
+/* ── CORR-8: Anti-flash — wrapper arranca oculto; JS injecta .pure-visible ──── */
+/* ATENÇÃO: o wrapper deve ter id="pureDashboardWrapper" a envolver o #pureDashboard. */
+/* A classe .pure-visible é adicionada por _syncPureDashboard() no final do ciclo  */
+/* de sincronização, garantindo que o DOM só é visível após todos os valores serem  */
+/* injectados. Elimina o flash de conteúdo "€ 0,00 → valor real" observado em      */
+/* browsers com render pipeline rápido (Chromium 124+).                             */
+#pureDashboardWrapper {
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out, visibility 0s linear 0s;
+}
+
+#pureDashboardWrapper.pure-visible {
+    visibility: visible !important;
+    opacity: 1 !important;
+    transition: opacity 0.5s ease-in-out;
+}
+
+/* ── CORR-10: Novo bloco de métrica — pure-metric-card (panel.html) ─────────── */
+/* Usado no bloco "Diferencial de Fluxo Financeiro Auditado" (PAINEL II ext.)    */
+.pure-metric-card {
+    background: var(--pure-bg-card, rgba(13, 27, 42, 0.85));
+    border: 1px solid var(--pure-border, rgba(0, 229, 255, 0.18));
+    border-radius: var(--pure-radius, 8px);
+    padding: 16px 20px;
+    margin-bottom: 12px;
+    font-family: var(--pure-font-mono, 'Courier New', monospace);
+}
+
+.pure-metric-card.alert {
+    border-color: var(--pure-border-alert, rgba(239, 68, 68, 0.35));
+    background: rgba(239, 68, 68, 0.04);
+    border-left: 4px solid var(--pure-warn, #EF4444);
+}
+
+.pure-metric-label {
+    font-size: 0.65rem;
+    color: var(--pure-text-muted, rgba(255, 255, 255, 0.5));
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+
+.pure-metric-value {
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: var(--pure-warn, #EF4444);
+    letter-spacing: 0.03em;
+}
+
+/* ── Responsividade para pure-metric-card ───────────────────────────────────── */
+@media (max-width: 600px) {
+    .pure-metric-value { font-size: 1.15rem; }
+}
+
+/* ============================================================================
+   FIM ADIÇÕES v13.11.0-PURE
+   ============================================================================ */
+
+/* ============================================================================
+   ADIÇÕES v13.11.2-PURE · 2026-04-02
+   CORR-15: .pure-metric-card.warning (Asfixia Financeira — Art. 405.º C. Civil)
+   CORR-15: .pure-legal-notice (rodapé jurídico no card)
+   CORR-15: #pure-iva-devido (transição suave ao preencher o valor calculado)
+   ============================================================================ */
+
+/* ── .pure-metric-card.warning — alerta amarelo (penalização dupla IVA) ─────── */
+/* Distinto de .alert (vermelho) para hierarquia visual pericial:                 */
+/*   · .alert   → infracção declarativa (Art. 103.º RGIT)                        */
+/*   · .warning → risco financeiro contratual (Art. 405.º C. Civil)              */
+.pure-metric-card.warning {
+    border-color: rgba(250, 204, 21, 0.45);
+    background: rgba(250, 204, 21, 0.04);
+    border-left: 4px solid #FACC15;
+}
+
+.pure-metric-card.warning .pure-metric-value {
+    color: #FACC15;
+}
+
+/* ── .pure-legal-notice — rodapé jurídico dentro do card ────────────────────── */
+.pure-legal-notice {
+    font-size: 0.62rem;
+    color: var(--pure-text-muted, rgba(255, 255, 255, 0.5));
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px dashed rgba(148, 163, 184, 0.3);
+    font-style: italic;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    line-height: 1.5;
+}
+
+/* ── #pure-iva-devido — transição suave ao injectar valor calculado ─────────── */
+#pure-iva-devido {
+    transition: color 0.4s ease, opacity 0.4s ease;
+}
+
+/* ── Responsividade para pure-3col no contexto das novas metric-cards ────────── */
+@media (max-width: 600px) {
+    .pure-metric-card { padding: 12px 14px; }
+    .pure-legal-notice { font-size: 0.58rem; }
+}
+
+/* ============================================================================
+   FIM ADIÇÕES v13.11.2-PURE
    ============================================================================ */
