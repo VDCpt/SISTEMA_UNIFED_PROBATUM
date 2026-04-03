@@ -1,15 +1,15 @@
 /**
- * UNIFED - PROBATUM · CASO REAL ANONIMIZADO v13.11.12-PURE (PARTE 1 DE 4)
+ * UNIFED - PROBATUM · CASO REAL ANONIMIZADO v13.11.13-PURE (PARTE 1 DE 4)
  * ============================================================================
  * Missão: Injeção Forense e Reconstituição da Verdade Material
  * Conformidade: DORA (UE) 2022/2554 · Art. 125.º CPP · ISO/IEC 27037:2012
  * ============================================================================
- * v13.11.12-PURE: Dados reais originais dos documentos.
- * Modificações legais: substituição de Art. 103.º/104.º RGIT por Art. 119.º RGIT
- * (Contra-ordenação). Remoção de termos "Crime" ou "Dolo" da interface.
- * Ocultação do painel "MOTOR PREDITIVO NEXUS ATF".
- * ADIÇÃO v13.11.12-MIS: Métrica de Impacto Sistémico (MIS) com projeção
- * para 38.000 operadores TVDE e 7 anos de operação.
+ * v13.11.13-PURE:
+ *   - Dados macro sistémicos (38.000 operadores, 7 anos, impacto 1,74MM€)
+ *   - Escudo silencioso CORS para FreeTSA (sem erros vermelhos)
+ *   - CSS dinâmico: boxes auxiliares com tamanhos iguais e largura total
+ *   - Ocultação do gráfico "DISCREPÂNCIA SAF-T vs DAC7" (discrepancyChart)
+ *   - Exclusão de dados macro do Master Hash (integridade da prova individual)
  * ============================================================================
  */
 
@@ -67,7 +67,41 @@
         }
     });
 
-    // 2. UTILITÁRIOS DE FORMATAÇÃO E ACESSO AO DOM
+    // 2. ESCUDO SILENCIOSO PARA CORS (TSA / FREETSA FALLBACK)
+    // Impede que erros 'Failed to fetch' apareçam em vermelho na consola
+    (function _installCORSSilentShield() {
+        const targetUrl = 'freetsa.org';
+        const originalFetch = window.fetch;
+        if (typeof originalFetch === 'function') {
+            window.fetch = function(input, init) {
+                const url = typeof input === 'string' ? input : (input && input.url);
+                if (url && url.indexOf(targetUrl) !== -1) {
+                    return originalFetch.apply(this, arguments).catch(function(err) {
+                        console.warn('[UNIFED] ⚙ Modo Standalone Ativo: Selagem TSA externa indisponível. Integridade assegurada por Assinatura Local SHA-256 (Nível 1).');
+                        throw err;
+                    });
+                }
+                return originalFetch.apply(this, arguments);
+            };
+        }
+        // Adicionalmente, silenciar erros não capturados relacionados com freetsa
+        window.addEventListener('unhandledrejection', function(event) {
+            if (event.reason && event.reason.message && event.reason.message.indexOf('freetsa') !== -1) {
+                console.warn('[UNIFED] ⚙ Modo Standalone Ativo: Selagem TSA externa indisponível (promise).');
+                event.preventDefault();
+            }
+        });
+        window.addEventListener('error', function(event) {
+            if (event.message && event.message.indexOf('freetsa') !== -1) {
+                console.warn('[UNIFED] ⚙ Modo Standalone Ativo: Selagem TSA externa indisponível (erro global).');
+                event.preventDefault();
+                return true;
+            }
+        });
+        console.log('[UNIFED] Escudo CORS silencioso instalado para FreeTSA.');
+    })();
+
+    // 3. UTILITÁRIOS DE FORMATAÇÃO E ACESSO AO DOM
     const _fmt = (v) => new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(v);
     
     const _set = (id, val) => {
@@ -82,7 +116,7 @@
 })();
 
 /**
- * UNIFED - PROBATUM · v13.11.12-PURE (PARTE 2 DE 4)
+ * UNIFED - PROBATUM · v13.11.13-PURE (PARTE 2 DE 4)
  * ============================================================================
  * Objetivo: Motor de Cálculo Forense e Mapeamento de Omissões — Completo
  * Modificação legal: textos dos smoking guns e veredicto ajustados para Art. 119.º RGIT.
@@ -242,7 +276,7 @@
 })();
 
 /**
- * UNIFED - PROBATUM · v13.11.12-PURE (PARTE 3 DE 4)
+ * UNIFED - PROBATUM · v13.11.13-PURE (PARTE 3 DE 4)
  * ============================================================================
  * Objetivo: Construção da Matriz de Triangulação (Visualização Judicial)
  * Textos legais ajustados para Art. 119.º RGIT.
@@ -291,13 +325,12 @@
 })();
 
 /**
- * UNIFED - PROBATUM · v13.11.12-PURE (PARTE 4 DE 4)
+ * UNIFED - PROBATUM · v13.11.13-PURE (PARTE 4 DE 4)
  * ============================================================================
  * Objetivo: Gatilho Final, ATF Metrics e Revelação do Painel
  * Dados reais originais: campanhas=405.00, portagens=0.15, gorjetas=46.00,
  * cancelamentos=58.10, total não sujeitos=451.15.
- * Modificações: ocultação do painel "MOTOR PREDITIVO NEXUS ATF", garantia
- * de textos em português de Portugal e injeção dinâmica do Card MIS.
+ * Modificações: CSS dinâmico para boxes auxiliares, ocultação do gráfico discrepancyChart.
  * ============================================================================
  */
 
@@ -306,7 +339,63 @@
     if (!window.UNIFED_INTERNAL) return;
     const { data, fmt, set, syncMetrics, renderMatrix } = window.UNIFED_INTERNAL;
 
-    // Função para ocultar elementos do Motor Preditivo NEXUS ATF
+    // 1. CSS dinâmico para forçar boxes auxiliares com tamanhos iguais e largura total
+    function _injectAuxiliaryBoxesCSS() {
+        const styleId = 'unifed-aux-boxes-fix';
+        if (document.getElementById(styleId)) return;
+        const css = `
+            .auxiliary-helper-section {
+                width: 100% !important;
+                max-width: 100% !important;
+                box-sizing: border-box !important;
+            }
+            .aux-boxes-grid {
+                display: grid !important;
+                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
+                gap: 0.75rem !important;
+                width: 100% !important;
+            }
+            .small-info-box {
+                width: 100% !important;
+                margin: 0 !important;
+                box-sizing: border-box !important;
+            }
+            @media (max-width: 640px) {
+                .aux-boxes-grid {
+                    grid-template-columns: repeat(2, 1fr) !important;
+                }
+            }
+            @media (max-width: 480px) {
+                .aux-boxes-grid {
+                    grid-template-columns: 1fr !important;
+                }
+            }
+        `;
+        const style = document.createElement('style');
+        style.id = styleId;
+        style.textContent = css;
+        document.head.appendChild(style);
+        console.log('[UNIFED] CSS injetado: boxes auxiliares com tamanhos iguais e largura total.');
+    }
+
+    // 2. Ocultar o gráfico "DISCREPÂNCIA SAF-T vs DAC7" (discrepancyChart)
+    function _hideDiscrepancyChart() {
+        const canvas = document.getElementById('discrepancyChart');
+        if (canvas) {
+            canvas.style.display = 'none';
+            const section = canvas.closest('.chart-section');
+            if (section && section.querySelectorAll('canvas').length === 1) {
+                section.style.display = 'none';
+                console.log('[UNIFED] Secção do gráfico DISCREPÂNCIA SAF-T vs DAC7 ocultada.');
+            } else {
+                console.log('[UNIFED] Canvas discrepancyChart ocultado, mas a secção pode conter outros elementos.');
+            }
+        } else {
+            console.log('[UNIFED] Canvas discrepancyChart não encontrado – nada a ocultar.');
+        }
+    }
+
+    // 3. Oculta o Motor Preditivo NEXUS ATF
     function _hideNexusForecast() {
         const nexusPanel = document.getElementById('nexusForecastPanel');
         if (nexusPanel) nexusPanel.style.display = 'none';
@@ -321,11 +410,11 @@
         console.log('[UNIFED] Motor Preditivo NEXUS ATF ocultado por orientação pericial.');
     }
 
-    // Função para injetar o card de Análise de Risco Sistémico (MIS)
+    // 4. Injeta o card de Análise de Risco Sistémico (MIS)
     function _injectMacroCard() {
         const target = document.getElementById('pureDashboard');
         if (!target) return;
-        if (document.getElementById('pureMacroCard')) return; // já existe
+        if (document.getElementById('pureMacroCard')) return;
 
         const macro = data.macro_analysis;
         if (!macro) return;
@@ -368,7 +457,7 @@
         target.insertAdjacentHTML('beforeend', cardHtml);
     }
 
-    // Função para atualizar especificamente os elementos da secção auxiliar
+    // 5. Atualiza os elementos da secção auxiliar (valores reais)
     function _updateAuxiliaryUI() {
         const t = data.totals;
         
@@ -408,7 +497,7 @@
         console.log('[UNIFED] UI auxiliar atualizada: Campanhas=', fmt(t.campanhas), 'Portagens=', fmt(t.portagens), 'Gorjetas=', fmt(t.gorjetas), 'Cancelamentos=', fmt(t.cancelamentos), 'Total=', fmt(t.totalNaoSujeitos));
     }
 
-    // Função para simular o carregamento de evidências no UNIFEDSystem
+    // 6. Simula o carregamento de evidências no UNIFEDSystem (dados reais)
     function _simulateEvidenceUpload() {
         if (typeof window.UNIFEDSystem === 'undefined') {
             console.warn('[UNIFED] UNIFEDSystem não disponível para simular upload.');
@@ -690,7 +779,7 @@
         return true;
     }
 
-    // Função auxiliar para gerar QR Code (cópia da existente em script.js)
+    // Função auxiliar para gerar QR Code
     function generateQRCode() {
         const container = document.getElementById('qrcodeContainer');
         if (!container) return;
@@ -731,11 +820,12 @@
 
         syncMetrics();
         renderMatrix();
-        _injectMacroCard();       // Inserir card MIS
-        _updateAuxiliaryUI();
+        _injectMacroCard();
+        _injectAuxiliaryBoxesCSS();   // Aplica CSS às boxes auxiliares
+        _hideDiscrepancyChart();      // Oculta o gráfico
+        _updateAuxiliaryUI();         // Actualiza valores das boxes
         _hideNexusForecast();
         
-        // MutationObserver para garantir que a UI auxiliar e o card macro sejam recriados se necessário
         const observer = new MutationObserver(function(mutations) {
             mutations.forEach(function(mutation) {
                 if (mutation.type === 'childList' && mutation.addedNodes.length) {
@@ -775,7 +865,7 @@
         const exportJSONBtn = document.getElementById('exportJSONBtn');
         if (exportJSONBtn) exportJSONBtn.disabled = false;
 
-        console.log('[UNIFED] ✅ SISTEMA 100% OPERACIONAL — Dados reais carregados. Motor Preditivo ocultado. Card MIS injectado.');
+        console.log('[UNIFED] ✅ SISTEMA 100% OPERACIONAL — Dados reais carregados. Motor Preditivo ocultado. Card MIS injectado. Boxes auxiliares ajustadas.');
     }
 
     window.UNIFEDSystem = window.UNIFEDSystem || {};
