@@ -284,11 +284,9 @@
 
     // Função para ocultar elementos do Motor Preditivo NEXUS ATF
     function _hideNexusForecast() {
-        // Ocultar o painel de previsão (se existir)
         const nexusPanel = document.getElementById('nexusForecastPanel');
         if (nexusPanel) nexusPanel.style.display = 'none';
         
-        // Ocultar qualquer botão ou referência ao motor preditivo no modal ATF
         const atfModal = document.getElementById('atfModal');
         if (atfModal) {
             const forecastElements = atfModal.querySelectorAll('#nexusForecastPanel, [class*="nexus"], [id*="nexusForecast"]');
@@ -297,7 +295,6 @@
             });
         }
         
-        // Remover a linha de previsão do gráfico ATF se existir (será tratado pelo Chart.js)
         console.log('[UNIFED] Motor Preditivo NEXUS ATF ocultado por orientação pericial.');
     }
 
@@ -323,7 +320,6 @@
             }
         });
         
-        // Atualizar também a nota de reconciliação DAC7
         const dac7NoteValue = document.getElementById('auxDac7NoteValue');
         if (dac7NoteValue) dac7NoteValue.textContent = fmt(t.totalNaoSujeitos);
         const dac7NoteValueQ = document.getElementById('auxDac7NoteValueQ');
@@ -334,7 +330,6 @@
             dac7Note.style.display = 'block';
         }
         
-        // Garantir que o texto do questionário está em português correto
         const questionText = document.getElementById('pure-zc-question-text');
         if (questionText) {
             questionText.textContent = 'Pode a plataforma confirmar se os €451,15 em Gorjetas e Campanhas (isentos de comissão nos termos da Lei TVDE) foram incluídos na base de cálculo do reporte DAC7? Se sim, qual o fundamento legal?';
@@ -632,15 +627,14 @@
         syncMetrics();
         renderMatrix();
         _updateAuxiliaryUI();
-        _hideNexusForecast();  // Ocultar o Motor Preditivo NEXUS ATF
+        _hideNexusForecast();
         
-        // MutationObserver para garantir que a UI auxiliar seja atualizada se criada dinamicamente
         const observer = new MutationObserver(function(mutations) {
             mutations.forEach(function(mutation) {
                 if (mutation.type === 'childList' && mutation.addedNodes.length) {
                     if (document.getElementById('auxBoxCampanhasValue')) {
                         _updateAuxiliaryUI();
-                        _hideNexusForecast(); // Reaplicar ocultação caso o painel seja recriado
+                        _hideNexusForecast();
                         observer.disconnect();
                     }
                 }
