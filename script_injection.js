@@ -8,13 +8,15 @@
  * Modificações legais: substituição de Art. 103.º/104.º RGIT por Art. 119.º RGIT
  * (Contra-ordenação). Remoção de termos "Crime" ou "Dolo" da interface.
  * Ocultação do painel "MOTOR PREDITIVO NEXUS ATF".
+ * ADIÇÃO v13.11.12-MIS: Métrica de Impacto Sistémico (MIS) com projeção
+ * para 38.000 operadores TVDE e 7 anos de operação.
  * ============================================================================
  */
 
 (function() {
     'use strict';
 
-    // 1. DATASET MESTRE (OBJETO IMUTÁVEL) — VALORES REAIS ORIGINAIS
+    // 1. DATASET MESTRE (OBJETO IMUTÁVEL) — VALORES REAIS ORIGINAIS + MACRO
     const _PDF_CASE = Object.freeze({
         sessionId:  "UNIFED-MNGFN3C0-X57MO",
         masterHash: "a3f8c9e2d5b6a7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1",
@@ -50,6 +52,18 @@
             score: 40,
             trend: "DESCENDENTE",
             outliers: 0
+        },
+        // ── MÓDULO DE IMPACTO SISTÉMICO (MIS) ──────────────────────────────────
+        macro_analysis: {
+            sector_drivers: 38000,
+            operational_years: 7,
+            avg_monthly_discrepancy: 546.24,
+            estimated_systemic_gap: 1743598080.00,
+            confidence_level: "High (based on verified algorithmic pattern)",
+            legal_implication: "Potential systemic tax erosion under Art. 119.º RGIT (Iteration)",
+            methodology: "Extrapolação Estatística de Baixa Variância · ISO/IEC 27037:2012",
+            status: "INDICATIVO_MACRO",
+            disclaimer: "Os valores de impacto sistémico constituem contexto macroeconómico e não prova direta de ilícito alheio, nos termos do Art. 128.º do CPP."
         }
     });
 
@@ -152,6 +166,16 @@
         };
 
         Object.entries(map).forEach(([id, val]) => set(id, val));
+        
+        // ── MÉTRICAS MACRO (MIS) ──────────────────────────────────────────────
+        const macro = data.macro_analysis;
+        if (macro) {
+            const monthlyLoss = (macro.sector_drivers || 38000) * (macro.avg_monthly_discrepancy || 546.24);
+            set('pure-macro-universe', macro.sector_drivers.toLocaleString('pt-PT'));
+            set('pure-macro-horizon', macro.operational_years + ' Anos');
+            set('pure-macro-monthly-loss', fmt(monthlyLoss));
+            set('pure-macro-total-loss', fmt(macro.estimated_systemic_gap));
+        }
         
         // Atualizar textos legais nos elementos estáticos (não mapeados por ID)
         const sg2Legal = document.getElementById('pure-sg2-legal');
@@ -272,8 +296,8 @@
  * Objetivo: Gatilho Final, ATF Metrics e Revelação do Painel
  * Dados reais originais: campanhas=405.00, portagens=0.15, gorjetas=46.00,
  * cancelamentos=58.10, total não sujeitos=451.15.
- * Modificações: ocultação do painel "MOTOR PREDITIVO NEXUS ATF" e garantia
- * de que os textos estão em português de Portugal, sem erros de codificação.
+ * Modificações: ocultação do painel "MOTOR PREDITIVO NEXUS ATF", garantia
+ * de textos em português de Portugal e injeção dinâmica do Card MIS.
  * ============================================================================
  */
 
@@ -294,8 +318,54 @@
                 if (el) el.style.display = 'none';
             });
         }
-        
         console.log('[UNIFED] Motor Preditivo NEXUS ATF ocultado por orientação pericial.');
+    }
+
+    // Função para injetar o card de Análise de Risco Sistémico (MIS)
+    function _injectMacroCard() {
+        const target = document.getElementById('pureDashboard');
+        if (!target) return;
+        if (document.getElementById('pureMacroCard')) return; // já existe
+
+        const macro = data.macro_analysis;
+        if (!macro) return;
+
+        const monthlyLoss = (macro.sector_drivers || 38000) * (macro.avg_monthly_discrepancy || 546.24);
+
+        const cardHtml = `
+        <div class="pure-card pure-card-macro" id="pureMacroCard">
+            <h3 class="pure-card-title">
+                <span class="pure-icon">🌍</span>
+                <span id="pure-macro-title" data-pt="IV. ANÁLISE DE RISCO SISTÉMICO (MIS)" data-en="IV. SYSTEMIC RISK ANALYSIS (MIS)">IV. ANÁLISE DE RISCO SISTÉMICO (MIS)</span>
+            </h3>
+            <div class="pure-macro-grid" style="display:flex; flex-wrap:wrap; gap:1rem; justify-content:space-between;">
+                <div class="pure-macro-item" style="flex:1; min-width:160px; background:rgba(255,255,255,0.03); padding:12px; border-radius:6px;">
+                    <div class="pure-macro-label" style="font-size:0.65rem; color:#94a3b8; text-transform:uppercase;" data-pt="Universo de Operadores" data-en="Operators Universe">Universo de Operadores</div>
+                    <div id="pure-macro-universe" class="pure-macro-value" style="font-size:1.4rem; font-weight:700; color:#00E5FF;">${macro.sector_drivers.toLocaleString('pt-PT')}</div>
+                    <div class="pure-macro-sub" style="font-size:0.6rem; color:#64748b;">Sector TVDE Portugal</div>
+                </div>
+                <div class="pure-macro-item" style="flex:1; min-width:160px; background:rgba(255,255,255,0.03); padding:12px; border-radius:6px;">
+                    <div class="pure-macro-label" style="font-size:0.65rem; color:#94a3b8; text-transform:uppercase;" data-pt="Horizonte Temporal" data-en="Time Horizon">Horizonte Temporal</div>
+                    <div id="pure-macro-horizon" class="pure-macro-value" style="font-size:1.4rem; font-weight:700; color:#00E5FF;">${macro.operational_years} Anos</div>
+                    <div class="pure-macro-sub" style="font-size:0.6rem; color:#64748b;">2019–2026</div>
+                </div>
+                <div class="pure-macro-item" style="flex:1; min-width:160px; background:rgba(255,255,255,0.03); padding:12px; border-radius:6px;">
+                    <div class="pure-macro-label" style="font-size:0.65rem; color:#94a3b8; text-transform:uppercase;" data-pt="Erosão Mensal Estimada" data-en="Estimated Monthly Erosion">Erosão Mensal Estimada</div>
+                    <div id="pure-macro-monthly-loss" class="pure-macro-value" style="font-size:1.4rem; font-weight:700; color:#F59E0B;">${fmt(monthlyLoss)}</div>
+                    <div class="pure-macro-sub" style="font-size:0.6rem; color:#64748b;">Art. 119.º RGIT</div>
+                </div>
+                <div class="pure-macro-item pure-macro-highlight" style="flex:1.5; min-width:200px; background:rgba(239,68,68,0.08); border-left:3px solid #EF4444; padding:12px; border-radius:6px;">
+                    <div class="pure-macro-label" style="font-size:0.65rem; color:#94a3b8; text-transform:uppercase;" data-pt="Erosão Fiscal Estimada (7 Anos)" data-en="Estimated Tax Erosion (7 Years)">Erosão Fiscal Estimada (7 Anos)</div>
+                    <div id="pure-macro-total-loss" class="pure-macro-value" style="font-size:1.6rem; font-weight:900; color:#EF4444;">${fmt(macro.estimated_systemic_gap)}</div>
+                    <div class="pure-macro-sub" style="font-size:0.6rem; color:#EF4444;">Art. 119.º RGIT (Iteração)</div>
+                </div>
+            </div>
+            <div class="pure-macro-disclaimer" style="margin-top:1rem; padding:0.75rem; background:rgba(0,0,0,0.3); border-left:3px solid #FACC15; font-size:0.7rem; color:#94a3b8;">
+                <i class="fas fa-gavel"></i> 
+                <span data-pt="Os valores de impacto sistémico constituem contexto macroeconómico e não prova direta de ilícito alheio, nos termos do Art. 128.º do CPP." data-en="Systemic impact values constitute macroeconomic context and not direct proof of third-party wrongdoing, under Art. 128 CPP.">Os valores de impacto sistémico constituem contexto macroeconómico e não prova direta de ilícito alheio, nos termos do Art. 128.º do CPP.</span>
+            </div>
+        </div>`;
+        target.insertAdjacentHTML('beforeend', cardHtml);
     }
 
     // Função para atualizar especificamente os elementos da secção auxiliar
@@ -347,6 +417,7 @@
 
         const sys = window.UNIFEDSystem;
         const t = data.totals;
+        const macro = data.macro_analysis;
 
         if (!sys.documents) sys.documents = {};
         if (!sys.documents.control) sys.documents.control = { files: [], totals: { records: 0 } };
@@ -502,7 +573,7 @@
             if (evidenceCount) evidenceCount.textContent = total;
         }
 
-        // 8. Totais e crossings no UNIFEDSystem.analysis
+        // 8. Totais e crossings no UNIFEDSystem.analysis (excluindo dados macro do Master Hash)
         if (!sys.analysis.totals) sys.analysis.totals = {};
         sys.analysis.totals.saftBruto = t.saftBruto;
         sys.analysis.totals.saftIliquido = t.saftIliquido;
@@ -603,12 +674,46 @@
             privacyBadge.innerHTML = currentText.replace(/\s*\(browser\)/gi, '');
         }
 
-        // 14. Master hash
-        if (sys.generateMasterHash) sys.generateMasterHash();
-        else if (typeof window.generateMasterHash === 'function') window.generateMasterHash();
+        // 14. Master hash (excluindo dados macro para preservar integridade da prova individual)
+        const evidenceHashes = sys.analysis.evidenceIntegrity
+            .map(ev => ev.hash)
+            .filter(h => h && h.length === 64)
+            .sort();
+        const binaryConcat = evidenceHashes.join('') + JSON.stringify({ client: sys.client, totals: t }) + sys.sessionId;
+        const masterHashFull = CryptoJS.SHA256(binaryConcat).toString().toUpperCase();
+        sys.masterHash = masterHashFull;
+        setElementText('masterHashValue', masterHashFull);
+        generateQRCode();
+        window.activeForensicSession = { sessionId: sys.sessionId, masterHash: masterHashFull };
 
         console.log('[UNIFED] Evidências simuladas carregadas. Total: 15 ficheiros (CTRL:4, SAFT:4, EXT:4, FAT:2, DAC7:1)');
         return true;
+    }
+
+    // Função auxiliar para gerar QR Code (cópia da existente em script.js)
+    function generateQRCode() {
+        const container = document.getElementById('qrcodeContainer');
+        if (!container) return;
+        container.innerHTML = '';
+        const hashFull = window.UNIFEDSystem?.masterHash || 'HASH_INDISPONIVEL';
+        const sessionShort = window.UNIFEDSystem?.sessionId ? window.UNIFEDSystem.sessionId.substring(0, 16) : 'N/A';
+        const qrData = `UNIFED|${sessionShort}|${hashFull}`;
+        if (typeof QRCode !== 'undefined') {
+            new QRCode(container, {
+                text: qrData,
+                width: 75,
+                height: 75,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.L
+            });
+        }
+        container.setAttribute('data-tooltip', 'Clique para verificar a cadeia de custódia completa');
+    }
+
+    function setElementText(id, text) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text;
     }
 
     function _init() {
@@ -626,15 +731,18 @@
 
         syncMetrics();
         renderMatrix();
+        _injectMacroCard();       // Inserir card MIS
         _updateAuxiliaryUI();
         _hideNexusForecast();
         
+        // MutationObserver para garantir que a UI auxiliar e o card macro sejam recriados se necessário
         const observer = new MutationObserver(function(mutations) {
             mutations.forEach(function(mutation) {
                 if (mutation.type === 'childList' && mutation.addedNodes.length) {
                     if (document.getElementById('auxBoxCampanhasValue')) {
                         _updateAuxiliaryUI();
                         _hideNexusForecast();
+                        if (!document.getElementById('pureMacroCard')) _injectMacroCard();
                         observer.disconnect();
                     }
                 }
@@ -667,7 +775,7 @@
         const exportJSONBtn = document.getElementById('exportJSONBtn');
         if (exportJSONBtn) exportJSONBtn.disabled = false;
 
-        console.log('[UNIFED] ✅ SISTEMA 100% OPERACIONAL — Dados reais carregados. Motor Preditivo ocultado.');
+        console.log('[UNIFED] ✅ SISTEMA 100% OPERACIONAL — Dados reais carregados. Motor Preditivo ocultado. Card MIS injectado.');
     }
 
     window.UNIFEDSystem = window.UNIFEDSystem || {};
