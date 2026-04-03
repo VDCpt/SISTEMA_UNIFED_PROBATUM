@@ -4,22 +4,14 @@
  * Missão: Injeção Forense e Reconstituição da Verdade Material
  * Conformidade: DORA (UE) 2022/2554 · Art. 125.º CPP · ISO/IEC 27037:2012
  * ============================================================================
- * v13.11.12-PURE: Completude total dos dados da DEMO — todos os campos do
- * painel #pureDashboard são preenchidos com valores reais do caso anonimizado.
- * Nenhuma alteração nas fórmulas ou estrutura do dashboard.
- * 
- * CORREÇÕES SOLICITADAS (FINAL):
- * - Preenchimento correto dos valores na secção "INDICAÇÃO DE APOIO PERICIAL"
- *   com campanhas=243,60€, portagens=0,15€, gorjetas=125,40€, total=369,15€.
- * - Cancelamentos mantidos a 0,00€ (já incluídos nas despesas).
- * - Garantia de que todos os elementos auxiliares (auxBox*) sejam atualizados.
+ * v13.11.12-PURE: Dados reais originais dos documentos.
  * ============================================================================
  */
 
 (function() {
     'use strict';
 
-    // 1. DATASET MESTRE (OBJETO IMUTÁVEL) — DADOS COMPLETOS VERIFICADOS
+    // 1. DATASET MESTRE (OBJETO IMUTÁVEL) — VALORES REAIS ORIGINAIS
     const _PDF_CASE = Object.freeze({
         sessionId:  "UNIFED-MNGFN3C0-X57MO",
         masterHash: "a3f8c9e2d5b6a7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1",
@@ -40,10 +32,11 @@
             iva6Omitido:        131.10,
             iva23Omitido:       502.54,
             asfixiaFinanceira:  493.68,
-            totalNaoSujeitos:   369.15,
-            gorjetas:           125.40,
+            totalNaoSujeitos:   451.15,
+            gorjetas:           46.00,
             portagens:           0.15,
-            campanhas:          243.60
+            campanhas:         405.00,
+            cancelamentos:      58.10
         },
         atf: {
             zScore: 2.45,
@@ -254,64 +247,50 @@
  * ============================================================================
  * Objetivo: Gatilho Final, ATF Metrics e Revelação do Painel
  * ============================================================================
- * v13.11.12-PURE: Adicionada simulação de upload de evidências no UNIFEDSystem
- * para que os módulos principais (SAF-T, Extratos, DAC7) exibam valores corretos.
- * 
- * CORREÇÕES FINAIS:
- * - Preenchimento automático da secção "INDICAÇÃO DE APOIO PERICIAL" com os
- *   valores corretos de campanhas, portagens, gorjetas, total não sujeitos.
- * - Cancelamentos mantidos a 0,00€ (já incluídos nas despesas).
- * - Utilização de MutationObserver para garantir que os elementos auxiliares
- *   sejam atualizados mesmo que sejam criados dinamicamente após o load.
+ * Dados reais originais: campanhas=405.00, portagens=0.15, gorjetas=46.00,
+ * cancelamentos=58.10, total não sujeitos=451.15.
  * ============================================================================
  */
 
 (function() {
     'use strict';
     if (!window.UNIFED_INTERNAL) return;
-    const { data, set, syncMetrics, renderMatrix } = window.UNIFED_INTERNAL;
+    const { data, fmt, set, syncMetrics, renderMatrix } = window.UNIFED_INTERNAL;
 
     // Função para atualizar especificamente os elementos da secção auxiliar
     function _updateAuxiliaryUI() {
         const t = data.totals;
         
-        // IDs esperados dos elementos no DOM (criados por injectAuxiliaryHelperBoxes)
         const auxElements = {
             'auxBoxCampanhasValue': t.campanhas,
             'auxBoxPortagensValue': t.portagens,
             'auxBoxGorjetasValue': t.gorjetas,
             'auxBoxTotalNSValue': t.totalNaoSujeitos,
-            'auxBoxCancelValue': 0  // Cancelamentos permanecem 0
+            'auxBoxCancelValue': t.cancelamentos
         };
         
         Object.entries(auxElements).forEach(([id, value]) => {
             const el = document.getElementById(id);
             if (el) {
-                el.textContent = _fmt(value);
-                // Adicionar classe de destaque se for o total
+                el.textContent = fmt(value);
                 if (id === 'auxBoxTotalNSValue') {
                     el.classList.add('highlighted');
                 }
             }
         });
         
-        // Atualizar também o texto da nota de reconciliação DAC7, se existir
+        // Atualizar também a nota de reconciliação DAC7
         const dac7NoteValue = document.getElementById('auxDac7NoteValue');
-        if (dac7NoteValue) {
-            dac7NoteValue.textContent = _fmt(t.totalNaoSujeitos);
-        }
+        if (dac7NoteValue) dac7NoteValue.textContent = fmt(t.totalNaoSujeitos);
         const dac7NoteValueQ = document.getElementById('auxDac7NoteValueQ');
-        if (dac7NoteValueQ) {
-            dac7NoteValueQ.textContent = _fmt(t.totalNaoSujeitos);
-        }
+        if (dac7NoteValueQ) dac7NoteValueQ.textContent = fmt(t.totalNaoSujeitos);
         
-        // Forçar visibilidade da nota se ainda não estiver visível
         const dac7Note = document.getElementById('auxDac7ReconciliationNote');
         if (dac7Note && t.totalNaoSujeitos > 0) {
             dac7Note.style.display = 'block';
         }
         
-        console.log('[UNIFED] UI auxiliar atualizada: Campanhas=', _fmt(t.campanhas), 'Portagens=', _fmt(t.portagens), 'Gorjetas=', _fmt(t.gorjetas), 'Total=', _fmt(t.totalNaoSujeitos));
+        console.log('[UNIFED] UI auxiliar atualizada: Campanhas=', fmt(t.campanhas), 'Portagens=', fmt(t.portagens), 'Gorjetas=', fmt(t.gorjetas), 'Cancelamentos=', fmt(t.cancelamentos), 'Total=', fmt(t.totalNaoSujeitos));
     }
 
     // Função para simular o carregamento de evidências no UNIFEDSystem
@@ -324,7 +303,6 @@
         const sys = window.UNIFEDSystem;
         const t = data.totals;
 
-        // Garantir que as estruturas de documentos existem
         if (!sys.documents) sys.documents = {};
         if (!sys.documents.control) sys.documents.control = { files: [], totals: { records: 0 } };
         if (!sys.documents.saft) sys.documents.saft = { files: [], totals: { bruto: 0, iliquido: 0, iva: 0, records: 0 } };
@@ -334,7 +312,6 @@
         if (!sys.analysis) sys.analysis = { evidenceIntegrity: [] };
         if (!sys.analysis.evidenceIntegrity) sys.analysis.evidenceIntegrity = [];
 
-        // Limpar dados anteriores para evitar duplicação
         sys.documents.control.files = [];
         sys.documents.saft.files = [];
         sys.documents.statements.files = [];
@@ -342,7 +319,7 @@
         sys.documents.dac7.files = [];
         sys.analysis.evidenceIntegrity = [];
 
-        // 1. Simular ficheiros de Controlo (4 ficheiros) -> CTRL = 4
+        // 1. Ficheiros de Controlo (4)
         const controlFiles = [
             { name: 'controlo_autenticidade_1.csv', type: 'control', size: 256 },
             { name: 'controlo_autenticidade_2.csv', type: 'control', size: 256 },
@@ -361,7 +338,7 @@
         });
         sys.documents.control.totals.records = controlFiles.length;
 
-        // 2. Simular ficheiros SAF-T (4 ficheiros mensais)
+        // 2. SAF-T (4 ficheiros mensais)
         const saftFiles = [
             { name: '131509_202409.csv', type: 'saft', size: 1024 },
             { name: '131509_202410.csv', type: 'saft', size: 1024 },
@@ -383,7 +360,7 @@
         sys.documents.saft.totals.iva = t.saftIva;
         sys.documents.saft.totals.records = saftFiles.length;
 
-        // 3. Simular ficheiros de Extratos (4 ficheiros mensais)
+        // 3. Extratos (4 ficheiros mensais)
         const statementFiles = [
             { name: 'extrato_setembro_2024.pdf', type: 'statement', size: 2048 },
             { name: 'extrato_outubro_2024.pdf', type: 'statement', size: 2048 },
@@ -405,7 +382,7 @@
         sys.documents.statements.totals.ganhosLiquidos = t.ganhosLiquidos;
         sys.documents.statements.totals.records = statementFiles.length;
 
-        // 4. Simular ficheiros de Faturas (2 faturas BTF)
+        // 4. Faturas (2)
         const invoiceFiles = [
             { name: 'PT1124_202412.pdf', type: 'invoice', size: 512 },
             { name: 'PT1125_202412.pdf', type: 'invoice', size: 512 }
@@ -423,7 +400,7 @@
         sys.documents.invoices.totals.invoiceValue = t.faturaPlataforma;
         sys.documents.invoices.totals.records = invoiceFiles.length;
 
-        // 5. Simular ficheiro DAC7 (1 ficheiro)
+        // 5. DAC7 (1 ficheiro) - apenas 4.º trimestre visível
         const dac7Files = [
             { name: 'dac7_2024_semestre2.pdf', type: 'dac7', size: 1024 }
         ];
@@ -437,7 +414,6 @@
                 size: file.size
             });
         });
-        // Apenas o 4.º trimestre tem valor (DAC7 do 2.º semestre concentrado em Q4 para demonstração)
         sys.documents.dac7.totals.q4 = t.dac7TotalPeriodo;
         sys.documents.dac7.totals.q3 = 0;
         sys.documents.dac7.totals.q1 = 0;
@@ -445,7 +421,7 @@
         sys.documents.dac7.totals.totalPeriodo = t.dac7TotalPeriodo;
         sys.documents.dac7.totals.records = dac7Files.length;
 
-        // 6. Simular dados mensais para ATF (Set, Out, Nov, Dez 2024)
+        // 6. Dados mensais para ATF
         if (!sys.monthlyData) sys.monthlyData = {};
         const monthlyGanhos = [2450.00, 2560.00, 2480.00, 2667.73];
         const monthlyDespesas = [590.00, 615.00, 600.00, 642.89];
@@ -460,7 +436,7 @@
         });
         sys.dataMonths = new Set(months);
 
-        // 7. Atualizar contadores da UI (total 4+4+4+2+1 = 15)
+        // 7. Contadores UI
         if (typeof window.forensicDataSynchronization === 'function') {
             window.forensicDataSynchronization();
         } else {
@@ -481,7 +457,7 @@
             if (evidenceCount) evidenceCount.textContent = total;
         }
 
-        // 8. Atualizar os totais no UNIFEDSystem.analysis.totals
+        // 8. Totais no UNIFEDSystem.analysis.totals
         if (!sys.analysis.totals) sys.analysis.totals = {};
         sys.analysis.totals.saftBruto = t.saftBruto;
         sys.analysis.totals.saftIliquido = t.saftIliquido;
@@ -496,7 +472,7 @@
         sys.analysis.totals.dac7Q4 = t.dac7TotalPeriodo;
         sys.analysis.totals.dac7TotalPeriodo = t.dac7TotalPeriodo;
 
-        // 9. Garantir que o cliente está registado
+        // 9. Cliente
         if (!sys.client && data.client) {
             sys.client = { name: data.client.name, nif: data.client.nif, platform: data.client.platform };
             const clientStatus = document.getElementById('clientStatusFixed');
@@ -513,7 +489,7 @@
             if (nifInput) nifInput.value = data.client.nif;
         }
 
-        // 10. Forçar seleção da plataforma "Plataforma A"
+        // 10. Plataforma "Plataforma A"
         const platformSelect = document.getElementById('selPlatformFixed');
         if (platformSelect) {
             for (let i = 0; i < platformSelect.options.length; i++) {
@@ -527,7 +503,7 @@
             }
         }
 
-        // 11. Forçar período "2. Semestre" e ocultar seletor de trimestre
+        // 11. Período "2. Semestre"
         const periodSelect = document.getElementById('periodoAnalise');
         if (periodSelect) {
             periodSelect.value = '2s';
@@ -542,7 +518,7 @@
             trimestralContainer.style.display = 'none';
         }
 
-        // 12. Ocultar trimestres 1,2,3 do módulo DAC7 na UI
+        // 12. Ocultar Q1, Q2, Q3 do DAC7
         const dac7Q1Card = document.querySelector('#dac7Q1Value')?.closest('.kpi-card');
         const dac7Q2Card = document.querySelector('#dac7Q2Value')?.closest('.kpi-card');
         const dac7Q3Card = document.querySelector('#dac7Q3Value')?.closest('.kpi-card');
@@ -550,29 +526,26 @@
         if (dac7Q2Card) dac7Q2Card.style.display = 'none';
         if (dac7Q3Card) dac7Q3Card.style.display = 'none';
 
-        // 13. Modificar texto do Privacy by Design: remover "(browser)"
+        // 13. Remover "(browser)" do Privacy by Design
         const privacyBadge = document.querySelector('.privacy-badge span');
         if (privacyBadge) {
             const currentText = privacyBadge.innerHTML;
             privacyBadge.innerHTML = currentText.replace(/\s*\(browser\)/gi, '');
         }
 
-        // 14. Atualizar master hash
+        // 14. Master hash
         if (sys.generateMasterHash) sys.generateMasterHash();
         else if (typeof window.generateMasterHash === 'function') window.generateMasterHash();
 
-        console.log('[UNIFED] Evidências simuladas carregadas com sucesso. Total: 15 ficheiros (CTRL:4, SAFT:4, EXT:4, FAT:2, DAC7:1)');
+        console.log('[UNIFED] Evidências simuladas carregadas. Total: 15 ficheiros (CTRL:4, SAFT:4, EXT:4, FAT:2, DAC7:1)');
         return true;
     }
 
-    // Função principal de inicialização
     function _init() {
         console.log('[UNIFED] A sincronizar verdade material...');
         
-        // 1. Simular upload de evidências
         _simulateEvidenceUpload();
         
-        // 2. Injetar Métricas ATF adicionais
         set('pure-atf-zscore', data.atf.zScore.toString());
         set('pure-atf-confianca', data.atf.confianca);
         set('pure-atf-periodo', data.atf.periodo);
@@ -581,55 +554,41 @@
         set('pure-atf-trend', data.atf.trend);
         set('pure-atf-outliers', data.atf.outliers + ' outliers > 2σ');
 
-        // 3. Executar Sincronização Geral
         syncMetrics();
         renderMatrix();
-        
-        // 4. Atualizar a UI auxiliar (valores da secção de apoio pericial)
         _updateAuxiliaryUI();
         
-        // 5. Configurar um MutationObserver para garantir que a UI auxiliar seja atualizada
-        //    caso os elementos sejam criados dinamicamente após este ponto
+        // MutationObserver para garantir que a UI auxiliar seja atualizada se criada dinamicamente
         const observer = new MutationObserver(function(mutations) {
             mutations.forEach(function(mutation) {
                 if (mutation.type === 'childList' && mutation.addedNodes.length) {
-                    // Verificar se os elementos alvo surgiram
-                    const auxBox = document.getElementById('auxBoxCampanhasValue');
-                    if (auxBox) {
+                    if (document.getElementById('auxBoxCampanhasValue')) {
                         _updateAuxiliaryUI();
-                        observer.disconnect(); // Para de observar depois de encontrado
+                        observer.disconnect();
                     }
                 }
             });
         });
         observer.observe(document.body, { childList: true, subtree: true });
-        
-        // Timeout de segurança para desligar o observer após 5 segundos
-        setTimeout(function() {
-            observer.disconnect();
-        }, 5000);
+        setTimeout(function() { observer.disconnect(); }, 5000);
 
-        // 6. Revelar Interface
         const wrapper = document.getElementById('pureDashboardWrapper');
         if (wrapper) {
             wrapper.style.display = 'block';
             wrapper.classList.add('pure-visible');
         }
 
-        // 7. Executar gatilhos de compatibilidade
         if (typeof window.updateDashboard === 'function') window.updateDashboard();
         if (typeof window.renderChart === 'function') window.renderChart();
         if (typeof window.updateModulesUI === 'function') window.updateModulesUI();
         if (typeof window.showAlerts === 'function') window.showAlerts();
         if (typeof window.showTwoAxisAlerts === 'function') window.showTwoAxisAlerts();
 
-        // 8. Forçar tradução do painel
         if (typeof window._translatePurePanel === 'function') {
             const lang = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
             window._translatePurePanel(lang);
         }
 
-        // 9. Ativar botões de análise e exportação
         const analyzeBtn = document.getElementById('analyzeBtn');
         if (analyzeBtn) analyzeBtn.disabled = false;
         const exportPDFBtn = document.getElementById('exportPDFBtn');
@@ -637,10 +596,9 @@
         const exportJSONBtn = document.getElementById('exportJSONBtn');
         if (exportJSONBtn) exportJSONBtn.disabled = false;
 
-        console.log('[UNIFED] ✅ SISTEMA 100% OPERACIONAL — Dados da DEMO completos.');
+        console.log('[UNIFED] ✅ SISTEMA 100% OPERACIONAL — Dados reais carregados.');
     }
 
-    // Exportação do comando de ativação para o index.html
     window.UNIFEDSystem = window.UNIFEDSystem || {};
     window.UNIFEDSystem.loadAnonymizedRealCase = function() {
         if (document.readyState === 'loading') {
@@ -652,7 +610,6 @@
         }
     };
 
-    // Auto-boot se o DOM estiver pronto e o wrapper já existir
     if (document.readyState === 'complete' && document.getElementById('pureDashboardWrapper')) {
         _init();
     }
