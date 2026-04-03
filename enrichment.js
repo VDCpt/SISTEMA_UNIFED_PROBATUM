@@ -1247,7 +1247,7 @@ function generateBurdenOfProofSection(discrepancyValue) {
 }
 window.generateBurdenOfProofSection = generateBurdenOfProofSection;
 
-console.log('[UNIFED-ENRICHMENT] \u2705 Output Enrichment Layer v13.5.0-PURE carregado.');
+console.log('[UNIFED-ENRICHMENT] \u2705 Output Enrichment Layer v13.11.3-PURE carregado.');
 console.log('[UNIFED-ENRICHMENT]   . generateLegalNarrative()     - IA Argumentativa + AI Adversarial Simulator');
 console.log('[UNIFED-ENRICHMENT]   . renderSankeyToImage()        - Dynamic Canvas-to-PDF (Sankey)');
 console.log('[UNIFED-ENRICHMENT]   . generateIntegritySeal()      - Integrity Visual Signature (Selo Holografico)');
