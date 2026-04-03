@@ -249,6 +249,7 @@
  * ============================================================================
  * Dados reais originais: campanhas=405.00, portagens=0.15, gorjetas=46.00,
  * cancelamentos=58.10, total não sujeitos=451.15.
+ * CORREÇÃO: Utilizar `fmt` em vez de `_fmt` (definido na parte 1).
  * ============================================================================
  */
 
