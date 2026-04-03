@@ -249,7 +249,7 @@
  * ============================================================================
  * Dados reais originais: campanhas=405.00, portagens=0.15, gorjetas=46.00,
  * cancelamentos=58.10, total não sujeitos=451.15.
- * CORREÇÃO: Utilizar `fmt` em vez de `_fmt` (definido na parte 1).
+ * CORREÇÃO: Garantir que crossings (discrepância SAF-T vs DAC7) seja preenchido.
  * ============================================================================
  */
 
@@ -458,7 +458,7 @@
             if (evidenceCount) evidenceCount.textContent = total;
         }
 
-        // 8. Totais no UNIFEDSystem.analysis.totals
+        // 8. Totais e crossings no UNIFEDSystem.analysis
         if (!sys.analysis.totals) sys.analysis.totals = {};
         sys.analysis.totals.saftBruto = t.saftBruto;
         sys.analysis.totals.saftIliquido = t.saftIliquido;
@@ -472,6 +472,32 @@
         sys.analysis.totals.dac7Q3 = 0;
         sys.analysis.totals.dac7Q4 = t.dac7TotalPeriodo;
         sys.analysis.totals.dac7TotalPeriodo = t.dac7TotalPeriodo;
+
+        // Calcular discrepâncias
+        const discrepanciaSaftVsDac7 = t.saftBruto - t.dac7TotalPeriodo;
+        const percentagemSaftVsDac7 = t.saftBruto > 0 ? (discrepanciaSaftVsDac7 / t.saftBruto) * 100 : 0;
+        const discrepanciaCritica = t.despesas - t.faturaPlataforma;
+        const percentagemOmissao = t.despesas > 0 ? (discrepanciaCritica / t.despesas) * 100 : 0;
+        const ivaFalta = discrepanciaCritica * 0.23;
+        const ivaFalta6 = discrepanciaCritica * 0.06;
+        const agravamentoBrutoIRC = discrepanciaCritica;
+        const ircEstimado = discrepanciaCritica * 0.21;
+
+        if (!sys.analysis.crossings) sys.analysis.crossings = {};
+        sys.analysis.crossings.discrepanciaSaftVsDac7 = discrepanciaSaftVsDac7;
+        sys.analysis.crossings.percentagemSaftVsDac7 = percentagemSaftVsDac7;
+        sys.analysis.crossings.discrepanciaCritica = discrepanciaCritica;
+        sys.analysis.crossings.percentagemOmissao = percentagemOmissao;
+        sys.analysis.crossings.ivaFalta = ivaFalta;
+        sys.analysis.crossings.ivaFalta6 = ivaFalta6;
+        sys.analysis.crossings.agravamentoBrutoIRC = agravamentoBrutoIRC;
+        sys.analysis.crossings.ircEstimado = ircEstimado;
+        sys.analysis.crossings.btor = t.despesas;
+        sys.analysis.crossings.btf = t.faturaPlataforma;
+        sys.analysis.crossings.c1_delta = discrepanciaSaftVsDac7;
+        sys.analysis.crossings.c1_pct = percentagemSaftVsDac7;
+        sys.analysis.crossings.c2_delta = discrepanciaCritica;
+        sys.analysis.crossings.c2_pct = percentagemOmissao;
 
         // 9. Cliente
         if (!sys.client && data.client) {
@@ -579,6 +605,7 @@
             wrapper.classList.add('pure-visible');
         }
 
+        // Forçar atualização do dashboard para que os cartões apareçam
         if (typeof window.updateDashboard === 'function') window.updateDashboard();
         if (typeof window.renderChart === 'function') window.renderChart();
         if (typeof window.updateModulesUI === 'function') window.updateModulesUI();
