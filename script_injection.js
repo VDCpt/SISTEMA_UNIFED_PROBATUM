@@ -248,6 +248,9 @@
  * ============================================================================
  * Objetivo: Gatilho Final, ATF Metrics e Revelação do Painel
  * ============================================================================
+ * v13.11.12-PURE: Adicionada simulação de upload de evidências no UNIFEDSystem
+ * para que os módulos principais (SAF-T, Extratos, DAC7) exibam valores corretos.
+ * ============================================================================
  */
 
 (function() {
@@ -255,10 +258,199 @@
     if (!window.UNIFED_INTERNAL) return;
     const { data, set, syncMetrics, renderMatrix } = window.UNIFED_INTERNAL;
 
+    // Função para simular o carregamento de evidências no UNIFEDSystem
+    function _simulateEvidenceUpload() {
+        if (typeof window.UNIFEDSystem === 'undefined') {
+            console.warn('[UNIFED] UNIFEDSystem não disponível para simular upload.');
+            return false;
+        }
+
+        const sys = window.UNIFEDSystem;
+        const t = data.totals;
+
+        // Garantir que as estruturas de documentos existem
+        if (!sys.documents) sys.documents = {};
+        if (!sys.documents.saft) sys.documents.saft = { files: [], totals: { bruto: 0, iliquido: 0, iva: 0, records: 0 } };
+        if (!sys.documents.statements) sys.documents.statements = { files: [], totals: { ganhos: 0, despesas: 0, ganhosLiquidos: 0, records: 0 } };
+        if (!sys.documents.invoices) sys.documents.invoices = { files: [], totals: { invoiceValue: 0, records: 0 } };
+        if (!sys.documents.dac7) sys.documents.dac7 = { files: [], totals: { q1: 0, q2: 0, q3: 0, q4: 0, totalPeriodo: 0, records: 0 } };
+        if (!sys.analysis) sys.analysis = { evidenceIntegrity: [] };
+        if (!sys.analysis.evidenceIntegrity) sys.analysis.evidenceIntegrity = [];
+
+        // Limpar dados anteriores para evitar duplicação
+        sys.documents.saft.files = [];
+        sys.documents.statements.files = [];
+        sys.documents.invoices.files = [];
+        sys.documents.dac7.files = [];
+        sys.analysis.evidenceIntegrity = [];
+
+        // 1. Simular ficheiros SAF-T (4 ficheiros mensais)
+        const saftFiles = [
+            { name: '131509_202409.csv', type: 'saft', size: 1024 },
+            { name: '131509_202410.csv', type: 'saft', size: 1024 },
+            { name: '131509_202411.csv', type: 'saft', size: 1024 },
+            { name: '131509_202412.csv', type: 'saft', size: 1024 }
+        ];
+        saftFiles.forEach(file => {
+            sys.documents.saft.files.push({ name: file.name, size: file.size });
+            sys.analysis.evidenceIntegrity.push({
+                filename: file.name,
+                type: 'saft',
+                hash: CryptoJS.SHA256(file.name + 'saft_demo').toString().toUpperCase(),
+                timestamp: new Date().toISOString(),
+                size: file.size
+            });
+        });
+        sys.documents.saft.totals.bruto = t.saftBruto;
+        sys.documents.saft.totals.iliquido = t.saftIliquido;
+        sys.documents.saft.totals.iva = t.saftIva;
+        sys.documents.saft.totals.records = saftFiles.length;
+
+        // 2. Simular ficheiros de Extratos (4 ficheiros mensais)
+        const statementFiles = [
+            { name: 'extrato_setembro_2024.pdf', type: 'statement', size: 2048 },
+            { name: 'extrato_outubro_2024.pdf', type: 'statement', size: 2048 },
+            { name: 'extrato_novembro_2024.pdf', type: 'statement', size: 2048 },
+            { name: 'extrato_dezembro_2024.pdf', type: 'statement', size: 2048 }
+        ];
+        statementFiles.forEach(file => {
+            sys.documents.statements.files.push({ name: file.name, size: file.size });
+            sys.analysis.evidenceIntegrity.push({
+                filename: file.name,
+                type: 'statement',
+                hash: CryptoJS.SHA256(file.name + 'statement_demo').toString().toUpperCase(),
+                timestamp: new Date().toISOString(),
+                size: file.size
+            });
+        });
+        sys.documents.statements.totals.ganhos = t.ganhos;
+        sys.documents.statements.totals.despesas = t.despesas;
+        sys.documents.statements.totals.ganhosLiquidos = t.ganhosLiquidos;
+        sys.documents.statements.totals.records = statementFiles.length;
+
+        // 3. Simular ficheiros de Faturas (2 faturas BTF)
+        const invoiceFiles = [
+            { name: 'PT1124_202412.pdf', type: 'invoice', size: 512 },
+            { name: 'PT1125_202412.pdf', type: 'invoice', size: 512 }
+        ];
+        invoiceFiles.forEach(file => {
+            sys.documents.invoices.files.push({ name: file.name, size: file.size });
+            sys.analysis.evidenceIntegrity.push({
+                filename: file.name,
+                type: 'invoice',
+                hash: CryptoJS.SHA256(file.name + 'invoice_demo').toString().toUpperCase(),
+                timestamp: new Date().toISOString(),
+                size: file.size
+            });
+        });
+        sys.documents.invoices.totals.invoiceValue = t.faturaPlataforma;
+        sys.documents.invoices.totals.records = invoiceFiles.length;
+
+        // 4. Simular ficheiro DAC7 (1 ficheiro)
+        const dac7Files = [
+            { name: 'dac7_2024_semestre2.pdf', type: 'dac7', size: 1024 }
+        ];
+        dac7Files.forEach(file => {
+            sys.documents.dac7.files.push({ name: file.name, size: file.size });
+            sys.analysis.evidenceIntegrity.push({
+                filename: file.name,
+                type: 'dac7',
+                hash: CryptoJS.SHA256(file.name + 'dac7_demo').toString().toUpperCase(),
+                timestamp: new Date().toISOString(),
+                size: file.size
+            });
+        });
+        // Distribuição trimestral aproximada com base no total do 2º semestre
+        sys.documents.dac7.totals.q3 = t.dac7TotalPeriodo * 0.48; // ~3722.48
+        sys.documents.dac7.totals.q4 = t.dac7TotalPeriodo * 0.52; // ~4032.68
+        sys.documents.dac7.totals.q1 = 0;
+        sys.documents.dac7.totals.q2 = 0;
+        sys.documents.dac7.totals.totalPeriodo = t.dac7TotalPeriodo;
+        sys.documents.dac7.totals.records = dac7Files.length;
+
+        // 5. Simular dados mensais para ATF (Set, Out, Nov, Dez 2024)
+        if (!sys.monthlyData) sys.monthlyData = {};
+        // Distribuição aproximada dos valores totais pelos 4 meses
+        const monthlyGanhos = [2450.00, 2560.00, 2480.00, 2667.73];
+        const monthlyDespesas = [590.00, 615.00, 600.00, 642.89];
+        const monthlyGanhosLiq = [1860.00, 1945.00, 1880.00, 2024.84];
+        const months = ['202409', '202410', '202411', '202412'];
+        months.forEach((month, idx) => {
+            sys.monthlyData[month] = {
+                ganhos: monthlyGanhos[idx],
+                despesas: monthlyDespesas[idx],
+                ganhosLiq: monthlyGanhosLiq[idx]
+            };
+        });
+        sys.dataMonths = new Set(months);
+
+        // 6. Atualizar contadores da UI
+        if (typeof window.forensicDataSynchronization === 'function') {
+            window.forensicDataSynchronization();
+        } else {
+            // Fallback manual
+            const setCount = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+            setCount('controlCountCompact', 0);
+            setCount('saftCountCompact', saftFiles.length);
+            setCount('invoiceCountCompact', invoiceFiles.length);
+            setCount('statementCountCompact', statementFiles.length);
+            setCount('dac7CountCompact', dac7Files.length);
+            setCount('summaryControl', 0);
+            setCount('summarySaft', saftFiles.length);
+            setCount('summaryInvoices', invoiceFiles.length);
+            setCount('summaryStatements', statementFiles.length);
+            setCount('summaryDac7', dac7Files.length);
+            const total = saftFiles.length + invoiceFiles.length + statementFiles.length + dac7Files.length;
+            setCount('summaryTotal', total);
+            const evidenceCount = document.getElementById('evidenceCountTotal');
+            if (evidenceCount) evidenceCount.textContent = total;
+        }
+
+        // 7. Atualizar os totais no UNIFEDSystem.analysis.totals para que a perícia funcione
+        if (!sys.analysis.totals) sys.analysis.totals = {};
+        sys.analysis.totals.saftBruto = t.saftBruto;
+        sys.analysis.totals.saftIliquido = t.saftIliquido;
+        sys.analysis.totals.saftIva = t.saftIva;
+        sys.analysis.totals.ganhos = t.ganhos;
+        sys.analysis.totals.despesas = t.despesas;
+        sys.analysis.totals.ganhosLiquidos = t.ganhosLiquidos;
+        sys.analysis.totals.faturaPlataforma = t.faturaPlataforma;
+        sys.analysis.totals.dac7Q3 = sys.documents.dac7.totals.q3;
+        sys.analysis.totals.dac7Q4 = sys.documents.dac7.totals.q4;
+        sys.analysis.totals.dac7TotalPeriodo = t.dac7TotalPeriodo;
+
+        // 8. Garantir que o cliente está registado
+        if (!sys.client && data.client) {
+            sys.client = { name: data.client.name, nif: data.client.nif, platform: data.client.platform };
+            const clientStatus = document.getElementById('clientStatusFixed');
+            if (clientStatus) {
+                clientStatus.style.display = 'flex';
+                const nameSpan = document.getElementById('clientNameDisplayFixed');
+                const nifSpan = document.getElementById('clientNifDisplayFixed');
+                if (nameSpan) nameSpan.textContent = data.client.name;
+                if (nifSpan) nifSpan.textContent = data.client.nif;
+            }
+            const nameInput = document.getElementById('clientNameFixed');
+            const nifInput = document.getElementById('clientNIFFixed');
+            if (nameInput) nameInput.value = data.client.name;
+            if (nifInput) nifInput.value = data.client.nif;
+        }
+
+        // 9. Atualizar master hash
+        if (sys.generateMasterHash) sys.generateMasterHash();
+        else if (typeof window.generateMasterHash === 'function') window.generateMasterHash();
+
+        console.log('[UNIFED] Evidências simuladas carregadas com sucesso.');
+        return true;
+    }
+
     function _init() {
         console.log('[UNIFED] A sincronizar verdade material...');
         
-        // 1. Injetar Métricas ATF adicionais
+        // 1. Simular upload de evidências para preencher módulos principais
+        _simulateEvidenceUpload();
+        
+        // 2. Injetar Métricas ATF adicionais
         set('pure-atf-zscore', data.atf.zScore.toString());
         set('pure-atf-confianca', data.atf.confianca);
         set('pure-atf-periodo', data.atf.periodo);
@@ -267,29 +459,37 @@
         set('pure-atf-trend', data.atf.trend);
         set('pure-atf-outliers', data.atf.outliers + ' outliers > 2σ');
 
-        // 2. Executar Sincronização Geral
+        // 3. Executar Sincronização Geral
         syncMetrics();
         renderMatrix();
 
-        // 3. Revelar Interface (Fim do estado 'loading')
+        // 4. Revelar Interface (Fim do estado 'loading')
         const wrapper = document.getElementById('pureDashboardWrapper');
         if (wrapper) {
             wrapper.style.display = 'block';
             wrapper.classList.add('pure-visible');
         }
 
-        // 4. Executar gatilhos de compatibilidade (Gráficos legados)
+        // 5. Executar gatilhos de compatibilidade (Gráficos legados)
         if (typeof window.updateDashboard === 'function') window.updateDashboard();
         if (typeof window.renderChart === 'function') window.renderChart();
         if (typeof window.updateModulesUI === 'function') window.updateModulesUI();
         if (typeof window.showAlerts === 'function') window.showAlerts();
         if (typeof window.showTwoAxisAlerts === 'function') window.showTwoAxisAlerts();
 
-        // 5. Forçar tradução do painel (se disponível)
+        // 6. Forçar tradução do painel (se disponível)
         if (typeof window._translatePurePanel === 'function') {
             const lang = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
             window._translatePurePanel(lang);
         }
+
+        // 7. Ativar botão de análise
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        if (analyzeBtn) analyzeBtn.disabled = false;
+        const exportPDFBtn = document.getElementById('exportPDFBtn');
+        if (exportPDFBtn) exportPDFBtn.disabled = false;
+        const exportJSONBtn = document.getElementById('exportJSONBtn');
+        if (exportJSONBtn) exportJSONBtn.disabled = false;
 
         console.log('[UNIFED] ✅ SISTEMA 100% OPERACIONAL — Dados da DEMO completos.');
     }
