@@ -5,6 +5,9 @@
  * Conformidade: DORA (UE) 2022/2554 · Art. 125.º CPP · ISO/IEC 27037:2012
  * ============================================================================
  * v13.11.12-PURE: Dados reais originais dos documentos.
+ * Modificações legais: substituição de Art. 103.º/104.º RGIT por Art. 119.º RGIT
+ * (Contra-ordenação). Remoção de termos "Crime" ou "Dolo" da interface.
+ * Ocultação do painel "MOTOR PREDITIVO NEXUS ATF".
  * ============================================================================
  */
 
@@ -68,6 +71,7 @@
  * UNIFED - PROBATUM · v13.11.12-PURE (PARTE 2 DE 4)
  * ============================================================================
  * Objetivo: Motor de Cálculo Forense e Mapeamento de Omissões — Completo
+ * Modificação legal: textos dos smoking guns e veredicto ajustados para Art. 119.º RGIT.
  * ============================================================================
  */
 
@@ -95,7 +99,7 @@
             'pure-dac7':             fmt(t.dac7TotalPeriodo),
             'pure-fatura':           fmt(t.faturaPlataforma),
             
-            // Painel II – Smoking Guns e Discrepâncias
+            // Painel II – Smoking Guns e Discrepâncias — textos legais alterados
             'pure-disc-c2':           fmt(discrepanciaC2),
             'pure-disc-c2-pct':       percentC2.toFixed(2) + '%',
             'pure-disc-saft-dac7':    fmt(discrepanciaC1),
@@ -116,8 +120,8 @@
             'pure-nc-portagens':       fmt(t.portagens),
             'pure-nc-total':           fmt(t.totalNaoSujeitos),
             
-            // Painel V – Veredicto e Integridade
-            'pure-verdict':            'RISCO ELEVADO',
+            // Painel V – Veredicto e Integridade — texto ajustado
+            'pure-verdict':            'RISCO ELEVADO · CONTRA-ORDENAÇÃO',
             'pure-verdict-pct':        percentC2.toFixed(2) + '%',
             'pure-hash-prefix-verdict': data.masterHash.substring(0, 16) + '...',
             
@@ -149,20 +153,40 @@
 
         Object.entries(map).forEach(([id, val]) => set(id, val));
         
+        // Atualizar textos legais nos elementos estáticos (não mapeados por ID)
+        const sg2Legal = document.getElementById('pure-sg2-legal');
+        if (sg2Legal) sg2Legal.textContent = 'Art. 36.º n.º 11 CIVA · Art. 119.º RGIT';
+        
+        const sg1Legal = document.getElementById('pure-sg1-legal');
+        if (sg1Legal) sg1Legal.textContent = 'Diretiva DAC7 (UE) 2021/514 · DL n.º 41/2023';
+        
+        const verdictBasis = document.getElementById('pure-verdict-basis');
+        if (verdictBasis) verdictBasis.textContent = 'Art. 119.º RGIT · Art. 125.º CPP';
+        
+        const pureIva23Sub = document.querySelector('#pure-iva23-sub');
+        if (pureIva23Sub) pureIva23Sub.textContent = 'Art. 2.º n.º 1 al. i) CIVA';
+        
+        const pureIrcSub = document.querySelector('#pure-irc-sub');
+        if (pureIrcSub) pureIrcSub.textContent = 'Art. 17.º CIRC';
+        
+        const pureAtfNote = document.getElementById('pure-atf-note-text');
+        if (pureAtfNote) {
+            pureAtfNote.textContent = 'Score de Persistência calculado pelo motor computeTemporalAnalysis() sobre 4 meses de histórico (Set/Out/Nov/Dez 2024). SP calculado sobre o lote global (dados verificados UNIFED-MMLADX8Q-CV69L). As discrepâncias absolutas (C2: €2.184,95 — 89,26% · C1: €472,81 — 5,75%) mantêm relevância jurídica independente.';
+        }
+        
         // Ativação de alertas visuais
         ['iva6Card', 'iva23Card', 'bigDataAlert', 'pureATFCard', 'pureEvidenceSection'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.style.display = (id === 'bigDataAlert') ? 'flex' : 'block';
         });
 
-        // Atualizar o valor do card "Percentagem Cobrada Pela Plataforma" (se existir)
+        // Atualizar o valor do card "Percentagem Cobrada Pela Plataforma"
         const omissaoPctEl = document.getElementById('omissaoDespesasPctValue');
         if (omissaoPctEl) {
             const pctComissao = (t.despesas / t.ganhos) * 100;
             omissaoPctEl.textContent = pctComissao.toFixed(2) + '%';
         }
 
-        // Atualizar o bloco de "Diferencial de Fluxo Auditado" na grid pericial
         const discGridEl = document.getElementById('pure-disc-c2-grid');
         if (discGridEl) discGridEl.textContent = fmt(discrepanciaC2);
         
@@ -172,7 +196,6 @@
         const naoSujeitosEl = document.getElementById('pure-nao-sujeitos');
         if (naoSujeitosEl) naoSujeitosEl.textContent = fmt(t.totalNaoSujeitos);
         
-        // Atualizar valores específicos dos Smoking Guns (SG2 e SG1)
         const sg2BtorEl = document.getElementById('pure-sg2-btor-val');
         if (sg2BtorEl) sg2BtorEl.textContent = fmt(t.despesas);
         const sg2BtfEl = document.getElementById('pure-sg2-btf-val');
@@ -198,6 +221,7 @@
  * UNIFED - PROBATUM · v13.11.12-PURE (PARTE 3 DE 4)
  * ============================================================================
  * Objetivo: Construção da Matriz de Triangulação (Visualização Judicial)
+ * Textos legais ajustados para Art. 119.º RGIT.
  * ============================================================================
  */
 
@@ -217,7 +241,7 @@
 
         const matrixHtml = `
         <div id="triangulationMatrixContainer" class="pure-triangulation-box" style="margin:30px 0; border:1px solid #00E5FF; background:rgba(15,23,42,0.95); padding:20px; border-radius:12px;">
-            <h3 style="color:#00E5FF; margin-top:0; font-size:1rem;">🔍 MATRIZ DE TRIANGULAÇÃO FORENSE (ART. 103.º RGIT)</h3>
+            <h3 style="color:#00E5FF; margin-top:0; font-size:1rem;">🔍 MATRIZ DE TRIANGULAÇÃO FORENSE (ART. 119.º RGIT)</h3>
             <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
                 <thead>
                     <tr style="border-bottom:1px solid rgba(255,255,255,0.2);">
@@ -234,7 +258,7 @@
                 </tbody>
             </table>
             <div style="margin-top: 15px; font-size: 0.7rem; color: #94a3b8; border-top: 1px solid rgba(0,229,255,0.2); padding-top: 10px;">
-                <strong>Nota Metodológica:</strong> A divergência entre o valor faturado (SAF-T/DAC7) e o valor real creditado (Ledger) evidencia uma omissão de base tributável de ${fmt(deltaFatura)} (${((deltaFatura/t.despesas)*100).toFixed(2)}%) nas comissões retidas pela plataforma.
+                <strong>Nota Metodológica:</strong> A divergência entre o valor faturado (SAF-T/DAC7) e o valor real creditado (Ledger) evidencia uma omissão de base tributável de ${fmt(deltaFatura)} (${((deltaFatura/t.despesas)*100).toFixed(2)}%) nas comissões retidas pela plataforma, configurando contra-ordenação tributária nos termos do Art. 119.º RGIT.
             </div>
         </div>`;
         target.insertAdjacentHTML('beforeend', matrixHtml);
@@ -246,10 +270,10 @@
  * UNIFED - PROBATUM · v13.11.12-PURE (PARTE 4 DE 4)
  * ============================================================================
  * Objetivo: Gatilho Final, ATF Metrics e Revelação do Painel
- * ============================================================================
  * Dados reais originais: campanhas=405.00, portagens=0.15, gorjetas=46.00,
  * cancelamentos=58.10, total não sujeitos=451.15.
- * CORREÇÃO: Garantir que crossings (discrepância SAF-T vs DAC7) seja preenchido.
+ * Modificações: ocultação do painel "MOTOR PREDITIVO NEXUS ATF" e garantia
+ * de que os textos estão em português de Portugal, sem erros de codificação.
  * ============================================================================
  */
 
@@ -257,6 +281,25 @@
     'use strict';
     if (!window.UNIFED_INTERNAL) return;
     const { data, fmt, set, syncMetrics, renderMatrix } = window.UNIFED_INTERNAL;
+
+    // Função para ocultar elementos do Motor Preditivo NEXUS ATF
+    function _hideNexusForecast() {
+        // Ocultar o painel de previsão (se existir)
+        const nexusPanel = document.getElementById('nexusForecastPanel');
+        if (nexusPanel) nexusPanel.style.display = 'none';
+        
+        // Ocultar qualquer botão ou referência ao motor preditivo no modal ATF
+        const atfModal = document.getElementById('atfModal');
+        if (atfModal) {
+            const forecastElements = atfModal.querySelectorAll('#nexusForecastPanel, [class*="nexus"], [id*="nexusForecast"]');
+            forecastElements.forEach(el => {
+                if (el) el.style.display = 'none';
+            });
+        }
+        
+        // Remover a linha de previsão do gráfico ATF se existir (será tratado pelo Chart.js)
+        console.log('[UNIFED] Motor Preditivo NEXUS ATF ocultado por orientação pericial.');
+    }
 
     // Função para atualizar especificamente os elementos da secção auxiliar
     function _updateAuxiliaryUI() {
@@ -289,6 +332,12 @@
         const dac7Note = document.getElementById('auxDac7ReconciliationNote');
         if (dac7Note && t.totalNaoSujeitos > 0) {
             dac7Note.style.display = 'block';
+        }
+        
+        // Garantir que o texto do questionário está em português correto
+        const questionText = document.getElementById('pure-zc-question-text');
+        if (questionText) {
+            questionText.textContent = 'Pode a plataforma confirmar se os €451,15 em Gorjetas e Campanhas (isentos de comissão nos termos da Lei TVDE) foram incluídos na base de cálculo do reporte DAC7? Se sim, qual o fundamento legal?';
         }
         
         console.log('[UNIFED] UI auxiliar atualizada: Campanhas=', fmt(t.campanhas), 'Portagens=', fmt(t.portagens), 'Gorjetas=', fmt(t.gorjetas), 'Cancelamentos=', fmt(t.cancelamentos), 'Total=', fmt(t.totalNaoSujeitos));
@@ -473,7 +522,6 @@
         sys.analysis.totals.dac7Q4 = t.dac7TotalPeriodo;
         sys.analysis.totals.dac7TotalPeriodo = t.dac7TotalPeriodo;
 
-        // Calcular discrepâncias
         const discrepanciaSaftVsDac7 = t.saftBruto - t.dac7TotalPeriodo;
         const percentagemSaftVsDac7 = t.saftBruto > 0 ? (discrepanciaSaftVsDac7 / t.saftBruto) * 100 : 0;
         const discrepanciaCritica = t.despesas - t.faturaPlataforma;
@@ -584,6 +632,7 @@
         syncMetrics();
         renderMatrix();
         _updateAuxiliaryUI();
+        _hideNexusForecast();  // Ocultar o Motor Preditivo NEXUS ATF
         
         // MutationObserver para garantir que a UI auxiliar seja atualizada se criada dinamicamente
         const observer = new MutationObserver(function(mutations) {
@@ -591,6 +640,7 @@
                 if (mutation.type === 'childList' && mutation.addedNodes.length) {
                     if (document.getElementById('auxBoxCampanhasValue')) {
                         _updateAuxiliaryUI();
+                        _hideNexusForecast(); // Reaplicar ocultação caso o painel seja recriado
                         observer.disconnect();
                     }
                 }
@@ -605,7 +655,6 @@
             wrapper.classList.add('pure-visible');
         }
 
-        // Forçar atualização do dashboard para que os cartões apareçam
         if (typeof window.updateDashboard === 'function') window.updateDashboard();
         if (typeof window.renderChart === 'function') window.renderChart();
         if (typeof window.updateModulesUI === 'function') window.updateModulesUI();
@@ -624,7 +673,7 @@
         const exportJSONBtn = document.getElementById('exportJSONBtn');
         if (exportJSONBtn) exportJSONBtn.disabled = false;
 
-        console.log('[UNIFED] ✅ SISTEMA 100% OPERACIONAL — Dados reais carregados.');
+        console.log('[UNIFED] ✅ SISTEMA 100% OPERACIONAL — Dados reais carregados. Motor Preditivo ocultado.');
     }
 
     window.UNIFEDSystem = window.UNIFEDSystem || {};
