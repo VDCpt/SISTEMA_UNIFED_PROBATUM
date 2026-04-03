@@ -8,15 +8,11 @@
  * painel #pureDashboard são preenchidos com valores reais do caso anonimizado.
  * Nenhuma alteração nas fórmulas ou estrutura do dashboard.
  * 
- * CORREÇÕES SOLICITADAS:
- * - Módulo DAC7: apenas 4.º trimestre visível com valor 7.755,16 €
- * - Fluxos não sujeitos: campanhas 243,60 €, portagens 0,15 €, gorjetas 125,40 €, total 369,15 €
- * - Discrepância SAF-T vs DAC7: valor 472,81 € e percentagem 5,75% visíveis
- * - Zona Cinzenta: portagens 0,15 €, cancelamentos 0,00 €
- * - Gestão de Evidências: total 15 ficheiros, sendo 4 de controlo (CTRL)
- * - Plataforma Digital: "Plataforma A" selecionada
- * - Período Temporal: "2. Semestre" selecionado
- * - Privacy by Design: texto alterado para "Processamento 100% local" (sem "(browser)")
+ * CORREÇÕES SOLICITADAS (FINAL):
+ * - Preenchimento correto dos valores na secção "INDICAÇÃO DE APOIO PERICIAL"
+ *   com campanhas=243,60€, portagens=0,15€, gorjetas=125,40€, total=369,15€.
+ * - Cancelamentos mantidos a 0,00€ (já incluídos nas despesas).
+ * - Garantia de que todos os elementos auxiliares (auxBox*) sejam atualizados.
  * ============================================================================
  */
 
@@ -40,13 +36,13 @@
             saftIva:            466.30,
             despesas:          2447.89,
             faturaPlataforma:   262.94,
-            dac7TotalPeriodo:  7755.16,   // Valor real do DAC7 (2.º Semestre 2024)
+            dac7TotalPeriodo:  7755.16,
             iva6Omitido:        131.10,
             iva23Omitido:       502.54,
             asfixiaFinanceira:  493.68,
-            totalNaoSujeitos:   369.15,   // Corrigido: 243.60 + 0.15 + 125.40
+            totalNaoSujeitos:   369.15,
             gorjetas:           125.40,
-            portagens:           0.15,    // Corrigido: 0,15 €
+            portagens:           0.15,
             campanhas:          243.60
         },
         atf: {
@@ -261,11 +257,12 @@
  * v13.11.12-PURE: Adicionada simulação de upload de evidências no UNIFEDSystem
  * para que os módulos principais (SAF-T, Extratos, DAC7) exibam valores corretos.
  * 
- * CORREÇÕES ADICIONAIS:
- * - Simulação de 4 ficheiros de controlo (CTRL) para totalizar 15 evidências
- * - Ocultação dos trimestres 1,2,3 do módulo DAC7
- * - Seleção da plataforma "Plataforma A" e período "2. Semestre"
- * - Remoção do texto "(browser)" da badge Privacy by Design
+ * CORREÇÕES FINAIS:
+ * - Preenchimento automático da secção "INDICAÇÃO DE APOIO PERICIAL" com os
+ *   valores corretos de campanhas, portagens, gorjetas, total não sujeitos.
+ * - Cancelamentos mantidos a 0,00€ (já incluídos nas despesas).
+ * - Utilização de MutationObserver para garantir que os elementos auxiliares
+ *   sejam atualizados mesmo que sejam criados dinamicamente após o load.
  * ============================================================================
  */
 
@@ -273,6 +270,49 @@
     'use strict';
     if (!window.UNIFED_INTERNAL) return;
     const { data, set, syncMetrics, renderMatrix } = window.UNIFED_INTERNAL;
+
+    // Função para atualizar especificamente os elementos da secção auxiliar
+    function _updateAuxiliaryUI() {
+        const t = data.totals;
+        
+        // IDs esperados dos elementos no DOM (criados por injectAuxiliaryHelperBoxes)
+        const auxElements = {
+            'auxBoxCampanhasValue': t.campanhas,
+            'auxBoxPortagensValue': t.portagens,
+            'auxBoxGorjetasValue': t.gorjetas,
+            'auxBoxTotalNSValue': t.totalNaoSujeitos,
+            'auxBoxCancelValue': 0  // Cancelamentos permanecem 0
+        };
+        
+        Object.entries(auxElements).forEach(([id, value]) => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.textContent = _fmt(value);
+                // Adicionar classe de destaque se for o total
+                if (id === 'auxBoxTotalNSValue') {
+                    el.classList.add('highlighted');
+                }
+            }
+        });
+        
+        // Atualizar também o texto da nota de reconciliação DAC7, se existir
+        const dac7NoteValue = document.getElementById('auxDac7NoteValue');
+        if (dac7NoteValue) {
+            dac7NoteValue.textContent = _fmt(t.totalNaoSujeitos);
+        }
+        const dac7NoteValueQ = document.getElementById('auxDac7NoteValueQ');
+        if (dac7NoteValueQ) {
+            dac7NoteValueQ.textContent = _fmt(t.totalNaoSujeitos);
+        }
+        
+        // Forçar visibilidade da nota se ainda não estiver visível
+        const dac7Note = document.getElementById('auxDac7ReconciliationNote');
+        if (dac7Note && t.totalNaoSujeitos > 0) {
+            dac7Note.style.display = 'block';
+        }
+        
+        console.log('[UNIFED] UI auxiliar atualizada: Campanhas=', _fmt(t.campanhas), 'Portagens=', _fmt(t.portagens), 'Gorjetas=', _fmt(t.gorjetas), 'Total=', _fmt(t.totalNaoSujeitos));
+    }
 
     // Função para simular o carregamento de evidências no UNIFEDSystem
     function _simulateEvidenceUpload() {
@@ -407,7 +447,6 @@
 
         // 6. Simular dados mensais para ATF (Set, Out, Nov, Dez 2024)
         if (!sys.monthlyData) sys.monthlyData = {};
-        // Distribuição aproximada dos valores totais pelos 4 meses
         const monthlyGanhos = [2450.00, 2560.00, 2480.00, 2667.73];
         const monthlyDespesas = [590.00, 615.00, 600.00, 642.89];
         const monthlyGanhosLiq = [1860.00, 1945.00, 1880.00, 2024.84];
@@ -425,7 +464,6 @@
         if (typeof window.forensicDataSynchronization === 'function') {
             window.forensicDataSynchronization();
         } else {
-            // Fallback manual
             const setCount = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
             setCount('controlCountCompact', controlFiles.length);
             setCount('saftCountCompact', saftFiles.length);
@@ -443,7 +481,7 @@
             if (evidenceCount) evidenceCount.textContent = total;
         }
 
-        // 8. Atualizar os totais no UNIFEDSystem.analysis.totals para que a perícia funcione
+        // 8. Atualizar os totais no UNIFEDSystem.analysis.totals
         if (!sys.analysis.totals) sys.analysis.totals = {};
         sys.analysis.totals.saftBruto = t.saftBruto;
         sys.analysis.totals.saftIliquido = t.saftIliquido;
@@ -496,7 +534,6 @@
             if (typeof window.UNIFEDSystem !== 'undefined') {
                 window.UNIFEDSystem.selectedPeriodo = '2s';
             }
-            // Disparar evento change para atualizar DAC7
             const changeEvent = new Event('change', { bubbles: true });
             periodSelect.dispatchEvent(changeEvent);
         }
@@ -528,10 +565,11 @@
         return true;
     }
 
+    // Função principal de inicialização
     function _init() {
         console.log('[UNIFED] A sincronizar verdade material...');
         
-        // 1. Simular upload de evidências para preencher módulos principais
+        // 1. Simular upload de evidências
         _simulateEvidenceUpload();
         
         // 2. Injetar Métricas ATF adicionais
@@ -546,28 +584,52 @@
         // 3. Executar Sincronização Geral
         syncMetrics();
         renderMatrix();
+        
+        // 4. Atualizar a UI auxiliar (valores da secção de apoio pericial)
+        _updateAuxiliaryUI();
+        
+        // 5. Configurar um MutationObserver para garantir que a UI auxiliar seja atualizada
+        //    caso os elementos sejam criados dinamicamente após este ponto
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'childList' && mutation.addedNodes.length) {
+                    // Verificar se os elementos alvo surgiram
+                    const auxBox = document.getElementById('auxBoxCampanhasValue');
+                    if (auxBox) {
+                        _updateAuxiliaryUI();
+                        observer.disconnect(); // Para de observar depois de encontrado
+                    }
+                }
+            });
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+        
+        // Timeout de segurança para desligar o observer após 5 segundos
+        setTimeout(function() {
+            observer.disconnect();
+        }, 5000);
 
-        // 4. Revelar Interface (Fim do estado 'loading')
+        // 6. Revelar Interface
         const wrapper = document.getElementById('pureDashboardWrapper');
         if (wrapper) {
             wrapper.style.display = 'block';
             wrapper.classList.add('pure-visible');
         }
 
-        // 5. Executar gatilhos de compatibilidade (Gráficos legados)
+        // 7. Executar gatilhos de compatibilidade
         if (typeof window.updateDashboard === 'function') window.updateDashboard();
         if (typeof window.renderChart === 'function') window.renderChart();
         if (typeof window.updateModulesUI === 'function') window.updateModulesUI();
         if (typeof window.showAlerts === 'function') window.showAlerts();
         if (typeof window.showTwoAxisAlerts === 'function') window.showTwoAxisAlerts();
 
-        // 6. Forçar tradução do painel (se disponível)
+        // 8. Forçar tradução do painel
         if (typeof window._translatePurePanel === 'function') {
             const lang = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
             window._translatePurePanel(lang);
         }
 
-        // 7. Ativar botão de análise
+        // 9. Ativar botões de análise e exportação
         const analyzeBtn = document.getElementById('analyzeBtn');
         if (analyzeBtn) analyzeBtn.disabled = false;
         const exportPDFBtn = document.getElementById('exportPDFBtn');
@@ -581,7 +643,6 @@
     // Exportação do comando de ativação para o index.html
     window.UNIFEDSystem = window.UNIFEDSystem || {};
     window.UNIFEDSystem.loadAnonymizedRealCase = function() {
-        // Aguardar que o DOM esteja pronto e o wrapper exista
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', function() {
                 setTimeout(_init, 300);
