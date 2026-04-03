@@ -7,6 +7,16 @@
  * v13.11.12-PURE: Completude total dos dados da DEMO — todos os campos do
  * painel #pureDashboard são preenchidos com valores reais do caso anonimizado.
  * Nenhuma alteração nas fórmulas ou estrutura do dashboard.
+ * 
+ * CORREÇÕES SOLICITADAS:
+ * - Módulo DAC7: apenas 4.º trimestre visível com valor 7.755,16 €
+ * - Fluxos não sujeitos: campanhas 243,60 €, portagens 0,15 €, gorjetas 125,40 €, total 369,15 €
+ * - Discrepância SAF-T vs DAC7: valor 472,81 € e percentagem 5,75% visíveis
+ * - Zona Cinzenta: portagens 0,15 €, cancelamentos 0,00 €
+ * - Gestão de Evidências: total 15 ficheiros, sendo 4 de controlo (CTRL)
+ * - Plataforma Digital: "Plataforma A" selecionada
+ * - Período Temporal: "2. Semestre" selecionado
+ * - Privacy by Design: texto alterado para "Processamento 100% local" (sem "(browser)")
  * ============================================================================
  */
 
@@ -34,10 +44,10 @@
             iva6Omitido:        131.10,
             iva23Omitido:       502.54,
             asfixiaFinanceira:  493.68,
-            totalNaoSujeitos:   451.15,
+            totalNaoSujeitos:   369.15,   // Corrigido: 243.60 + 0.15 + 125.40
             gorjetas:           125.40,
-            portagens:           82.15,
-            campanhas:          243.60   // Antigo cancelamentos renomeado para campanhas
+            portagens:           0.15,    // Corrigido: 0,15 €
+            campanhas:          243.60
         },
         atf: {
             zScore: 2.45,
@@ -250,6 +260,12 @@
  * ============================================================================
  * v13.11.12-PURE: Adicionada simulação de upload de evidências no UNIFEDSystem
  * para que os módulos principais (SAF-T, Extratos, DAC7) exibam valores corretos.
+ * 
+ * CORREÇÕES ADICIONAIS:
+ * - Simulação de 4 ficheiros de controlo (CTRL) para totalizar 15 evidências
+ * - Ocultação dos trimestres 1,2,3 do módulo DAC7
+ * - Seleção da plataforma "Plataforma A" e período "2. Semestre"
+ * - Remoção do texto "(browser)" da badge Privacy by Design
  * ============================================================================
  */
 
@@ -270,6 +286,7 @@
 
         // Garantir que as estruturas de documentos existem
         if (!sys.documents) sys.documents = {};
+        if (!sys.documents.control) sys.documents.control = { files: [], totals: { records: 0 } };
         if (!sys.documents.saft) sys.documents.saft = { files: [], totals: { bruto: 0, iliquido: 0, iva: 0, records: 0 } };
         if (!sys.documents.statements) sys.documents.statements = { files: [], totals: { ganhos: 0, despesas: 0, ganhosLiquidos: 0, records: 0 } };
         if (!sys.documents.invoices) sys.documents.invoices = { files: [], totals: { invoiceValue: 0, records: 0 } };
@@ -278,13 +295,33 @@
         if (!sys.analysis.evidenceIntegrity) sys.analysis.evidenceIntegrity = [];
 
         // Limpar dados anteriores para evitar duplicação
+        sys.documents.control.files = [];
         sys.documents.saft.files = [];
         sys.documents.statements.files = [];
         sys.documents.invoices.files = [];
         sys.documents.dac7.files = [];
         sys.analysis.evidenceIntegrity = [];
 
-        // 1. Simular ficheiros SAF-T (4 ficheiros mensais)
+        // 1. Simular ficheiros de Controlo (4 ficheiros) -> CTRL = 4
+        const controlFiles = [
+            { name: 'controlo_autenticidade_1.csv', type: 'control', size: 256 },
+            { name: 'controlo_autenticidade_2.csv', type: 'control', size: 256 },
+            { name: 'controlo_autenticidade_3.csv', type: 'control', size: 256 },
+            { name: 'controlo_autenticidade_4.csv', type: 'control', size: 256 }
+        ];
+        controlFiles.forEach(file => {
+            sys.documents.control.files.push({ name: file.name, size: file.size });
+            sys.analysis.evidenceIntegrity.push({
+                filename: file.name,
+                type: 'control',
+                hash: CryptoJS.SHA256(file.name + 'control_demo').toString().toUpperCase(),
+                timestamp: new Date().toISOString(),
+                size: file.size
+            });
+        });
+        sys.documents.control.totals.records = controlFiles.length;
+
+        // 2. Simular ficheiros SAF-T (4 ficheiros mensais)
         const saftFiles = [
             { name: '131509_202409.csv', type: 'saft', size: 1024 },
             { name: '131509_202410.csv', type: 'saft', size: 1024 },
@@ -306,7 +343,7 @@
         sys.documents.saft.totals.iva = t.saftIva;
         sys.documents.saft.totals.records = saftFiles.length;
 
-        // 2. Simular ficheiros de Extratos (4 ficheiros mensais)
+        // 3. Simular ficheiros de Extratos (4 ficheiros mensais)
         const statementFiles = [
             { name: 'extrato_setembro_2024.pdf', type: 'statement', size: 2048 },
             { name: 'extrato_outubro_2024.pdf', type: 'statement', size: 2048 },
@@ -328,7 +365,7 @@
         sys.documents.statements.totals.ganhosLiquidos = t.ganhosLiquidos;
         sys.documents.statements.totals.records = statementFiles.length;
 
-        // 3. Simular ficheiros de Faturas (2 faturas BTF)
+        // 4. Simular ficheiros de Faturas (2 faturas BTF)
         const invoiceFiles = [
             { name: 'PT1124_202412.pdf', type: 'invoice', size: 512 },
             { name: 'PT1125_202412.pdf', type: 'invoice', size: 512 }
@@ -346,7 +383,7 @@
         sys.documents.invoices.totals.invoiceValue = t.faturaPlataforma;
         sys.documents.invoices.totals.records = invoiceFiles.length;
 
-        // 4. Simular ficheiro DAC7 (1 ficheiro)
+        // 5. Simular ficheiro DAC7 (1 ficheiro)
         const dac7Files = [
             { name: 'dac7_2024_semestre2.pdf', type: 'dac7', size: 1024 }
         ];
@@ -360,15 +397,15 @@
                 size: file.size
             });
         });
-        // Distribuição trimestral aproximada com base no total do 2º semestre
-        sys.documents.dac7.totals.q3 = t.dac7TotalPeriodo * 0.48; // ~3722.48
-        sys.documents.dac7.totals.q4 = t.dac7TotalPeriodo * 0.52; // ~4032.68
+        // Apenas o 4.º trimestre tem valor (DAC7 do 2.º semestre concentrado em Q4 para demonstração)
+        sys.documents.dac7.totals.q4 = t.dac7TotalPeriodo;
+        sys.documents.dac7.totals.q3 = 0;
         sys.documents.dac7.totals.q1 = 0;
         sys.documents.dac7.totals.q2 = 0;
         sys.documents.dac7.totals.totalPeriodo = t.dac7TotalPeriodo;
         sys.documents.dac7.totals.records = dac7Files.length;
 
-        // 5. Simular dados mensais para ATF (Set, Out, Nov, Dez 2024)
+        // 6. Simular dados mensais para ATF (Set, Out, Nov, Dez 2024)
         if (!sys.monthlyData) sys.monthlyData = {};
         // Distribuição aproximada dos valores totais pelos 4 meses
         const monthlyGanhos = [2450.00, 2560.00, 2480.00, 2667.73];
@@ -384,29 +421,29 @@
         });
         sys.dataMonths = new Set(months);
 
-        // 6. Atualizar contadores da UI
+        // 7. Atualizar contadores da UI (total 4+4+4+2+1 = 15)
         if (typeof window.forensicDataSynchronization === 'function') {
             window.forensicDataSynchronization();
         } else {
             // Fallback manual
             const setCount = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-            setCount('controlCountCompact', 0);
+            setCount('controlCountCompact', controlFiles.length);
             setCount('saftCountCompact', saftFiles.length);
             setCount('invoiceCountCompact', invoiceFiles.length);
             setCount('statementCountCompact', statementFiles.length);
             setCount('dac7CountCompact', dac7Files.length);
-            setCount('summaryControl', 0);
+            setCount('summaryControl', controlFiles.length);
             setCount('summarySaft', saftFiles.length);
             setCount('summaryInvoices', invoiceFiles.length);
             setCount('summaryStatements', statementFiles.length);
             setCount('summaryDac7', dac7Files.length);
-            const total = saftFiles.length + invoiceFiles.length + statementFiles.length + dac7Files.length;
+            const total = controlFiles.length + saftFiles.length + invoiceFiles.length + statementFiles.length + dac7Files.length;
             setCount('summaryTotal', total);
             const evidenceCount = document.getElementById('evidenceCountTotal');
             if (evidenceCount) evidenceCount.textContent = total;
         }
 
-        // 7. Atualizar os totais no UNIFEDSystem.analysis.totals para que a perícia funcione
+        // 8. Atualizar os totais no UNIFEDSystem.analysis.totals para que a perícia funcione
         if (!sys.analysis.totals) sys.analysis.totals = {};
         sys.analysis.totals.saftBruto = t.saftBruto;
         sys.analysis.totals.saftIliquido = t.saftIliquido;
@@ -415,11 +452,13 @@
         sys.analysis.totals.despesas = t.despesas;
         sys.analysis.totals.ganhosLiquidos = t.ganhosLiquidos;
         sys.analysis.totals.faturaPlataforma = t.faturaPlataforma;
-        sys.analysis.totals.dac7Q3 = sys.documents.dac7.totals.q3;
-        sys.analysis.totals.dac7Q4 = sys.documents.dac7.totals.q4;
+        sys.analysis.totals.dac7Q1 = 0;
+        sys.analysis.totals.dac7Q2 = 0;
+        sys.analysis.totals.dac7Q3 = 0;
+        sys.analysis.totals.dac7Q4 = t.dac7TotalPeriodo;
         sys.analysis.totals.dac7TotalPeriodo = t.dac7TotalPeriodo;
 
-        // 8. Garantir que o cliente está registado
+        // 9. Garantir que o cliente está registado
         if (!sys.client && data.client) {
             sys.client = { name: data.client.name, nif: data.client.nif, platform: data.client.platform };
             const clientStatus = document.getElementById('clientStatusFixed');
@@ -436,11 +475,56 @@
             if (nifInput) nifInput.value = data.client.nif;
         }
 
-        // 9. Atualizar master hash
+        // 10. Forçar seleção da plataforma "Plataforma A"
+        const platformSelect = document.getElementById('selPlatformFixed');
+        if (platformSelect) {
+            for (let i = 0; i < platformSelect.options.length; i++) {
+                if (platformSelect.options[i].value === 'outra') {
+                    platformSelect.selectedIndex = i;
+                    break;
+                }
+            }
+            if (typeof window.UNIFEDSystem !== 'undefined') {
+                window.UNIFEDSystem.selectedPlatform = 'outra';
+            }
+        }
+
+        // 11. Forçar período "2. Semestre" e ocultar seletor de trimestre
+        const periodSelect = document.getElementById('periodoAnalise');
+        if (periodSelect) {
+            periodSelect.value = '2s';
+            if (typeof window.UNIFEDSystem !== 'undefined') {
+                window.UNIFEDSystem.selectedPeriodo = '2s';
+            }
+            // Disparar evento change para atualizar DAC7
+            const changeEvent = new Event('change', { bubbles: true });
+            periodSelect.dispatchEvent(changeEvent);
+        }
+        const trimestralContainer = document.getElementById('trimestralSelectorContainer');
+        if (trimestralContainer) {
+            trimestralContainer.style.display = 'none';
+        }
+
+        // 12. Ocultar trimestres 1,2,3 do módulo DAC7 na UI
+        const dac7Q1Card = document.querySelector('#dac7Q1Value')?.closest('.kpi-card');
+        const dac7Q2Card = document.querySelector('#dac7Q2Value')?.closest('.kpi-card');
+        const dac7Q3Card = document.querySelector('#dac7Q3Value')?.closest('.kpi-card');
+        if (dac7Q1Card) dac7Q1Card.style.display = 'none';
+        if (dac7Q2Card) dac7Q2Card.style.display = 'none';
+        if (dac7Q3Card) dac7Q3Card.style.display = 'none';
+
+        // 13. Modificar texto do Privacy by Design: remover "(browser)"
+        const privacyBadge = document.querySelector('.privacy-badge span');
+        if (privacyBadge) {
+            const currentText = privacyBadge.innerHTML;
+            privacyBadge.innerHTML = currentText.replace(/\s*\(browser\)/gi, '');
+        }
+
+        // 14. Atualizar master hash
         if (sys.generateMasterHash) sys.generateMasterHash();
         else if (typeof window.generateMasterHash === 'function') window.generateMasterHash();
 
-        console.log('[UNIFED] Evidências simuladas carregadas com sucesso.');
+        console.log('[UNIFED] Evidências simuladas carregadas com sucesso. Total: 15 ficheiros (CTRL:4, SAFT:4, EXT:4, FAT:2, DAC7:1)');
         return true;
     }
 
