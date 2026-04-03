@@ -1,16 +1,25 @@
 /**
- * UNIFED - PROBATUM · CASO REAL ANONIMIZADO v13.11.6-PURE (DEFINITIVO)
+ * UNIFED - PROBATUM · CASO REAL ANONIMIZADO v13.11.8-PURE (LOTE DEFINITIVO)
  * ============================================================================
- * Script de Injeção de Dados Forenses Certificados
+ * Missão: Injeção Forense e Reconstituição da Verdade Material
+ * Conformidade: DORA (UE) 2022/2554 · Art. 125.º CPP · ISO/IEC 27037:2012
+ * * INTEGRIDADE ASSEGURADA: Zero truncamentos. Mapeamento 1:1 do DOM legado 
+ * e do painel PURE. Semântica legal preservada.
  * ============================================================================
  */
 
 (function() {
-    // ── DADOS REAIS EXTRAÍDOS DO PDF ──────────────────────────────────────────
-    const _PDF_CASE = {
+    'use strict';
+
+    // ── 1. DADOS MESTRES CERTIFICADOS (IMUTÁVEIS) ───────────────────────────
+    const _PDF_CASE = Object.freeze({
         sessionId:  "UNIFED-MNGFN3C0-X57MO",
         masterHash: "a3f8c9e2d5b6a7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1",
-        client: { name: "Real Demo - Unipessoal, Lda", nif: "999999990", platform: "outra" },
+        client: { 
+            name: "Real Demo - Unipessoal, Lda", 
+            nif: "999999990", 
+            platform: "outra" // Corresponde a "Plataforma A" no HTML
+        },
         totals: {
             ganhos:           10157.73,
             ganhosLiquidos:    7709.84,
@@ -40,9 +49,13 @@
             gorjetas:          46.00,
             cancelamentos:     58.10,
             totalNaoSujeitos: 451.15
+        },
+        evidence: {
+            ctrl: 4, saft: 4, fat: 2, ext: 4, dac7: 1, total: 15
         }
-    };
+    });
 
+    // ── 2. UTILITÁRIOS FORENSES ─────────────────────────────────────────────
     function _fmt(v) {
         if (typeof window.formatCurrency === 'function') return window.formatCurrency(v);
         return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(v || 0);
@@ -51,12 +64,18 @@
     function _set(id, value) {
         try {
             var el = document.getElementById(id);
-            if (el) { el.textContent = value; return true; }
-        } catch(e) {} return false;
+            if (el) { 
+                el.textContent = value; 
+                return true; 
+            }
+        } catch(e) {} 
+        return false;
     }
 
+    // ── 3. MATRIZ DE TRIANGULAÇÃO (PROVA RAINHA) ────────────────────────────
     function _renderTriangulationMatrix() {
         if (document.getElementById('triangulationMatrixContainer')) return;
+        
         var targetCard = document.getElementById('pureVerdictCard');
         if (!targetCard) return;
 
@@ -73,8 +92,9 @@
 
         var container = document.createElement('div');
         container.id = 'triangulationMatrixContainer';
-        // LARGURA MÁXIMA E DARK MODE BLINDADO
-        container.style.cssText = 'width:100%;margin:20px 0;padding:20px;border:1px solid rgba(0,229,255,0.3);border-radius:8px;background:#1e293b;box-sizing:border-box;display:block;';
+        
+        // RETIFICAÇÃO CIRÚRGICA: Largura máxima e fundo opaco Dark Mode
+        container.style.cssText = 'width:100%;max-width:none;margin:20px 0;padding:20px;border:1px solid rgba(0,229,255,0.3);border-radius:8px;background:#1e293b;box-sizing:border-box;display:block;';
 
         container.innerHTML = `
             <h3 style="margin:0 0 15px 0;color:#00E5FF;font-size:1.1rem;">📐 Matriz de Triangulação (Prova Rainha)</h3>
@@ -93,12 +113,17 @@
         targetCard.parentNode.insertBefore(container, targetCard);
     }
 
+    // ── 4. SINCRONIZAÇÃO MACRO (ORQUESTRAÇÃO DO DOM) ────────────────────────
     function _syncPureDashboard() {
-        console.log('[UNIFED-PURE] v13.11.6 — Sincronização Definitiva de Verdade Material iniciada...');
+        console.log('[UNIFED-PURE] v13.11.8 — Sincronização Integral e Sem Omissões Iniciada.');
+        
         try {
-            var p = _PDF_CASE.totals; var c = _PDF_CASE.crossings; var a = _PDF_CASE.auxiliaryData;
+            var p = _PDF_CASE.totals; 
+            var c = _PDF_CASE.crossings; 
+            var a = _PDF_CASE.auxiliaryData;
+            var ev = _PDF_CASE.evidence;
 
-            // ── RESTAURO DO OBJETO GLOBAL (RECUPERA O CÓDIGO PERDIDO) ────────
+            // RESTAURO DO OBJETO DE MEMÓRIA (UNIFEDSystem)
             if (window.UNIFEDSystem) {
                 window.UNIFEDSystem.analysis = window.UNIFEDSystem.analysis || {};
                 window.UNIFEDSystem.analysis.totals = p;
@@ -109,40 +134,57 @@
                 window.UNIFEDSystem.sessionId = _PDF_CASE.sessionId;
             }
 
-            // ── 1. IDENTIFICAÇÃO E EVIDÊNCIAS ─────────────────────────────────
+            // ── BLOCO A: PARÂMETROS, IDENTIDADE E EVIDÊNCIAS (DASHBOARD ESQUERDO) ──
+            
+            // Sujeito Passivo
             _set('clientNameDisplayFixed', _PDF_CASE.client.name);
             _set('clientNifDisplayFixed', _PDF_CASE.client.nif);
-            _set('clientNameFixed', _PDF_CASE.client.name);
-            _set('clientNIFFixed', _PDF_CASE.client.nif);
+            var clientNameInput = document.getElementById('clientNameFixed');
+            var clientNifInput = document.getElementById('clientNIFFixed');
+            if (clientNameInput) clientNameInput.value = _PDF_CASE.client.name;
+            if (clientNifInput) clientNifInput.value = _PDF_CASE.client.nif;
+            
             var statusFixed = document.getElementById('clientStatusFixed');
             if (statusFixed) statusFixed.style.display = 'block';
-            
-            _set('evidenceCountTotal', '15');
-            _set('controlCountCompact', '4');
+            var btnGroupFixed = document.querySelector('.btn-group-fixed');
+            if (btnGroupFixed) btnGroupFixed.style.display = 'none';
 
-            // ── 2. PARÂMETROS TEMPORAIS (Forçar 2.º Semestre) ────────────────
+            // Parâmetros Temporais e Plataforma
+            var selPlatform = document.getElementById('selPlatformFixed');
+            if (selPlatform) selPlatform.value = _PDF_CASE.client.platform; // Define "Plataforma A"
+
             var periodoSelect = document.getElementById('periodoAnalise');
             if (periodoSelect) {
-                periodoSelect.value = '2s'; 
+                periodoSelect.value = '2s'; // Garante "2.º Semestre"
                 periodoSelect.dispatchEvent(new Event('change', { bubbles: true }));
             }
 
-            // ── 3. PRIVACY BY DESIGN (Purga do texto "(browser)") ────────────
+            // Gestão de Evidências (Contadores atualizados: Total 15)
+            _set('evidenceCountTotal', ev.total);
+            _set('controlCountCompact', ev.ctrl);
+            _set('saftCountCompact', ev.saft);
+            _set('invoiceCountCompact', ev.fat);
+            _set('statementCountCompact', ev.ext);
+            _set('dac7CountCompact', ev.dac7);
+
+            // Privacy by Design (Eliminar "browser")
             var privacyText = document.querySelector('.privacy-badge span span');
             if (privacyText && privacyText.textContent.includes('(browser)')) {
                 privacyText.textContent = privacyText.textContent.replace(' (browser)', '');
             }
 
-            // ── 4. OCULTAÇÃO DE ZEROS DAC7 ───────────────────────────────────
+            // ── BLOCO B: DASHBOARD LEGADO (TOPO) ──
+            
+            // Ocultar DAC7 vazios
             ['dac7Q1Value', 'dac7Q2Value', 'dac7Q3Value'].forEach(function(id) {
                 var el = document.getElementById(id);
-                if (el && (el.textContent.includes('0,00') || el.textContent.includes('0.00') || el.textContent === '')) {
+                if (el && (el.textContent.includes('0,00') || el.textContent === '')) {
                     var card = el.closest('.kpi-card');
                     if (card) card.style.display = 'none';
                 }
             });
 
-            // ── 5. FLUXOS NÃO SUJEITOS (Injeção Forçada no Dashboard Legado) ─
+            // Injeção de "Fluxos Não Sujeitos" no Legacy via XPath
             const legacyMap = [
                 { text: "CAMPANHAS", val: _fmt(a.campanhas) },
                 { text: "REEMBOLSOS / PORTAGENS", val: _fmt(a.portagens) },
@@ -152,7 +194,6 @@
             ];
             legacyMap.forEach(function(item) {
                 try {
-                    // Busca exaustiva no DOM por texto para injetar os valores omitidos
                     var xpath = `//h4[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '${item.text.toLowerCase()}')]/following-sibling::p`;
                     var result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
                     if (result.singleNodeValue) {
@@ -162,66 +203,106 @@
                 } catch(e) {}
             });
 
-            // ── 6. MAPEAMENTO MASSIVO (Painel Legado + Painel PURE) ─────────
+            // ── BLOCO C: DICIONÁRIO MASSIVO (IDs PURE + IDs LEGACY) ──
             var map = {
-                // Painel PURE (Fundo)
-                'pure-ganhos': _fmt(p.ganhos), 'pure-despesas': _fmt(p.despesas),
-                'pure-liquido': _fmt(p.ganhosLiquidos), 'pure-saft': _fmt(p.saftBruto),
-                'pure-dac7': _fmt(p.dac7TotalPeriodo), 'pure-fatura': _fmt(p.faturaPlataforma),
-                'pure-sg2-btor-val': _fmt(c.btor), 'pure-sg2-btf-val': _fmt(c.btf),
-                'pure-disc-c2': _fmt(c.discrepanciaCritica), 'pure-disc-c2-pct': c.percentagemOmissao.toFixed(2) + '%',
-                'pure-sg1-saft-val': _fmt(p.saftBruto), 'pure-sg1-dac7-val': _fmt(p.dac7TotalPeriodo),
-                'pure-disc-saft-dac7': _fmt(c.discrepanciaSaftVsDac7), 'pure-disc-saft-pct': c.percentagemSaftVsDac7.toFixed(2) + '%',
-                'pure-iva-23': _fmt(c.ivaFalta), 'pure-iva-6': _fmt(c.ivaFalta6),
-                'pure-irc': _fmt(c.ircEstimado), 'pure-disc-c2-grid': _fmt(c.discrepanciaCritica),
-                'pure-iva-devido': _fmt(p.saftBruto * 0.06), 'pure-nc-campanhas': _fmt(a.campanhas),
-                'pure-nc-gorjetas': _fmt(a.gorjetas), 'pure-nc-portagens': _fmt(a.portagens),
-                'pure-nc-cancelamentos': _fmt(a.cancelamentos), 'pure-nc-total': _fmt(a.totalNaoSujeitos),
-                'pure-zc-amount': _fmt(a.totalNaoSujeitos), 'pure-nao-sujeitos': _fmt(a.totalNaoSujeitos),
+                /* PAINEL PURE (NOVO) */
+                'pure-ganhos': _fmt(p.ganhos), 
+                'pure-despesas': _fmt(p.despesas),
+                'pure-liquido': _fmt(p.ganhosLiquidos), 
+                'pure-saft': _fmt(p.saftBruto),
+                'pure-dac7': _fmt(p.dac7TotalPeriodo), 
+                'pure-sub-dac7': '2.º Semestre 2024 (Q4 activo)',
+                'pure-fatura': _fmt(p.faturaPlataforma),
+                'pure-sg2-btor-val': _fmt(c.btor), 
+                'pure-sg2-btf-val': _fmt(c.btf),
+                'pure-disc-c2': _fmt(c.discrepanciaCritica), 
+                'pure-disc-c2-pct': c.percentagemOmissao.toFixed(2) + '%',
+                'pure-sg1-saft-val': _fmt(p.saftBruto), 
+                'pure-sg1-dac7-val': _fmt(p.dac7TotalPeriodo),
+                'pure-disc-saft-dac7': _fmt(c.discrepanciaSaftVsDac7), 
+                'pure-disc-saft-pct': c.percentagemSaftVsDac7.toFixed(2) + '%',
+                'pure-iva-23': _fmt(c.ivaFalta), 
+                'pure-iva-6': _fmt(c.ivaFalta6),
+                'pure-irc': _fmt(c.ircEstimado), 
+                'pure-disc-c2-grid': _fmt(c.discrepanciaCritica),
+                'pure-iva-devido': _fmt(p.saftBruto * 0.06), 
+                'pure-nc-campanhas': _fmt(a.campanhas),
+                'pure-nc-gorjetas': _fmt(a.gorjetas), 
+                'pure-nc-portagens': _fmt(a.portagens),
+                'pure-nc-cancelamentos': _fmt(a.cancelamentos), 
+                'pure-nc-total': _fmt(a.totalNaoSujeitos),
+                'pure-zc-amount': _fmt(a.totalNaoSujeitos), 
+                'pure-nao-sujeitos': _fmt(a.totalNaoSujeitos),
                 
-                // Painel Legado (Topo) - O que faltava preencher
-                'saftIliquidoValue': _fmt(p.saftIliquido), 'saftIvaValue': _fmt(p.saftIva), 'saftBrutoValue': _fmt(p.saftBruto),
-                'stmtGanhosValue': _fmt(p.ganhos), 'stmtDespesasValue': _fmt(p.despesas), 'stmtGanhosLiquidosValue': _fmt(p.ganhosLiquidos),
+                /* PAINEL LEGADO (TOPO) */
+                'saftIliquidoValue': _fmt(p.saftIliquido), 
+                'saftIvaValue': _fmt(p.saftIva), 
+                'saftBrutoValue': _fmt(p.saftBruto),
+                'stmtGanhosValue': _fmt(p.ganhos), 
+                'stmtDespesasValue': _fmt(p.despesas), 
+                'stmtGanhosLiquidosValue': _fmt(p.ganhosLiquidos),
                 'dac7Q4Value': _fmt(p.dac7TotalPeriodo),
-                'statNet': _fmt(p.ganhosLiquidos), 'statComm': _fmt(p.despesas), 'statJuros': _fmt(c.discrepanciaCritica),
-                'discrepancy5Value': _fmt(c.discrepanciaSaftVsDac7), 'agravamentoBrutoValue': _fmt(c.discrepanciaCritica),
-                'ircValue': _fmt(c.ircEstimado), 'iva6Value': _fmt(c.ivaFalta6), 'iva23Value': _fmt(c.ivaFalta),
-                'kpiGrossValue': _fmt(p.ganhos), 'kpiCommValue': _fmt(p.despesas), 'kpiNetValue': _fmt(p.ganhosLiquidos), 'kpiInvValue': _fmt(p.faturaPlataforma),
+                'statNet': _fmt(p.ganhosLiquidos), 
+                'statComm': _fmt(p.despesas), 
+                'statJuros': _fmt(c.discrepanciaCritica),
+                'discrepancy5Value': _fmt(c.discrepanciaSaftVsDac7), 
+                'agravamentoBrutoValue': _fmt(c.discrepanciaCritica),
+                'ircValue': _fmt(c.ircEstimado), 
+                'iva6Value': _fmt(c.ivaFalta6), 
+                'iva23Value': _fmt(c.ivaFalta),
+                'kpiGrossValue': _fmt(p.ganhos), 
+                'kpiCommValue': _fmt(p.despesas), 
+                'kpiNetValue': _fmt(p.ganhosLiquidos), 
+                'kpiInvValue': _fmt(p.faturaPlataforma),
                 'alertDeltaValue': _fmt(c.discrepanciaCritica),
                 
-                // Veredicto e Hash
-                'verdictLevel': 'RISCO ELEVADO', 'verdictPercentSpan': '89,26%',
-                'masterHashValue': _PDF_CASE.masterHash, 'masterHashFull': _PDF_CASE.masterHash,
-                'sessionIdDisplay': _PDF_CASE.sessionId, 'verdictSessionId': _PDF_CASE.sessionId,
+                /* VEREDICTO, SESSÃO E HASH */
+                'verdictLevel': 'RISCO ELEVADO', 
+                'verdictPercentSpan': '89,26%',
+                'masterHashValue': _PDF_CASE.masterHash, 
+                'masterHashFull': _PDF_CASE.masterHash,
+                'sessionIdDisplay': _PDF_CASE.sessionId, 
+                'verdictSessionId': _PDF_CASE.sessionId,
                 'pure-session-id': _PDF_CASE.sessionId
             };
+
+            // Injeta valores verificando a existência de cada ID
             Object.keys(map).forEach(function(id) { _set(id, map[id]); });
 
-            // Activação dos Cards de Alerta (Display Block)
+            // ── BLOCO D: RENDERIZAÇÃO E ATIVAÇÃO ──
+            
+            // Ativar Cards de Alerta Ocultos
             const cardsToDisplay = ['jurosCard', 'discrepancy5Card', 'agravamentoBrutoCard', 'ircCard', 'iva6Card', 'iva23Card', 'bigDataAlert'];
             cardsToDisplay.forEach(id => {
                 var el = document.getElementById(id);
-                if (el) {
-                    el.style.display = (id === 'bigDataAlert') ? 'flex' : 'block';
-                }
+                if (el) el.style.display = (id === 'bigDataAlert') ? 'flex' : 'block';
             });
 
-            // GATILHOS LEGAIS (RECUPERADOS)
+            // Reativar os gatilhos originais dos gráficos e dashboard legado
             if (typeof window.updateDashboard === 'function') window.updateDashboard();
             if (typeof window.updateModulesUI === 'function') window.updateModulesUI();
             if (typeof window.renderChart === 'function') window.renderChart();
 
+            // Renderizar Matriz (Prova Rainha)
             _renderTriangulationMatrix();
+
+            // Forçar visibilidade do Painel PURE
             var _wrapper = document.getElementById('pureDashboardWrapper');
             if (_wrapper) _wrapper.classList.add('pure-visible');
 
-        } catch(e) { console.error('[UNIFED-PURE] ERRO FATAL:', e); }
+            // Forçar visibilidade da Análise Temporal Forense (ATF)
+            var atfBlock = document.getElementById('pureATFCard');
+            if (atfBlock) atfBlock.style.display = 'block';
+
+        } catch(e) { 
+            console.error('[UNIFED-PURE] ERRO FATAL NA EXECUÇÃO:', e); 
+        }
     }
 
-    // ── EXPOSIÇÃO PÚBLICA ─────────────────────────────────────────────────────
+    // ── 5. EXPOSIÇÃO PÚBLICA AO MOTOR PRINCIPAL ─────────────────────────────
     window.UNIFEDSystem = window.UNIFEDSystem || {};
     window.UNIFEDSystem.loadAnonymizedRealCase = function() {
-        console.log('[UNIFED-PURE] Gatilho activado pelo index.html — DOM do painel garantido.');
+        console.log('[UNIFED-PURE] Comando index.html recebido. Execução blindada.');
         setTimeout(_syncPureDashboard, 300);
     };
 
