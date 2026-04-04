@@ -7,6 +7,7 @@
     - Guard clause no syncMetrics para evitar erro dos 42 IDs
     - Remoção do texto "(browser)" do selo Privacy by Design
     - Ajuste de layout (eliminação do gap entre gráfico e log)
+    - Contadores de evidências visíveis na UI (movidos para o bloco de gestão)
     - Escudo CORS mantido (freetsa.org)
   Conformidade: ISO/IEC 27037:2012 · Art. 125.º CPP · Art. 119.º RGIT
   ============================================================================
@@ -46,6 +47,31 @@
       <div class="pure-data-label" data-pt="Plataforma" data-en="Platform">Plataforma</div>
       <div id="pure-subject-platform" class="pure-subject-value" style="font-size:1rem; font-weight:600; color:#00E5FF;">---</div>
     </div>
+  </div>
+
+  <!-- ── GESTÃO DE EVIDÊNCIAS (com contadores visíveis) ───────────────────── -->
+  <div class="evidence-management-section-solid" style="margin-bottom: 1rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+      <button id="openEvidenceModalBtn" class="evidence-management-btn-solid" style="flex: 1;">
+        <span><i class="fas fa-folder-open"></i> <span id="btnEvidence">GESTÃO DE EVIDÊNCIAS</span></span>
+        <span id="evidenceCountTotal" class="evidence-count-solid">0</span>
+      </button>
+      <div class="pure-evidence-stats" style="display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: flex-end;">
+        <div class="pure-evidence-item" style="background: rgba(0,229,255,0.08); padding: 4px 8px; border-radius: 4px; font-size: 0.7rem;">CTRL: <span id="pure-ctrl-qty" class="pure-accent" style="font-weight: 800;">0</span></div>
+        <div class="pure-evidence-item" style="background: rgba(0,229,255,0.08); padding: 4px 8px; border-radius: 4px; font-size: 0.7rem;">SAF-T: <span id="pure-saft-qty" class="pure-accent" style="font-weight: 800;">0</span></div>
+        <div class="pure-evidence-item" style="background: rgba(0,229,255,0.08); padding: 4px 8px; border-radius: 4px; font-size: 0.7rem;">FAT: <span id="pure-fat-qty" class="pure-accent" style="font-weight: 800;">0</span></div>
+        <div class="pure-evidence-item" style="background: rgba(0,229,255,0.08); padding: 4px 8px; border-radius: 4px; font-size: 0.7rem;">EXT: <span id="pure-ext-qty" class="pure-accent" style="font-weight: 800;">0</span></div>
+        <div class="pure-evidence-item" style="background: rgba(0,229,255,0.08); padding: 4px 8px; border-radius: 4px; font-size: 0.7rem;">DAC7: <span id="pure-dac7-qty" class="pure-accent" style="font-weight: 800;">0</span></div>
+      </div>
+    </div>
+    <div class="counters-compact" style="margin-top: 0.5rem;">
+      <div class="counter-item-compact"><span id="controlCountCompact" class="counter-value-compact">0</span><span class="counter-label-compact">CTRL</span></div>
+      <div class="counter-item-compact"><span id="saftCountCompact" class="counter-value-compact">0</span><span class="counter-label-compact">SAF-T</span></div>
+      <div class="counter-item-compact"><span id="invoiceCountCompact" class="counter-value-compact">0</span><span class="counter-label-compact">FAT</span></div>
+      <div class="counter-item-compact"><span id="statementCountCompact" class="counter-value-compact">0</span><span class="counter-label-compact">EXT</span></div>
+      <div class="counter-item-compact"><span id="dac7CountCompact" class="counter-value-compact">0</span><span class="counter-label-compact">DAC7</span></div>
+    </div>
+    <button id="analyzeBtn" class="btn-forensic" disabled><i class="fas fa-search-dollar"></i> <span id="btnAnalyze">EXECUTAR PERÍCIA</span></button>
   </div>
 
   <!-- ── GRID DE PAINÉIS (pure-card-grid) ─────────────────────────────────── -->
@@ -541,14 +567,7 @@
     <div id="pure-iva-devido-val"></div>
     <div id="pure-impacto-macro"></div>
     
-    <!-- IDs para contagem de evidências (adicionados) -->
-    <div id="pure-ctrl-qty"></div>
-    <div id="pure-saft-qty"></div>
-    <div id="pure-fat-qty"></div>
-    <div id="pure-ext-qty"></div>
-    <div id="pure-dac7-qty"></div>
-    
-    <!-- Garantia de que todos os IDs referenciados em script_injection.js existem -->
+    <!-- Garantia de que todos os IDs referenciados em script_injection.js existem (os contadores já foram movidos para UI visível, mas mantêm-se aqui para compatibilidade) -->
     <div id="pure-fatura"></div>
     <div id="pure-disc-c2"></div>
     <div id="pure-disc-c2-pct"></div>
