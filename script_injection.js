@@ -1,5 +1,5 @@
 /**
- * UNIFED - PROBATUM · CASO REAL ANONIMIZADO v13.11.13-PURE (PARTE 1 DE 6)
+ * UNIFED - PROBATUM · CASO REAL ANONIMIZADO v13.11.13-PURE (PARTE 1 DE 4)
  * ============================================================================
  * Missão: Injeção Forense e Reconstituição da Verdade Material
  * Conformidade: DORA (UE) 2022/2554 · Art. 125.º CPP · ISO/IEC 27037:2012
@@ -10,8 +10,7 @@
  *   - CSS dinâmico: boxes auxiliares com tamanhos iguais e largura total
  *   - Ocultação do gráfico "DISCREPÂNCIA SAF-T vs DAC7" (discrepancyChart)
  *   - Exclusão de dados macro do Master Hash (integridade da prova individual)
- *   - Correção tipificação legal: exclusivo Art. 119.º RGIT (contra-ordenação)
- *   - Versão do motor unificada para v13.11.13-PURE
+ *   - CORREÇÃO: Aguarda robustamente pelo #pureDashboard antes de manipular DOM
  * ============================================================================
  */
 
@@ -50,7 +49,7 @@
             confianca: "99.2%",
             periodo: "Q4 2024",
             anomalias: 4,
-            version: "v13.11.13-PURE",   // ATUALIZADO: unificado com a versão do motor
+            version: "v13.5.0-PURE",
             score: 40,
             trend: "DESCENDENTE",
             outliers: 0
@@ -118,7 +117,7 @@
 })();
 
 /**
- * UNIFED - PROBATUM · v13.11.13-PURE (PARTE 2 DE 6)
+ * UNIFED - PROBATUM · v13.11.13-PURE (PARTE 2 DE 4)
  * ============================================================================
  * Objetivo: Motor de Cálculo Forense e Mapeamento de Omissões — Completo
  * Modificação legal: textos dos smoking guns e veredicto ajustados para Art. 119.º RGIT.
@@ -201,15 +200,6 @@
             'pure-atf-trend-val':      data.atf.trend
         };
 
-        // Validação de integridade: verifica se todos os IDs existem antes da injeção
-        const missingIds = [];
-        Object.keys(map).forEach(id => {
-            if (!document.getElementById(id)) missingIds.push(id);
-        });
-        if (missingIds.length) {
-            console.warn('[UNIFED] IDs em falta no DOM:', missingIds);
-        }
-
         Object.entries(map).forEach(([id, val]) => set(id, val));
         
         // ── MÉTRICAS MACRO (MIS) ──────────────────────────────────────────────
@@ -287,7 +277,7 @@
 })();
 
 /**
- * UNIFED - PROBATUM · v13.11.13-PURE (PARTE 3 DE 6)
+ * UNIFED - PROBATUM · v13.11.13-PURE (PARTE 3 DE 4)
  * ============================================================================
  * Objetivo: Construção da Matriz de Triangulação (Visualização Judicial)
  * Textos legais ajustados para Art. 119.º RGIT.
@@ -336,11 +326,13 @@
 })();
 
 /**
- * UNIFED - PROBATUM · v13.11.13-PURE (PARTE 4 DE 6)
+ * UNIFED - PROBATUM · v13.11.13-PURE (PARTE 4 DE 4)
  * ============================================================================
- * Objetivo: CSS dinâmico, ocultações iniciais e helpers visuais.
- * Modificações: CSS para boxes auxiliares, ocultação do gráfico discrepancyChart,
- * e ocultação inicial da secção de evidências (pureEvidenceSection e contadores).
+ * Objetivo: Gatilho Final, ATF Metrics e Revelação do Painel
+ * Dados reais originais: campanhas=405.00, portagens=0.15, gorjetas=46.00,
+ * cancelamentos=58.10, total não sujeitos=451.15.
+ * Modificações: CSS dinâmico para boxes auxiliares, ocultação do gráfico discrepancyChart.
+ * CORREÇÃO: Aguarda robustamente pelo #pureDashboard antes de atualizar DOM.
  * ============================================================================
  */
 
@@ -349,8 +341,29 @@
     if (!window.UNIFED_INTERNAL) return;
     const { data, fmt, set, syncMetrics, renderMatrix } = window.UNIFED_INTERNAL;
 
+    // ===================== ESPERA ROBUSTA PELO #pureDashboard =====================
+    function waitForPureDashboard(timeout = 10000) {
+        return new Promise((resolve, reject) => {
+            if (document.getElementById('pureDashboard')) {
+                resolve();
+                return;
+            }
+            const observer = new MutationObserver((mutations, obs) => {
+                if (document.getElementById('pureDashboard')) {
+                    obs.disconnect();
+                    resolve();
+                }
+            });
+            observer.observe(document.body, { childList: true, subtree: true });
+            setTimeout(() => {
+                observer.disconnect();
+                reject(new Error('Timeout: #pureDashboard não encontrado após ' + timeout + 'ms'));
+            }, timeout);
+        });
+    }
+    // ============================================================================
+
     // 1. CSS dinâmico para forçar boxes auxiliares com tamanhos iguais e largura total
-    //    + ocultação inicial da secção de evidências
     function _injectAuxiliaryBoxesCSS() {
         const styleId = 'unifed-aux-boxes-fix';
         if (document.getElementById(styleId)) return;
@@ -371,13 +384,6 @@
                 margin: 0 !important;
                 box-sizing: border-box !important;
             }
-            /* Ocultação inicial da secção de evidências e contadores */
-            #pureEvidenceSection,
-            #controlCountCompact, #saftCountCompact, #invoiceCountCompact,
-            #statementCountCompact, #dac7CountCompact,
-            .evidence-counter, .evidence-summary {
-                display: none !important;
-            }
             @media (max-width: 640px) {
                 .aux-boxes-grid {
                     grid-template-columns: repeat(2, 1fr) !important;
@@ -393,7 +399,7 @@
         style.id = styleId;
         style.textContent = css;
         document.head.appendChild(style);
-        console.log('[UNIFED] CSS injetado: boxes auxiliares + ocultação inicial da secção de evidências.');
+        console.log('[UNIFED] CSS injetado: boxes auxiliares com tamanhos iguais e largura total.');
     }
 
     // 2. Ocultar o gráfico "DISCREPÂNCIA SAF-T vs DAC7" (discrepancyChart)
@@ -413,7 +419,7 @@
         }
     }
 
-    // 3. Oculta o Motor Preditivo NEXUS ATF (segredo industrial)
+    // 3. Oculta o Motor Preditivo NEXUS ATF
     function _hideNexusForecast() {
         const nexusPanel = document.getElementById('nexusForecastPanel');
         if (nexusPanel) nexusPanel.style.display = 'none';
@@ -425,7 +431,7 @@
                 if (el) el.style.display = 'none';
             });
         }
-        console.log('[UNIFED] Motor Preditivo NEXUS ATF ocultado por orientação pericial (segredo industrial).');
+        console.log('[UNIFED] Motor Preditivo NEXUS ATF ocultado por orientação pericial.');
     }
 
     // 4. Injeta o card de Análise de Risco Sistémico (MIS)
@@ -509,525 +515,396 @@
         
         const questionText = document.getElementById('pure-zc-question-text');
         if (questionText) {
-            questionText.textContent = 'Pode a plataforma confirmar se os €451,15 em Gorjetas e Campanhas (isentos de comissão nos termos da Lei TVDE) foram incluídos na base de cálculo do reporte DAC7 enviado pela plataforma à Autoridade Tributária? Se sim, qual o fundamento legal?';
+            questionText.textContent = 'Pode a plataforma confirmar se os €451,15 em Gorjetas e Campanhas (isentos de comissão nos termos da Lei TVDE) foram incluídos na base de cálculo do reporte DAC7? Se sim, qual o fundamento legal?';
         }
         
         console.log('[UNIFED] UI auxiliar atualizada: Campanhas=', fmt(t.campanhas), 'Portagens=', fmt(t.portagens), 'Gorjetas=', fmt(t.gorjetas), 'Cancelamentos=', fmt(t.cancelamentos), 'Total=', fmt(t.totalNaoSujeitos));
     }
 
-    // Exportar funções para o namespace global (usado na Parte 6)
-    window.UNIFED_INTERNAL.injectAuxiliaryBoxesCSS = _injectAuxiliaryBoxesCSS;
-    window.UNIFED_INTERNAL.hideDiscrepancyChart = _hideDiscrepancyChart;
-    window.UNIFED_INTERNAL.hideNexusForecast = _hideNexusForecast;
-    window.UNIFED_INTERNAL.injectMacroCard = _injectMacroCard;
-    window.UNIFED_INTERNAL.updateAuxiliaryUI = _updateAuxiliaryUI;
-    console.log('[UNIFED] Camada 4: OK (CSS e funções de UI).');
-})();
+    // 6. Simula o carregamento de evidências no UNIFEDSystem (dados reais)
+    function _simulateEvidenceUpload() {
+        if (typeof window.UNIFEDSystem === 'undefined') {
+            console.warn('[UNIFED] UNIFEDSystem não disponível para simular upload.');
+            return false;
+        }
 
-/**
- * UNIFED - PROBATUM · v13.11.13-PURE (PARTE 5 DE 6)
- * ============================================================================
- * Objetivo: Simulação de evidências e gestão de plataforma/DAC7.
- * Modificações: Força 'Plataforma A' read‑only, remove KPIs DAC7 com valor zero,
- * e prepara a função de carregamento de evidências para uso sob pedido.
- * ============================================================================
- */
+        const sys = window.UNIFEDSystem;
+        const t = data.totals;
+        const macro = data.macro_analysis;
 
-(function() {
-    'use strict';
-    if (!window.UNIFED_INTERNAL) return;
-    const { data, fmt } = window.UNIFED_INTERNAL;
+        if (!sys.documents) sys.documents = {};
+        if (!sys.documents.control) sys.documents.control = { files: [], totals: { records: 0 } };
+        if (!sys.documents.saft) sys.documents.saft = { files: [], totals: { bruto: 0, iliquido: 0, iva: 0, records: 0 } };
+        if (!sys.documents.statements) sys.documents.statements = { files: [], totals: { ganhos: 0, despesas: 0, ganhosLiquidos: 0, records: 0 } };
+        if (!sys.documents.invoices) sys.documents.invoices = { files: [], totals: { invoiceValue: 0, records: 0 } };
+        if (!sys.documents.dac7) sys.documents.dac7 = { files: [], totals: { q1: 0, q2: 0, q3: 0, q4: 0, totalPeriodo: 0, records: 0 } };
+        if (!sys.analysis) sys.analysis = { evidenceIntegrity: [] };
+        if (!sys.analysis.evidenceIntegrity) sys.analysis.evidenceIntegrity = [];
 
-    // 1. Forçar plataforma 'Plataforma A' read‑only e ignorar dropdown
-    function _forcePlatformReadOnly() {
+        sys.documents.control.files = [];
+        sys.documents.saft.files = [];
+        sys.documents.statements.files = [];
+        sys.documents.invoices.files = [];
+        sys.documents.dac7.files = [];
+        sys.analysis.evidenceIntegrity = [];
+
+        // 1. Ficheiros de Controlo (4)
+        const controlFiles = [
+            { name: 'controlo_autenticidade_1.csv', type: 'control', size: 256 },
+            { name: 'controlo_autenticidade_2.csv', type: 'control', size: 256 },
+            { name: 'controlo_autenticidade_3.csv', type: 'control', size: 256 },
+            { name: 'controlo_autenticidade_4.csv', type: 'control', size: 256 }
+        ];
+        controlFiles.forEach(file => {
+            sys.documents.control.files.push({ name: file.name, size: file.size });
+            sys.analysis.evidenceIntegrity.push({
+                filename: file.name,
+                type: 'control',
+                hash: CryptoJS.SHA256(file.name + 'control_demo').toString().toUpperCase(),
+                timestamp: new Date().toISOString(),
+                size: file.size
+            });
+        });
+        sys.documents.control.totals.records = controlFiles.length;
+
+        // 2. SAF-T (4 ficheiros mensais)
+        const saftFiles = [
+            { name: '131509_202409.csv', type: 'saft', size: 1024 },
+            { name: '131509_202410.csv', type: 'saft', size: 1024 },
+            { name: '131509_202411.csv', type: 'saft', size: 1024 },
+            { name: '131509_202412.csv', type: 'saft', size: 1024 }
+        ];
+        saftFiles.forEach(file => {
+            sys.documents.saft.files.push({ name: file.name, size: file.size });
+            sys.analysis.evidenceIntegrity.push({
+                filename: file.name,
+                type: 'saft',
+                hash: CryptoJS.SHA256(file.name + 'saft_demo').toString().toUpperCase(),
+                timestamp: new Date().toISOString(),
+                size: file.size
+            });
+        });
+        sys.documents.saft.totals.bruto = t.saftBruto;
+        sys.documents.saft.totals.iliquido = t.saftIliquido;
+        sys.documents.saft.totals.iva = t.saftIva;
+        sys.documents.saft.totals.records = saftFiles.length;
+
+        // 3. Extratos (4 ficheiros mensais)
+        const statementFiles = [
+            { name: 'extrato_setembro_2024.pdf', type: 'statement', size: 2048 },
+            { name: 'extrato_outubro_2024.pdf', type: 'statement', size: 2048 },
+            { name: 'extrato_novembro_2024.pdf', type: 'statement', size: 2048 },
+            { name: 'extrato_dezembro_2024.pdf', type: 'statement', size: 2048 }
+        ];
+        statementFiles.forEach(file => {
+            sys.documents.statements.files.push({ name: file.name, size: file.size });
+            sys.analysis.evidenceIntegrity.push({
+                filename: file.name,
+                type: 'statement',
+                hash: CryptoJS.SHA256(file.name + 'statement_demo').toString().toUpperCase(),
+                timestamp: new Date().toISOString(),
+                size: file.size
+            });
+        });
+        sys.documents.statements.totals.ganhos = t.ganhos;
+        sys.documents.statements.totals.despesas = t.despesas;
+        sys.documents.statements.totals.ganhosLiquidos = t.ganhosLiquidos;
+        sys.documents.statements.totals.records = statementFiles.length;
+
+        // 4. Faturas (2)
+        const invoiceFiles = [
+            { name: 'PT1124_202412.pdf', type: 'invoice', size: 512 },
+            { name: 'PT1125_202412.pdf', type: 'invoice', size: 512 }
+        ];
+        invoiceFiles.forEach(file => {
+            sys.documents.invoices.files.push({ name: file.name, size: file.size });
+            sys.analysis.evidenceIntegrity.push({
+                filename: file.name,
+                type: 'invoice',
+                hash: CryptoJS.SHA256(file.name + 'invoice_demo').toString().toUpperCase(),
+                timestamp: new Date().toISOString(),
+                size: file.size
+            });
+        });
+        sys.documents.invoices.totals.invoiceValue = t.faturaPlataforma;
+        sys.documents.invoices.totals.records = invoiceFiles.length;
+
+        // 5. DAC7 (1 ficheiro) - apenas 4.º trimestre visível
+        const dac7Files = [
+            { name: 'dac7_2024_semestre2.pdf', type: 'dac7', size: 1024 }
+        ];
+        dac7Files.forEach(file => {
+            sys.documents.dac7.files.push({ name: file.name, size: file.size });
+            sys.analysis.evidenceIntegrity.push({
+                filename: file.name,
+                type: 'dac7',
+                hash: CryptoJS.SHA256(file.name + 'dac7_demo').toString().toUpperCase(),
+                timestamp: new Date().toISOString(),
+                size: file.size
+            });
+        });
+        sys.documents.dac7.totals.q4 = t.dac7TotalPeriodo;
+        sys.documents.dac7.totals.q3 = 0;
+        sys.documents.dac7.totals.q1 = 0;
+        sys.documents.dac7.totals.q2 = 0;
+        sys.documents.dac7.totals.totalPeriodo = t.dac7TotalPeriodo;
+        sys.documents.dac7.totals.records = dac7Files.length;
+
+        // 6. Dados mensais para ATF
+        if (!sys.monthlyData) sys.monthlyData = {};
+        const monthlyGanhos = [2450.00, 2560.00, 2480.00, 2667.73];
+        const monthlyDespesas = [590.00, 615.00, 600.00, 642.89];
+        const monthlyGanhosLiq = [1860.00, 1945.00, 1880.00, 2024.84];
+        const months = ['202409', '202410', '202411', '202412'];
+        months.forEach((month, idx) => {
+            sys.monthlyData[month] = {
+                ganhos: monthlyGanhos[idx],
+                despesas: monthlyDespesas[idx],
+                ganhosLiq: monthlyGanhosLiq[idx]
+            };
+        });
+        sys.dataMonths = new Set(months);
+
+        // 7. Contadores UI
+        if (typeof window.forensicDataSynchronization === 'function') {
+            window.forensicDataSynchronization();
+        } else {
+            const setCount = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+            setCount('controlCountCompact', controlFiles.length);
+            setCount('saftCountCompact', saftFiles.length);
+            setCount('invoiceCountCompact', invoiceFiles.length);
+            setCount('statementCountCompact', statementFiles.length);
+            setCount('dac7CountCompact', dac7Files.length);
+            setCount('summaryControl', controlFiles.length);
+            setCount('summarySaft', saftFiles.length);
+            setCount('summaryInvoices', invoiceFiles.length);
+            setCount('summaryStatements', statementFiles.length);
+            setCount('summaryDac7', dac7Files.length);
+            const total = controlFiles.length + saftFiles.length + invoiceFiles.length + statementFiles.length + dac7Files.length;
+            setCount('summaryTotal', total);
+            const evidenceCount = document.getElementById('evidenceCountTotal');
+            if (evidenceCount) evidenceCount.textContent = total;
+        }
+
+        // 8. Totais e crossings no UNIFEDSystem.analysis (excluindo dados macro do Master Hash)
+        if (!sys.analysis.totals) sys.analysis.totals = {};
+        sys.analysis.totals.saftBruto = t.saftBruto;
+        sys.analysis.totals.saftIliquido = t.saftIliquido;
+        sys.analysis.totals.saftIva = t.saftIva;
+        sys.analysis.totals.ganhos = t.ganhos;
+        sys.analysis.totals.despesas = t.despesas;
+        sys.analysis.totals.ganhosLiquidos = t.ganhosLiquidos;
+        sys.analysis.totals.faturaPlataforma = t.faturaPlataforma;
+        sys.analysis.totals.dac7Q1 = 0;
+        sys.analysis.totals.dac7Q2 = 0;
+        sys.analysis.totals.dac7Q3 = 0;
+        sys.analysis.totals.dac7Q4 = t.dac7TotalPeriodo;
+        sys.analysis.totals.dac7TotalPeriodo = t.dac7TotalPeriodo;
+
+        const discrepanciaSaftVsDac7 = t.saftBruto - t.dac7TotalPeriodo;
+        const percentagemSaftVsDac7 = t.saftBruto > 0 ? (discrepanciaSaftVsDac7 / t.saftBruto) * 100 : 0;
+        const discrepanciaCritica = t.despesas - t.faturaPlataforma;
+        const percentagemOmissao = t.despesas > 0 ? (discrepanciaCritica / t.despesas) * 100 : 0;
+        const ivaFalta = discrepanciaCritica * 0.23;
+        const ivaFalta6 = discrepanciaCritica * 0.06;
+        const agravamentoBrutoIRC = discrepanciaCritica;
+        const ircEstimado = discrepanciaCritica * 0.21;
+
+        if (!sys.analysis.crossings) sys.analysis.crossings = {};
+        sys.analysis.crossings.discrepanciaSaftVsDac7 = discrepanciaSaftVsDac7;
+        sys.analysis.crossings.percentagemSaftVsDac7 = percentagemSaftVsDac7;
+        sys.analysis.crossings.discrepanciaCritica = discrepanciaCritica;
+        sys.analysis.crossings.percentagemOmissao = percentagemOmissao;
+        sys.analysis.crossings.ivaFalta = ivaFalta;
+        sys.analysis.crossings.ivaFalta6 = ivaFalta6;
+        sys.analysis.crossings.agravamentoBrutoIRC = agravamentoBrutoIRC;
+        sys.analysis.crossings.ircEstimado = ircEstimado;
+        sys.analysis.crossings.btor = t.despesas;
+        sys.analysis.crossings.btf = t.faturaPlataforma;
+        sys.analysis.crossings.c1_delta = discrepanciaSaftVsDac7;
+        sys.analysis.crossings.c1_pct = percentagemSaftVsDac7;
+        sys.analysis.crossings.c2_delta = discrepanciaCritica;
+        sys.analysis.crossings.c2_pct = percentagemOmissao;
+
+        // 9. Cliente
+        if (!sys.client && data.client) {
+            sys.client = { name: data.client.name, nif: data.client.nif, platform: data.client.platform };
+            const clientStatus = document.getElementById('clientStatusFixed');
+            if (clientStatus) {
+                clientStatus.style.display = 'flex';
+                const nameSpan = document.getElementById('clientNameDisplayFixed');
+                const nifSpan = document.getElementById('clientNifDisplayFixed');
+                if (nameSpan) nameSpan.textContent = data.client.name;
+                if (nifSpan) nifSpan.textContent = data.client.nif;
+            }
+            const nameInput = document.getElementById('clientNameFixed');
+            const nifInput = document.getElementById('clientNIFFixed');
+            if (nameInput) nameInput.value = data.client.name;
+            if (nifInput) nifInput.value = data.client.nif;
+        }
+
+        // 10. Plataforma "Plataforma A"
         const platformSelect = document.getElementById('selPlatformFixed');
         if (platformSelect) {
-            // Define valor como 'outra' (ou o que corresponda a "Plataforma A")
             for (let i = 0; i < platformSelect.options.length; i++) {
                 if (platformSelect.options[i].value === 'outra') {
                     platformSelect.selectedIndex = i;
                     break;
                 }
             }
-            platformSelect.disabled = true;
-            platformSelect.style.opacity = '0.7';
-            platformSelect.style.cursor = 'not-allowed';
-        }
-        // Garantir que o nome da plataforma no objeto global também fica fixo
-        if (window.UNIFEDSystem) {
-            window.UNIFEDSystem.selectedPlatform = 'outra';
-        }
-        console.log('[UNIFED] Plataforma forçada para "Plataforma A" em modo read‑only.');
-    }
-
-    // 2. Remover do DOM quaisquer KPIs DAC7 com valor zero (Q1, Q2, Q3)
-    function _removeZeroDac7Kpis() {
-        const zeroKpis = ['dac7Q1Value', 'dac7Q2Value', 'dac7Q3Value'];
-        zeroKpis.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) {
-                const card = el.closest('.kpi-card');
-                if (card) {
-                    card.remove();
-                    console.log(`[UNIFED] KPI DAC7 com valor zero removido: ${id}`);
-                } else {
-                    el.remove();
-                }
+            if (typeof window.UNIFEDSystem !== 'undefined') {
+                window.UNIFEDSystem.selectedPlatform = 'outra';
             }
-        });
+        }
+
+        // 11. Período "2. Semestre"
+        const periodSelect = document.getElementById('periodoAnalise');
+        if (periodSelect) {
+            periodSelect.value = '2s';
+            if (typeof window.UNIFEDSystem !== 'undefined') {
+                window.UNIFEDSystem.selectedPeriodo = '2s';
+            }
+            const changeEvent = new Event('change', { bubbles: true });
+            periodSelect.dispatchEvent(changeEvent);
+        }
+        const trimestralContainer = document.getElementById('trimestralSelectorContainer');
+        if (trimestralContainer) {
+            trimestralContainer.style.display = 'none';
+        }
+
+        // 12. Ocultar Q1, Q2, Q3 do DAC7
+        const dac7Q1Card = document.querySelector('#dac7Q1Value')?.closest('.kpi-card');
+        const dac7Q2Card = document.querySelector('#dac7Q2Value')?.closest('.kpi-card');
+        const dac7Q3Card = document.querySelector('#dac7Q3Value')?.closest('.kpi-card');
+        if (dac7Q1Card) dac7Q1Card.style.display = 'none';
+        if (dac7Q2Card) dac7Q2Card.style.display = 'none';
+        if (dac7Q3Card) dac7Q3Card.style.display = 'none';
+
+        // 13. Remover "(browser)" do Privacy by Design
+        const privacyBadge = document.querySelector('.privacy-badge span');
+        if (privacyBadge) {
+            const currentText = privacyBadge.innerHTML;
+            privacyBadge.innerHTML = currentText.replace(/\s*\(browser\)/gi, '');
+        }
+
+        // 14. Master hash (excluindo dados macro para preservar integridade da prova individual)
+        const evidenceHashes = sys.analysis.evidenceIntegrity
+            .map(ev => ev.hash)
+            .filter(h => h && h.length === 64)
+            .sort();
+        const binaryConcat = evidenceHashes.join('') + JSON.stringify({ client: sys.client, totals: t }) + sys.sessionId;
+        const masterHashFull = CryptoJS.SHA256(binaryConcat).toString().toUpperCase();
+        sys.masterHash = masterHashFull;
+        const setElementText = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+        setElementText('masterHashValue', masterHashFull);
+        if (typeof window.generateQRCode === 'function') window.generateQRCode();
+        else {
+            const qrContainer = document.getElementById('qrcodeContainer');
+            if (qrContainer && typeof QRCode !== 'undefined') {
+                qrContainer.innerHTML = '';
+                new QRCode(qrContainer, {
+                    text: `UNIFED|${sys.sessionId || ''}|${masterHashFull}`,
+                    width: 75, height: 75
+                });
+            }
+        }
+        window.activeForensicSession = { sessionId: sys.sessionId, masterHash: masterHashFull };
+
+        console.log('[UNIFED] Evidências simuladas carregadas. Total: 15 ficheiros (CTRL:4, SAFT:4, EXT:4, FAT:2, DAC7:1)');
+        return true;
     }
 
-    // 3. Função principal de simulação de upload de evidências (retorna Promise)
-    function _simulateEvidenceUpload() {
-        return new Promise((resolve, reject) => {
-            try {
-                if (typeof window.UNIFEDSystem === 'undefined') {
-                    console.warn('[UNIFED] UNIFEDSystem não disponível para simular upload.');
-                    reject(new Error('UNIFEDSystem not found'));
-                    return;
-                }
+    // Função auxiliar para setElementText (caso não exista global)
+    function setElementText(id, text) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text;
+    }
 
-                const sys = window.UNIFEDSystem;
-                const t = data.totals;
+    async function _init() {
+        console.log('[UNIFED] Aguardando pelo elemento #pureDashboard...');
+        try {
+            await waitForPureDashboard(15000);
+            console.log('[UNIFED] #pureDashboard encontrado. Iniciando sincronização da verdade material...');
+            
+            _simulateEvidenceUpload();
+            
+            set('pure-atf-zscore', data.atf.zScore.toString());
+            set('pure-atf-confianca', data.atf.confianca);
+            set('pure-atf-periodo', data.atf.periodo);
+            set('pure-atf-version', data.atf.version);
+            set('pure-atf-score', data.atf.score + '/100');
+            set('pure-atf-trend', data.atf.trend);
+            set('pure-atf-outliers', data.atf.outliers + ' outliers > 2σ');
 
-                if (!sys.documents) sys.documents = {};
-                if (!sys.documents.control) sys.documents.control = { files: [], totals: { records: 0 } };
-                if (!sys.documents.saft) sys.documents.saft = { files: [], totals: { bruto: 0, iliquido: 0, iva: 0, records: 0 } };
-                if (!sys.documents.statements) sys.documents.statements = { files: [], totals: { ganhos: 0, despesas: 0, ganhosLiquidos: 0, records: 0 } };
-                if (!sys.documents.invoices) sys.documents.invoices = { files: [], totals: { invoiceValue: 0, records: 0 } };
-                if (!sys.documents.dac7) sys.documents.dac7 = { files: [], totals: { q1: 0, q2: 0, q3: 0, q4: 0, totalPeriodo: 0, records: 0 } };
-                if (!sys.analysis) sys.analysis = { evidenceIntegrity: [] };
-                if (!sys.analysis.evidenceIntegrity) sys.analysis.evidenceIntegrity = [];
-
-                // Limpar dados anteriores
-                sys.documents.control.files = [];
-                sys.documents.saft.files = [];
-                sys.documents.statements.files = [];
-                sys.documents.invoices.files = [];
-                sys.documents.dac7.files = [];
-                sys.analysis.evidenceIntegrity = [];
-
-                // 1. Ficheiros de Controlo (4)
-                const controlFiles = [
-                    { name: 'controlo_autenticidade_1.csv', type: 'control', size: 256 },
-                    { name: 'controlo_autenticidade_2.csv', type: 'control', size: 256 },
-                    { name: 'controlo_autenticidade_3.csv', type: 'control', size: 256 },
-                    { name: 'controlo_autenticidade_4.csv', type: 'control', size: 256 }
-                ];
-                controlFiles.forEach(file => {
-                    sys.documents.control.files.push({ name: file.name, size: file.size });
-                    sys.analysis.evidenceIntegrity.push({
-                        filename: file.name,
-                        type: 'control',
-                        hash: CryptoJS.SHA256(file.name + 'control_demo').toString().toUpperCase(),
-                        timestamp: new Date().toISOString(),
-                        size: file.size
-                    });
-                });
-                sys.documents.control.totals.records = controlFiles.length;
-
-                // 2. SAF-T (4 ficheiros mensais)
-                const saftFiles = [
-                    { name: '131509_202409.csv', type: 'saft', size: 1024 },
-                    { name: '131509_202410.csv', type: 'saft', size: 1024 },
-                    { name: '131509_202411.csv', type: 'saft', size: 1024 },
-                    { name: '131509_202412.csv', type: 'saft', size: 1024 }
-                ];
-                saftFiles.forEach(file => {
-                    sys.documents.saft.files.push({ name: file.name, size: file.size });
-                    sys.analysis.evidenceIntegrity.push({
-                        filename: file.name,
-                        type: 'saft',
-                        hash: CryptoJS.SHA256(file.name + 'saft_demo').toString().toUpperCase(),
-                        timestamp: new Date().toISOString(),
-                        size: file.size
-                    });
-                });
-                sys.documents.saft.totals.bruto = t.saftBruto;
-                sys.documents.saft.totals.iliquido = t.saftIliquido;
-                sys.documents.saft.totals.iva = t.saftIva;
-                sys.documents.saft.totals.records = saftFiles.length;
-
-                // 3. Extratos (4 ficheiros mensais)
-                const statementFiles = [
-                    { name: 'extrato_setembro_2024.pdf', type: 'statement', size: 2048 },
-                    { name: 'extrato_outubro_2024.pdf', type: 'statement', size: 2048 },
-                    { name: 'extrato_novembro_2024.pdf', type: 'statement', size: 2048 },
-                    { name: 'extrato_dezembro_2024.pdf', type: 'statement', size: 2048 }
-                ];
-                statementFiles.forEach(file => {
-                    sys.documents.statements.files.push({ name: file.name, size: file.size });
-                    sys.analysis.evidenceIntegrity.push({
-                        filename: file.name,
-                        type: 'statement',
-                        hash: CryptoJS.SHA256(file.name + 'statement_demo').toString().toUpperCase(),
-                        timestamp: new Date().toISOString(),
-                        size: file.size
-                    });
-                });
-                sys.documents.statements.totals.ganhos = t.ganhos;
-                sys.documents.statements.totals.despesas = t.despesas;
-                sys.documents.statements.totals.ganhosLiquidos = t.ganhosLiquidos;
-                sys.documents.statements.totals.records = statementFiles.length;
-
-                // 4. Faturas (2)
-                const invoiceFiles = [
-                    { name: 'PT1124_202412.pdf', type: 'invoice', size: 512 },
-                    { name: 'PT1125_202412.pdf', type: 'invoice', size: 512 }
-                ];
-                invoiceFiles.forEach(file => {
-                    sys.documents.invoices.files.push({ name: file.name, size: file.size });
-                    sys.analysis.evidenceIntegrity.push({
-                        filename: file.name,
-                        type: 'invoice',
-                        hash: CryptoJS.SHA256(file.name + 'invoice_demo').toString().toUpperCase(),
-                        timestamp: new Date().toISOString(),
-                        size: file.size
-                    });
-                });
-                sys.documents.invoices.totals.invoiceValue = t.faturaPlataforma;
-                sys.documents.invoices.totals.records = invoiceFiles.length;
-
-                // 5. DAC7 (1 ficheiro) - apenas 4.º trimestre visível
-                const dac7Files = [
-                    { name: 'dac7_2024_semestre2.pdf', type: 'dac7', size: 1024 }
-                ];
-                dac7Files.forEach(file => {
-                    sys.documents.dac7.files.push({ name: file.name, size: file.size });
-                    sys.analysis.evidenceIntegrity.push({
-                        filename: file.name,
-                        type: 'dac7',
-                        hash: CryptoJS.SHA256(file.name + 'dac7_demo').toString().toUpperCase(),
-                        timestamp: new Date().toISOString(),
-                        size: file.size
-                    });
-                });
-                sys.documents.dac7.totals.q4 = t.dac7TotalPeriodo;
-                sys.documents.dac7.totals.q3 = 0;
-                sys.documents.dac7.totals.q1 = 0;
-                sys.documents.dac7.totals.q2 = 0;
-                sys.documents.dac7.totals.totalPeriodo = t.dac7TotalPeriodo;
-                sys.documents.dac7.totals.records = dac7Files.length;
-
-                // 6. Dados mensais para ATF
-                if (!sys.monthlyData) sys.monthlyData = {};
-                const monthlyGanhos = [2450.00, 2560.00, 2480.00, 2667.73];
-                const monthlyDespesas = [590.00, 615.00, 600.00, 642.89];
-                const monthlyGanhosLiq = [1860.00, 1945.00, 1880.00, 2024.84];
-                const months = ['202409', '202410', '202411', '202412'];
-                months.forEach((month, idx) => {
-                    sys.monthlyData[month] = {
-                        ganhos: monthlyGanhos[idx],
-                        despesas: monthlyDespesas[idx],
-                        ganhosLiq: monthlyGanhosLiq[idx]
-                    };
-                });
-                sys.dataMonths = new Set(months);
-
-                // 7. Totais e crossings (excluindo macro do Master Hash)
-                if (!sys.analysis.totals) sys.analysis.totals = {};
-                sys.analysis.totals.saftBruto = t.saftBruto;
-                sys.analysis.totals.saftIliquido = t.saftIliquido;
-                sys.analysis.totals.saftIva = t.saftIva;
-                sys.analysis.totals.ganhos = t.ganhos;
-                sys.analysis.totals.despesas = t.despesas;
-                sys.analysis.totals.ganhosLiquidos = t.ganhosLiquidos;
-                sys.analysis.totals.faturaPlataforma = t.faturaPlataforma;
-                sys.analysis.totals.dac7Q1 = 0;
-                sys.analysis.totals.dac7Q2 = 0;
-                sys.analysis.totals.dac7Q3 = 0;
-                sys.analysis.totals.dac7Q4 = t.dac7TotalPeriodo;
-                sys.analysis.totals.dac7TotalPeriodo = t.dac7TotalPeriodo;
-
-                const discrepanciaSaftVsDac7 = t.saftBruto - t.dac7TotalPeriodo;
-                const percentagemSaftVsDac7 = t.saftBruto > 0 ? (discrepanciaSaftVsDac7 / t.saftBruto) * 100 : 0;
-                const discrepanciaCritica = t.despesas - t.faturaPlataforma;
-                const percentagemOmissao = t.despesas > 0 ? (discrepanciaCritica / t.despesas) * 100 : 0;
-                const ivaFalta = discrepanciaCritica * 0.23;
-                const ivaFalta6 = discrepanciaCritica * 0.06;
-                const agravamentoBrutoIRC = discrepanciaCritica;
-                const ircEstimado = discrepanciaCritica * 0.21;
-
-                if (!sys.analysis.crossings) sys.analysis.crossings = {};
-                sys.analysis.crossings.discrepanciaSaftVsDac7 = discrepanciaSaftVsDac7;
-                sys.analysis.crossings.percentagemSaftVsDac7 = percentagemSaftVsDac7;
-                sys.analysis.crossings.discrepanciaCritica = discrepanciaCritica;
-                sys.analysis.crossings.percentagemOmissao = percentagemOmissao;
-                sys.analysis.crossings.ivaFalta = ivaFalta;
-                sys.analysis.crossings.ivaFalta6 = ivaFalta6;
-                sys.analysis.crossings.agravamentoBrutoIRC = agravamentoBrutoIRC;
-                sys.analysis.crossings.ircEstimado = ircEstimado;
-                sys.analysis.crossings.btor = t.despesas;
-                sys.analysis.crossings.btf = t.faturaPlataforma;
-                sys.analysis.crossings.c1_delta = discrepanciaSaftVsDac7;
-                sys.analysis.crossings.c1_pct = percentagemSaftVsDac7;
-                sys.analysis.crossings.c2_delta = discrepanciaCritica;
-                sys.analysis.crossings.c2_pct = percentagemOmissao;
-
-                // 8. Cliente
-                if (!sys.client && data.client) {
-                    sys.client = { name: data.client.name, nif: data.client.nif, platform: data.client.platform };
-                    const clientStatus = document.getElementById('clientStatusFixed');
-                    if (clientStatus) {
-                        clientStatus.style.display = 'flex';
-                        const nameSpan = document.getElementById('clientNameDisplayFixed');
-                        const nifSpan = document.getElementById('clientNifDisplayFixed');
-                        if (nameSpan) nameSpan.textContent = data.client.name;
-                        if (nifSpan) nifSpan.textContent = data.client.nif;
+            syncMetrics();
+            renderMatrix();
+            _injectMacroCard();
+            _injectAuxiliaryBoxesCSS();
+            _hideDiscrepancyChart();
+            _updateAuxiliaryUI();
+            _hideNexusForecast();
+            
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === 'childList' && mutation.addedNodes.length) {
+                        if (document.getElementById('auxBoxCampanhasValue')) {
+                            _updateAuxiliaryUI();
+                            _hideNexusForecast();
+                            if (!document.getElementById('pureMacroCard')) _injectMacroCard();
+                            observer.disconnect();
+                        }
                     }
-                    const nameInput = document.getElementById('clientNameFixed');
-                    const nifInput = document.getElementById('clientNIFFixed');
-                    if (nameInput) nameInput.value = data.client.name;
-                    if (nifInput) nifInput.value = data.client.nif;
-                }
-
-                // 9. Período "2. Semestre"
-                const periodSelect = document.getElementById('periodoAnalise');
-                if (periodSelect) {
-                    periodSelect.value = '2s';
-                    if (typeof window.UNIFEDSystem !== 'undefined') {
-                        window.UNIFEDSystem.selectedPeriodo = '2s';
-                    }
-                    const changeEvent = new Event('change', { bubbles: true });
-                    periodSelect.dispatchEvent(changeEvent);
-                }
-                const trimestralContainer = document.getElementById('trimestralSelectorContainer');
-                if (trimestralContainer) {
-                    trimestralContainer.style.display = 'none';
-                }
-
-                // 10. Master hash (excluindo dados macro)
-                const evidenceHashes = sys.analysis.evidenceIntegrity
-                    .map(ev => ev.hash)
-                    .filter(h => h && h.length === 64)
-                    .sort();
-                const binaryConcat = evidenceHashes.join('') + JSON.stringify({ client: sys.client, totals: t }) + sys.sessionId;
-                const masterHashFull = CryptoJS.SHA256(binaryConcat).toString().toUpperCase();
-                sys.masterHash = masterHashFull;
-                window.activeForensicSession = { sessionId: sys.sessionId, masterHash: masterHashFull };
-
-                console.log('[UNIFED] Evidências simuladas carregadas. Total: 15 ficheiros.');
-                resolve(true);
-            } catch (err) {
-                console.error('[UNIFED] Erro na simulação de evidências:', err);
-                reject(err);
-            }
-        });
-    }
-
-    // 4. Atualizar contadores na UI e mostrar secção de evidências
-    function _updateEvidenceCountersAndShow() {
-        const sys = window.UNIFEDSystem;
-        if (!sys || !sys.documents) return;
-
-        const controlCount = sys.documents.control?.files?.length || 0;
-        const saftCount = sys.documents.saft?.files?.length || 0;
-        const invoiceCount = sys.documents.invoices?.files?.length || 0;
-        const statementCount = sys.documents.statements?.files?.length || 0;
-        const dac7Count = sys.documents.dac7?.files?.length || 0;
-        const total = controlCount + saftCount + invoiceCount + statementCount + dac7Count;
-
-        const setText = (id, val) => {
-            const el = document.getElementById(id);
-            if (el) el.textContent = val;
-        };
-        setText('controlCountCompact', controlCount);
-        setText('saftCountCompact', saftCount);
-        setText('invoiceCountCompact', invoiceCount);
-        setText('statementCountCompact', statementCount);
-        setText('dac7CountCompact', dac7Count);
-        setText('summaryControl', controlCount);
-        setText('summarySaft', saftCount);
-        setText('summaryInvoices', invoiceCount);
-        setText('summaryStatements', statementCount);
-        setText('summaryDac7', dac7Count);
-        setText('summaryTotal', total);
-        const evidenceCountTotal = document.getElementById('evidenceCountTotal');
-        if (evidenceCountTotal) evidenceCountTotal.textContent = total;
-
-        // Mostrar a secção de evidências e os contadores
-        const evidenceSection = document.getElementById('pureEvidenceSection');
-        if (evidenceSection) evidenceSection.style.display = 'block';
-        const counters = ['controlCountCompact', 'saftCountCompact', 'invoiceCountCompact', 'statementCountCompact', 'dac7CountCompact'];
-        counters.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.style.display = 'inline-block';
-        });
-        console.log('[UNIFED] Contadores de evidências atualizados e secção revelada.');
-    }
-
-    // Exportar funções para uso na Parte 6
-    window.UNIFED_INTERNAL.forcePlatformReadOnly = _forcePlatformReadOnly;
-    window.UNIFED_INTERNAL.removeZeroDac7Kpis = _removeZeroDac7Kpis;
-    window.UNIFED_INTERNAL.simulateEvidenceUpload = _simulateEvidenceUpload;
-    window.UNIFED_INTERNAL.updateEvidenceCountersAndShow = _updateEvidenceCountersAndShow;
-    console.log('[UNIFED] Camada 5: OK (gestão de evidências e plataforma).');
-})();
-
-/**
- * UNIFED - PROBATUM · v13.11.13-PURE (PARTE 6 DE 6)
- * ============================================================================
- * Final: Inicialização baseada em Promise, validação de DOM, e gatilho por botão.
- * ============================================================================
- */
-
-(function() {
-    'use strict';
-    if (!window.UNIFED_INTERNAL) return;
-    const { data, fmt, set, syncMetrics, renderMatrix } = window.UNIFED_INTERNAL;
-    const {
-        injectAuxiliaryBoxesCSS, hideDiscrepancyChart, hideNexusForecast,
-        injectMacroCard, updateAuxiliaryUI, forcePlatformReadOnly,
-        removeZeroDac7Kpis, simulateEvidenceUpload, updateEvidenceCountersAndShow
-    } = window.UNIFED_INTERNAL;
-
-    // Função para mostrar o bloco de identificação do sujeito passivo
-    function showClientIdentificationBlock() {
-        const block = document.getElementById('clientIdentificationBlock');
-        if (block) {
-            block.style.display = 'block';
-            console.log('[UNIFED] Bloco de identificação do sujeito passivo revelado.');
-        } else {
-            console.warn('[UNIFED] Elemento #clientIdentificationBlock não encontrado.');
-        }
-    }
-
-    // Aguarda a existência do elemento #pureDashboard (injectado via fetch)
-    function waitForPureDashboard() {
-        return new Promise((resolve) => {
-            if (document.getElementById('pureDashboard')) {
-                resolve();
-                return;
-            }
-            const observer = new MutationObserver((mutations, obs) => {
-                if (document.getElementById('pureDashboard')) {
-                    obs.disconnect();
-                    resolve();
-                }
+                });
             });
             observer.observe(document.body, { childList: true, subtree: true });
-            // Timeout de segurança
-            setTimeout(() => { observer.disconnect(); resolve(); }, 5000);
-        });
-    }
+            setTimeout(function() { observer.disconnect(); }, 5000);
 
-    // Inicialização do core do dashboard (sem evidências)
-    function initializeCoreDashboard() {
-        waitForPureDashboard().then(() => {
-            // Pequeno delay para garantir que todos os filhos foram renderizados
-            setTimeout(() => {
-                if (typeof syncMetrics === 'function') syncMetrics();
-                if (typeof renderMatrix === 'function') renderMatrix();
-                if (typeof injectMacroCard === 'function') injectMacroCard();
-                if (typeof injectAuxiliaryBoxesCSS === 'function') injectAuxiliaryBoxesCSS();
-                if (typeof hideDiscrepancyChart === 'function') hideDiscrepancyChart();
-                if (typeof updateAuxiliaryUI === 'function') updateAuxiliaryUI();
-                if (typeof hideNexusForecast === 'function') hideNexusForecast();
-                if (typeof forcePlatformReadOnly === 'function') forcePlatformReadOnly();
-                if (typeof removeZeroDac7Kpis === 'function') removeZeroDac7Kpis();
-                console.log('[UNIFED] Core dashboard inicializado com sucesso após injeção do painel.');
-            }, 100);
-        }).catch(err => console.warn('[UNIFED] Erro ao aguardar #pureDashboard', err));
-    }
-
-    // Inicialização completa com evidências (chamada pelo botão)
-    async function initializeFullWithEvidence() {
-        console.log('[UNIFED] A carregar evidências do caso real...');
-        try {
-            await simulateEvidenceUpload();
-            updateEvidenceCountersAndShow();
-            // Atualiza o hash no painel (se existir)
-            if (window.UNIFEDSystem && window.UNIFEDSystem.masterHash) {
-                const hashEl = document.getElementById('masterHashValue');
-                if (hashEl) hashEl.textContent = window.UNIFEDSystem.masterHash;
-                if (typeof generateQRCode === 'function') generateQRCode();
+            const wrapper = document.getElementById('pureDashboardWrapper');
+            if (wrapper) {
+                wrapper.style.display = 'block';
+                wrapper.classList.add('pure-visible');
             }
-            // Mostrar o bloco de identificação do sujeito passivo
-            showClientIdentificationBlock();
-            console.log('[UNIFED] ✅ Evidências carregadas e secção revelada.');
+
+            if (typeof window.updateDashboard === 'function') window.updateDashboard();
+            if (typeof window.renderChart === 'function') window.renderChart();
+            if (typeof window.updateModulesUI === 'function') window.updateModulesUI();
+            if (typeof window.showAlerts === 'function') window.showAlerts();
+            if (typeof window.showTwoAxisAlerts === 'function') window.showTwoAxisAlerts();
+
+            if (typeof window._translatePurePanel === 'function') {
+                const lang = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
+                window._translatePurePanel(lang);
+            }
+
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            if (analyzeBtn) analyzeBtn.disabled = false;
+            const exportPDFBtn = document.getElementById('exportPDFBtn');
+            if (exportPDFBtn) exportPDFBtn.disabled = false;
+            const exportJSONBtn = document.getElementById('exportJSONBtn');
+            if (exportJSONBtn) exportJSONBtn.disabled = false;
+
+            console.log('[UNIFED] ✅ SISTEMA 100% OPERACIONAL — Dados reais carregados. Motor Preditivo ocultado. Card MIS injectado. Boxes auxiliares ajustadas.');
         } catch (err) {
-            console.error('[UNIFED] Falha ao carregar evidências:', err);
+            console.error('[UNIFED] Erro ao aguardar #pureDashboard:', err);
         }
     }
 
-    // Configurar o botão "CASO REAL ANONIMIZADO"
-    function setupRealCaseButton() {
-        // Tenta por ID primeiro (recomendado)
-        let targetButton = document.getElementById('demoModeBtn');
-        if (!targetButton) {
-            // Fallback: procura por texto exacto
-            const buttons = document.querySelectorAll('button, .btn, [role="button"]');
-            for (let btn of buttons) {
-                if (btn.textContent.trim() === 'CASO REAL ANONIMIZADO') {
-                    targetButton = btn;
-                    break;
-                }
-            }
-        }
-        if (!targetButton) {
-            console.warn('[UNIFED] Botão "CASO REAL ANONIMIZADO" não encontrado. Listener genérico activado.');
-            // Fallback: ouvir cliques em qualquer elemento que contenha o texto
-            document.body.addEventListener('click', function(e) {
-                const el = e.target.closest('button, .btn, [role="button"]');
-                if (el && el.textContent.includes('CASO REAL ANONIMIZADO')) {
-                    e.preventDefault();
-                    initializeFullWithEvidence();
-                }
+    window.UNIFEDSystem = window.UNIFEDSystem || {};
+    window.UNIFEDSystem.loadAnonymizedRealCase = function() {
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                _init();
             });
-            return;
+        } else {
+            _init();
         }
-        // Remove event listeners antigos para evitar duplicação
-        const newBtn = targetButton.cloneNode(true);
-        targetButton.parentNode.replaceChild(newBtn, targetButton);
-        newBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            initializeFullWithEvidence();
-        });
-        console.log('[UNIFED] Listener associado ao botão "CASO REAL ANONIMIZADO".');
-    }
+    };
 
-    // Função auxiliar para gerar QR Code (caso não exista globalmente)
-    function generateQRCode() {
-        const container = document.getElementById('qrcodeContainer');
-        if (!container) return;
-        container.innerHTML = '';
-        const hashFull = window.UNIFEDSystem?.masterHash || 'HASH_INDISPONIVEL';
-        const sessionShort = window.UNIFEDSystem?.sessionId ? window.UNIFEDSystem.sessionId.substring(0, 16) : 'N/A';
-        const qrData = `UNIFED|${sessionShort}|${hashFull}`;
-        if (typeof QRCode !== 'undefined') {
-            new QRCode(container, {
-                text: qrData,
-                width: 75,
-                height: 75,
-                colorDark: "#000000",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.L
-            });
-        }
-        container.setAttribute('data-tooltip', 'Clique para verificar a cadeia de custódia completa');
+    // Se a página já estiver completa e o painel já estiver presente, inicia imediatamente
+    if (document.readyState === 'complete' && document.getElementById('pureDashboard')) {
+        _init();
+    } else if (document.readyState !== 'loading') {
+        // DOM já carregado, mas pode faltar o painel
+        _init();
     }
-    window.generateQRCode = generateQRCode; // expor globalmente
-
-    // Inicialização por Promise (sem setTimeout)
-    function startApplication() {
-        return new Promise((resolve) => {
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', () => resolve());
-            } else {
-                resolve();
-            }
-        }).then(() => {
-            initializeCoreDashboard();
-            setupRealCaseButton();
-            // Garantir que o bloco de identificação começa oculto (reforço)
-            const block = document.getElementById('clientIdentificationBlock');
-            if (block) block.style.display = 'none';
-            console.log('[UNIFED] ✅ Aplicação pronta. Clique em "CASO REAL ANONIMIZADO" para carregar as evidências.');
-        }).catch(err => {
-            console.error('[UNIFED] Erro na inicialização:', err);
-        });
-    }
-
-    // Iniciar
-    startApplication();
 })();
