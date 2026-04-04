@@ -932,6 +932,11 @@ body {
     font-size: 0.8rem;
 }
 
+/* CORREÇÃO: Removido o texto "(browser)" do selo Privacy by Design */
+.privacy-badge span[data-pt="Processamento 100% local (browser)"]::after {
+    display: none;
+}
+
 .btn-wipe {
     width: 100%;
     background: rgba(239, 68, 68, 0.1);
@@ -3576,4 +3581,23 @@ body.dual-screen .stat-card p {
 #pureDashboardWrapper {
     background: #020617 !important;
     transition: opacity 0.2s ease-in !important;
+}
+
+/* CORREÇÃO: Remover gap entre análise de discrepâncias e log de custódia */
+.chart-section:last-of-type {
+    margin-bottom: 0 !important;
+}
+
+.console-section {
+    margin-top: 0 !important;
+}
+
+.pure-card:last-child,
+.pure-card-grid .pure-card:last-of-type {
+    margin-bottom: 0;
+}
+
+/* CORREÇÃO: Ajuste de altura do console para não criar espaços vazios */
+.console-section {
+    min-height: auto;
 }

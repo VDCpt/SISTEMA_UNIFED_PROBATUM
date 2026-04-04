@@ -1,23 +1,23 @@
 <!--
   ============================================================================
-  UNIFED - PROBATUM · v13.11.15-PURE · PAINEL DE CASO REAL ANONIMIZADO
+  UNIFED - PROBATUM · v13.11.16-PURE · PAINEL DE CASO REAL ANONIMIZADO
   ============================================================================
-  CONSOLIDAÇÃO COM Panel(2).html - INCLUSÃO DE TODOS OS IDs NECESSÁRIOS
+  CONSOLIDAÇÃO FINAL COM CORREÇÕES:
+    - Bloco de identificação do sujeito passivo sempre visível (não ocultado)
+    - Guard clause no syncMetrics para evitar erro dos 42 IDs
+    - Remoção do texto "(browser)" do selo Privacy by Design
+    - Ajuste de layout (eliminação do gap entre gráfico e log)
+    - Escudo CORS mantido (freetsa.org)
   Conformidade: ISO/IEC 27037:2012 · Art. 125.º CPP · Art. 119.º RGIT
-  ============================================================================
-  PT: Painel consolidado a partir de panel.html (v13.11.14) e Panel(2).html (v13.11.15).
-      Inclui todos os IDs requeridos pelo script_injection.js.
-  EN: Consolidated panel from panel.html (v13.11.14) and Panel(2).html (v13.11.15).
-      Includes all IDs required by script_injection.js.
   ============================================================================
 -->
 
-<section id="pureDashboard" class="pure-section" aria-label="Painel Caso Real Anonimizado v13.11.15-PURE">
+<section id="pureDashboard" class="pure-section" aria-label="Painel Caso Real Anonimizado v13.11.16-PURE">
 
   <!-- ── HEADER DA SECÇÃO ────────────────────────────────────────────────── -->
   <div class="pure-section-header">
     <div class="pure-section-title">
-      <span class="pure-badge-version" title="Versão / Version">v13.11.15-PURE</span>
+      <span class="pure-badge-version" title="Versão / Version">v13.11.16-PURE</span>
       <span id="pure-title-text"
             data-pt="RECONSTITUIÇÃO DA VERDADE MATERIAL — SESSÃO"
             data-en="RECONSTRUCTION OF MATERIAL TRUTH — SESSION">RECONSTITUIÇÃO DA VERDADE MATERIAL — SESSÃO</span>
@@ -32,16 +32,17 @@
   </div>
 
   <!-- ── BLOCO DE IDENTIFICAÇÃO DO SUJEITO PASSIVO ────────────────────────── -->
-  <div class="pure-subject-header" style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
-    <div class="pure-data-block" style="flex:1; background: rgba(255,255,255,0.03); border-radius: 6px; padding: 12px 14px;">
+  <!-- CORREÇÃO: flex-wrap + align-items stretch para evitar empilhamento vertical -->
+  <div class="pure-subject-header" style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: stretch;">
+    <div class="pure-data-block" style="flex: 1 1 200px; background: rgba(255,255,255,0.03); border-radius: 6px; padding: 12px 14px;">
       <div class="pure-data-label" data-pt="Sujeito Passivo" data-en="Subject">Sujeito Passivo</div>
       <div id="pure-subject-name" class="pure-subject-value" style="font-size:1rem; font-weight:600; color:#00E5FF;">---</div>
     </div>
-    <div class="pure-data-block" style="flex:1; background: rgba(255,255,255,0.03); border-radius: 6px; padding: 12px 14px;">
+    <div class="pure-data-block" style="flex: 1 1 150px; background: rgba(255,255,255,0.03); border-radius: 6px; padding: 12px 14px;">
       <div class="pure-data-label" data-pt="NIF" data-en="Tax ID">NIF</div>
       <div id="pure-subject-nif" class="pure-subject-value" style="font-size:1rem; font-weight:600; color:#00E5FF;">---</div>
     </div>
-    <div class="pure-data-block" style="flex:1; background: rgba(255,255,255,0.03); border-radius: 6px; padding: 12px 14px;">
+    <div class="pure-data-block" style="flex: 1 1 200px; background: rgba(255,255,255,0.03); border-radius: 6px; padding: 12px 14px;">
       <div class="pure-data-label" data-pt="Plataforma" data-en="Platform">Plataforma</div>
       <div id="pure-subject-platform" class="pure-subject-value" style="font-size:1rem; font-weight:600; color:#00E5FF;">---</div>
     </div>
@@ -540,6 +541,13 @@
     <div id="pure-iva-devido-val"></div>
     <div id="pure-impacto-macro"></div>
     
+    <!-- IDs para contagem de evidências (adicionados) -->
+    <div id="pure-ctrl-qty"></div>
+    <div id="pure-saft-qty"></div>
+    <div id="pure-fat-qty"></div>
+    <div id="pure-ext-qty"></div>
+    <div id="pure-dac7-qty"></div>
+    
     <!-- Garantia de que todos os IDs referenciados em script_injection.js existem -->
     <div id="pure-fatura"></div>
     <div id="pure-disc-c2"></div>
@@ -564,4 +572,4 @@
   </div>
 
 </section>
-<!-- FIM: pureDashboard · v13.11.15-PURE · UNIFED-MMLADX8Q-CV69L (CONSOLIDADO) -->
+<!-- FIM: pureDashboard · v13.11.16-PURE · UNIFED-MMLADX8Q-CV69L (CONSOLIDADO) -->

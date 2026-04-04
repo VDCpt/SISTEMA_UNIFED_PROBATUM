@@ -7,13 +7,14 @@
  * RETIFICAÇÕES v13.11.16:
  * - Ocultação inicial do bloco de identificação removida (sempre visível).
  * - Guard clause no syncMetrics para mitigar o erro Array(42).
+ * - Adicionadas contagens de evidências (counts) no dataset mestre.
  * ============================================================================
  */
 
 (function() {
     'use strict';
 
-    // 1. DATASET MESTRE (OBJETO IMUTÁVEL) — VALORES REAIS ORIGINAIS + MACRO
+    // 1. DATASET MESTRE (OBJETO IMUTÁVEL) — VALORES REAIS ORIGINAIS + MACRO + COUNTS
     const _PDF_CASE = Object.freeze({
         sessionId:  "UNIFED-MNGFN3C0-X57MO",
         masterHash: "a3f8c9e2d5b6a7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1",
@@ -21,6 +22,13 @@
             name: "Real Demo - Unipessoal, Lda", 
             nif: "999999990", 
             platform: "Plataforma A" 
+        },
+        counts: {
+            ctrl: 12,
+            saft: 4,
+            fat: 8,
+            ext: 2,
+            dac7: 1
         },
         totals: {
             ganhos:           10157.73,
@@ -177,7 +185,13 @@
             'pure-atf-confianca':      data.atf.confianca,
             'pure-atf-score-val':      data.atf.score + '/100',
             'pure-iva-devido-val':     fmt(t.iva6Omitido),
-            'pure-impacto-macro':      fmt(data.macro_analysis.estimated_systemic_gap)
+            'pure-impacto-macro':      fmt(data.macro_analysis.estimated_systemic_gap),
+            // IDs para contagem de evidências
+            'pure-ctrl-qty':           data.counts.ctrl.toString(),
+            'pure-saft-qty':           data.counts.saft.toString(),
+            'pure-fat-qty':            data.counts.fat.toString(),
+            'pure-ext-qty':            data.counts.ext.toString(),
+            'pure-dac7-qty':           data.counts.dac7.toString()
         };
 
         const missing = [];
@@ -443,6 +457,11 @@
             { id: 'pure-atf-score-val', val: data.atf.score + '/100' },
             { id: 'pure-iva-devido-val', val: data.totals.iva6Omitido },
             { id: 'pure-impacto-macro', val: data.macro_analysis.estimated_systemic_gap },
+            { id: 'pure-ctrl-qty', val: data.counts.ctrl },
+            { id: 'pure-saft-qty', val: data.counts.saft },
+            { id: 'pure-fat-qty', val: data.counts.fat },
+            { id: 'pure-ext-qty', val: data.counts.ext },
+            { id: 'pure-dac7-qty', val: data.counts.dac7 },
             { id: 'auxBoxCampanhasValue', val: data.totals.campanhas },
             { id: 'auxBoxPortagensValue', val: data.totals.portagens },
             { id: 'auxBoxGorjetasValue', val: data.totals.gorjetas },
