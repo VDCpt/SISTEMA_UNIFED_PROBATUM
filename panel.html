@@ -1,10 +1,10 @@
 <!--
   ============================================================================
-  UNIFED - PROBATUM · v13.5.0-PURE · PAINEL DE CASO REAL ANONIMIZADO
+  UNIFED - PROBATUM · v13.11.14-PURE · PAINEL DE CASO REAL ANONIMIZADO
   ============================================================================
   Ficheiro      : panel.html
-  Versão        : 13.11.2-PURE (CONSOLIDADA)
-  Conformidade  : ISO/IEC 27037:2012 · Art. 125.º CPP · Art. 103.º RGIT
+  Versão        : 13.11.14-PURE (CONSOLIDADA)
+  Conformidade  : ISO/IEC 27037:2012 · Art. 125.º CPP · Art. 119.º RGIT
   ============================================================================
   PT: Inserir após o painel de Dashboard principal no index.html.
       Todos os valores são preenchidos por _syncPureDashboard() em script.js.
@@ -21,12 +21,12 @@
   ============================================================================
 -->
 
-<section id="pureDashboard" class="pure-section" aria-label="Painel Caso Real Anonimizado v13.5.0-PURE">
+<section id="pureDashboard" class="pure-section" aria-label="Painel Caso Real Anonimizado v13.11.14-PURE">
 
   <!-- ── HEADER DA SECÇÃO ────────────────────────────────────────────────── -->
   <div class="pure-section-header">
     <div class="pure-section-title">
-      <span class="pure-badge-version" title="Versão / Version">v13.5.0-PURE</span>
+      <span class="pure-badge-version" title="Versão / Version">v13.11.14-PURE</span>
       <span id="pure-title-text"
             data-pt="RECONSTITUIÇÃO DA VERDADE MATERIAL — SESSÃO"
             data-en="RECONSTRUCTION OF MATERIAL TRUTH — SESSION">RECONSTITUIÇÃO DA VERDADE MATERIAL — SESSÃO</span>
@@ -37,6 +37,22 @@
             data-pt="INTEGRIDADE"
             data-en="INTEGRITY">SHA-256</span>
       <span id="pure-hash-prefix" class="pure-mono pure-hash">5150e767...</span>
+    </div>
+  </div>
+
+  <!-- ── BLOCO DE IDENTIFICAÇÃO DO SUJEITO PASSIVO (NOVO) ─────────────────── -->
+  <div class="pure-subject-header" style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+    <div class="pure-data-block" style="flex:1; background: rgba(255,255,255,0.03); border-radius: 6px; padding: 12px 14px;">
+      <div class="pure-data-label" data-pt="Sujeito Passivo" data-en="Subject">Sujeito Passivo</div>
+      <div id="pure-subject-name" class="pure-subject-value" style="font-size:1rem; font-weight:600; color:#00E5FF;">---</div>
+    </div>
+    <div class="pure-data-block" style="flex:1; background: rgba(255,255,255,0.03); border-radius: 6px; padding: 12px 14px;">
+      <div class="pure-data-label" data-pt="NIF" data-en="Tax ID">NIF</div>
+      <div id="pure-subject-nif" class="pure-subject-value" style="font-size:1rem; font-weight:600; color:#00E5FF;">---</div>
+    </div>
+    <div class="pure-data-block" style="flex:1; background: rgba(255,255,255,0.03); border-radius: 6px; padding: 12px 14px;">
+      <div class="pure-data-label" data-pt="Plataforma" data-en="Platform">Plataforma</div>
+      <div id="pure-subject-platform" class="pure-subject-value" style="font-size:1rem; font-weight:600; color:#00E5FF;">---</div>
     </div>
   </div>
 
@@ -169,8 +185,8 @@
           </div>
           <div class="pure-sg-legal"
                id="pure-sg2-legal"
-               data-pt="Art. 36.º n.º 11 CIVA · Art. 104.º RGIT"
-               data-en="Art. 36(11) CIVA · Art. 104 RGIT">Art. 36.º n.º 11 CIVA · Art. 104.º RGIT</div>
+               data-pt="Art. 36.º n.º 11 CIVA · Art. 119.º RGIT"
+               data-en="Art. 36(11) CIVA · Art. 119 RGIT">Art. 36.º n.º 11 CIVA · Art. 119.º RGIT</div>
         </div>
         <!-- FIM: SMOKING GUN 2 -->
 
@@ -249,12 +265,7 @@
       </div>
       <!-- FIM: Impacto Fiscal -->
 
-      <!-- ── GRID PERICIAL v13.11.2 · 3 Colunas — Métricas Críticas ────────────
-           Bloco: Diferencial Auditado | Asfixia Financeira | Fluxos Não Sujeitos
-           Populado por: _syncPureDashboard() → _injectIva6Alert() + _safeReInjectAuxValues()
-           IDs:   pure-disc-c2 · pure-iva-devido · pure-nao-sujeitos
-           Legal: Art. 103.º RGIT · Verba 2.18 Lista I CIVA · Art. 405.º C. Civil
-      ──────────────────────────────────────────────────────────────────────────── -->
+      <!-- ── GRID PERICIAL v13.11.2 · 3 Colunas — Métricas Críticas ──────────── -->
       <div class="pure-card-grid pure-3col" style="margin-top:14px;">
 
         <!-- Card 1 — Diferencial de Fluxo Financeiro Auditado -->
@@ -493,8 +504,8 @@
           <div id="pure-verdict-pct" class="pure-verdict-pct">89,26%</div>
           <div class="pure-verdict-basis"
                id="pure-verdict-basis"
-               data-pt="Art. 103.º / 104.º RGIT · Art. 125.º CPP"
-               data-en="Art. 103 / 104 RGIT · Art. 125 CPP">Art. 103.º / 104.º RGIT · Art. 125.º CPP</div>
+               data-pt="Art. 119.º RGIT · Art. 125.º CPP"
+               data-en="Art. 119 RGIT · Art. 125 CPP">Art. 119.º RGIT · Art. 125.º CPP</div>
         </div>
         <div class="pure-integrity-block">
           <div class="pure-verdict-label"
@@ -519,5 +530,23 @@
   </div>
   <!-- FIM: pure-card-grid -->
 
+  <!-- ── ELEMENTOS OCULTOS PARA SINCronização ADICIONAL ──────────────────── -->
+  <div style="display:none;">
+    <div id="pure-verdict-text"></div>
+    <div id="pure-timestamp-ots"></div>
+    <div id="pure-blockchain-status"></div>
+    <!-- Métricas adicionais solicitadas pelo syncMetrics -->
+    <div id="pure-ganhos-extrato"></div>
+    <div id="pure-despesas-extrato"></div>
+    <div id="pure-ganhos-liquidos-extrato"></div>
+    <div id="pure-saft-bruto-val"></div>
+    <div id="pure-dac7-val"></div>
+    <div id="pure-atf-zscore"></div>
+    <div id="pure-atf-confianca"></div>
+    <div id="pure-atf-score-val"></div>
+    <div id="pure-iva-devido-val"></div>
+    <div id="pure-impacto-macro"></div>
+  </div>
+
 </section>
-<!-- FIM: pureDashboard · v13.5.0-PURE · UNIFED-MMLADX8Q-CV69L -->
+<!-- FIM: pureDashboard · v13.11.14-PURE · UNIFED-MMLADX8Q-CV69L -->

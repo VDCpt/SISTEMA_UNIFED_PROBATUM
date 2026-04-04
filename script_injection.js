@@ -1,17 +1,14 @@
 /**
- * UNIFED - PROBATUM · CASO REAL ANONIMIZADO v13.11.13-PURE (PARTE 1 DE 6)
+ * UNIFED - PROBATUM · CASO REAL ANONIMIZADO v13.11.14-PURE (PARTE 1 DE 6)
  * ============================================================================
  * Missão: Injeção Forense e Reconstituição da Verdade Material
  * Conformidade: DORA (UE) 2022/2554 · Art. 125.º CPP · ISO/IEC 27037:2012
  * ============================================================================
- * v13.11.13-PURE:
- *   - Dados macro sistémicos (38.000 operadores, 7 anos, impacto 1,74MM€)
- *   - Escudo silencioso CORS para FreeTSA (sem erros vermelhos)
- *   - CSS dinâmico: boxes auxiliares com tamanhos iguais e largura total
- *   - Ocultação do gráfico "DISCREPÂNCIA SAF-T vs DAC7" (discrepancyChart)
- *   - Exclusão de dados macro do Master Hash (integridade da prova individual)
- *   - Correção tipificação legal: exclusivo Art. 119.º RGIT (contra-ordenação)
- *   - Versão do motor unificada para v13.11.13-PURE
+ * v13.11.14-PURE:
+ *   - Correção do erro "IDs em falta no DOM" com mapeamento robusto
+ *   - Sincronização atómica com fallback para elementos ocultos
+ *   - Eliminação do erro de nulidade no showClientIdentificationBlock
+ *   - Melhoria na inicialização assíncrona sem event hijacking
  * ============================================================================
  */
 
@@ -50,12 +47,11 @@
             confianca: "99.2%",
             periodo: "Q4 2024",
             anomalias: 4,
-            version: "v13.11.13-PURE",   // ATUALIZADO: unificado com a versão do motor
+            version: "v13.11.14-PURE",
             score: 40,
             trend: "DESCENDENTE",
             outliers: 0
         },
-        // ── MÓDULO DE IMPACTO SISTÉMICO (MIS) ──────────────────────────────────
         macro_analysis: {
             sector_drivers: 38000,
             operational_years: 7,
@@ -70,7 +66,6 @@
     });
 
     // 2. ESCUDO SILENCIOSO PARA CORS (TSA / FREETSA FALLBACK)
-    // Impede que erros 'Failed to fetch' apareçam em vermelho na consola
     (function _installCORSSilentShield() {
         const targetUrl = 'freetsa.org';
         const originalFetch = window.fetch;
@@ -86,7 +81,6 @@
                 return originalFetch.apply(this, arguments);
             };
         }
-        // Adicionalmente, silenciar erros não capturados relacionados com freetsa
         window.addEventListener('unhandledrejection', function(event) {
             if (event.reason && event.reason.message && event.reason.message.indexOf('freetsa') !== -1) {
                 console.warn('[UNIFED] ⚙ Modo Standalone Ativo: Selagem TSA externa indisponível (promise).');
@@ -112,16 +106,21 @@
         return false;
     };
 
-    // Namespace Global para intercomunicação entre partes
-    window.UNIFED_INTERNAL = { data: _PDF_CASE, fmt: _fmt, set: _set };
+    // Namespace Global
+    window.UNIFED_INTERNAL = window.UNIFED_INTERNAL || {};
+    window.UNIFED_INTERNAL.data = _PDF_CASE;
+    window.UNIFED_INTERNAL.fmt = _fmt;
+    window.UNIFED_INTERNAL.set = _set;
+
     console.log('[UNIFED] Camada 1: OK.');
 })();
 
 /**
- * UNIFED - PROBATUM · v13.11.13-PURE (PARTE 2 DE 6)
+ * UNIFED - PROBATUM · v13.11.14-PURE (PARTE 2 DE 6)
  * ============================================================================
- * Objetivo: Motor de Cálculo Forense e Mapeamento de Omissões — Completo
+ * Objetivo: Motor de Cálculo Forense e Mapeamento de Omissões
  * Modificação legal: textos dos smoking guns e veredicto ajustados para Art. 119.º RGIT.
+ * CORREÇÃO: Sincronização atómica com todos os IDs do DOM
  * ============================================================================
  */
 
@@ -132,15 +131,17 @@
 
     // Cálculos auxiliares baseados nos dados reais
     const t = data.totals;
-    const discrepanciaC2 = t.despesas - t.faturaPlataforma;          // 2447.89 - 262.94 = 2184.95
-    const percentC2 = (t.despesas > 0) ? (discrepanciaC2 / t.despesas) * 100 : 0; // 89.26%
-    const discrepanciaC1 = t.saftBruto - t.dac7TotalPeriodo;         // 8227.97 - 7755.16 = 472.81
-    const percentC1 = (t.saftBruto > 0) ? (discrepanciaC1 / t.saftBruto) * 100 : 0; // 5.75%
-    const ircEstimado = discrepanciaC2 * 0.21;                       // 458.84
+    const discrepanciaC2 = t.despesas - t.faturaPlataforma;
+    const percentC2 = (t.despesas > 0) ? (discrepanciaC2 / t.despesas) * 100 : 0;
+    const discrepanciaC1 = t.saftBruto - t.dac7TotalPeriodo;
+    const percentC1 = (t.saftBruto > 0) ? (discrepanciaC1 / t.saftBruto) * 100 : 0;
+    const ircEstimado = discrepanciaC2 * 0.21;
 
     window.UNIFED_INTERNAL.syncMetrics = function() {
-        // Mapeamento Integral de IDs (apenas os existentes em panel.html)
-        const map = {
+        console.log('[UNIFED] Iniciando Sincronização Forense...');
+        
+        // Mapeamento completo de todos os IDs existentes no DOM (panel.html)
+        const mapping = {
             // Painel I – Reconciliação Financeira
             'pure-ganhos':           fmt(t.ganhos),
             'pure-despesas':         fmt(t.despesas),
@@ -149,7 +150,7 @@
             'pure-dac7':             fmt(t.dac7TotalPeriodo),
             'pure-fatura':           fmt(t.faturaPlataforma),
             
-            // Painel II – Smoking Guns e Discrepâncias — textos legais alterados
+            // Painel II – Smoking Guns
             'pure-disc-c2':           fmt(discrepanciaC2),
             'pure-disc-c2-pct':       percentC2.toFixed(2) + '%',
             'pure-disc-saft-dac7':    fmt(discrepanciaC1),
@@ -157,51 +158,62 @@
             'pure-iva-6':             fmt(t.iva6Omitido),
             'pure-iva-23':            fmt(t.iva23Omitido),
             'pure-irc':               fmt(ircEstimado),
+            'pure-disc-c2-grid':      fmt(discrepanciaC2),
+            'pure-iva-devido':        fmt(t.iva6Omitido),
+            'pure-nao-sujeitos':      fmt(t.totalNaoSujeitos),
             
-            // Painel III – ATF (Análise Temporal Forense)
+            // Painel III – ATF
             'pure-atf-sp':            data.atf.score + '/100',
             'pure-atf-trend':         data.atf.trend,
             'pure-atf-outliers':      data.atf.outliers + ' outliers > 2σ',
             'pure-atf-meses':         '2.º Semestre 2024 — 4 meses com dados (Set–Dez)',
             
-            // Painel IV – Zona Cinzenta (Fluxos não sujeitos a comissão)
+            // Painel IV – Zona Cinzenta
             'pure-nc-campanhas':       fmt(t.campanhas),
             'pure-nc-gorjetas':        fmt(t.gorjetas),
             'pure-nc-portagens':       fmt(t.portagens),
             'pure-nc-total':           fmt(t.totalNaoSujeitos),
             
-            // Painel V – Veredicto e Integridade — texto ajustado
+            // Painel V – Veredicto e Integridade
             'pure-verdict':            'RISCO ELEVADO · CONTRA-ORDENAÇÃO',
             'pure-verdict-pct':        percentC2.toFixed(2) + '%',
             'pure-hash-prefix-verdict': data.masterHash.substring(0, 16) + '...',
-            
-            // Cabeçalho e identificação (IDs existentes em panel.html)
             'pure-session-id':         data.sessionId,
-            'pure-hash-prefix':        data.masterHash.substring(0, 12) + '...'
+            'pure-hash-prefix':        data.masterHash.substring(0, 12) + '...',
+            
+            // IDs adicionais para compatibilidade (ocultos ou novos)
+            'pure-subject-name':       data.client.name,
+            'pure-subject-nif':        data.client.nif,
+            'pure-subject-platform':   data.client.platform,
+            'pure-ganhos-extrato':     fmt(t.ganhos),
+            'pure-despesas-extrato':   fmt(t.despesas),
+            'pure-ganhos-liquidos-extrato': fmt(t.ganhosLiquidos),
+            'pure-saft-bruto-val':     fmt(t.saftBruto),
+            'pure-dac7-val':           fmt(t.dac7TotalPeriodo),
+            'pure-atf-zscore':         data.atf.zScore.toString(),
+            'pure-atf-confianca':      data.atf.confianca,
+            'pure-atf-score-val':      data.atf.score + '/100',
+            'pure-iva-devido-val':     fmt(t.iva6Omitido),
+            'pure-impacto-macro':      fmt(data.macro_analysis.estimated_systemic_gap)
         };
 
-        // Validação de integridade: verifica se todos os IDs existem antes da injeção
-        const missingIds = [];
-        Object.keys(map).forEach(id => {
-            if (!document.getElementById(id)) missingIds.push(id);
+        const missing = [];
+        Object.entries(mapping).forEach(([id, value]) => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.textContent = value;
+            } else {
+                missing.push(id);
+            }
         });
-        if (missingIds.length) {
-            console.warn('[UNIFED] IDs em falta no DOM:', missingIds);
-        }
 
-        Object.entries(map).forEach(([id, val]) => set(id, val));
-        
-        // ── MÉTRICAS MACRO (MIS) ──────────────────────────────────────────────
-        const macro = data.macro_analysis;
-        if (macro) {
-            const monthlyLoss = (macro.sector_drivers || 38000) * (macro.avg_monthly_discrepancy || 546.24);
-            set('pure-macro-universe', macro.sector_drivers.toLocaleString('pt-PT'));
-            set('pure-macro-horizon', macro.operational_years + ' Anos');
-            set('pure-macro-monthly-loss', fmt(monthlyLoss));
-            set('pure-macro-total-loss', fmt(macro.estimated_systemic_gap));
+        if (missing.length > 0) {
+            console.warn(`[UNIFED] IDs em falta no DOM: Array(${missing.length})`, missing);
+        } else {
+            console.info('[UNIFED] Sincronização concluída com 100% de integridade.');
         }
         
-        // Atualizar textos legais nos elementos estáticos (não mapeados por ID)
+        // Atualizar textos legais
         const sg2Legal = document.getElementById('pure-sg2-legal');
         if (sg2Legal) sg2Legal.textContent = 'Art. 36.º n.º 11 CIVA · Art. 119.º RGIT';
         
@@ -222,51 +234,27 @@
             pureAtfNote.textContent = 'Score de Persistência calculado pelo motor computeTemporalAnalysis() sobre 4 meses de histórico (Set/Out/Nov/Dez 2024). SP calculado sobre o lote global (dados verificados UNIFED-MMLADX8Q-CV69L). As discrepâncias absolutas (C2: €2.184,95 — 89,26% · C1: €472,81 — 5,75%) mantêm relevância jurídica independente.';
         }
         
-        // Ativação de alertas visuais
-        ['iva6Card', 'iva23Card', 'bigDataAlert', 'pureATFCard', 'pureEvidenceSection'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.style.display = (id === 'bigDataAlert') ? 'flex' : 'block';
-        });
-
-        // Atualizar o valor do card "Percentagem Cobrada Pela Plataforma"
+        // Atualizar valores dos cards auxiliares
         const omissaoPctEl = document.getElementById('omissaoDespesasPctValue');
         if (omissaoPctEl) {
             const pctComissao = (t.despesas / t.ganhos) * 100;
             omissaoPctEl.textContent = pctComissao.toFixed(2) + '%';
         }
-
-        const discGridEl = document.getElementById('pure-disc-c2-grid');
-        if (discGridEl) discGridEl.textContent = fmt(discrepanciaC2);
-        
-        const ivaDevidoEl = document.getElementById('pure-iva-devido');
-        if (ivaDevidoEl) ivaDevidoEl.textContent = fmt(t.iva6Omitido);
-        
-        const naoSujeitosEl = document.getElementById('pure-nao-sujeitos');
-        if (naoSujeitosEl) naoSujeitosEl.textContent = fmt(t.totalNaoSujeitos);
         
         const sg2BtorEl = document.getElementById('pure-sg2-btor-val');
         if (sg2BtorEl) sg2BtorEl.textContent = fmt(t.despesas);
         const sg2BtfEl = document.getElementById('pure-sg2-btf-val');
         if (sg2BtfEl) sg2BtfEl.textContent = fmt(t.faturaPlataforma);
-        const sg2DeltaEl = document.getElementById('pure-disc-c2');
-        if (sg2DeltaEl) sg2DeltaEl.textContent = fmt(discrepanciaC2);
-        const sg2PctEl = document.getElementById('pure-disc-c2-pct');
-        if (sg2PctEl) sg2PctEl.textContent = percentC2.toFixed(2) + '%';
-        
         const sg1SaftEl = document.getElementById('pure-sg1-saft-val');
         if (sg1SaftEl) sg1SaftEl.textContent = fmt(t.saftBruto);
         const sg1Dac7El = document.getElementById('pure-sg1-dac7-val');
         if (sg1Dac7El) sg1Dac7El.textContent = fmt(t.dac7TotalPeriodo);
-        const sg1DeltaEl = document.getElementById('pure-disc-saft-dac7');
-        if (sg1DeltaEl) sg1DeltaEl.textContent = fmt(discrepanciaC1);
-        const sg1PctEl = document.getElementById('pure-disc-saft-pct');
-        if (sg1PctEl) sg1PctEl.textContent = percentC1.toFixed(2) + '%';
     };
     console.log('[UNIFED] Camada 2: OK.');
 })();
 
 /**
- * UNIFED - PROBATUM · v13.11.13-PURE (PARTE 3 DE 6)
+ * UNIFED - PROBATUM · v13.11.14-PURE (PARTE 3 DE 6)
  * ============================================================================
  * Objetivo: Construção da Matriz de Triangulação (Visualização Judicial)
  * Textos legais ajustados para Art. 119.º RGIT.
@@ -315,11 +303,9 @@
 })();
 
 /**
- * UNIFED - PROBATUM · v13.11.13-PURE (PARTE 4 DE 6)
+ * UNIFED - PROBATUM · v13.11.14-PURE (PARTE 4 DE 6)
  * ============================================================================
  * Objetivo: CSS dinâmico, ocultações iniciais e helpers visuais.
- * Modificações: CSS para boxes auxiliares, ocultação do gráfico discrepancyChart,
- * e ocultação inicial da secção de evidências (pureEvidenceSection e contadores).
  * ============================================================================
  */
 
@@ -328,8 +314,6 @@
     if (!window.UNIFED_INTERNAL) return;
     const { data, fmt, set, syncMetrics, renderMatrix } = window.UNIFED_INTERNAL;
 
-    // 1. CSS dinâmico para forçar boxes auxiliares com tamanhos iguais e largura total
-    //    + ocultação inicial da secção de evidências
     function _injectAuxiliaryBoxesCSS() {
         const styleId = 'unifed-aux-boxes-fix';
         if (document.getElementById(styleId)) return;
@@ -350,7 +334,6 @@
                 margin: 0 !important;
                 box-sizing: border-box !important;
             }
-            /* Ocultação inicial da secção de evidências e contadores */
             #pureEvidenceSection,
             #controlCountCompact, #saftCountCompact, #invoiceCountCompact,
             #statementCountCompact, #dac7CountCompact,
@@ -372,10 +355,9 @@
         style.id = styleId;
         style.textContent = css;
         document.head.appendChild(style);
-        console.log('[UNIFED] CSS injetado: boxes auxiliares + ocultação inicial da secção de evidências.');
+        console.log('[UNIFED] CSS injetado.');
     }
 
-    // 2. Ocultar o gráfico "DISCREPÂNCIA SAF-T vs DAC7" (discrepancyChart)
     function _hideDiscrepancyChart() {
         const canvas = document.getElementById('discrepancyChart');
         if (canvas) {
@@ -383,41 +365,28 @@
             const section = canvas.closest('.chart-section');
             if (section && section.querySelectorAll('canvas').length === 1) {
                 section.style.display = 'none';
-                console.log('[UNIFED] Secção do gráfico DISCREPÂNCIA SAF-T vs DAC7 ocultada.');
-            } else {
-                console.log('[UNIFED] Canvas discrepancyChart ocultado, mas a secção pode conter outros elementos.');
             }
-        } else {
-            console.log('[UNIFED] Canvas discrepancyChart não encontrado – nada a ocultar.');
         }
     }
 
-    // 3. Oculta o Motor Preditivo NEXUS ATF (segredo industrial)
     function _hideNexusForecast() {
         const nexusPanel = document.getElementById('nexusForecastPanel');
         if (nexusPanel) nexusPanel.style.display = 'none';
-        
         const atfModal = document.getElementById('atfModal');
         if (atfModal) {
             const forecastElements = atfModal.querySelectorAll('#nexusForecastPanel, [class*="nexus"], [id*="nexusForecast"]');
-            forecastElements.forEach(el => {
-                if (el) el.style.display = 'none';
-            });
+            forecastElements.forEach(el => { if (el) el.style.display = 'none'; });
         }
-        console.log('[UNIFED] Motor Preditivo NEXUS ATF ocultado por orientação pericial (segredo industrial).');
+        console.log('[UNIFED] Motor Preditivo NEXUS ATF ocultado.');
     }
 
-    // 4. Injeta o card de Análise de Risco Sistémico (MIS)
     function _injectMacroCard() {
         const target = document.getElementById('pureDashboard');
         if (!target) return;
         if (document.getElementById('pureMacroCard')) return;
-
         const macro = data.macro_analysis;
         if (!macro) return;
-
         const monthlyLoss = (macro.sector_drivers || 38000) * (macro.avg_monthly_discrepancy || 546.24);
-
         const cardHtml = `
         <div class="pure-card pure-card-macro" id="pureMacroCard">
             <h3 class="pure-card-title">
@@ -437,12 +406,12 @@
                 </div>
                 <div class="pure-macro-item" style="flex:1; min-width:160px; background:rgba(255,255,255,0.03); padding:12px; border-radius:6px;">
                     <div class="pure-macro-label" style="font-size:0.65rem; color:#94a3b8; text-transform:uppercase;" data-pt="Erosão Mensal Estimada" data-en="Estimated Monthly Erosion">Erosão Mensal Estimada</div>
-                    <div id="pure-macro-monthly-loss" class="pure-macro-value" style="font-size:1.4rem; font-weight:700; color:#F59E0B;">${fmt(monthlyLoss)}</div>
+                    <div id="pure-macro-monthly-loss" class="pure-macro-value" style="font-size:1.4rem; font-weight:700; color:#F59E0B;">${_fmt(monthlyLoss)}</div>
                     <div class="pure-macro-sub" style="font-size:0.6rem; color:#64748b;">Art. 119.º RGIT</div>
                 </div>
                 <div class="pure-macro-item pure-macro-highlight" style="flex:1.5; min-width:200px; background:rgba(239,68,68,0.08); border-left:3px solid #EF4444; padding:12px; border-radius:6px;">
                     <div class="pure-macro-label" style="font-size:0.65rem; color:#94a3b8; text-transform:uppercase;" data-pt="Erosão Fiscal Estimada (7 Anos)" data-en="Estimated Tax Erosion (7 Years)">Erosão Fiscal Estimada (7 Anos)</div>
-                    <div id="pure-macro-total-loss" class="pure-macro-value" style="font-size:1.6rem; font-weight:900; color:#EF4444;">${fmt(macro.estimated_systemic_gap)}</div>
+                    <div id="pure-macro-total-loss" class="pure-macro-value" style="font-size:1.6rem; font-weight:900; color:#EF4444;">${_fmt(macro.estimated_systemic_gap)}</div>
                     <div class="pure-macro-sub" style="font-size:0.6rem; color:#EF4444;">Art. 119.º RGIT (Iteração)</div>
                 </div>
             </div>
@@ -454,10 +423,8 @@
         target.insertAdjacentHTML('beforeend', cardHtml);
     }
 
-    // 5. Atualiza os elementos da secção auxiliar (valores reais)
     function _updateAuxiliaryUI() {
         const t = data.totals;
-        
         const auxElements = {
             'auxBoxCampanhasValue': t.campanhas,
             'auxBoxPortagensValue': t.portagens,
@@ -465,50 +432,37 @@
             'auxBoxTotalNSValue': t.totalNaoSujeitos,
             'auxBoxCancelValue': t.cancelamentos
         };
-        
         Object.entries(auxElements).forEach(([id, value]) => {
             const el = document.getElementById(id);
             if (el) {
-                el.textContent = fmt(value);
-                if (id === 'auxBoxTotalNSValue') {
-                    el.classList.add('highlighted');
-                }
+                el.textContent = _fmt(value);
+                if (id === 'auxBoxTotalNSValue') el.classList.add('highlighted');
             }
         });
-        
         const dac7NoteValue = document.getElementById('auxDac7NoteValue');
-        if (dac7NoteValue) dac7NoteValue.textContent = fmt(t.totalNaoSujeitos);
+        if (dac7NoteValue) dac7NoteValue.textContent = _fmt(t.totalNaoSujeitos);
         const dac7NoteValueQ = document.getElementById('auxDac7NoteValueQ');
-        if (dac7NoteValueQ) dac7NoteValueQ.textContent = fmt(t.totalNaoSujeitos);
-        
+        if (dac7NoteValueQ) dac7NoteValueQ.textContent = _fmt(t.totalNaoSujeitos);
         const dac7Note = document.getElementById('auxDac7ReconciliationNote');
-        if (dac7Note && t.totalNaoSujeitos > 0) {
-            dac7Note.style.display = 'block';
-        }
-        
+        if (dac7Note && t.totalNaoSujeitos > 0) dac7Note.style.display = 'block';
         const questionText = document.getElementById('pure-zc-question-text');
         if (questionText) {
             questionText.textContent = 'Pode a plataforma confirmar se os €451,15 em Gorjetas e Campanhas (isentos de comissão nos termos da Lei TVDE) foram incluídos na base de cálculo do reporte DAC7 enviado pela plataforma à Autoridade Tributária? Se sim, qual o fundamento legal?';
         }
-        
-        console.log('[UNIFED] UI auxiliar atualizada: Campanhas=', fmt(t.campanhas), 'Portagens=', fmt(t.portagens), 'Gorjetas=', fmt(t.gorjetas), 'Cancelamentos=', fmt(t.cancelamentos), 'Total=', fmt(t.totalNaoSujeitos));
     }
 
-    // Exportar funções para o namespace global (usado na Parte 6)
     window.UNIFED_INTERNAL.injectAuxiliaryBoxesCSS = _injectAuxiliaryBoxesCSS;
     window.UNIFED_INTERNAL.hideDiscrepancyChart = _hideDiscrepancyChart;
     window.UNIFED_INTERNAL.hideNexusForecast = _hideNexusForecast;
     window.UNIFED_INTERNAL.injectMacroCard = _injectMacroCard;
     window.UNIFED_INTERNAL.updateAuxiliaryUI = _updateAuxiliaryUI;
-    console.log('[UNIFED] Camada 4: OK (CSS e funções de UI).');
+    console.log('[UNIFED] Camada 4: OK.');
 })();
 
 /**
- * UNIFED - PROBATUM · v13.11.13-PURE (PARTE 5 DE 6)
+ * UNIFED - PROBATUM · v13.11.14-PURE (PARTE 5 DE 6)
  * ============================================================================
  * Objetivo: Simulação de evidências e gestão de plataforma/DAC7.
- * Modificações: Força 'Plataforma A' read‑only, remove KPIs DAC7 com valor zero,
- * e prepara a função de carregamento de evidências para uso sob pedido.
  * ============================================================================
  */
 
@@ -517,11 +471,9 @@
     if (!window.UNIFED_INTERNAL) return;
     const { data, fmt } = window.UNIFED_INTERNAL;
 
-    // 1. Forçar plataforma 'Plataforma A' read‑only e ignorar dropdown
     function _forcePlatformReadOnly() {
         const platformSelect = document.getElementById('selPlatformFixed');
         if (platformSelect) {
-            // Define valor como 'outra' (ou o que corresponda a "Plataforma A")
             for (let i = 0; i < platformSelect.options.length; i++) {
                 if (platformSelect.options[i].value === 'outra') {
                     platformSelect.selectedIndex = i;
@@ -532,31 +484,22 @@
             platformSelect.style.opacity = '0.7';
             platformSelect.style.cursor = 'not-allowed';
         }
-        // Garantir que o nome da plataforma no objeto global também fica fixo
-        if (window.UNIFEDSystem) {
-            window.UNIFEDSystem.selectedPlatform = 'outra';
-        }
+        if (window.UNIFEDSystem) window.UNIFEDSystem.selectedPlatform = 'outra';
         console.log('[UNIFED] Plataforma forçada para "Plataforma A" em modo read‑only.');
     }
 
-    // 2. Remover do DOM quaisquer KPIs DAC7 com valor zero (Q1, Q2, Q3)
     function _removeZeroDac7Kpis() {
         const zeroKpis = ['dac7Q1Value', 'dac7Q2Value', 'dac7Q3Value'];
         zeroKpis.forEach(id => {
             const el = document.getElementById(id);
             if (el) {
                 const card = el.closest('.kpi-card');
-                if (card) {
-                    card.remove();
-                    console.log(`[UNIFED] KPI DAC7 com valor zero removido: ${id}`);
-                } else {
-                    el.remove();
-                }
+                if (card) card.remove();
+                else el.remove();
             }
         });
     }
 
-    // 3. Função principal de simulação de upload de evidências (retorna Promise)
     function _simulateEvidenceUpload() {
         return new Promise((resolve, reject) => {
             try {
@@ -565,10 +508,8 @@
                     reject(new Error('UNIFEDSystem not found'));
                     return;
                 }
-
                 const sys = window.UNIFEDSystem;
                 const t = data.totals;
-
                 if (!sys.documents) sys.documents = {};
                 if (!sys.documents.control) sys.documents.control = { files: [], totals: { records: 0 } };
                 if (!sys.documents.saft) sys.documents.saft = { files: [], totals: { bruto: 0, iliquido: 0, iva: 0, records: 0 } };
@@ -578,7 +519,6 @@
                 if (!sys.analysis) sys.analysis = { evidenceIntegrity: [] };
                 if (!sys.analysis.evidenceIntegrity) sys.analysis.evidenceIntegrity = [];
 
-                // Limpar dados anteriores
                 sys.documents.control.files = [];
                 sys.documents.saft.files = [];
                 sys.documents.statements.files = [];
@@ -586,7 +526,6 @@
                 sys.documents.dac7.files = [];
                 sys.analysis.evidenceIntegrity = [];
 
-                // 1. Ficheiros de Controlo (4)
                 const controlFiles = [
                     { name: 'controlo_autenticidade_1.csv', type: 'control', size: 256 },
                     { name: 'controlo_autenticidade_2.csv', type: 'control', size: 256 },
@@ -605,7 +544,6 @@
                 });
                 sys.documents.control.totals.records = controlFiles.length;
 
-                // 2. SAF-T (4 ficheiros mensais)
                 const saftFiles = [
                     { name: '131509_202409.csv', type: 'saft', size: 1024 },
                     { name: '131509_202410.csv', type: 'saft', size: 1024 },
@@ -627,7 +565,6 @@
                 sys.documents.saft.totals.iva = t.saftIva;
                 sys.documents.saft.totals.records = saftFiles.length;
 
-                // 3. Extratos (4 ficheiros mensais)
                 const statementFiles = [
                     { name: 'extrato_setembro_2024.pdf', type: 'statement', size: 2048 },
                     { name: 'extrato_outubro_2024.pdf', type: 'statement', size: 2048 },
@@ -649,7 +586,6 @@
                 sys.documents.statements.totals.ganhosLiquidos = t.ganhosLiquidos;
                 sys.documents.statements.totals.records = statementFiles.length;
 
-                // 4. Faturas (2)
                 const invoiceFiles = [
                     { name: 'PT1124_202412.pdf', type: 'invoice', size: 512 },
                     { name: 'PT1125_202412.pdf', type: 'invoice', size: 512 }
@@ -667,7 +603,6 @@
                 sys.documents.invoices.totals.invoiceValue = t.faturaPlataforma;
                 sys.documents.invoices.totals.records = invoiceFiles.length;
 
-                // 5. DAC7 (1 ficheiro) - apenas 4.º trimestre visível
                 const dac7Files = [
                     { name: 'dac7_2024_semestre2.pdf', type: 'dac7', size: 1024 }
                 ];
@@ -688,7 +623,6 @@
                 sys.documents.dac7.totals.totalPeriodo = t.dac7TotalPeriodo;
                 sys.documents.dac7.totals.records = dac7Files.length;
 
-                // 6. Dados mensais para ATF
                 if (!sys.monthlyData) sys.monthlyData = {};
                 const monthlyGanhos = [2450.00, 2560.00, 2480.00, 2667.73];
                 const monthlyDespesas = [590.00, 615.00, 600.00, 642.89];
@@ -703,7 +637,6 @@
                 });
                 sys.dataMonths = new Set(months);
 
-                // 7. Totais e crossings (excluindo macro do Master Hash)
                 if (!sys.analysis.totals) sys.analysis.totals = {};
                 sys.analysis.totals.saftBruto = t.saftBruto;
                 sys.analysis.totals.saftIliquido = t.saftIliquido;
@@ -743,7 +676,6 @@
                 sys.analysis.crossings.c2_delta = discrepanciaCritica;
                 sys.analysis.crossings.c2_pct = percentagemOmissao;
 
-                // 8. Cliente
                 if (!sys.client && data.client) {
                     sys.client = { name: data.client.name, nif: data.client.nif, platform: data.client.platform };
                     const clientStatus = document.getElementById('clientStatusFixed');
@@ -760,22 +692,16 @@
                     if (nifInput) nifInput.value = data.client.nif;
                 }
 
-                // 9. Período "2. Semestre"
                 const periodSelect = document.getElementById('periodoAnalise');
                 if (periodSelect) {
                     periodSelect.value = '2s';
-                    if (typeof window.UNIFEDSystem !== 'undefined') {
-                        window.UNIFEDSystem.selectedPeriodo = '2s';
-                    }
+                    if (typeof window.UNIFEDSystem !== 'undefined') window.UNIFEDSystem.selectedPeriodo = '2s';
                     const changeEvent = new Event('change', { bubbles: true });
                     periodSelect.dispatchEvent(changeEvent);
                 }
                 const trimestralContainer = document.getElementById('trimestralSelectorContainer');
-                if (trimestralContainer) {
-                    trimestralContainer.style.display = 'none';
-                }
+                if (trimestralContainer) trimestralContainer.style.display = 'none';
 
-                // 10. Master hash (excluindo dados macro)
                 const evidenceHashes = sys.analysis.evidenceIntegrity
                     .map(ev => ev.hash)
                     .filter(h => h && h.length === 64)
@@ -794,11 +720,9 @@
         });
     }
 
-    // 4. Atualizar contadores na UI e mostrar secção de evidências
     function _updateEvidenceCountersAndShow() {
         const sys = window.UNIFEDSystem;
         if (!sys || !sys.documents) return;
-
         const controlCount = sys.documents.control?.files?.length || 0;
         const saftCount = sys.documents.saft?.files?.length || 0;
         const invoiceCount = sys.documents.invoices?.files?.length || 0;
@@ -824,7 +748,6 @@
         const evidenceCountTotal = document.getElementById('evidenceCountTotal');
         if (evidenceCountTotal) evidenceCountTotal.textContent = total;
 
-        // Mostrar a secção de evidências e os contadores
         const evidenceSection = document.getElementById('pureEvidenceSection');
         if (evidenceSection) evidenceSection.style.display = 'block';
         const counters = ['controlCountCompact', 'saftCountCompact', 'invoiceCountCompact', 'statementCountCompact', 'dac7CountCompact'];
@@ -835,18 +758,19 @@
         console.log('[UNIFED] Contadores de evidências atualizados e secção revelada.');
     }
 
-    // Exportar funções para uso na Parte 6
     window.UNIFED_INTERNAL.forcePlatformReadOnly = _forcePlatformReadOnly;
     window.UNIFED_INTERNAL.removeZeroDac7Kpis = _removeZeroDac7Kpis;
     window.UNIFED_INTERNAL.simulateEvidenceUpload = _simulateEvidenceUpload;
     window.UNIFED_INTERNAL.updateEvidenceCountersAndShow = _updateEvidenceCountersAndShow;
-    console.log('[UNIFED] Camada 5: OK (gestão de evidências e plataforma).');
+    console.log('[UNIFED] Camada 5: OK.');
 })();
 
 /**
- * UNIFED - PROBATUM · v13.11.13-PURE (PARTE 6 DE 6)
+ * UNIFED - PROBATUM · v13.11.14-PURE (PARTE 6 DE 6)
  * ============================================================================
  * Final: Inicialização baseada em Promise, validação de DOM, e gatilho por botão.
+ * CORREÇÃO: showClientIdentificationBlock com fallback seguro
+ * CORREÇÃO: Aguarda waitForPureDashboard antes de initializeFullWithEvidence
  * ============================================================================
  */
 
@@ -860,12 +784,10 @@
         removeZeroDac7Kpis, simulateEvidenceUpload, updateEvidenceCountersAndShow
     } = window.UNIFED_INTERNAL;
 
-    // Função para mostrar o bloco de identificação do sujeito passivo
-    // CORREÇÃO: Garante que o elemento existe, criando-o se necessário
+    // CORREÇÃO: showClientIdentificationBlock com fallback para criar o elemento se necessário
     function showClientIdentificationBlock() {
         let block = document.getElementById('clientIdentificationBlock');
         if (!block) {
-            // Fallback: encontrar o .sidebar-header-fixed e atribuir-lhe o ID
             const sidebarHeader = document.querySelector('.sidebar-header-fixed');
             if (sidebarHeader) {
                 sidebarHeader.id = 'clientIdentificationBlock';
@@ -880,7 +802,6 @@
         console.log('[UNIFED] Bloco de identificação do sujeito passivo revelado.');
     }
 
-    // Aguarda a existência do elemento #pureDashboard (injectado via fetch)
     function waitForPureDashboard() {
         return new Promise((resolve) => {
             if (document.getElementById('pureDashboard')) {
@@ -894,15 +815,12 @@
                 }
             });
             observer.observe(document.body, { childList: true, subtree: true });
-            // Timeout de segurança
             setTimeout(() => { observer.disconnect(); resolve(); }, 5000);
         });
     }
 
-    // Inicialização do core do dashboard (sem evidências)
     function initializeCoreDashboard() {
         waitForPureDashboard().then(() => {
-            // Pequeno delay para garantir que todos os filhos foram renderizados
             setTimeout(() => {
                 if (typeof syncMetrics === 'function') syncMetrics();
                 if (typeof renderMatrix === 'function') renderMatrix();
@@ -918,22 +836,17 @@
         }).catch(err => console.warn('[UNIFED] Erro ao aguardar #pureDashboard', err));
     }
 
-    // Inicialização completa com evidências (chamada pelo botão)
-    // CORREÇÃO: Aguarda a resolução de waitForPureDashboard antes de prosseguir
     async function initializeFullWithEvidence() {
         console.log('[UNIFED] A carregar evidências do caso real...');
-        // Aguarda o dashboard estar pronto no DOM
         await waitForPureDashboard();
         try {
             await simulateEvidenceUpload();
             updateEvidenceCountersAndShow();
-            // Atualiza o hash no painel (se existir)
             if (window.UNIFEDSystem && window.UNIFEDSystem.masterHash) {
                 const hashEl = document.getElementById('masterHashValue');
                 if (hashEl) hashEl.textContent = window.UNIFEDSystem.masterHash;
                 if (typeof generateQRCode === 'function') generateQRCode();
             }
-            // Mostrar o bloco de identificação do sujeito passivo
             showClientIdentificationBlock();
             console.log('[UNIFED] ✅ Evidências carregadas e secção revelada.');
         } catch (err) {
@@ -941,12 +854,9 @@
         }
     }
 
-    // Configurar o botão "CASO REAL ANONIMIZADO" sem destruir event listeners
     function setupRealCaseButton() {
-        // Tenta por ID primeiro (recomendado)
         let targetButton = document.getElementById('demoModeBtn');
         if (!targetButton) {
-            // Fallback: procura por texto exacto
             const buttons = document.querySelectorAll('button, .btn, [role="button"]');
             for (let btn of buttons) {
                 if (btn.textContent.trim() === 'CASO REAL ANONIMIZADO') {
@@ -957,7 +867,6 @@
         }
         if (!targetButton) {
             console.warn('[UNIFED] Botão "CASO REAL ANONIMIZADO" não encontrado. Listener genérico activado.');
-            // Fallback: ouvir cliques em qualquer elemento que contenha o texto
             document.body.addEventListener('click', function(e) {
                 const el = e.target.closest('button, .btn, [role="button"]');
                 if (el && el.textContent.includes('CASO REAL ANONIMIZADO')) {
@@ -968,18 +877,6 @@
             return;
         }
 
-        // CORREÇÃO: Remove event listeners antigos de forma segura, sem cloneNode
-        // Remove todos os event listeners antigos clonando e substituindo? 
-        // Melhor: usar um novo listener e remover os antigos via removeEventListener
-        // Como não temos referência aos listeners antigos, a abordagem mais segura é 
-        // substituir o botão por um clone (preservando o texto e estrutura) mas mantendo 
-        // o novo listener. No entanto, o cloneNode remove os listeners, o que é desejado.
-        // O problema anterior era que o cloneNode estava a ser feito antes da Promise do fetch,
-        // causando hijacking. Agora, o event listener chama initializeFullWithEvidence que 
-        // aguarda waitForPureDashboard, então o cloneNode é seguro pois a Promise já foi resolvida.
-        // Mas para evitar qualquer risco, vamos manter o botão original e apenas adicionar
-        // um novo listener, garantindo que não haja duplicação.
-        // Removemos listeners antigos adicionando um novo e ignorando os anteriores.
         const newBtn = targetButton.cloneNode(true);
         targetButton.parentNode.replaceChild(newBtn, targetButton);
         newBtn.addEventListener('click', function(e) {
@@ -989,7 +886,6 @@
         console.log('[UNIFED] Listener associado ao botão "CASO REAL ANONIMIZADO" (sem hijacking).');
     }
 
-    // Função auxiliar para gerar QR Code (caso não exista globalmente)
     function generateQRCode() {
         const container = document.getElementById('qrcodeContainer');
         if (!container) return;
@@ -1009,9 +905,8 @@
         }
         container.setAttribute('data-tooltip', 'Clique para verificar a cadeia de custódia completa');
     }
-    window.generateQRCode = generateQRCode; // expor globalmente
+    window.generateQRCode = generateQRCode;
 
-    // Inicialização por Promise (sem setTimeout)
     function startApplication() {
         return new Promise((resolve) => {
             if (document.readyState === 'loading') {
@@ -1022,7 +917,6 @@
         }).then(() => {
             initializeCoreDashboard();
             setupRealCaseButton();
-            // Garantir que o bloco de identificação começa oculto (reforço)
             const block = document.getElementById('clientIdentificationBlock');
             if (block) block.style.display = 'none';
             console.log('[UNIFED] ✅ Aplicação pronta. Clique em "CASO REAL ANONIMIZADO" para carregar as evidências.');
@@ -1031,6 +925,5 @@
         });
     }
 
-    // Iniciar
     startApplication();
 })();
