@@ -5,10 +5,9 @@
  * Conformidade: DORA (UE) 2022/2554 · Art. 125.º CPP · ISO/IEC 27037:2012
  * ============================================================================
  * v13.11.15-PURE:
- *   - Correção do erro "Array(42)" através da definição local de _fmt
- *   - Expansão do mapeamento para 42 campos auxiliares
- *   - Orquestração segura com verificação de existência do #pureDashboard
- *   - Eliminação de referências não definidas e logs condicionais
+ *   - Correção da função _updateAuxiliaryUI com fallback _fmt para evitar ReferenceError
+ *   - Mapeamento completo de 42 campos com validação de existência no DOM
+ *   - Sincronização atómica protegida por verificação de #pureDashboard
  * ============================================================================
  */
 
@@ -120,7 +119,6 @@
  * ============================================================================
  * Objetivo: Motor de Cálculo Forense e Mapeamento de Omissões
  * Modificação legal: textos dos smoking guns e veredicto ajustados para Art. 119.º RGIT.
- * CORREÇÃO: Sincronização atómica com todos os IDs do DOM
  * ============================================================================
  */
 
@@ -306,7 +304,7 @@
  * UNIFED - PROBATUM · v13.11.15-PURE (PARTE 4 DE 6)
  * ============================================================================
  * Objetivo: CSS dinâmico, ocultações iniciais e helpers visuais.
- * CORREÇÃO: _updateAuxiliaryUI com definição local de _fmt e mapeamento de 42 campos.
+ * CORREÇÃO: _updateAuxiliaryUI com fallback _fmt e mapeamento completo.
  * ============================================================================
  */
 
@@ -424,30 +422,27 @@
         target.insertAdjacentHTML('beforeend', cardHtml);
     }
 
-    // CORREÇÃO: _updateAuxiliaryUI com definição local de _fmt e mapeamento de 42 campos
+    // CORREÇÃO: _updateAuxiliaryUI com fallback _fmt e mapeamento completo de 42 campos
     function _updateAuxiliaryUI() {
-        // Definir _fmt localmente para evitar ReferenceError e garantir formatação consistente
-        const localFmt = (val) => {
-            if (val === undefined || val === null || isNaN(val)) return "€ 0,00";
+        // Enforcement de fallback para evitar ReferenceError
+        const _f = (typeof _fmt === 'function') ? _fmt : (v) => {
+            if (v === undefined || v === null || isNaN(v)) return "€ 0,00";
             return new Intl.NumberFormat('pt-PT', { 
                 style: 'currency', 
                 currency: 'EUR',
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
-            }).format(val);
+            }).format(v);
         };
 
         // Mapeamento completo dos 42 campos auxiliares esperados pelo sistema
-        const auxFields = [
-            // Totais principais (Painel I)
+        const auxMapping = [
             { id: 'pure-ganhos', val: data.totals.ganhos },
             { id: 'pure-despesas', val: data.totals.despesas },
             { id: 'pure-liquido', val: data.totals.ganhosLiquidos },
             { id: 'pure-saft', val: data.totals.saftBruto },
             { id: 'pure-dac7', val: data.totals.dac7TotalPeriodo },
             { id: 'pure-fatura', val: data.totals.faturaPlataforma },
-            
-            // Discrepâncias (Painel II)
             { id: 'pure-disc-c2', val: data.totals.despesas - data.totals.faturaPlataforma },
             { id: 'pure-disc-saft-dac7', val: data.totals.saftBruto - data.totals.dac7TotalPeriodo },
             { id: 'pure-iva-6', val: data.totals.iva6Omitido },
@@ -456,32 +451,22 @@
             { id: 'pure-disc-c2-grid', val: data.totals.despesas - data.totals.faturaPlataforma },
             { id: 'pure-iva-devido', val: data.totals.iva6Omitido },
             { id: 'pure-nao-sujeitos', val: data.totals.totalNaoSujeitos },
-            
-            // ATF (Painel III)
             { id: 'pure-atf-sp', val: data.atf.score + '/100' },
             { id: 'pure-atf-trend', val: data.atf.trend },
             { id: 'pure-atf-outliers', val: data.atf.outliers + ' outliers > 2σ' },
             { id: 'pure-atf-meses', val: '2.º Semestre 2024 — 4 meses com dados (Set–Dez)' },
-            
-            // Zona Cinzenta (Painel IV)
             { id: 'pure-nc-campanhas', val: data.totals.campanhas },
             { id: 'pure-nc-gorjetas', val: data.totals.gorjetas },
             { id: 'pure-nc-portagens', val: data.totals.portagens },
             { id: 'pure-nc-total', val: data.totals.totalNaoSujeitos },
-            
-            // Veredicto e Integridade (Painel V)
             { id: 'pure-verdict', val: 'RISCO ELEVADO · CONTRA-ORDENAÇÃO' },
             { id: 'pure-verdict-pct', val: ((data.totals.despesas - data.totals.faturaPlataforma) / data.totals.despesas * 100).toFixed(2) + '%' },
             { id: 'pure-hash-prefix-verdict', val: data.masterHash.substring(0, 16) + '...' },
             { id: 'pure-session-id', val: data.sessionId },
             { id: 'pure-hash-prefix', val: data.masterHash.substring(0, 12) + '...' },
-            
-            // Identificação do sujeito passivo
             { id: 'pure-subject-name', val: data.client.name },
             { id: 'pure-subject-nif', val: data.client.nif },
             { id: 'pure-subject-platform', val: data.client.platform },
-            
-            // Campos adicionais (formato extendido)
             { id: 'pure-ganhos-extrato', val: data.totals.ganhos },
             { id: 'pure-despesas-extrato', val: data.totals.despesas },
             { id: 'pure-ganhos-liquidos-extrato', val: data.totals.ganhosLiquidos },
@@ -492,35 +477,30 @@
             { id: 'pure-atf-score-val', val: data.atf.score + '/100' },
             { id: 'pure-iva-devido-val', val: data.totals.iva6Omitido },
             { id: 'pure-impacto-macro', val: data.macro_analysis.estimated_systemic_gap },
-            
-            // Boxes auxiliares (já existentes)
             { id: 'auxBoxCampanhasValue', val: data.totals.campanhas },
             { id: 'auxBoxPortagensValue', val: data.totals.portagens },
             { id: 'auxBoxGorjetasValue', val: data.totals.gorjetas },
             { id: 'auxBoxTotalNSValue', val: data.totals.totalNaoSujeitos },
             { id: 'auxBoxCancelValue', val: data.totals.cancelamentos },
-            
-            // Elementos de nota DAC7
             { id: 'auxDac7NoteValue', val: data.totals.totalNaoSujeitos },
             { id: 'auxDac7NoteValueQ', val: data.totals.totalNaoSujeitos }
         ];
 
         let updatedCount = 0;
-        auxFields.forEach(field => {
-            const el = document.getElementById(field.id);
+        auxMapping.forEach(item => {
+            const el = document.getElementById(item.id);
             if (el) {
-                // Aplica formatação apenas a valores numéricos, caso contrário usa string diretamente
-                if (typeof field.val === 'number') {
-                    el.textContent = localFmt(field.val);
+                if (typeof item.val === 'number') {
+                    el.textContent = _f(item.val);
                 } else {
-                    el.textContent = field.val;
+                    el.textContent = item.val;
                 }
                 updatedCount++;
             } else if (window.UNIFED_DEBUG) {
-                console.debug(`[UNIFED] Campo auxiliar ${field.id} não encontrado (aguardando DOM).`);
+                console.debug(`[UNIFED] Campo auxiliar ${item.id} não encontrado (aguardando DOM).`);
             }
         });
-        
+
         // Atualização específica para elementos de texto legal
         const sg2Legal = document.getElementById('pure-sg2-legal');
         if (sg2Legal) sg2Legal.textContent = 'Art. 36.º n.º 11 CIVA · Art. 119.º RGIT';

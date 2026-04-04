@@ -1,32 +1,23 @@
 <!--
   ============================================================================
-  UNIFED - PROBATUM · v13.11.14-PURE · PAINEL DE CASO REAL ANONIMIZADO
+  UNIFED - PROBATUM · v13.11.15-PURE · PAINEL DE CASO REAL ANONIMIZADO
   ============================================================================
-  Ficheiro      : panel.html
-  Versão        : 13.11.14-PURE (CONSOLIDADA)
-  Conformidade  : ISO/IEC 27037:2012 · Art. 125.º CPP · Art. 119.º RGIT
+  CONSOLIDAÇÃO COM Panel(2).html - INCLUSÃO DE TODOS OS IDs NECESSÁRIOS
+  Conformidade: ISO/IEC 27037:2012 · Art. 125.º CPP · Art. 119.º RGIT
   ============================================================================
-  PT: Inserir após o painel de Dashboard principal no index.html.
-      Todos os valores são preenchidos por _syncPureDashboard() em script.js.
-      IDs marcados com "pure-*" — sem conflito com IDs existentes.
-  EN: Insert after the main Dashboard panel in index.html.
-      All values populated by _syncPureDashboard() in script.js.
-      IDs marked with "pure-*" — no conflict with existing IDs.
-
-  SUPORTE A TRADUÇÃO PT/EN / PT/EN TRANSLATION SUPPORT:
-    - Elementos com data-pt e data-en são traduzidos por window._translatePurePanel()
-    - Elements with data-pt and data-en are translated by window._translatePurePanel()
-    - Chamada automática em switchLanguage() de script.js
-    - Automatically called in switchLanguage() from script.js
+  PT: Painel consolidado a partir de panel.html (v13.11.14) e Panel(2).html (v13.11.15).
+      Inclui todos os IDs requeridos pelo script_injection.js.
+  EN: Consolidated panel from panel.html (v13.11.14) and Panel(2).html (v13.11.15).
+      Includes all IDs required by script_injection.js.
   ============================================================================
 -->
 
-<section id="pureDashboard" class="pure-section" aria-label="Painel Caso Real Anonimizado v13.11.14-PURE">
+<section id="pureDashboard" class="pure-section" aria-label="Painel Caso Real Anonimizado v13.11.15-PURE">
 
   <!-- ── HEADER DA SECÇÃO ────────────────────────────────────────────────── -->
   <div class="pure-section-header">
     <div class="pure-section-title">
-      <span class="pure-badge-version" title="Versão / Version">v13.11.14-PURE</span>
+      <span class="pure-badge-version" title="Versão / Version">v13.11.15-PURE</span>
       <span id="pure-title-text"
             data-pt="RECONSTITUIÇÃO DA VERDADE MATERIAL — SESSÃO"
             data-en="RECONSTRUCTION OF MATERIAL TRUTH — SESSION">RECONSTITUIÇÃO DA VERDADE MATERIAL — SESSÃO</span>
@@ -40,7 +31,7 @@
     </div>
   </div>
 
-  <!-- ── BLOCO DE IDENTIFICAÇÃO DO SUJEITO PASSIVO (NOVO) ─────────────────── -->
+  <!-- ── BLOCO DE IDENTIFICAÇÃO DO SUJEITO PASSIVO ────────────────────────── -->
   <div class="pure-subject-header" style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
     <div class="pure-data-block" style="flex:1; background: rgba(255,255,255,0.03); border-radius: 6px; padding: 12px 14px;">
       <div class="pure-data-label" data-pt="Sujeito Passivo" data-en="Subject">Sujeito Passivo</div>
@@ -530,12 +521,14 @@
   </div>
   <!-- FIM: pure-card-grid -->
 
-  <!-- ── ELEMENTOS OCULTOS PARA SINCronização ADICIONAL ──────────────────── -->
+  <!-- ── ELEMENTOS OCULTOS PARA SINCronização ADICIONAL (TODOS OS IDs NECESSÁRIOS) ── -->
   <div style="display:none;">
+    <!-- IDs do primeiro painel (Panel(2).html) que não estão duplicados como visíveis -->
     <div id="pure-verdict-text"></div>
     <div id="pure-timestamp-ots"></div>
     <div id="pure-blockchain-status"></div>
-    <!-- Métricas adicionais solicitadas pelo syncMetrics -->
+    
+    <!-- Métricas adicionais requeridas pelo syncMetrics -->
     <div id="pure-ganhos-extrato"></div>
     <div id="pure-despesas-extrato"></div>
     <div id="pure-ganhos-liquidos-extrato"></div>
@@ -546,7 +539,29 @@
     <div id="pure-atf-score-val"></div>
     <div id="pure-iva-devido-val"></div>
     <div id="pure-impacto-macro"></div>
+    
+    <!-- Garantia de que todos os IDs referenciados em script_injection.js existem -->
+    <div id="pure-fatura"></div>
+    <div id="pure-disc-c2"></div>
+    <div id="pure-disc-c2-pct"></div>
+    <div id="pure-disc-saft-dac7"></div>
+    <div id="pure-disc-saft-pct"></div>
+    <div id="pure-iva-6"></div>
+    <div id="pure-iva-23"></div>
+    <div id="pure-irc"></div>
+    <div id="pure-disc-c2-grid"></div>
+    <div id="pure-nao-sujeitos"></div>
+    <div id="pure-atf-sp"></div>
+    <div id="pure-atf-trend"></div>
+    <div id="pure-atf-outliers"></div>
+    <div id="pure-atf-meses"></div>
+    <div id="pure-nc-campanhas"></div>
+    <div id="pure-nc-gorjetas"></div>
+    <div id="pure-nc-portagens"></div>
+    <div id="pure-nc-total"></div>
+    <div id="pure-verdict"></div>
+    <div id="pure-hash-prefix"></div>
   </div>
 
 </section>
-<!-- FIM: pureDashboard · v13.11.14-PURE · UNIFED-MMLADX8Q-CV69L -->
+<!-- FIM: pureDashboard · v13.11.15-PURE · UNIFED-MMLADX8Q-CV69L (CONSOLIDADO) -->
