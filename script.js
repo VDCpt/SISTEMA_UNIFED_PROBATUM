@@ -8275,8 +8275,7 @@ window.resetAuxiliaryData = resetAuxiliaryData;
 
     if (typeof UNIFEDSystem.loadAnonymizedRealCase !== 'function') {
         UNIFEDSystem.loadAnonymizedRealCase = function _pureStub() {
-            // console.warn('[UNIFED-PURE] ⚠ script_injection_v13.5.0-PURE.js não carregado. Verificar ordem de carregamento em index.html.'
-            );
+            // console.warn('[UNIFED-PURE] ⚠ script_injection_v13.5.0-PURE.js não carregado. Verificar ordem de carregamento em index.html.');
         };
     }
 
