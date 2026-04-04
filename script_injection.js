@@ -8,6 +8,7 @@
  * - Ocultação inicial do bloco de identificação removida (sempre visível).
  * - Guard clause no syncMetrics para mitigar o erro Array(42).
  * - Adicionadas contagens de evidências (counts) no dataset mestre.
+ * - Tratamento silencioso de erro DNS (api.unifed.com) com fallback estático.
  * ============================================================================
  */
 
@@ -92,6 +93,11 @@
                 console.warn('[UNIFED] ⚙ Modo Standalone Ativo: Selagem TSA externa indisponível (promise).');
                 event.preventDefault();
             }
+            // Tratamento silencioso do erro DNS api.unifed.com
+            if (event.reason && event.reason.message && event.reason.message.indexOf('api.unifed.com') !== -1) {
+                console.warn('[UNIFED] ⚙ Modo Standalone Ativo: Proxy IA indisponível (DNS). Fallback estático ativo.');
+                event.preventDefault();
+            }
         });
         window.addEventListener('error', function(event) {
             if (event.message && event.message.indexOf('freetsa') !== -1) {
@@ -99,8 +105,13 @@
                 event.preventDefault();
                 return true;
             }
+            if (event.message && event.message.indexOf('api.unifed.com') !== -1) {
+                console.warn('[UNIFED] ⚙ Modo Standalone Ativo: Proxy IA indisponível (DNS). Fallback estático ativo.');
+                event.preventDefault();
+                return true;
+            }
         });
-        console.log('[UNIFED] Escudo CORS silencioso instalado para FreeTSA.');
+        console.log('[UNIFED] Escudo CORS silencioso instalado para FreeTSA e api.unifed.com.');
     })();
 
     // 3. UTILITÁRIOS DE FORMATAÇÃO E ACESSO AO DOM
@@ -271,7 +282,7 @@
                         <th style="text-align:left; padding:10px;">FONTE DE PROVA</th>
                         <th style="text-align:right; padding:10px;">VALOR</th>
                         <th style="text-align:right; padding:10px; color:#EF4444;">DISCREPÂNCIA</th>
-                    <tr>
+                    </table>
                 </thead>
                 <tbody>
                     <tr><td style="padding:10px;">📄 SAF-T PT (Faturação)</td><td style="padding:10px; text-align:right;">${fmt(t.saftBruto)}</td><td style="padding:10px; text-align:right;">-${fmt(deltaSaft)}</td></tr>
