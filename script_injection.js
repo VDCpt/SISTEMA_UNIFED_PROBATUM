@@ -881,35 +881,53 @@
         removeZeroDac7Kpis, simulateEvidenceUpload, updateEvidenceCountersAndShow
     } = window.UNIFED_INTERNAL;
 
-    // Validação de integridade dos elementos essenciais antes da injeção
-    function validateRequiredElements() {
-        const requiredIds = [
-            'pure-ganhos', 'pure-despesas', 'pure-liquido', 'pure-saft', 'pure-dac7',
-            'pure-disc-c2', 'pure-atf-score', 'pure-macro-universe'
-        ];
-        const missing = requiredIds.filter(id => !document.getElementById(id));
-        if (missing.length) {
-            console.error('[UNIFED] Elementos obrigatórios em falta:', missing);
-            return false;
+    // Função para mostrar o bloco de identificação do sujeito passivo
+    function showClientIdentificationBlock() {
+        const block = document.getElementById('clientIdentificationBlock');
+        if (block) {
+            block.style.display = 'block';
+            console.log('[UNIFED] Bloco de identificação do sujeito passivo revelado.');
+        } else {
+            console.warn('[UNIFED] Elemento #clientIdentificationBlock não encontrado.');
         }
-        return true;
+    }
+
+    // Aguarda a existência do elemento #pureDashboard (injectado via fetch)
+    function waitForPureDashboard() {
+        return new Promise((resolve) => {
+            if (document.getElementById('pureDashboard')) {
+                resolve();
+                return;
+            }
+            const observer = new MutationObserver((mutations, obs) => {
+                if (document.getElementById('pureDashboard')) {
+                    obs.disconnect();
+                    resolve();
+                }
+            });
+            observer.observe(document.body, { childList: true, subtree: true });
+            // Timeout de segurança
+            setTimeout(() => { observer.disconnect(); resolve(); }, 5000);
+        });
     }
 
     // Inicialização do core do dashboard (sem evidências)
     function initializeCoreDashboard() {
-        if (!validateRequiredElements()) {
-            console.warn('[UNIFED] Alguns elementos não foram encontrados. A injeção pode estar incompleta.');
-        }
-        syncMetrics();
-        renderMatrix();
-        injectMacroCard();
-        injectAuxiliaryBoxesCSS();
-        hideDiscrepancyChart();
-        updateAuxiliaryUI();
-        hideNexusForecast();
-        forcePlatformReadOnly();
-        removeZeroDac7Kpis();
-        console.log('[UNIFED] Core do dashboard inicializado (sem evidências).');
+        waitForPureDashboard().then(() => {
+            // Pequeno delay para garantir que todos os filhos foram renderizados
+            setTimeout(() => {
+                if (typeof syncMetrics === 'function') syncMetrics();
+                if (typeof renderMatrix === 'function') renderMatrix();
+                if (typeof injectMacroCard === 'function') injectMacroCard();
+                if (typeof injectAuxiliaryBoxesCSS === 'function') injectAuxiliaryBoxesCSS();
+                if (typeof hideDiscrepancyChart === 'function') hideDiscrepancyChart();
+                if (typeof updateAuxiliaryUI === 'function') updateAuxiliaryUI();
+                if (typeof hideNexusForecast === 'function') hideNexusForecast();
+                if (typeof forcePlatformReadOnly === 'function') forcePlatformReadOnly();
+                if (typeof removeZeroDac7Kpis === 'function') removeZeroDac7Kpis();
+                console.log('[UNIFED] Core dashboard inicializado com sucesso após injeção do painel.');
+            }, 100);
+        }).catch(err => console.warn('[UNIFED] Erro ao aguardar #pureDashboard', err));
     }
 
     // Inicialização completa com evidências (chamada pelo botão)
@@ -922,9 +940,10 @@
             if (window.UNIFEDSystem && window.UNIFEDSystem.masterHash) {
                 const hashEl = document.getElementById('masterHashValue');
                 if (hashEl) hashEl.textContent = window.UNIFEDSystem.masterHash;
-                // Gerar QR code se a função existir
                 if (typeof generateQRCode === 'function') generateQRCode();
             }
+            // Mostrar o bloco de identificação do sujeito passivo
+            showClientIdentificationBlock();
             console.log('[UNIFED] ✅ Evidências carregadas e secção revelada.');
         } catch (err) {
             console.error('[UNIFED] Falha ao carregar evidências:', err);
@@ -933,17 +952,20 @@
 
     // Configurar o botão "CASO REAL ANONIMIZADO"
     function setupRealCaseButton() {
-        // Procura por botão com texto exacto ou com ID específico
-        const buttons = document.querySelectorAll('button, .btn, [role="button"]');
-        let targetButton = null;
-        for (let btn of buttons) {
-            if (btn.textContent.trim() === 'CASO REAL ANONIMIZADO' || btn.id === 'loadRealCaseBtn') {
-                targetButton = btn;
-                break;
+        // Tenta por ID primeiro (recomendado)
+        let targetButton = document.getElementById('demoModeBtn');
+        if (!targetButton) {
+            // Fallback: procura por texto exacto
+            const buttons = document.querySelectorAll('button, .btn, [role="button"]');
+            for (let btn of buttons) {
+                if (btn.textContent.trim() === 'CASO REAL ANONIMIZADO') {
+                    targetButton = btn;
+                    break;
+                }
             }
         }
         if (!targetButton) {
-            console.warn('[UNIFED] Botão "CASO REAL ANONIMIZADO" não encontrado. Tentando criar um listener genérico.');
+            console.warn('[UNIFED] Botão "CASO REAL ANONIMIZADO" não encontrado. Listener genérico activado.');
             // Fallback: ouvir cliques em qualquer elemento que contenha o texto
             document.body.addEventListener('click', function(e) {
                 const el = e.target.closest('button, .btn, [role="button"]');
@@ -954,7 +976,10 @@
             });
             return;
         }
-        targetButton.addEventListener('click', function(e) {
+        // Remove event listeners antigos para evitar duplicação
+        const newBtn = targetButton.cloneNode(true);
+        targetButton.parentNode.replaceChild(newBtn, targetButton);
+        newBtn.addEventListener('click', function(e) {
             e.preventDefault();
             initializeFullWithEvidence();
         });
@@ -986,7 +1011,6 @@
     // Inicialização por Promise (sem setTimeout)
     function startApplication() {
         return new Promise((resolve) => {
-            // Aguarda o DOM estar pronto
             if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', () => resolve());
             } else {
@@ -995,11 +1019,9 @@
         }).then(() => {
             initializeCoreDashboard();
             setupRealCaseButton();
-            // Opcional: mostrar uma mensagem de que as evidências estão bloqueadas
-            const evidenceSection = document.getElementById('pureEvidenceSection');
-            if (evidenceSection) {
-                evidenceSection.style.display = 'none'; // já está hidden pelo CSS, mas reforça
-            }
+            // Garantir que o bloco de identificação começa oculto (reforço)
+            const block = document.getElementById('clientIdentificationBlock');
+            if (block) block.style.display = 'none';
             console.log('[UNIFED] ✅ Aplicação pronta. Clique em "CASO REAL ANONIMIZADO" para carregar as evidências.');
         }).catch(err => {
             console.error('[UNIFED] Erro na inicialização:', err);
