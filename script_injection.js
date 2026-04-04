@@ -1,13 +1,12 @@
 /**
- * UNIFED - PROBATUM · CASO REAL ANONIMIZADO v13.11.15-PURE (PARTE 1 DE 6)
+ * UNIFED - PROBATUM · CASO REAL ANONIMIZADO v13.11.16-PURE (COMPLETO)
  * ============================================================================
  * Missão: Injeção Forense e Reconstituição da Verdade Material
  * Conformidade: DORA (UE) 2022/2554 · Art. 125.º CPP · ISO/IEC 27037:2012
  * ============================================================================
- * v13.11.15-PURE:
- *   - Correção da função _updateAuxiliaryUI com fallback _fmt para evitar ReferenceError
- *   - Mapeamento completo de 42 campos com validação de existência no DOM
- *   - Sincronização atómica protegida por verificação de #pureDashboard
+ * RETIFICAÇÕES v13.11.16:
+ * - Ocultação inicial do bloco de identificação removida (sempre visível).
+ * - Guard clause no syncMetrics para mitigar o erro Array(42).
  * ============================================================================
  */
 
@@ -46,7 +45,7 @@
             confianca: "99.2%",
             periodo: "Q4 2024",
             anomalias: 4,
-            version: "v13.11.15-PURE",
+            version: "v13.11.16-PURE",
             score: 40,
             trend: "DESCENDENTE",
             outliers: 0
@@ -114,14 +113,6 @@
     console.log('[UNIFED] Camada 1: OK.');
 })();
 
-/**
- * UNIFED - PROBATUM · v13.11.15-PURE (PARTE 2 DE 6)
- * ============================================================================
- * Objetivo: Motor de Cálculo Forense e Mapeamento de Omissões
- * Modificação legal: textos dos smoking guns e veredicto ajustados para Art. 119.º RGIT.
- * ============================================================================
- */
-
 (function() {
     'use strict';
     if (!window.UNIFED_INTERNAL) return;
@@ -136,19 +127,21 @@
     const ircEstimado = discrepanciaC2 * 0.21;
 
     window.UNIFED_INTERNAL.syncMetrics = function() {
+        // [CORREÇÃO CIRÚRGICA]: Evita erro Array(42) se o DOM não estiver pronto
+        if (!document.getElementById('pureDashboard')) {
+            console.info('[UNIFED] syncMetrics abortado: painel pureDashboard ainda não injetado no DOM.');
+            return;
+        }
+
         console.log('[UNIFED] Iniciando Sincronização Forense...');
         
-        // Mapeamento completo de todos os IDs existentes no DOM (panel.html)
         const mapping = {
-            // Painel I – Reconciliação Financeira
             'pure-ganhos':           fmt(t.ganhos),
             'pure-despesas':         fmt(t.despesas),
             'pure-liquido':          fmt(t.ganhosLiquidos),
             'pure-saft':             fmt(t.saftBruto),
             'pure-dac7':             fmt(t.dac7TotalPeriodo),
             'pure-fatura':           fmt(t.faturaPlataforma),
-            
-            // Painel II – Smoking Guns
             'pure-disc-c2':           fmt(discrepanciaC2),
             'pure-disc-c2-pct':       percentC2.toFixed(2) + '%',
             'pure-disc-saft-dac7':    fmt(discrepanciaC1),
@@ -159,27 +152,19 @@
             'pure-disc-c2-grid':      fmt(discrepanciaC2),
             'pure-iva-devido':        fmt(t.iva6Omitido),
             'pure-nao-sujeitos':      fmt(t.totalNaoSujeitos),
-            
-            // Painel III – ATF
             'pure-atf-sp':            data.atf.score + '/100',
             'pure-atf-trend':         data.atf.trend,
             'pure-atf-outliers':      data.atf.outliers + ' outliers > 2σ',
             'pure-atf-meses':         '2.º Semestre 2024 — 4 meses com dados (Set–Dez)',
-            
-            // Painel IV – Zona Cinzenta
             'pure-nc-campanhas':       fmt(t.campanhas),
             'pure-nc-gorjetas':        fmt(t.gorjetas),
             'pure-nc-portagens':       fmt(t.portagens),
             'pure-nc-total':           fmt(t.totalNaoSujeitos),
-            
-            // Painel V – Veredicto e Integridade
             'pure-verdict':            'RISCO ELEVADO · CONTRA-ORDENAÇÃO',
             'pure-verdict-pct':        percentC2.toFixed(2) + '%',
             'pure-hash-prefix-verdict': data.masterHash.substring(0, 16) + '...',
             'pure-session-id':         data.sessionId,
             'pure-hash-prefix':        data.masterHash.substring(0, 12) + '...',
-            
-            // IDs adicionais para compatibilidade (ocultos ou novos)
             'pure-subject-name':       data.client.name,
             'pure-subject-nif':        data.client.nif,
             'pure-subject-platform':   data.client.platform,
@@ -211,7 +196,6 @@
             console.info('[UNIFED] Sincronização concluída com 100% de integridade.');
         }
         
-        // Atualizar textos legais
         const sg2Legal = document.getElementById('pure-sg2-legal');
         if (sg2Legal) sg2Legal.textContent = 'Art. 36.º n.º 11 CIVA · Art. 119.º RGIT';
         
@@ -232,7 +216,6 @@
             pureAtfNote.textContent = 'Score de Persistência calculado pelo motor computeTemporalAnalysis() sobre 4 meses de histórico (Set/Out/Nov/Dez 2024). SP calculado sobre o lote global (dados verificados UNIFED-MMLADX8Q-CV69L). As discrepâncias absolutas (C2: €2.184,95 — 89,26% · C1: €472,81 — 5,75%) mantêm relevância jurídica independente.';
         }
         
-        // Atualizar valores dos cards auxiliares
         const omissaoPctEl = document.getElementById('omissaoDespesasPctValue');
         if (omissaoPctEl) {
             const pctComissao = (t.despesas / t.ganhos) * 100;
@@ -250,14 +233,6 @@
     };
     console.log('[UNIFED] Camada 2: OK.');
 })();
-
-/**
- * UNIFED - PROBATUM · v13.11.15-PURE (PARTE 3 DE 6)
- * ============================================================================
- * Objetivo: Construção da Matriz de Triangulação (Visualização Judicial)
- * Textos legais ajustados para Art. 119.º RGIT.
- * ============================================================================
- */
 
 (function() {
     'use strict';
@@ -299,14 +274,6 @@
     };
     console.log('[UNIFED] Camada 3: OK.');
 })();
-
-/**
- * UNIFED - PROBATUM · v13.11.15-PURE (PARTE 4 DE 6)
- * ============================================================================
- * Objetivo: CSS dinâmico, ocultações iniciais e helpers visuais.
- * CORREÇÃO: _updateAuxiliaryUI com fallback _fmt e mapeamento completo.
- * ============================================================================
- */
 
 (function() {
     'use strict';
@@ -422,9 +389,9 @@
         target.insertAdjacentHTML('beforeend', cardHtml);
     }
 
-    // CORREÇÃO: _updateAuxiliaryUI com fallback _fmt e mapeamento completo de 42 campos
     function _updateAuxiliaryUI() {
-        // Enforcement de fallback para evitar ReferenceError
+        if (!document.getElementById('pureDashboard')) return;
+
         const _f = (typeof _fmt === 'function') ? _fmt : (v) => {
             if (v === undefined || v === null || isNaN(v)) return "€ 0,00";
             return new Intl.NumberFormat('pt-PT', { 
@@ -435,7 +402,6 @@
             }).format(v);
         };
 
-        // Mapeamento completo dos 42 campos auxiliares esperados pelo sistema
         const auxMapping = [
             { id: 'pure-ganhos', val: data.totals.ganhos },
             { id: 'pure-despesas', val: data.totals.despesas },
@@ -496,12 +462,9 @@
                     el.textContent = item.val;
                 }
                 updatedCount++;
-            } else if (window.UNIFED_DEBUG) {
-                console.debug(`[UNIFED] Campo auxiliar ${item.id} não encontrado (aguardando DOM).`);
             }
         });
 
-        // Atualização específica para elementos de texto legal
         const sg2Legal = document.getElementById('pure-sg2-legal');
         if (sg2Legal) sg2Legal.textContent = 'Art. 36.º n.º 11 CIVA · Art. 119.º RGIT';
         
@@ -522,7 +485,6 @@
             pureAtfNote.textContent = 'Score de Persistência calculado pelo motor computeTemporalAnalysis() sobre 4 meses de histórico (Set/Out/Nov/Dez 2024). SP calculado sobre o lote global (dados verificados UNIFED-MMLADX8Q-CV69L). As discrepâncias absolutas (C2: €2.184,95 — 89,26% · C1: €472,81 — 5,75%) mantêm relevância jurídica independente.';
         }
         
-        // Nota de reconciliação DAC7
         const dac7Note = document.getElementById('auxDac7ReconciliationNote');
         if (dac7Note && data.totals.totalNaoSujeitos > 0) {
             dac7Note.style.display = 'block';
@@ -543,13 +505,6 @@
     window.UNIFED_INTERNAL.updateAuxiliaryUI = _updateAuxiliaryUI;
     console.log('[UNIFED] Camada 4: OK.');
 })();
-
-/**
- * UNIFED - PROBATUM · v13.11.15-PURE (PARTE 5 DE 6)
- * ============================================================================
- * Objetivo: Simulação de evidências e gestão de plataforma/DAC7.
- * ============================================================================
- */
 
 (function() {
     'use strict';
@@ -850,16 +805,6 @@
     console.log('[UNIFED] Camada 5: OK.');
 })();
 
-/**
- * UNIFED - PROBATUM · v13.11.15-PURE (PARTE 6 DE 6)
- * ============================================================================
- * Final: Inicialização baseada em Promise, validação de DOM, e gatilho por botão.
- * CORREÇÃO: showClientIdentificationBlock com fallback seguro
- * CORREÇÃO: Aguarda waitForPureDashboard antes de initializeFullWithEvidence
- * CORREÇÃO (Linha 830): Verificação da existência de #pureDashboard antes de invocar _updateAuxiliaryUI
- * ============================================================================
- */
-
 (function() {
     'use strict';
     if (!window.UNIFED_INTERNAL) return;
@@ -883,7 +828,7 @@
                 return;
             }
         }
-        block.style.display = 'block';
+        block.style.display = 'flex';
         console.log('[UNIFED] Bloco de identificação do sujeito passivo revelado.');
     }
 
@@ -916,7 +861,6 @@
                 if (typeof forcePlatformReadOnly === 'function') forcePlatformReadOnly();
                 if (typeof removeZeroDac7Kpis === 'function') removeZeroDac7Kpis();
                 
-                // CORREÇÃO (Linha 830): Verificar existência do #pureDashboard antes de atualizar UI auxiliar
                 if (document.getElementById('pureDashboard')) {
                     if (typeof updateAuxiliaryUI === 'function') updateAuxiliaryUI();
                 } else {
@@ -959,10 +903,16 @@
         }
         if (!targetButton) {
             console.warn('[UNIFED] Botão "CASO REAL ANONIMIZADO" não encontrado. Listener genérico activado.');
-            document.body.addEventListener('click', function(e) {
+            document.body.addEventListener('click', async function(e) {
                 const el = e.target.closest('button, .btn, [role="button"]');
                 if (el && el.textContent.includes('CASO REAL ANONIMIZADO')) {
                     e.preventDefault();
+                    if (typeof window._activatePurePanel === 'function') {
+                        window._activatePurePanel();
+                    }
+                    await waitForPureDashboard();
+                    await new Promise(r => setTimeout(r, 100));
+                    window.UNIFED_INTERNAL.syncMetrics();
                     initializeFullWithEvidence();
                 }
             });
@@ -971,11 +921,17 @@
 
         const newBtn = targetButton.cloneNode(true);
         targetButton.parentNode.replaceChild(newBtn, targetButton);
-        newBtn.addEventListener('click', function(e) {
+        newBtn.addEventListener('click', async function(e) {
             e.preventDefault();
+            if (typeof window._activatePurePanel === 'function') {
+                window._activatePurePanel();
+            }
+            await waitForPureDashboard();
+            await new Promise(r => setTimeout(r, 100));
+            window.UNIFED_INTERNAL.syncMetrics();
             initializeFullWithEvidence();
         });
-        console.log('[UNIFED] Listener associado ao botão "CASO REAL ANONIMIZADO" (sem hijacking).');
+        console.log('[UNIFED] Listener associado ao botão "CASO REAL ANONIMIZADO".');
     }
 
     function generateQRCode() {
@@ -1009,8 +965,7 @@
         }).then(() => {
             initializeCoreDashboard();
             setupRealCaseButton();
-            const block = document.getElementById('clientIdentificationBlock');
-            if (block) block.style.display = 'none';
+            // [CORREÇÃO CIRÚRGICA]: Removida a linha que ocultava a consola de identificação
             console.log('[UNIFED] ✅ Aplicação pronta. Clique em "CASO REAL ANONIMIZADO" para carregar as evidências.');
         }).catch(err => {
             console.error('[UNIFED] Erro na inicialização:', err);
