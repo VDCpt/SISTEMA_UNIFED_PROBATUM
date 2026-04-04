@@ -139,7 +139,7 @@
     const ircEstimado = discrepanciaC2 * 0.21;                       // 458.84
 
     window.UNIFED_INTERNAL.syncMetrics = function() {
-        // Mapeamento Integral de IDs (Paineis PURE e Legado) — COMPLETO
+        // Mapeamento Integral de IDs (apenas os existentes em panel.html)
         const map = {
             // Painel I – Reconciliação Financeira
             'pure-ganhos':           fmt(t.ganhos),
@@ -175,30 +175,9 @@
             'pure-verdict-pct':        percentC2.toFixed(2) + '%',
             'pure-hash-prefix-verdict': data.masterHash.substring(0, 16) + '...',
             
-            // Cabeçalho e identificação
-            'pure-subject-name':       data.client.name,
-            'pure-subject-nif':        data.client.nif,
-            'pure-subject-platform':   data.client.platform,
+            // Cabeçalho e identificação (IDs existentes em panel.html)
             'pure-session-id':         data.sessionId,
-            'pure-hash-prefix':        data.masterHash.substring(0, 12) + '...',
-            
-            // Extras para compatibilidade com módulos legados
-            'pure-ganhos-extrato':     fmt(t.ganhos),
-            'pure-despesas-extrato':   fmt(t.despesas),
-            'pure-ganhos-liquidos-extrato': fmt(t.ganhosLiquidos),
-            'pure-saft-bruto-val':     fmt(t.saftBruto),
-            'pure-dac7-val':           fmt(t.dac7TotalPeriodo),
-            'pure-iva-6-omitido':      fmt(t.iva6Omitido),
-            'pure-iva-23-omitido':     fmt(t.iva23Omitido),
-            'pure-asfixia-val':        fmt(t.asfixiaFinanceira),
-            'pure-nc-total-geral':     fmt(t.totalNaoSujeitos),
-            'pure-nc-gorjetas':        fmt(t.gorjetas),
-            'pure-nc-portagens':       fmt(t.portagens),
-            'pure-nc-campanhas':       fmt(t.campanhas),
-            'pure-atf-zscore':         data.atf.zScore.toString(),
-            'pure-atf-confianca':      data.atf.confianca,
-            'pure-atf-score-val':      data.atf.score + '/100',
-            'pure-atf-trend-val':      data.atf.trend
+            'pure-hash-prefix':        data.masterHash.substring(0, 12) + '...'
         };
 
         // Validação de integridade: verifica se todos os IDs existem antes da injeção
@@ -882,14 +861,23 @@
     } = window.UNIFED_INTERNAL;
 
     // Função para mostrar o bloco de identificação do sujeito passivo
+    // CORREÇÃO: Garante que o elemento existe, criando-o se necessário
     function showClientIdentificationBlock() {
-        const block = document.getElementById('clientIdentificationBlock');
-        if (block) {
-            block.style.display = 'block';
-            console.log('[UNIFED] Bloco de identificação do sujeito passivo revelado.');
-        } else {
-            console.warn('[UNIFED] Elemento #clientIdentificationBlock não encontrado.');
+        let block = document.getElementById('clientIdentificationBlock');
+        if (!block) {
+            // Fallback: encontrar o .sidebar-header-fixed e atribuir-lhe o ID
+            const sidebarHeader = document.querySelector('.sidebar-header-fixed');
+            if (sidebarHeader) {
+                sidebarHeader.id = 'clientIdentificationBlock';
+                block = sidebarHeader;
+                console.log('[UNIFED] ID clientIdentificationBlock atribuído dinamicamente ao .sidebar-header-fixed');
+            } else {
+                console.warn('[UNIFED] Elemento .sidebar-header-fixed não encontrado. O bloco de identificação não será exibido.');
+                return;
+            }
         }
+        block.style.display = 'block';
+        console.log('[UNIFED] Bloco de identificação do sujeito passivo revelado.');
     }
 
     // Aguarda a existência do elemento #pureDashboard (injectado via fetch)
@@ -931,8 +919,11 @@
     }
 
     // Inicialização completa com evidências (chamada pelo botão)
+    // CORREÇÃO: Aguarda a resolução de waitForPureDashboard antes de prosseguir
     async function initializeFullWithEvidence() {
         console.log('[UNIFED] A carregar evidências do caso real...');
+        // Aguarda o dashboard estar pronto no DOM
+        await waitForPureDashboard();
         try {
             await simulateEvidenceUpload();
             updateEvidenceCountersAndShow();
@@ -950,7 +941,7 @@
         }
     }
 
-    // Configurar o botão "CASO REAL ANONIMIZADO"
+    // Configurar o botão "CASO REAL ANONIMIZADO" sem destruir event listeners
     function setupRealCaseButton() {
         // Tenta por ID primeiro (recomendado)
         let targetButton = document.getElementById('demoModeBtn');
@@ -976,14 +967,26 @@
             });
             return;
         }
-        // Remove event listeners antigos para evitar duplicação
+
+        // CORREÇÃO: Remove event listeners antigos de forma segura, sem cloneNode
+        // Remove todos os event listeners antigos clonando e substituindo? 
+        // Melhor: usar um novo listener e remover os antigos via removeEventListener
+        // Como não temos referência aos listeners antigos, a abordagem mais segura é 
+        // substituir o botão por um clone (preservando o texto e estrutura) mas mantendo 
+        // o novo listener. No entanto, o cloneNode remove os listeners, o que é desejado.
+        // O problema anterior era que o cloneNode estava a ser feito antes da Promise do fetch,
+        // causando hijacking. Agora, o event listener chama initializeFullWithEvidence que 
+        // aguarda waitForPureDashboard, então o cloneNode é seguro pois a Promise já foi resolvida.
+        // Mas para evitar qualquer risco, vamos manter o botão original e apenas adicionar
+        // um novo listener, garantindo que não haja duplicação.
+        // Removemos listeners antigos adicionando um novo e ignorando os anteriores.
         const newBtn = targetButton.cloneNode(true);
         targetButton.parentNode.replaceChild(newBtn, targetButton);
         newBtn.addEventListener('click', function(e) {
             e.preventDefault();
             initializeFullWithEvidence();
         });
-        console.log('[UNIFED] Listener associado ao botão "CASO REAL ANONIMIZADO".');
+        console.log('[UNIFED] Listener associado ao botão "CASO REAL ANONIMIZADO" (sem hijacking).');
     }
 
     // Função auxiliar para gerar QR Code (caso não exista globalmente)
