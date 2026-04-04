@@ -206,7 +206,7 @@
         if (macro) {
             const monthlyLoss = (macro.sector_drivers || 38000) * (macro.avg_monthly_discrepancy || 546.24);
             set('pure-macro-universe', macro.sector_drivers.toLocaleString('pt-PT'));
-            set('pure-macro-horizon', macro.operational_years + '7 Anos');
+            set('pure-macro-horizon', macro.operational_years + 'Anos');
             set('pure-macro-monthly-loss', fmt(monthlyLoss));
             set('pure-macro-total-loss', fmt(macro.estimated_systemic_gap));
         }
