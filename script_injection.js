@@ -257,7 +257,7 @@
                         <th style="text-align:left; padding:10px;">FONTE DE PROVA</th>
                         <th style="text-align:right; padding:10px;">VALOR</th>
                         <th style="text-align:right; padding:10px; color:#EF4444;">DISCREPÂNCIA</th>
-                    </tr>
+                    <tr>
                 </thead>
                 <tbody>
                     <tr><td style="padding:10px;">📄 SAF-T PT (Faturação)</td><td style="padding:10px; text-align:right;">${fmt(t.saftBruto)}</td><td style="padding:10px; text-align:right;">-${fmt(deltaSaft)}</td></tr>
