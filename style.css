@@ -932,7 +932,7 @@ body {
     font-size: 0.8rem;
 }
 
-/* CORREÇÃO: Removido o texto "(browser)" do selo Privacy by Design */
+/* CORREÇÃO: Removido o texto "(browser)" do selo Privacy by Design (a remoção efectiva está no HTML) */
 .privacy-badge span[data-pt="Processamento 100% local (browser)"]::after {
     display: none;
 }
@@ -3600,4 +3600,24 @@ body.dual-screen .stat-card p {
 /* CORREÇÃO: Ajuste de altura do console para não criar espaços vazios */
 .console-section {
     min-height: auto;
+}
+
+/* ============================================================================
+   ESTABILIZAÇÃO DO BLOCO DE IDENTIFICAÇÃO – evitar quebra de linha e overflow
+   ============================================================================ */
+.pure-subject-header {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+}
+@media (max-width: 768px) {
+    .pure-subject-header {
+        flex-wrap: wrap;
+    }
+}
+#pure-subject-name, #pure-subject-nif, #pure-subject-platform {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    display: inline-block;
 }
