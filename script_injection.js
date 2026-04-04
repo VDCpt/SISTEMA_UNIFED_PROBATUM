@@ -1,14 +1,14 @@
 /**
- * UNIFED - PROBATUM · CASO REAL ANONIMIZADO v13.11.14-PURE (PARTE 1 DE 6)
+ * UNIFED - PROBATUM · CASO REAL ANONIMIZADO v13.11.15-PURE (PARTE 1 DE 6)
  * ============================================================================
  * Missão: Injeção Forense e Reconstituição da Verdade Material
  * Conformidade: DORA (UE) 2022/2554 · Art. 125.º CPP · ISO/IEC 27037:2012
  * ============================================================================
- * v13.11.14-PURE:
- *   - Correção do erro "IDs em falta no DOM" com mapeamento robusto
- *   - Sincronização atómica com fallback para elementos ocultos
- *   - Eliminação do erro de nulidade no showClientIdentificationBlock
- *   - Melhoria na inicialização assíncrona sem event hijacking
+ * v13.11.15-PURE:
+ *   - Correção do erro "Array(42)" através da definição local de _fmt
+ *   - Expansão do mapeamento para 42 campos auxiliares
+ *   - Orquestração segura com verificação de existência do #pureDashboard
+ *   - Eliminação de referências não definidas e logs condicionais
  * ============================================================================
  */
 
@@ -47,7 +47,7 @@
             confianca: "99.2%",
             periodo: "Q4 2024",
             anomalias: 4,
-            version: "v13.11.14-PURE",
+            version: "v13.11.15-PURE",
             score: 40,
             trend: "DESCENDENTE",
             outliers: 0
@@ -116,7 +116,7 @@
 })();
 
 /**
- * UNIFED - PROBATUM · v13.11.14-PURE (PARTE 2 DE 6)
+ * UNIFED - PROBATUM · v13.11.15-PURE (PARTE 2 DE 6)
  * ============================================================================
  * Objetivo: Motor de Cálculo Forense e Mapeamento de Omissões
  * Modificação legal: textos dos smoking guns e veredicto ajustados para Art. 119.º RGIT.
@@ -254,7 +254,7 @@
 })();
 
 /**
- * UNIFED - PROBATUM · v13.11.14-PURE (PARTE 3 DE 6)
+ * UNIFED - PROBATUM · v13.11.15-PURE (PARTE 3 DE 6)
  * ============================================================================
  * Objetivo: Construção da Matriz de Triangulação (Visualização Judicial)
  * Textos legais ajustados para Art. 119.º RGIT.
@@ -303,9 +303,10 @@
 })();
 
 /**
- * UNIFED - PROBATUM · v13.11.14-PURE (PARTE 4 DE 6)
+ * UNIFED - PROBATUM · v13.11.15-PURE (PARTE 4 DE 6)
  * ============================================================================
  * Objetivo: CSS dinâmico, ocultações iniciais e helpers visuais.
+ * CORREÇÃO: _updateAuxiliaryUI com definição local de _fmt e mapeamento de 42 campos.
  * ============================================================================
  */
 
@@ -423,32 +424,136 @@
         target.insertAdjacentHTML('beforeend', cardHtml);
     }
 
+    // CORREÇÃO: _updateAuxiliaryUI com definição local de _fmt e mapeamento de 42 campos
     function _updateAuxiliaryUI() {
-        const t = data.totals;
-        const auxElements = {
-            'auxBoxCampanhasValue': t.campanhas,
-            'auxBoxPortagensValue': t.portagens,
-            'auxBoxGorjetasValue': t.gorjetas,
-            'auxBoxTotalNSValue': t.totalNaoSujeitos,
-            'auxBoxCancelValue': t.cancelamentos
+        // Definir _fmt localmente para evitar ReferenceError e garantir formatação consistente
+        const localFmt = (val) => {
+            if (val === undefined || val === null || isNaN(val)) return "€ 0,00";
+            return new Intl.NumberFormat('pt-PT', { 
+                style: 'currency', 
+                currency: 'EUR',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(val);
         };
-        Object.entries(auxElements).forEach(([id, value]) => {
-            const el = document.getElementById(id);
+
+        // Mapeamento completo dos 42 campos auxiliares esperados pelo sistema
+        const auxFields = [
+            // Totais principais (Painel I)
+            { id: 'pure-ganhos', val: data.totals.ganhos },
+            { id: 'pure-despesas', val: data.totals.despesas },
+            { id: 'pure-liquido', val: data.totals.ganhosLiquidos },
+            { id: 'pure-saft', val: data.totals.saftBruto },
+            { id: 'pure-dac7', val: data.totals.dac7TotalPeriodo },
+            { id: 'pure-fatura', val: data.totals.faturaPlataforma },
+            
+            // Discrepâncias (Painel II)
+            { id: 'pure-disc-c2', val: data.totals.despesas - data.totals.faturaPlataforma },
+            { id: 'pure-disc-saft-dac7', val: data.totals.saftBruto - data.totals.dac7TotalPeriodo },
+            { id: 'pure-iva-6', val: data.totals.iva6Omitido },
+            { id: 'pure-iva-23', val: data.totals.iva23Omitido },
+            { id: 'pure-irc', val: (data.totals.despesas - data.totals.faturaPlataforma) * 0.21 },
+            { id: 'pure-disc-c2-grid', val: data.totals.despesas - data.totals.faturaPlataforma },
+            { id: 'pure-iva-devido', val: data.totals.iva6Omitido },
+            { id: 'pure-nao-sujeitos', val: data.totals.totalNaoSujeitos },
+            
+            // ATF (Painel III)
+            { id: 'pure-atf-sp', val: data.atf.score + '/100' },
+            { id: 'pure-atf-trend', val: data.atf.trend },
+            { id: 'pure-atf-outliers', val: data.atf.outliers + ' outliers > 2σ' },
+            { id: 'pure-atf-meses', val: '2.º Semestre 2024 — 4 meses com dados (Set–Dez)' },
+            
+            // Zona Cinzenta (Painel IV)
+            { id: 'pure-nc-campanhas', val: data.totals.campanhas },
+            { id: 'pure-nc-gorjetas', val: data.totals.gorjetas },
+            { id: 'pure-nc-portagens', val: data.totals.portagens },
+            { id: 'pure-nc-total', val: data.totals.totalNaoSujeitos },
+            
+            // Veredicto e Integridade (Painel V)
+            { id: 'pure-verdict', val: 'RISCO ELEVADO · CONTRA-ORDENAÇÃO' },
+            { id: 'pure-verdict-pct', val: ((data.totals.despesas - data.totals.faturaPlataforma) / data.totals.despesas * 100).toFixed(2) + '%' },
+            { id: 'pure-hash-prefix-verdict', val: data.masterHash.substring(0, 16) + '...' },
+            { id: 'pure-session-id', val: data.sessionId },
+            { id: 'pure-hash-prefix', val: data.masterHash.substring(0, 12) + '...' },
+            
+            // Identificação do sujeito passivo
+            { id: 'pure-subject-name', val: data.client.name },
+            { id: 'pure-subject-nif', val: data.client.nif },
+            { id: 'pure-subject-platform', val: data.client.platform },
+            
+            // Campos adicionais (formato extendido)
+            { id: 'pure-ganhos-extrato', val: data.totals.ganhos },
+            { id: 'pure-despesas-extrato', val: data.totals.despesas },
+            { id: 'pure-ganhos-liquidos-extrato', val: data.totals.ganhosLiquidos },
+            { id: 'pure-saft-bruto-val', val: data.totals.saftBruto },
+            { id: 'pure-dac7-val', val: data.totals.dac7TotalPeriodo },
+            { id: 'pure-atf-zscore', val: data.atf.zScore },
+            { id: 'pure-atf-confianca', val: data.atf.confianca },
+            { id: 'pure-atf-score-val', val: data.atf.score + '/100' },
+            { id: 'pure-iva-devido-val', val: data.totals.iva6Omitido },
+            { id: 'pure-impacto-macro', val: data.macro_analysis.estimated_systemic_gap },
+            
+            // Boxes auxiliares (já existentes)
+            { id: 'auxBoxCampanhasValue', val: data.totals.campanhas },
+            { id: 'auxBoxPortagensValue', val: data.totals.portagens },
+            { id: 'auxBoxGorjetasValue', val: data.totals.gorjetas },
+            { id: 'auxBoxTotalNSValue', val: data.totals.totalNaoSujeitos },
+            { id: 'auxBoxCancelValue', val: data.totals.cancelamentos },
+            
+            // Elementos de nota DAC7
+            { id: 'auxDac7NoteValue', val: data.totals.totalNaoSujeitos },
+            { id: 'auxDac7NoteValueQ', val: data.totals.totalNaoSujeitos }
+        ];
+
+        let updatedCount = 0;
+        auxFields.forEach(field => {
+            const el = document.getElementById(field.id);
             if (el) {
-                el.textContent = _fmt(value);
-                if (id === 'auxBoxTotalNSValue') el.classList.add('highlighted');
+                // Aplica formatação apenas a valores numéricos, caso contrário usa string diretamente
+                if (typeof field.val === 'number') {
+                    el.textContent = localFmt(field.val);
+                } else {
+                    el.textContent = field.val;
+                }
+                updatedCount++;
+            } else if (window.UNIFED_DEBUG) {
+                console.debug(`[UNIFED] Campo auxiliar ${field.id} não encontrado (aguardando DOM).`);
             }
         });
-        const dac7NoteValue = document.getElementById('auxDac7NoteValue');
-        if (dac7NoteValue) dac7NoteValue.textContent = _fmt(t.totalNaoSujeitos);
-        const dac7NoteValueQ = document.getElementById('auxDac7NoteValueQ');
-        if (dac7NoteValueQ) dac7NoteValueQ.textContent = _fmt(t.totalNaoSujeitos);
+        
+        // Atualização específica para elementos de texto legal
+        const sg2Legal = document.getElementById('pure-sg2-legal');
+        if (sg2Legal) sg2Legal.textContent = 'Art. 36.º n.º 11 CIVA · Art. 119.º RGIT';
+        
+        const sg1Legal = document.getElementById('pure-sg1-legal');
+        if (sg1Legal) sg1Legal.textContent = 'Diretiva DAC7 (UE) 2021/514 · DL n.º 41/2023';
+        
+        const verdictBasis = document.getElementById('pure-verdict-basis');
+        if (verdictBasis) verdictBasis.textContent = 'Art. 119.º RGIT · Art. 125.º CPP';
+        
+        const pureIva23Sub = document.querySelector('#pure-iva23-sub');
+        if (pureIva23Sub) pureIva23Sub.textContent = 'Art. 2.º n.º 1 al. i) CIVA';
+        
+        const pureIrcSub = document.querySelector('#pure-irc-sub');
+        if (pureIrcSub) pureIrcSub.textContent = 'Art. 17.º CIRC';
+        
+        const pureAtfNote = document.getElementById('pure-atf-note-text');
+        if (pureAtfNote) {
+            pureAtfNote.textContent = 'Score de Persistência calculado pelo motor computeTemporalAnalysis() sobre 4 meses de histórico (Set/Out/Nov/Dez 2024). SP calculado sobre o lote global (dados verificados UNIFED-MMLADX8Q-CV69L). As discrepâncias absolutas (C2: €2.184,95 — 89,26% · C1: €472,81 — 5,75%) mantêm relevância jurídica independente.';
+        }
+        
+        // Nota de reconciliação DAC7
         const dac7Note = document.getElementById('auxDac7ReconciliationNote');
-        if (dac7Note && t.totalNaoSujeitos > 0) dac7Note.style.display = 'block';
+        if (dac7Note && data.totals.totalNaoSujeitos > 0) {
+            dac7Note.style.display = 'block';
+        }
+        
         const questionText = document.getElementById('pure-zc-question-text');
         if (questionText) {
             questionText.textContent = 'Pode a plataforma confirmar se os €451,15 em Gorjetas e Campanhas (isentos de comissão nos termos da Lei TVDE) foram incluídos na base de cálculo do reporte DAC7 enviado pela plataforma à Autoridade Tributária? Se sim, qual o fundamento legal?';
         }
+        
+        console.log(`[UNIFED] UI auxiliar atualizada: ${updatedCount} campos sincronizados.`);
     }
 
     window.UNIFED_INTERNAL.injectAuxiliaryBoxesCSS = _injectAuxiliaryBoxesCSS;
@@ -460,7 +565,7 @@
 })();
 
 /**
- * UNIFED - PROBATUM · v13.11.14-PURE (PARTE 5 DE 6)
+ * UNIFED - PROBATUM · v13.11.15-PURE (PARTE 5 DE 6)
  * ============================================================================
  * Objetivo: Simulação de evidências e gestão de plataforma/DAC7.
  * ============================================================================
@@ -766,11 +871,12 @@
 })();
 
 /**
- * UNIFED - PROBATUM · v13.11.14-PURE (PARTE 6 DE 6)
+ * UNIFED - PROBATUM · v13.11.15-PURE (PARTE 6 DE 6)
  * ============================================================================
  * Final: Inicialização baseada em Promise, validação de DOM, e gatilho por botão.
  * CORREÇÃO: showClientIdentificationBlock com fallback seguro
  * CORREÇÃO: Aguarda waitForPureDashboard antes de initializeFullWithEvidence
+ * CORREÇÃO (Linha 830): Verificação da existência de #pureDashboard antes de invocar _updateAuxiliaryUI
  * ============================================================================
  */
 
@@ -784,7 +890,6 @@
         removeZeroDac7Kpis, simulateEvidenceUpload, updateEvidenceCountersAndShow
     } = window.UNIFED_INTERNAL;
 
-    // CORREÇÃO: showClientIdentificationBlock com fallback para criar o elemento se necessário
     function showClientIdentificationBlock() {
         let block = document.getElementById('clientIdentificationBlock');
         if (!block) {
@@ -827,10 +932,17 @@
                 if (typeof injectMacroCard === 'function') injectMacroCard();
                 if (typeof injectAuxiliaryBoxesCSS === 'function') injectAuxiliaryBoxesCSS();
                 if (typeof hideDiscrepancyChart === 'function') hideDiscrepancyChart();
-                if (typeof updateAuxiliaryUI === 'function') updateAuxiliaryUI();
                 if (typeof hideNexusForecast === 'function') hideNexusForecast();
                 if (typeof forcePlatformReadOnly === 'function') forcePlatformReadOnly();
                 if (typeof removeZeroDac7Kpis === 'function') removeZeroDac7Kpis();
+                
+                // CORREÇÃO (Linha 830): Verificar existência do #pureDashboard antes de atualizar UI auxiliar
+                if (document.getElementById('pureDashboard')) {
+                    if (typeof updateAuxiliaryUI === 'function') updateAuxiliaryUI();
+                } else {
+                    console.info('[UNIFED] Aguardando renderização do painel para sincronização auxiliar.');
+                }
+                
                 console.log('[UNIFED] Core dashboard inicializado com sucesso após injeção do painel.');
             }, 100);
         }).catch(err => console.warn('[UNIFED] Erro ao aguardar #pureDashboard', err));
