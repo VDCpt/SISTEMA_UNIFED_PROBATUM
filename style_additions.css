@@ -746,15 +746,37 @@ html, body {
 /* ============================================================================
    CORRECÇÃO II (IDENTIFICAÇÃO DO SUJEITO PASSIVO) – v13.12.0-PURE
    ============================================================================ */
+/* CORRECÇÃO: Header de identificação – evitar quebra de linha e overflow */
 .pure-subject-header {
     display: flex !important;
-    flex-wrap: wrap !important;
+    flex-wrap: nowrap !important;      /* antes era 'wrap' */
     gap: 1.5rem !important;
     align-items: stretch !important;
+    overflow-x: auto !important;       /* permite scroll horizontal em ecrãs pequenos */
+    overflow-y: hidden !important;
 }
 .pure-data-block {
+    flex: 1 1 0 !important;            /* distribuição proporcional sem quebrar */
+    min-width: 0 !important;           /* essencial para evitar overflow de texto */
     display: flex !important;
     flex-direction: column !important;
     align-items: flex-start !important;
-    min-width: 200px;
+}
+.pure-data-block .pure-subject-value {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    display: inline-block;
+}
+
+/* Responsividade: em ecrãs muito pequenos, permite wrap */
+@media (max-width: 640px) {
+    .pure-subject-header {
+        flex-wrap: wrap !important;
+    }
+    .pure-data-block {
+        flex: 1 1 100% !important;
+        min-width: auto !important;
+    }
 }
