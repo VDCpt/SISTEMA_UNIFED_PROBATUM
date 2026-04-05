@@ -1,14 +1,18 @@
 /**
- * UNIFED - PROBATUM · CASO REAL ANONIMIZADO v13.11.16-PURE (COMPLETO)
+ * UNIFED - PROBATUM · CASO REAL ANONIMIZADO v13.11.17-PURE (COMPLETO)
  * ============================================================================
  * Missão: Injeção Forense e Reconstituição da Verdade Material
  * Conformidade: DORA (UE) 2022/2554 · Art. 125.º CPP · ISO/IEC 27037:2012
  * ============================================================================
- * RETIFICAÇÕES v13.11.16:
- * - Ocultação inicial do bloco de identificação removida (sempre visível).
- * - Guard clause no syncMetrics para mitigar o erro Array(42).
- * - Adicionadas contagens de evidências (counts) no dataset mestre.
- * - Tratamento silencioso de erro DNS (api.unifed.com) com fallback estático.
+ * RETIFICAÇÕES v13.11.17:
+ * - CORRECÇÃO I: Espaço vazio – função _hideDiscrepancyChart() reescrita para
+ *   eliminar completamente o contentor .chart-section (height:0, display:none,
+ *   margin/padding zero).
+ * - CORRECÇÃO II: Identificação do sujeito passivo – flex-wrap agora respeitado.
+ * - CORRECÇÃO III: Fluxos não sujeitos – injectAuxiliaryHelperBoxes() chamado
+ *   antes de syncMetrics().
+ * - CORRECÇÃO IV: Risco elevado – mapeamento blindado dos valores no syncMetrics,
+ *   incluindo 'pure-verdict-value', 'pure-verdict-pct', 'quantumValue'.
  * - Adicionado suporte para cartão "Risco de Asfixia Financeira" (Art. 405.º C. Civil)
  * - Adicionado bloco de análise macroeconómica (7 anos · 38.000 operadores)
  * ============================================================================
@@ -56,7 +60,7 @@
             confianca: "99.2%",
             periodo: "Q4 2024",
             anomalias: 4,
-            version: "v13.11.16-PURE",
+            version: "v13.11.17-PURE",
             score: 40,
             trend: "DESCENDENTE",
             outliers: 0
@@ -290,7 +294,7 @@
                         <th style="text-align:left; padding:10px;">FONTE DE PROVA</th>
                         <th style="text-align:right; padding:10px;">VALOR</th>
                         <th style="text-align:right; padding:10px; color:#EF4444;">DISCREPÂNCIA</th>
-                    <tr>
+                    </tr>
                 </thead>
                 <tbody>
                     <tr><td style="padding:10px;">📄 SAF-T PT (Faturação)</td><td style="padding:10px; text-align:right;">${fmt(t.saftBruto)}</td><td style="padding:10px; text-align:right;">-${fmt(deltaSaft)}</td></tr>
@@ -354,13 +358,29 @@
         console.log('[UNIFED] CSS injetado.');
     }
 
+    // CORRECÇÃO I: Eliminação completa do espaço vazio
     function _hideDiscrepancyChart() {
         const canvas = document.getElementById('discrepancyChart');
         if (canvas) {
-            canvas.style.display = 'none';
             const section = canvas.closest('.chart-section');
-            if (section && section.querySelectorAll('canvas').length === 1) {
-                section.style.display = 'none';
+            if (section) {
+                section.style.setProperty('display', 'none', 'important');
+                section.style.margin = '0';
+                section.style.padding = '0';
+                section.style.height = '0';
+                section.style.overflow = 'hidden';
+            }
+        }
+        // Remover também o segundo gráfico se existir
+        const chart2 = document.getElementById('mainChart');
+        if (chart2) {
+            const section2 = chart2.closest('.chart-section');
+            if (section2) {
+                section2.style.setProperty('display', 'none', 'important');
+                section2.style.margin = '0';
+                section2.style.padding = '0';
+                section2.style.height = '0';
+                section2.style.overflow = 'hidden';
             }
         }
     }
@@ -413,7 +433,7 @@
             </div>
             <div class="pure-macro-disclaimer" style="margin-top:1rem; padding:0.75rem; background:rgba(0,0,0,0.3); border-left:3px solid #FACC15; font-size:0.7rem; color:#94a3b8;">
                 <i class="fas fa-gavel"></i> 
-                <span data-pt="Os valores de impacto sistémico constituem contexto macroeconómico e não prova direta de ilícito alheio, nos termos do Art. 128.º do CPP." data-en="Systemic impact values constitute macroeconomic context and not direct proof of third-party wrongdoing, under Art. 128 CPP.">Os valores de impacto sistémico constituem contexto macroeconómico e não prova direta de ilícito alheio, nos termos do Art. 128.º do CPP.</span>
+                <span data-pt="Os valores de impacto sistémico constituem contexto macroeconómico e não prova directa de ilícito alheio, nos termos do Art. 128.º do CPP." data-en="Systemic impact values constitute macroeconomic context and not direct proof of third-party wrongdoing, under Art. 128 CPP.">Os valores de impacto sistémico constituem contexto macroeconómico e não prova directa de ilícito alheio, nos termos do Art. 128.º do CPP.</span>
             </div>
         </div>`;
         target.insertAdjacentHTML('beforeend', cardHtml);
@@ -889,6 +909,11 @@
     function initializeCoreDashboard() {
         waitForPureDashboard().then(() => {
             setTimeout(() => {
+                // CORRECÇÃO III: Injetar primeiro as caixas auxiliares no DOM
+                if (typeof window.injectAuxiliaryHelperBoxes === 'function') {
+                    window.injectAuxiliaryHelperBoxes();
+                }
+                // Executar os mapeamentos e sincronizações
                 if (typeof syncMetrics === 'function') syncMetrics();
                 if (typeof renderMatrix === 'function') renderMatrix();
                 if (typeof injectMacroCard === 'function') injectMacroCard();

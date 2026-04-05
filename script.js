@@ -8075,7 +8075,7 @@ function resetAllValues() {
     generateMasterHash();
     ForensicLogger.addEntry('VALUES_RESET');
 
-    resetAuxiliaryData();
+    resetAuxiliaryData();  // Garantir que os dados auxiliares também são limpos
 }
 
 function resetSystem() {

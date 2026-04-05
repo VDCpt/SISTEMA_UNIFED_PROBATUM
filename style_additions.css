@@ -1,5 +1,5 @@
 /* ============================================================================
-   UNIFED - PROBATUM · v13.11.5-PURE · ESTILOS DO PAINEL DE CASO REAL
+   UNIFED - PROBATUM · v13.11.17-PURE · ESTILOS DO PAINEL DE CASO REAL
    ============================================================================
    Escopo      : Seletor raiz #pureDashboard — sem conflito com estilos base.
    Variáveis   : Consume as CSS custom properties existentes em style.css base.
@@ -13,7 +13,7 @@
 :root {
     --pure-accent:  #00E5FF; /* Cyan Forense */
     --pure-warn:    #EF4444; /* Alerta Fiscal */
-    --pure-version: "v13.11.3-PURE";
+    --pure-version: "v13.11.17-PURE";
     /* CORR-v13.11.3: Bloqueio cromático máximo — impede "sangramento" de fundo branco */
     background-color: #0f172a !important;
 }
@@ -526,7 +526,7 @@ html, body {
 }
 
 /* ============================================================================
-   FIM: style.css additions · v13.11.3-PURE · UNIFED-PROBATUM
+   FIM: style.css additions · v13.11.17-PURE · UNIFED-PROBATUM
    Escopo: #pureDashboard · Sem colisões com CSS base.
    ============================================================================ */
 
@@ -744,5 +744,17 @@ html, body {
 }
 
 /* ============================================================================
-   FIM ADIÇÕES v13.11.5-PURE
+   CORRECÇÃO II (IDENTIFICAÇÃO DO SUJEITO PASSIVO) – v13.11.17-PURE
    ============================================================================ */
+.pure-subject-header {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 1.5rem !important;
+    align-items: stretch !important;
+}
+.pure-data-block {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    min-width: 200px;
+}
