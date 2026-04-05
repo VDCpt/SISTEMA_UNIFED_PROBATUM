@@ -1,8 +1,8 @@
 /**
- * UNIFED - PROBATUM SISTEMA DE PERITAGEM FORENSE - v13.5.0-PURE · COURT READY · DORA COMPLIANT
+ * UNIFED - PROBATUM SISTEMA DE PERITAGEM FORENSE - v13.12.0-PURE · COURT READY · DORA COMPLIANT
  * VERSAO FINAL ABSOLUTA - EXTRACAO PRECISA DE DADOS — HEADER-BASED CSV MAPPING
  * ====================================================================
- * CORRECOES IMPLEMENTADAS (v13.5.0-PURE):
+ * CORRECOES IMPLEMENTADAS (v13.12.0-PURE):
  * 1. Sistema de Tradução Completo PT/EN - 100% de cobertura
  * 2. Todos os elementos da interface traduzidos dinamicamente
  * 3. Centralização da formatação monetária via window.formatCurrency
@@ -18,7 +18,7 @@
 
 'use strict';
 
-console.log('UNIFED - PROBATUM SCRIPT v13.5.0-PURE · DORA COMPLIANT · ATF · INTEGRITY SEAL · DOCX · AI ADVERSARIAL · NIFAF GUARD · NEXUS · ATIVADO');
+console.log('UNIFED - PROBATUM SCRIPT v13.12.0-PURE · DORA COMPLIANT · ATF · INTEGRITY SEAL · DOCX · AI ADVERSARIAL · NIFAF GUARD · NEXUS · ATIVADO');
 
 // ============================================================================
 // 0. HANDSHAKE DE INFRAESTRUTURA — Verificação da Biblioteca OpenTimestamps
@@ -147,7 +147,7 @@ const forensicRound = (num) => {
     return Math.round((num + Number.EPSILON) * 100) / 100;
 };
 
-// ── FUNÇÃO CENTRAL DE FORMATAÇÃO MONETÁRIA (UNIFICAÇÃO v13.5.0-PURE) ─────────
+// ── FUNÇÃO CENTRAL DE FORMATAÇÃO MONETÁRIA (UNIFICAÇÃO v13.12.0-PURE) ─────────
 // Utiliza Intl.NumberFormat com locale dinâmico baseado em currentLang.
 // PT-PT: 1.250,00 € (sufixo)
 // EN-GB: €1,250.00 (prefixo)
@@ -679,7 +679,7 @@ function exportCustodyChainJSON() {
     const logs = ForensicLogger.getLogs();
     const payload = {
         exportedAt: new Date().toISOString(),
-        system: 'UNIFED - PROBATUM v13.5.0-PURE',
+        system: 'UNIFED - PROBATUM v13.12.0-PURE',
         standard: 'SHA-256 · PROBATUM INTERNAL SEAL · DORA (UE) 2022/2554',
         totalEntries: logs.length,
         entries: logs
@@ -859,7 +859,7 @@ async function submitToOpenTimestamps() {
             submittedAt: new Date().toISOString(),
             calendars: ['alice.btc.calendar.opentimestamps.org', 'bob.btc.calendar.opentimestamps.org'],
             protocol: 'OpenTimestamps · Bitcoin blockchain',
-            system: 'UNIFED - PROBATUM v13.5.0-PURE',
+            system: 'UNIFED - PROBATUM v13.12.0-PURE',
             error: 'Biblioteca OTS não carregada (CDN inacessível na rede atual)'
         }, null, 2);
 
@@ -1005,7 +1005,7 @@ async function submitToOpenTimestamps() {
             submittedAt: new Date().toISOString(),
             calendars: ['alice.btc.calendar.opentimestamps.org', 'bob.btc.calendar.opentimestamps.org'],
             protocol: 'OpenTimestamps · Bitcoin blockchain',
-            system: 'UNIFED - PROBATUM v13.5.0-PURE',
+            system: 'UNIFED - PROBATUM v13.12.0-PURE',
             error: err.message
         }, null, 2);
 
@@ -1352,7 +1352,7 @@ async function _doOnlineSeal(masterHash) {
     if (UNIFEDSystem.demoMode === true || UNIFEDSystem.casoRealAnonimizado === true) {
         const _mockDate = new Date().toISOString();
         _nivel2SealSuccess(masterHash, _mockDate, 'ANCORADO VIA PROXY SEGURO', 'UNIFED-TSA-99A8B7C6');
-        console.info('[v13.5.0-PURE] TSA Anchor: Verified Local Integrity.');
+        console.info('[v13.12.0-PURE] TSA Anchor: Verified Local Integrity.');
         if (btn) { btn.disabled = false; }
         return;
     }
@@ -1618,7 +1618,7 @@ const ForensicLogger = {
             period: yearMonth || 'COMPLETO',
             total_entries: filtered.length,
             rgpd_basis: 'Art. 30.º RGPD (UE) 2016/679 — Registos das Atividades de Tratamento',
-            system: 'UNIFED - PROBATUM v13.5.0-PURE · DORA COMPLIANT',
+            system: 'UNIFED - PROBATUM v13.12.0-PURE · DORA COMPLIANT',
             logs: filtered
         };
 
@@ -1793,7 +1793,7 @@ const ValueSource = {
 // ============================================================================
 const translations = {
     pt: {
-        startBtn: "INICIAR PERÍCIA v13.5.0-PURE",
+        startBtn: "INICIAR PERÍCIA v13.12.0-PURE",
         splashLogsBtn: "REGISTO DE ATIVIDADES (LOG)",
         navDemo: "CASO REAL (ANONIMIZADO)",
         langBtn: "EN",
@@ -1826,7 +1826,7 @@ const translations = {
         irc: "IRC (21% + Derrama)",
         iva6: "IVA 6% OMITIDO",
         iva23: "IVA 23% OMITIDO",
-        kpiTitle: "TRIANGULAÇÃO FINANCEIRA · BIG DATA ALGORITHM v13.5.0-PURE",
+        kpiTitle: "TRIANGULAÇÃO FINANCEIRA · BIG DATA ALGORITHM v13.12.0-PURE",
         kpiGross: "BRUTO REAL",
         kpiCommText: "COMISSÕES",
         kpiNetText: "LÍQUIDO",
@@ -1922,7 +1922,7 @@ const translations = {
         clausulaAssinaturaDigital: "VALIDAÇÃO TÉCNICA DE CONSULTORIA:\nO presente relatorio e selado com o Master Hash SHA-256 completo e o QR Code anexo, garantindo a sua integridade e não-repúdio. A sua validação pode ser efetuada através de qualquer ferramenta de verificação de hash ou leitura de QR Code, que remete para o hash completo do documento."
     },
     en: {
-        startBtn: "START FORENSIC EXAM v13.5.0-PURE",
+        startBtn: "START FORENSIC EXAM v13.12.0-PURE",
         splashLogsBtn: "ACTIVITY LOG (GDPR Art. 30)",
         navDemo: "REAL CASE (ANONYMISED)",
         langBtn: "PT",
@@ -1955,7 +1955,7 @@ const translations = {
         irc: "CIT (21% + Surtax)",
         iva6: "VAT 6% OMITTED",
         iva23: "VAT 23% OMITTED",
-        kpiTitle: "FINANCIAL TRIANGULATION · BIG DATA ALGORITHM v13.5.0-PURE",
+        kpiTitle: "FINANCIAL TRIANGULATION · BIG DATA ALGORITHM v13.12.0-PURE",
         kpiGross: "REAL GROSS",
         kpiCommText: "COMMISSIONS",
         kpiNetText: "NET",
@@ -2888,7 +2888,7 @@ const SchemaRegistry = {
 // 9. ESTADO GLOBAL (SINGLE SOURCE OF TRUTH) - UNIFED - PROBATUM
 // ============================================================================
 const UNIFEDSystem = {
-    version: 'v13.5.0-PURE-DORA-COMPLIANT',
+    version: 'v13.12.0-PURE-DORA-COMPLIANT',
     name: 'UNIFED - PROBATUM',
     sessionId: null,
     selectedYear: new Date().getFullYear(),
@@ -3139,7 +3139,7 @@ function openHashModal() {
 // 13. INICIALIZAÇÃO
 // ============================================================================
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOMContentLoaded - Inicializando sistema UNIFED - PROBATUM v13.5.0-PURE');
+    console.log('DOMContentLoaded - Inicializando sistema UNIFED - PROBATUM v13.12.0-PURE');
     setupStaticListeners();
     populateAnoFiscal();
     populateYears();
@@ -3234,7 +3234,7 @@ function updateLoadingProgress(percent) {
     const bar = document.getElementById('loadingProgress');
     const text = document.getElementById('loadingStatusText');
     if (bar) bar.style.width = percent + '%';
-    if (text) text.textContent = `MÓDULO FORENSE BIG DATA v13.5.0-PURE · DORA COMPLIANT... ${percent}%`;
+    if (text) text.textContent = `MÓDULO FORENSE BIG DATA v13.12.0-PURE · DORA COMPLIANT... ${percent}%`;
 }
 
 function showMainInterface() {
@@ -3249,7 +3249,7 @@ function showMainInterface() {
             ForensicLogger.addEntry('MAIN_INTERFACE_SHOWN');
         }, 500);
     }
-    logAudit('SISTEMA UNIFED - PROBATUM v13.5.0-PURE · DORA COMPLIANT · MODO PROFISSIONAL ATIVADO · EXTRAÇÃO PRECISA · CSC ONLINE', 'success');
+    logAudit('SISTEMA UNIFED - PROBATUM v13.12.0-PURE · DORA COMPLIANT · MODO PROFISSIONAL ATIVADO · EXTRAÇÃO PRECISA · CSC ONLINE', 'success');
 
     const analyzeBtn = document.getElementById('analyzeBtn');
     if (analyzeBtn) analyzeBtn.disabled = false;
@@ -4465,7 +4465,7 @@ function performForensicCrossings() {
         UNIFEDSystem.analysis.verdict.percent = cross.percentagemDiscrepancia.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
     }
 
-    logAudit(`━━ MATRIZ FORENSE v13.5.0-PURE ━━ Período: ${UNIFEDSystem.selectedPeriodo} | Meses: ${mesesDados}`, 'info');
+    logAudit(`━━ MATRIZ FORENSE v13.12.0-PURE ━━ Período: ${UNIFEDSystem.selectedPeriodo} | Meses: ${mesesDados}`, 'info');
     logAudit(`[C1] SAF-T Bruto (${formatCurrency(saftBruto)}) vs DAC7 (${formatCurrency(dac7Total)}) → Δ ${formatCurrency(cross.c1_delta)} (${cross.c1_pct.toFixed(2)}%) — Sub-comunicação plataforma→Estado`, 'warning');
     logAudit(`[C2] 🔫 SMOKING GUN — Despesas/Comissões (${formatCurrency(despesas)}) vs Faturado (${formatCurrency(faturaPlataforma)}) → Δ ${formatCurrency(cross.c2_delta)} (${cross.c2_pct.toFixed(2)}%) — Retenção ilegal provada`, 'error');
     logAudit(`[C3] SAF-T Bruto (${formatCurrency(saftBruto)}) vs Ganhos Extrato (${formatCurrency(ganhos)}) → Δ ${formatCurrency(cross.c3_delta)} (${cross.c3_pct.toFixed(2)}%) — Viagens faturadas vs transferências efectivas`, 'warning');
@@ -5228,7 +5228,7 @@ async function exportPDF() {
     }
 
     ForensicLogger.addEntry('PDF_EXPORT_STARTED');
-    logAudit('📄 A gerar Parecer Técnico (Estilo Institucional v13.5.0-PURE)...', 'info');
+    logAudit('📄 A gerar Parecer Técnico (Estilo Institucional v13.12.0-PURE)...', 'info');
 
     try {
         const { jsPDF } = window.jspdf;
@@ -5378,7 +5378,7 @@ async function exportPDF() {
                     doc.text(_hashLines[i], margin, yPos);
                     yPos -= 4;
                 }
-                doc.text(`Pág. ${pageNum} · UNIFED-PROBATUM v13.5.0-PURE · ISO/IEC 27037:2012 · Art. 125.º CPP`,
+                doc.text(`Pág. ${pageNum} · UNIFED-PROBATUM v13.12.0-PURE · ISO/IEC 27037:2012 · Art. 125.º CPP`,
                     pageWidth / 2, pageHeight - 8, { align: 'center' });
             }
 
@@ -5411,7 +5411,7 @@ async function exportPDF() {
                 doc.setFontSize(5);
                 doc.setFont('courier', 'bold');
                 doc.setTextColor(0, 229, 255);
-                doc.text('PROBATUM SEAL v13.5.0-PURE', sealX + boxSize / 2, sealY + 3.5, { align: 'center' });
+                doc.text('PROBATUM SEAL v13.12.0-PURE', sealX + boxSize / 2, sealY + 3.5, { align: 'center' });
 
                 if (_qrDataUrl) {
                     doc.addImage(_qrDataUrl, 'PNG',
@@ -5431,7 +5431,7 @@ async function exportPDF() {
                 doc.setTextColor(30, 60, 120);
                 const certLine1 = '[ UNIFED - PROBATUM CERTIFIED ]';
                 const certLine2 = 'ANALISTA E CONSULTOR FORENSE';
-                const certLine3 = 'v13.5.0-PURE · Art. 103.º/104.º RGIT';
+                const certLine3 = 'v13.12.0-PURE · Art. 103.º/104.º RGIT';
                 const certLine4 = 'Art. 32.º CRP · Art. 125.º CPP';
                 doc.text(certLine1, sealX + boxSize / 2, sealY + qrSize + 7, { align: 'center' });
                 doc.text(certLine2, sealX + boxSize / 2, sealY + qrSize + 10, { align: 'center' });
@@ -6050,7 +6050,7 @@ async function exportPDF() {
         doc.text('Algoritmo Hash: SHA-256 (Forense)', left, y); y += 5;
         doc.text(`Timestamp: RFC 3161`, left, y); y += 5;
         doc.text(`${currentLang === 'pt' ? 'Validade Prova: Indeterminada' : 'Proof Validity: Indeterminate'}`, left, y); y += 5;
-        doc.text(`Certificação: UNIFED - PROBATUM v13.5.0-PURE · DORA COMPLIANT`, left, y); y += 5;
+        doc.text(`Certificação: UNIFED - PROBATUM v13.12.0-PURE · DORA COMPLIANT`, left, y); y += 5;
         doc.setFont('helvetica', 'italic');
         doc.setFontSize(7);
         doc.text(`${currentLang === 'pt' ? 'Este relatório cumpre com o Regulamento (UE) 2022/2554 (DORA) - Digital Operational Resilience Act, assegurando a resiliência operacional digital e a integridade das evidências digitais processadas.' : 'This report complies with Regulation (EU) 2022/2554 (DORA) - Digital Operational Resilience Act, ensuring digital operational resilience and integrity of processed digital evidence.'}`, left, y, { maxWidth: doc.internal.pageSize.getWidth() - 30 }); y += 8;
@@ -6482,7 +6482,7 @@ async function exportPDF() {
             doc.setFontSize(8.5);
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(0, 229, 255);
-            doc.text(`${currentLang === 'pt' ? 'DIAGRAMA DE FLUXO FINANCEIRO — MONEY FLOW ANALYSIS · v13.5.0-PURE' : 'FINANCIAL FLOW DIAGRAM — MONEY FLOW ANALYSIS · v13.5.0-PURE'}`,
+            doc.text(`${currentLang === 'pt' ? 'DIAGRAMA DE FLUXO FINANCEIRO — MONEY FLOW ANALYSIS · v13.12.0-PURE' : 'FINANCIAL FLOW DIAGRAM — MONEY FLOW ANALYSIS · v13.12.0-PURE'}`,
                 doc.internal.pageSize.getWidth() / 2, 18, { align: 'center' });
             doc.setTextColor(0, 0, 0);
             y = 30;
@@ -6527,7 +6527,7 @@ async function exportPDF() {
             doc.setFontSize(6);
             doc.setFont('courier', 'normal');
             doc.setTextColor(120, 120, 120);
-            doc.text('UNIFED-PROBATUM v13.5.0-PURE · Diagrama de Fluxo Financeiro · Art. 125.º CPP · DORA (UE) 2022/2554', left, y + 4);
+            doc.text('UNIFED-PROBATUM v13.12.0-PURE · Diagrama de Fluxo Financeiro · Art. 125.º CPP · DORA (UE) 2022/2554', left, y + 4);
 
             addFooter(doc, pageNumber);
         }
@@ -6544,8 +6544,8 @@ async function exportPDF() {
             doc.setTextColor(0, 229, 255);
             const _atfHeader = doc.splitTextToSize(
                 currentLang === 'pt'
-                    ? 'ANÁLISE TEMPORAL FORENSE (ATF) — TENDÊNCIAS · OUTLIERS 2σ · ÍNDICE DE RECIDIVA · v13.5.0-PURE'
-                    : 'FORENSIC TEMPORAL ANALYSIS (ATF) — TRENDS · OUTLIERS 2σ · RECIDIVISM INDEX · v13.5.0-PURE',
+                    ? 'ANÁLISE TEMPORAL FORENSE (ATF) — TENDÊNCIAS · OUTLIERS 2σ · ÍNDICE DE RECIDIVA · v13.12.0-PURE'
+                    : 'FORENSIC TEMPORAL ANALYSIS (ATF) — TRENDS · OUTLIERS 2σ · RECIDIVISM INDEX · v13.12.0-PURE',
                 180);
             doc.text(_atfHeader, doc.internal.pageSize.getWidth() / 2, 18, { align: 'center' });
             doc.setTextColor(0, 0, 0);
@@ -6591,7 +6591,7 @@ async function exportPDF() {
                     doc.setFontSize(6.5);
                     doc.setFont('courier', 'normal');
                     doc.setTextColor(120, 120, 120);
-                    doc.text('UNIFED-PROBATUM v13.5.0-PURE · Análise Temporal Forense · DORA (UE) 2022/2554', left, y + 3);
+                    doc.text('UNIFED-PROBATUM v13.12.0-PURE · Análise Temporal Forense · DORA (UE) 2022/2554', left, y + 3);
                 } catch (_e) { }
             }
             addFooter(doc, pageNumber);
@@ -6607,7 +6607,7 @@ async function exportPDF() {
             doc.setFontSize(8.5);
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(0, 229, 255);
-            doc.text(`${currentLang === 'pt' ? 'SÍNTESE JURÍDICA PERICIAL — ANÁLISE DETERMINÍSTICA v13.5.0-PURE' : 'FORENSIC LEGAL SUMMARY — DETERMINISTIC ANALYSIS v13.5.0-PURE'}`,
+            doc.text(`${currentLang === 'pt' ? 'SÍNTESE JURÍDICA PERICIAL — ANÁLISE DETERMINÍSTICA v13.12.0-PURE' : 'FORENSIC LEGAL SUMMARY — DETERMINISTIC ANALYSIS v13.12.0-PURE'}`,
                 doc.internal.pageSize.getWidth() / 2, 18, { align: 'center' });
             doc.setTextColor(0, 0, 0);
             y = 30;
@@ -6617,12 +6617,12 @@ async function exportPDF() {
             doc.setTextColor(80, 80, 80);
             const aiNotaLines = doc.splitTextToSize(
                 currentLang === 'pt'
-                    ? 'Documento gerado sob metodologia forense UNIFED-PROBATUM v13.5.0-PURE. ' +
+                    ? 'Documento gerado sob metodologia forense UNIFED-PROBATUM v13.12.0-PURE. ' +
                       'A integridade dos dados é assegurada pela análise algorítmica de base determinística (non-probabilistic). ' +
                       'Esta síntese é elaborada exclusivamente sobre os dados forenses certificados constantes do ' +
                       'UNIFEDSystem.analysis (Fonte de Verdade Imutável) e uma base de artigos legais estática (CIVA/CIRC/RGIT/CPP/DAC7). ' +
                       'Conformidade: Art. 125.º CPP · ISO/IEC 27037:2012 · DORA (UE) 2022/2554.'
-                    : 'Document generated under UNIFED-PROBATUM v13.5.0-PURE forensic methodology. ' +
+                    : 'Document generated under UNIFED-PROBATUM v13.12.0-PURE forensic methodology. ' +
                       'Data integrity is ensured by deterministic algorithmic analysis (non-probabilistic). ' +
                       'This summary is prepared exclusively on the certified forensic data contained in ' +
                       'UNIFEDSystem.analysis (Immutable Truth Source) and a static legal article base (CIVA/CIRC/RGIT/CPP/DAC7). ' +
@@ -6675,7 +6675,7 @@ async function exportPDF() {
             doc.setFontSize(6.5);
             doc.setFont('courier', 'normal');
             doc.setTextColor(100, 116, 139);
-            doc.text('UNIFED-PROBATUM v13.5.0-PURE · Análise Determinística · Base Legal: CIVA/CIRC/RGIT/CPP/DAC7', left, y); y += 4;
+            doc.text('UNIFED-PROBATUM v13.12.0-PURE · Análise Determinística · Base Legal: CIVA/CIRC/RGIT/CPP/DAC7', left, y); y += 4;
             doc.text(`${currentLang === 'pt' ? 'Metodologia: RECONSTITUIÇÃO DA VERDADE MATERIAL DIGITAL · ISO/IEC 27037:2012 · DORA (UE) 2022/2554 · Art. 125.º CPP' : 'Methodology: RECONSTRUCTION OF DIGITAL MATERIAL TRUTH · ISO/IEC 27037:2012 · DORA (EU) 2022/2554 · Art. 125 CPP'}`, left, y);
             y += 8;
             doc.setFont('helvetica', 'normal');
@@ -7415,7 +7415,7 @@ async function exportPDF() {
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(9);
             doc.setTextColor(30, 60, 120);
-            doc.text('[ UNIFED - PROBATUM CERTIFIED · ANALISTA E CONSULTOR FORENSE · v13.5.0-PURE ]',
+            doc.text('[ UNIFED - PROBATUM CERTIFIED · ANALISTA E CONSULTOR FORENSE · v13.12.0-PURE ]',
                 _termW / 2, y, { align: 'center' }); y += 5;
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(6.5);
@@ -7474,7 +7474,7 @@ async function exportPDF() {
             doc.setFontSize(5.5);
             doc.setTextColor(140, 140, 140);
             doc.text(
-                `${currentLang === 'pt' ? 'UNIFED-PROBATUM v13.5.0-PURE · RECONSTITUIÇÃO DA VERDADE MATERIAL DIGITAL · Art. 125.º CPP' : 'UNIFED-PROBATUM v13.5.0-PURE · RECONSTRUCTION OF DIGITAL MATERIAL TRUTH · Art. 125 CPP'}`,
+                `${currentLang === 'pt' ? 'UNIFED-PROBATUM v13.12.0-PURE · RECONSTITUIÇÃO DA VERDADE MATERIAL DIGITAL · Art. 125.º CPP' : 'UNIFED-PROBATUM v13.12.0-PURE · RECONSTRUCTION OF DIGITAL MATERIAL TRUTH · Art. 125 CPP'}`,
                 _pw / 2, _ph - 9, { align: 'center' }
             );
 
@@ -8283,12 +8283,12 @@ window.resetAuxiliaryData = resetAuxiliaryData;
         return;
     }
 
-    UNIFEDSystem._pureModuleVersion = 'v13.5.0-PURE';
+    UNIFEDSystem._pureModuleVersion = 'v13.12.0-PURE';
     UNIFEDSystem._pureModuleLoaded = true;
 
     if (typeof UNIFEDSystem.loadAnonymizedRealCase !== 'function') {
         UNIFEDSystem.loadAnonymizedRealCase = function _pureStub() {
-            // console.warn('[UNIFED-PURE] ⚠ script_injection_v13.5.0-PURE.js não carregado. Verificar ordem de carregamento em index.html.');
+            // console.warn('[UNIFED-PURE] ⚠ script_injection_v13.12.0-PURE.js não carregado. Verificar ordem de carregamento em index.html.');
         };
     }
 
@@ -8334,10 +8334,10 @@ if (typeof window.dispatchEvent === 'function') {
     window.dispatchEvent(new CustomEvent('UNIFED_CORE_READY', {
         detail: {
             timestamp: Date.now(),
-            version: UNIFEDSystem._pureModuleVersion || 'v13.5.0-PURE'
+            version: UNIFEDSystem._pureModuleVersion || 'v13.12.0-PURE'
         }
     }));
     console.log('[UNIFED-CORE] Evento UNIFED_CORE_READY despachado.');
 }
 
-console.log('UNIFED - PROBATUM v13.5.0-PURE · DORA COMPLIANT · ATF · INTEGRITY SEAL · DOCX · AI ADVERSARIAL · NIFAF GUARD · NEXUS · ATIVADO');
+console.log('UNIFED - PROBATUM v13.12.0-PURE · DORA COMPLIANT · ATF · INTEGRITY SEAL · DOCX · AI ADVERSARIAL · NIFAF GUARD · NEXUS · ATIVADO');

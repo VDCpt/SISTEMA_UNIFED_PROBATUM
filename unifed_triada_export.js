@@ -1,5 +1,5 @@
 /**
- * UNIFED - PROBATUM · v13.5.0-PURE · MÓDULO DE EXPORTAÇÃO — TRÍADE DOCUMENTAL
+ * UNIFED - PROBATUM · v13.12.0-PURE · MÓDULO DE EXPORTAÇÃO — TRÍADE DOCUMENTAL
  * ============================================================================
  * Ficheiro      : unifed_triada_export.js
  * Versão        : 1.0.17-TRIADA-FINAL (Rectificação Risco E — DOMContentLoaded)
