@@ -879,18 +879,22 @@
         removeZeroDac7Kpis, simulateEvidenceUpload, updateEvidenceCountersAndShow
     } = window.UNIFED_INTERNAL;
 
-    function showClientIdentificationBlock() {
-        let block = document.getElementById('clientIdentificationBlock');
-        if (!block) {
-            const sidebarHeader = document.querySelector('.sidebar-header-fixed');
-            if (sidebarHeader) {
-                sidebarHeader.id = 'clientIdentificationBlock';
-                block = sidebarHeader;
-                console.log('[UNIFED] ID clientIdentificationBlock atribuído dinamicamente ao .sidebar-header-fixed');
-            } else {
-                console.warn('[UNIFED] Elemento .sidebar-header-fixed não encontrado. O bloco de identificação não será exibido.');
-                return;
-            }
+ function showClientIdentificationBlock() {
+    let block = document.getElementById('clientIdentificationBlock');
+    if (!block) {
+        const sidebarHeader = document.querySelector('.sidebar-header-fixed');
+        if (sidebarHeader) {
+            sidebarHeader.id = 'clientIdentificationBlock';
+            block = sidebarHeader;
+            console.log('[UNIFED] ID clientIdentificationBlock atribuído dinamicamente ao .sidebar-header-fixed');
+        } else {
+            console.warn('[UNIFED] Elemento .sidebar-header-fixed não encontrado. O bloco de identificação não será exibido.');
+            return;
+        }
+    }
+    block.style.display = 'block';   // alterado de 'flex' para 'block'
+    console.log('[UNIFED] Bloco de identificação do sujeito passivo revelado.');
+}
         }
         block.style.display = 'flex';
         console.log('[UNIFED] Bloco de identificação do sujeito passivo revelado.');
