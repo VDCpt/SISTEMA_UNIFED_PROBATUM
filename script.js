@@ -8029,12 +8029,14 @@ if (typeof window.dispatchEvent === 'function') {
             timestamp: Date.now(),
             version: UNIFEDSystem._pureModuleVersion || 'v13.12.0-PURE'
         }
+    }));
+    console.log('[UNIFED-CORE] Evento UNIFED_CORE_READY despachado.');
+}
 
 // ============================================================================
 // 32. FUNÇÃO GLOBAL showToast (Notificações Temporárias)
 // ============================================================================
 window.showToast = function showToast(message, type = 'info') {
-    // Criar container se não existir
     let container = document.getElementById('toastContainer');
     if (!container) {
         container = document.createElement('div');
@@ -8043,7 +8045,6 @@ window.showToast = function showToast(message, type = 'info') {
         document.body.appendChild(container);
     }
 
-    // Criar o toast
     const toast = document.createElement('div');
     toast.className = `toast-notification ${type}`;
     toast.style.cssText = `
@@ -8060,7 +8061,6 @@ window.showToast = function showToast(message, type = 'info') {
         word-break: break-word;
     `;
 
-    // Ícone conforme o tipo
     let icon = '';
     if (type === 'success') icon = '✅ ';
     else if (type === 'error') icon = '❌ ';
@@ -8070,7 +8070,6 @@ window.showToast = function showToast(message, type = 'info') {
     toast.innerHTML = `${icon}${message}`;
     container.appendChild(toast);
 
-    // Remover após 4 segundos
     setTimeout(() => {
         toast.style.opacity = '0';
         toast.style.transition = 'opacity 0.3s';
@@ -8080,7 +8079,6 @@ window.showToast = function showToast(message, type = 'info') {
     }, 4000);
 };
 
-// Garantir que a animação slideIn existe no CSS (se não existir, adicionar dinamicamente)
 if (!document.querySelector('#toastAnimationStyle')) {
     const style = document.createElement('style');
     style.id = 'toastAnimationStyle';
@@ -8091,9 +8089,6 @@ if (!document.querySelector('#toastAnimationStyle')) {
         }
     `;
     document.head.appendChild(style);
-}
-    }));
-    console.log('[UNIFED-CORE] Evento UNIFED_CORE_READY despachado.');
 }
 
 console.log('UNIFED - PROBATUM v13.12.0-PURE · DORA COMPLIANT · ATF · INTEGRITY SEAL · DOCX · AI ADVERSARIAL · NIFAF GUARD · NEXUS · ATIVADO');
