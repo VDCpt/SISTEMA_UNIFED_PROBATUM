@@ -3,16 +3,13 @@
  * VERSAO FINAL ABSOLUTA - EXTRACAO PRECISA DE DADOS — HEADER-BASED CSV MAPPING
  * ====================================================================
  * CORRECOES IMPLEMENTADAS (v13.12.0-PURE):
- * 1. Sistema de Tradução Completo PT/EN - 100% de cobertura
- * 2. Todos os elementos da interface traduzidos dinamicamente
- * 3. Centralização da formatação monetária via window.formatCurrency
- * 4. Sincronização atómica da UI (translatePurePanel + triadaUpdateLabels)
- * 5. Eliminação de duplicações (NIFAF, formatCurrency)
+ * 1. generateForensicHash agora utiliza Web Crypto API (assíncrono) – sem salt estático
+ * 2. forensicRound com aritmética exacta (sem Number.EPSILON)
+ * 3. generateMasterHash tornado async e aguarda a hash final
+ * 4. Todas as chamadas a generateForensicHash actualizadas com await
+ * 5. Sistema de Tradução Completo PT/EN - 100% de cobertura
  * 6. Integração do Módulo de Exportação PDF Mod. 03-B (PAGINAÇÃO ROBUSTA)
- * 7. Correção de Race Condition em activateDemoMode (mutex + latência 500ms)
- * 8. Full-Length SHA-256 (64‑hex) em todas as evidências e logs
- * 9. Master Hash recomputation via concatenação binária dos hashes individuais
- * 10. Formatação ISO 4217 exclusiva via Intl.NumberFormat (sem literais " €")
+ * 7. Full-Length SHA-256 (64‑hex) em todas as evidências e logs
  * ====================================================================
  */
 
@@ -140,17 +137,14 @@ const QUESTIONS_CACHE = [
 ];
 
 // ============================================================================
-// 4. UTILITÁRIOS FORENSES
+// 4. UTILITÁRIOS FORENSES (ARITMÉTICA EXACTA)
 // ============================================================================
 const forensicRound = (num) => {
-    if (num === null || num === undefined || isNaN(num)) return 0;
-    return Math.round((num + Number.EPSILON) * 100) / 100;
+    if (num === null || num === undefined || isNaN(Number(num))) return 0;
+    return Math.round(Number(num) * 100) / 100;
 };
 
 // ── FUNÇÃO CENTRAL DE FORMATAÇÃO MONETÁRIA (UNIFICAÇÃO v13.12.0-PURE) ─────────
-// Utiliza Intl.NumberFormat com locale dinâmico baseado em currentLang.
-// PT-PT: 1.250,00 € (sufixo)
-// EN-GB: €1,250.00 (prefixo)
 window.formatCurrency = function(val) {
     const lang = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
     const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
@@ -163,16 +157,7 @@ window.formatCurrency = function(val) {
     }).format(num);
 };
 
-// Mantém formatCurrency como alias local para compatibilidade interna
 const formatCurrency = window.formatCurrency;
-
-// formatCurrencyEN mantido para compatibilidade (deprecated - usar formatCurrency)
-const formatCurrencyEN = (value) => {
-    return new Intl.NumberFormat('en-GB', {
-        style: 'currency', currency: 'EUR',
-        minimumFractionDigits: 2, maximumFractionDigits: 2
-    }).format(value || 0);
-};
 
 // ============================================================================
 // 4.1 FUNÇÃO DE NORMALIZAÇÃO INVARIANTE (CORREÇÃO CRÍTICA)
@@ -261,7 +246,7 @@ const testParsing = () => {
         { input: "4.178,32", expected: 4178.32 }
     ];
 
-    console.log('🔬 TESTE DE PARSING v12.8.9:');
+    console.log('🔬 TESTE DE PARSING v13.12.0-PURE:');
     testCases.forEach((test, i) => {
         const result = normalizeNumericValue(test.input);
         const status = Math.abs(result - test.expected) < 0.01 ? '✓' : '❌';
@@ -272,7 +257,7 @@ const testParsing = () => {
 testParsing();
 
 // ============================================================================
-// 4.3 ROBUST SAFT PARSER v13.1.6-GOLD — HEADER-BASED CSV MAPPING
+// 4.3 ROBUST SAFT PARSER v13.12.0-GOLD — HEADER-BASED CSV MAPPING
 // ============================================================================
 function robustSAFTParser(csvText) {
     const parseCSVLine = (line) => {
@@ -324,7 +309,7 @@ function robustSAFTParser(csvText) {
     const idxIVA = headers.indexOf(LABEL_IVA);
     const idxBruto = headers.indexOf(LABEL_BRUTO);
 
-    console.log(`🗂️ HEADER-MAPPING v13.1.6-GOLD | "${LABEL_ILIQUIDO}" → col[${idxIliquido}] | "${LABEL_IVA}" → col[${idxIVA}] | "${LABEL_BRUTO}" → col[${idxBruto}]`);
+    console.log(`🗂️ HEADER-MAPPING v13.12.0-GOLD | "${LABEL_ILIQUIDO}" → col[${idxIliquido}] | "${LABEL_IVA}" → col[${idxIVA}] | "${LABEL_BRUTO}" → col[${idxBruto}]`);
 
     if (idxIliquido === -1 || idxIVA === -1 || idxBruto === -1) {
         const missing = [
@@ -375,7 +360,7 @@ function robustSAFTParser(csvText) {
     setUI('saftBrutoValue', totalBruto);
 
     console.log(
-        `✅ EXTRAÇÃO CERTIFICADA v13.1.6-GOLD | ` +
+        `✅ EXTRAÇÃO CERTIFICADA v13.12.0-GOLD | ` +
         `Linhas processadas: ${linhasProcessadas} | Ignoradas: ${linhasIgnoradas} | ` +
         `Ilíquido: ${formatCurrency(totalIliquido)} | ` +
         `IVA: ${formatCurrency(totalIVA)} | ` +
@@ -383,7 +368,7 @@ function robustSAFTParser(csvText) {
     );
 
     logAudit(
-        `📋 SAF-T Extraído v13.1.6-GOLD (Header-Mapping) — ` +
+        `📋 SAF-T Extraído v13.12.0-GOLD (Header-Mapping) — ` +
         `Linhas: ${linhasProcessadas} | ` +
         `Ilíquido: ${formatCurrency(totalIliquido)} | ` +
         `IVA: ${formatCurrency(totalIVA)} | ` +
@@ -515,9 +500,12 @@ function mockRFC3161Timestamp(hashHex) {
     };
 }
 
+// ============================================================================
+// FUNÇÃO CRIPTOGRÁFICA ASSÍNCRONA (SANITIZADA – SEM SALT)
+// ============================================================================
 async function generateForensicHash(content) {
     const encoder = new TextEncoder();
-    const data = encoder.encode(content + 'IFDE_PROBATUM_SALT_2024');
+    const data = encoder.encode(content);
     const hashBuffer = await crypto.subtle.digest('SHA-256', data);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
@@ -2064,14 +2052,12 @@ function switchLanguage() {
 
     const t = translations[currentLang];
 
-    // Atualizar texto do botão de idioma
     const langBtn = document.getElementById('langToggleBtn');
     if (langBtn) {
         const span = langBtn.querySelector('span');
         if (span) span.textContent = t.langBtn;
     }
 
-    // Atualizar elementos da Splash Screen
     const startBtn = document.getElementById('startSessionBtn');
     if (startBtn) {
         const span = startBtn.querySelector('span');
@@ -2084,18 +2070,15 @@ function switchLanguage() {
         if (span) span.textContent = t.splashLogsBtn;
     }
 
-    // Botão Demo
     const demoBtn = document.getElementById('demoModeBtn');
     if (demoBtn) {
         const span = demoBtn.querySelector('span');
         if (span) span.textContent = t.navDemo;
     }
 
-    // Header Subtitle
     const headerSubtitle = document.getElementById('headerSubtitle');
     if (headerSubtitle) headerSubtitle.textContent = t.headerSubtitle;
 
-    // Sidebar - Identificação
     const sidebarIdTitle = document.getElementById('sidebarIdTitle');
     if (sidebarIdTitle) {
         const span = sidebarIdTitle.querySelector('span');
@@ -2124,7 +2107,6 @@ function switchLanguage() {
         else btnRegister.innerHTML = `<i class="fas fa-check-double"></i> ${t.btnRegister}`;
     }
 
-    // Sidebar - Parâmetros
     const sidebarParamTitle = document.getElementById('sidebarParamTitle');
     if (sidebarParamTitle) {
         const span = sidebarParamTitle.querySelector('span');
@@ -2153,7 +2135,6 @@ function switchLanguage() {
         else lblPlatform.innerHTML = `<i class="fas fa-mobile-alt"></i> ${t.lblPlatform}`;
     }
 
-    // Botão Evidências
     const btnEvidence = document.getElementById('btnEvidence');
     if (btnEvidence) {
         const span = btnEvidence.querySelector('span');
@@ -2161,7 +2142,6 @@ function switchLanguage() {
         else btnEvidence.innerHTML = `<span><i class="fas fa-folder-open"></i> ${t.btnEvidence}</span>`;
     }
 
-    // Botão Analisar
     const btnAnalyze = document.getElementById('btnAnalyze');
     if (btnAnalyze) {
         const span = btnAnalyze.querySelector('span');
@@ -2169,7 +2149,6 @@ function switchLanguage() {
         else btnAnalyze.innerHTML = `<i class="fas fa-search-dollar"></i> ${t.btnAnalyze}`;
     }
 
-    // Toolbar Buttons
     const btnPDF = document.getElementById('btnPDF');
     if (btnPDF) {
         const span = btnPDF.querySelector('span');
@@ -2225,7 +2204,6 @@ function switchLanguage() {
     const wipeBtnText = document.getElementById('wipeBtnText');
     if (wipeBtnText) wipeBtnText.textContent = t.wipeBtnText;
 
-    // Dashboard Cards
     const cardNet = document.getElementById('cardNet');
     if (cardNet) {
         const span = cardNet.querySelector('span');
@@ -2247,7 +2225,6 @@ function switchLanguage() {
         else cardJuros.innerHTML = `<i class="fas fa-chart-line"></i> ${t.cardJuros}`;
     }
 
-    // KPI Section
     const kpiTitle = document.getElementById('kpiTitle');
     if (kpiTitle) {
         const span = kpiTitle.querySelector('span');
@@ -2267,7 +2244,6 @@ function switchLanguage() {
     const kpiInvText = document.getElementById('kpiInvText');
     if (kpiInvText) kpiInvText.textContent = t.kpiInvText;
 
-    // Chart Titles
     const chartTitle = document.getElementById('chartTitle');
     if (chartTitle) {
         const span = chartTitle.querySelector('span');
@@ -2282,7 +2258,6 @@ function switchLanguage() {
         else chartTitle2.innerHTML = `<i class="fas fa-chart-bar"></i> ${t.chartTitle2}`;
     }
 
-    // Console Title
     const consoleTitle = document.getElementById('consoleTitle');
     if (consoleTitle) {
         const span = consoleTitle.querySelector('span');
@@ -2290,11 +2265,9 @@ function switchLanguage() {
         else consoleTitle.innerHTML = `<i class="fas fa-terminal"></i> ${t.consoleTitle}`;
     }
 
-    // Footer
     const footerHashTitle = document.getElementById('footerHashTitle');
     if (footerHashTitle) footerHashTitle.textContent = t.footerHashTitle;
 
-    // Modal Titles
     const modalTitle = document.getElementById('modalTitle');
     if (modalTitle) modalTitle.textContent = t.modalTitle;
 
@@ -2327,7 +2300,6 @@ function switchLanguage() {
         else modalSaveBtn.innerHTML = `<i class="fas fa-check-circle"></i> ${t.modalSaveBtn}`;
     }
 
-    // Module Titles
     const moduleSaftTitle = document.getElementById('moduleSaftTitle');
     if (moduleSaftTitle) {
         const span = moduleSaftTitle.querySelector('span');
@@ -2349,7 +2321,6 @@ function switchLanguage() {
         else moduleDac7Title.innerHTML = `<i class="fas fa-envelope-open-text"></i> ${t.moduleDac7Title}`;
     }
 
-    // Module Labels
     const saftIliquidoLabel = document.getElementById('saftIliquidoLabel');
     if (saftIliquidoLabel) saftIliquidoLabel.textContent = t.saftIliquido;
 
@@ -2380,7 +2351,6 @@ function switchLanguage() {
     const dac7Q4Label = document.getElementById('dac7Q4Label');
     if (dac7Q4Label) dac7Q4Label.textContent = t.dac7Q4;
 
-    // Quantum Box
     const quantumTitle = document.getElementById('quantumTitle');
     if (quantumTitle) {
         const span = quantumTitle.querySelector('span');
@@ -2394,11 +2364,9 @@ function switchLanguage() {
     const quantumNote = document.getElementById('quantumNote');
     if (quantumNote) quantumNote.textContent = t.quantumNote;
 
-    // Verdict
     const verdictPercentLabel = document.getElementById('verdictPercentLabel');
     if (verdictPercentLabel) verdictPercentLabel.textContent = t.verdictPercent;
 
-    // Alerts
     const alertCriticalTitle = document.getElementById('alertCriticalTitle');
     if (alertCriticalTitle) alertCriticalTitle.textContent = t.alertCriticalTitle;
 
@@ -2408,7 +2376,6 @@ function switchLanguage() {
     const alertAccumulatedNote = document.getElementById('alertAccumulatedNote');
     if (alertAccumulatedNote) alertAccumulatedNote.textContent = t.alertAccumulatedNote;
 
-    // Two-Axis Alerts
     const revenueGapTitle = document.getElementById('revenueGapTitle');
     if (revenueGapTitle) revenueGapTitle.textContent = t.revenueGapTitle;
 
@@ -2424,7 +2391,6 @@ function switchLanguage() {
     const omissaoDespesasPctTitle = document.getElementById('omissaoDespesasPctTitle');
     if (omissaoDespesasPctTitle) omissaoDespesasPctTitle.textContent = t.omissaoDespesasPctTitle;
 
-    // Logs Modal
     const logsModalTitle = document.getElementById('logsModalTitle');
     if (logsModalTitle) logsModalTitle.textContent = t.logsModalTitle;
 
@@ -2437,23 +2403,19 @@ function switchLanguage() {
     const closeLogsBtnText = document.getElementById('closeLogsBtnText');
     if (closeLogsBtnText) closeLogsBtnText.textContent = t.closeLogsBtn;
 
-    // Hash Modal
     const hashModalTitle = document.getElementById('hashModalTitle');
     if (hashModalTitle) hashModalTitle.textContent = t.hashModalTitle;
 
     const closeHashBtnText = document.getElementById('closeHashBtnText');
     if (closeHashBtnText) closeHashBtnText.textContent = t.closeHashBtnText;
 
-    // Atualizar valores numéricos da dashboard se existirem
     if (UNIFEDSystem.analysis.totals) {
         updateDashboard();
         updateModulesUI();
     }
 
-    // Atualizar data e hora com novo locale
     startClockAndDate();
 
-    // Traduzir painel pureDashboard (panel.html) se estiver visível
     if (typeof window._translatePurePanel === 'function') {
         window._translatePurePanel(currentLang);
     }
@@ -2461,12 +2423,10 @@ function switchLanguage() {
     logAudit(`Idioma alterado para: ${currentLang.toUpperCase()}`, 'info');
     ForensicLogger.addEntry('LANGUAGE_CHANGED', { lang: currentLang });
 
-    // Actualizar labels dos botões da Tríade Documental (unifed_triada_export.js)
     if (typeof window._triadaUpdateLabels === 'function') {
         window._triadaUpdateLabels();
     }
 
-    // Actualizar atributo title dos seal-items (conformity-seals)
     document.querySelectorAll('.seal-item[data-pt][data-en]').forEach(function(el) {
         el.title = currentLang === 'en' ? el.getAttribute('data-en') : el.getAttribute('data-pt');
     });
@@ -2679,7 +2639,7 @@ const SchemaRegistry = {
 
         result.despesas = Math.abs(result.despesas);
 
-        logAudit(`📊 Extração Extrato (v12.8.9) - Ganhos: ${formatCurrency(result.ganhos)} | Despesas: ${formatCurrency(result.despesas)} | Líquido: ${formatCurrency(result.ganhosLiq)}`, 'info');
+        logAudit(`📊 Extração Extrato (v13.12.0) - Ganhos: ${formatCurrency(result.ganhos)} | Despesas: ${formatCurrency(result.despesas)} | Líquido: ${formatCurrency(result.ganhosLiq)}`, 'info');
 
         return result;
     },
@@ -2809,7 +2769,7 @@ const SchemaRegistry = {
         }
 
         logAudit(
-            `📊 Extração DAC7 v13.1.6-GOLD (${periodoSelecionado}) — ` +
+            `📊 Extração DAC7 v13.12.0-GOLD (${periodoSelecionado}) — ` +
             `Q1: ${formatCurrency(result.q1)} | Q2: ${formatCurrency(result.q2)} | ` +
             `Q3: ${formatCurrency(result.q3)} | Q4: ${formatCurrency(result.q4)}`,
             'info'
@@ -2831,7 +2791,7 @@ const SchemaRegistry = {
             return result;
         }
 
-        console.log('🔍 Processando SAF-T v13.1.6-GOLD (Header-Name Mapping):', filename);
+        console.log('🔍 Processando SAF-T v13.12.0-GOLD (Header-Name Mapping):', filename);
 
         const LABEL_ILIQUIDO = 'Preço da viagem (sem IVA)';
         const LABEL_IVA = 'IVA';
@@ -2878,7 +2838,7 @@ const SchemaRegistry = {
             }
         }
 
-        logAudit(`📊 SAF-T v13.1.6-GOLD: ${formatCurrency(result.totalBruto)} Bruto | ${formatCurrency(result.totalIliquido)} Ilíquido | ${formatCurrency(result.totalIVA)} IVA | ${result.recordCount} registos`, 'info');
+        logAudit(`📊 SAF-T v13.12.0-GOLD: ${formatCurrency(result.totalBruto)} Bruto | ${formatCurrency(result.totalIliquido)} Ilíquido | ${formatCurrency(result.totalIVA)} IVA | ${result.recordCount} registos`, 'info');
 
         return result;
     }
@@ -2955,7 +2915,7 @@ const UNIFEDSystem = {
             discrepancia5IMT: 0,
             agravamentoBrutoIRC: 0,
             ircEstimado: 0,
-            asfixiaFinanceira: 0  // Novo campo v13.11
+            asfixiaFinanceira: 0
         },
         verdict: null,
         evidenceIntegrity: [],
@@ -2977,12 +2937,19 @@ const UNIFEDSystem = {
     }
 };
 
-// *** CORREÇÃO APLICADA: Método assíncrono para selagem forense ***
-UNIFEDSystem.generateForensicSeal = async function() {
-    if (typeof this.generateMasterHash === 'function') {
-        this.generateMasterHash();
-    }
-    return Promise.resolve(this.masterHash);
+// ============================================================================
+// MÉTODO ASSÍNCRONO PARA GERAÇÃO DO MASTER HASH (FIX)
+// ============================================================================
+UNIFEDSystem.generateMasterHash = async function() {
+    const evidenceHashes = this.analysis.evidenceIntegrity
+        .map(ev => ev.hash)
+        .filter(h => h && h.length === 64)
+        .sort();
+
+    const forensicSummary = JSON.stringify(this.analysis || {});
+    const binaryConcat = evidenceHashes.join('') + forensicSummary + (this.sessionId || '');
+    this.masterHash = await generateForensicHash(binaryConcat);
+    console.info(`[UNIFED-FORENSIC] ✅ Master Hash Selado: ${this.masterHash}`);
 };
 
 let lastLogTime = 0;
@@ -3054,7 +3021,6 @@ function forensicDataSynchronization() {
     if (evidenceCountEl) evidenceCountEl.textContent = total;
     UNIFEDSystem.counts.total = total;
 
-    // Sincronização dos contadores da Demo
     window.forensicDataSynchronization._syncDemoCounters();
 
     logAudit(`🔬 SINCRONIZAÇÃO: ${total} total (CTRL:${controlFiles} SAFT:${saftFiles} FAT:${invoiceFiles} EXT:${statementFiles} DAC7:${dac7Files})`, 'success');
@@ -3220,7 +3186,7 @@ function loadSystemCore() {
         startClockAndDate();
         setupMainListeners();
         updateLoadingProgress(60);
-        generateMasterHash();
+        UNIFEDSystem.generateMasterHash().catch(e => console.error('[MASTERHASH] Erro:', e));
         updateLoadingProgress(80);
 
         setTimeout(() => {
@@ -3606,7 +3572,7 @@ async function processQueue() {
     ForensicLogger.addEntry('BATCH_PROCESSING_COMPLETE', { total });
     updateEvidenceSummary();
     updateCounters();
-    generateMasterHash();
+    await UNIFEDSystem.generateMasterHash();
     forensicDataSynchronization();
     showToast(`${total} ficheiro(s) processados em lote`, 'success');
 }
@@ -3708,7 +3674,7 @@ function registerClient() {
 }
 
 // ============================================================================
-// 20. PROCESSAMENTO DE FICHEIROS (COM SCHEMA REGISTRY v12.8.9)
+// 20. PROCESSAMENTO DE FICHEIROS (COM SCHEMA REGISTRY v13.12.0)
 // ============================================================================
 async function processFile(file, type) {
     const fileKey = `${file.name}_${file.size}_${file.lastModified}`;
@@ -3753,7 +3719,7 @@ async function processFile(file, type) {
     }
 
     const contentToHash = text;
-    const hash = CryptoJS.SHA256(contentToHash).toString();
+    const hash = await generateForensicHash(contentToHash);
 
     await generateForensicLog('FILE_INGESTED', file.name, hash);
 
@@ -3872,7 +3838,7 @@ async function processFile(file, type) {
 
             processAuxiliaryPlatformData(text, file.name);
 
-            logAudit(`📊 Extrato processado (v12.8.9): ${file.name} | Ganhos: ${formatCurrency(extracted.ganhos)} | Despesas: ${formatCurrency(extracted.despesas)} | Líquido: ${formatCurrency(extracted.ganhosLiq)}`, 'success');
+            logAudit(`📊 Extrato processado (v13.12.0): ${file.name} | Ganhos: ${formatCurrency(extracted.ganhos)} | Despesas: ${formatCurrency(extracted.despesas)} | Líquido: ${formatCurrency(extracted.ganhosLiq)}`, 'success');
             ForensicLogger.addEntry('STATEMENT_PROCESSED', { filename: file.name, ...extracted });
 
         } catch (e) {
@@ -4069,44 +4035,23 @@ function updateCounters() {
 }
 
 // ============================================================================
-// 21. MODO DEMO — v13.1.2-GOLD · DADOS FIXOS PARA APRESENTAÇÃO (NIF unificado)
+// 21. MODO DEMO — v13.12.0-PURE · DADOS FIXOS PARA APRESENTAÇÃO
 // ============================================================================
 function activateDemoMode() {
-    // ── GUARD CLAUSE: re-entrada bloqueada enquanto processamento activo ──────
-    // Idempotência de Execução: garante que loadAnonymizedRealCase não é
-    // disparado mais de uma vez por ciclo de DOM. A flag UNIFEDSystem.processing
-    // actua como mutex de estado (Stable/Ready).
     if (UNIFEDSystem.processing) return;
     UNIFEDSystem.processing = true;
 
     ForensicLogger.addEntry('DEMO_MODE_ACTIVATED');
 
-    // ── GUARD CLAUSE: verificar disponibilidade de _activatePurePanel ─────────
-    // _activatePurePanel() (definido em index.html) é o único ponto de montagem
-    // do panel.html. Internamente, após a Promise do fetch('panel.html') resolver,
-    // chama loadAnonymizedRealCase() uma única vez — garantindo que a injecção
-    // de dados ocorre DEPOIS dos nós DOM estarem em estado Stable/Ready.
-    // NÃO invocar loadAnonymizedRealCase() aqui directamente: seria uma
-    // segunda invocação redundante (race condition de dupla injecção).
     if (typeof window._activatePurePanel !== 'function') {
         console.error('[UNIFED] _activatePurePanel não registado. Verifique a ordem de carregamento de scripts.');
         UNIFEDSystem.processing = false;
         return;
     }
 
-    // 1. DISPARAR A MONTAGEM DO PAINEL (fetch + inject HTML + loadAnonymizedRealCase)
-    //    A Promise do fetch é assíncrona; o setTimeout abaixo aguarda a sua resolução.
     window._activatePurePanel();
 
-    // 2. LATÊNCIA DE I/O GARANTIDA: 500ms
-    //    Compensa: fetch('panel.html') [I/O disco/rede] + wrapper.innerHTML [Reflow]
-    //    + crypto.subtle.digest() [async] + _updatePureUI() [Repaint].
-    //    NÃO reduzir para 150ms: o encadeamento assíncrono excede esse valor
-    //    em contextos de servidor HTTP com latência de disco não nula.
     setTimeout(() => {
-        // 3. ACTUALIZAR CAMPOS DE IDENTIFICAÇÃO DO SUJEITO PASSIVO
-        //    Os dados já foram injectados por loadAnonymizedRealCase() via
-        //    _activatePurePanel(). Apenas sincronizar os inputs de UI.
         const client = UNIFEDSystem.client;
         if (client) {
             const nameInput = document.getElementById('clientNameFixed');
@@ -4116,7 +4061,6 @@ function activateDemoMode() {
             registerClient();
         }
 
-        // 4. LIBERTAR MUTEX E RESTAURAR ESTADO DA UI
         UNIFEDSystem.processing = false;
         const demoBtn = document.getElementById('demoModeBtn');
         if (demoBtn) {
@@ -4125,7 +4069,7 @@ function activateDemoMode() {
         }
         forensicDataSynchronization();
         logAudit('✅ Caso Real (Anonimizado) carregado com sucesso.', 'success');
-    }, 500); // [ISO/IEC 27037] Latência de I/O Garantida — não alterar sem validação
+    }, 500);
 }
 
 function simulateUpload(type, count) {
@@ -4186,7 +4130,7 @@ function simulateUpload(type, count) {
 }
 
 // ============================================================================
-// 22. MOTOR DE PERÍCIA FORENSE (v12.8.9) COM CORREÇÕES
+// 22. MOTOR DE PERÍCIA FORENSE (v13.12.0) COM CORREÇÕES
 // ============================================================================
 function performAudit() {
     if (!UNIFEDSystem.client) return showToast(currentLang === 'en' ? 'Register the taxpayer first.' : 'Registe o sujeito passivo primeiro.', 'error');
@@ -4267,7 +4211,7 @@ function performAudit() {
                 dac7TotalPeriodo: dac7TotalPeriodo
             };
 
-            console.log('🔍 VALORES EXTRAÍDOS (v12.8.9):');
+            console.log('🔍 VALORES EXTRAÍDOS (v13.12.0):');
             console.log('   SAF-T Bruto:', formatCurrency(saftBruto));
             console.log('   SAF-T Ilíquido:', formatCurrency(saftIliquido));
             console.log('   SAF-T IVA:', formatCurrency(saftIva));
@@ -4294,7 +4238,7 @@ function performAudit() {
             UNIFEDSystem.performanceTiming.end = performance.now();
             const duration = (UNIFEDSystem.performanceTiming.end - UNIFEDSystem.performanceTiming.start).toFixed(2);
 
-            logAudit(`📊 VALORES UTILIZADOS NA PERÍCIA (v12.8.9):`, 'info');
+            logAudit(`📊 VALORES UTILIZADOS NA PERÍCIA (v13.12.0):`, 'info');
             logAudit(`   SAF-T Bruto: ${formatCurrency(saftBruto)} (${UNIFEDSystem.documents.saft?.files?.length || 0} ficheiros)`, 'info');
             logAudit(`   Ganhos (Extrato): ${formatCurrency(stmtGanhos)}`, 'info');
             logAudit(`   Despesas (Extrato): ${formatCurrency(stmtDespesas)}`, 'info');
@@ -4307,7 +4251,7 @@ function performAudit() {
             logAudit(`   Expense Gap (Despesas - Fatura): ${formatCurrency(stmtDespesas - invoiceVal)}`, 'info');
             logAudit(`   Meses com dados: ${UNIFEDSystem.dataMonths.size}`, 'info');
 
-            logAudit(`✅ Perícia BIG DATA v12.8.9 concluída em ${duration}ms.`, 'success');
+            logAudit(`✅ Perícia BIG DATA v13.12.0 concluída em ${duration}ms.`, 'success');
 
             ForensicLogger.addEntry('AUDIT_COMPLETED', {
                 duration,
@@ -4425,7 +4369,7 @@ function performForensicCrossings() {
     cross.percentagemOmissao = cross.c2_pct;
     cross.ivaFalta = cross.discrepanciaCritica * 0.23;
     cross.ivaFalta6 = cross.discrepanciaCritica * 0.06;
-    cross.asfixiaFinanceira = saftBruto * 0.06; // v13.11: Asfixia Financeira
+    cross.asfixiaFinanceira = saftBruto * 0.06;
 
     cross.c3_saftBruto = saftBruto;
     cross.c3_ganhos = ganhos;
@@ -5210,7 +5154,7 @@ async function exportDataJSON() {
 }
 
 // ============================================================================
-// 24. EXPORTAÇÃO PDF (v12.8.9 - Atualizada para novos campos) - CÓDIGO COMPLETO
+// 24. EXPORTAÇÃO PDF (v13.12.0 - Atualizada para novos campos)
 // ============================================================================
 async function exportPDF() {
     if (!UNIFEDSystem.client) return showToast('Sem sujeito passivo para gerar parecer.', 'error');
@@ -5219,9 +5163,9 @@ async function exportPDF() {
         return showToast('Erro de sistema (jsPDF)', 'error');
     }
 
-    if (typeof UNIFEDSystem.generateForensicSeal === 'function') {
+    if (typeof UNIFEDSystem.generateMasterHash === 'function') {
         try {
-            await UNIFEDSystem.generateForensicSeal();
+            await UNIFEDSystem.generateMasterHash();
         } catch (e) {
             console.warn('[UNIFED-PDF] Não foi possível atualizar o hash dinâmico:', e);
         }
@@ -5312,39 +5256,39 @@ async function exportPDF() {
 
         if (typeof window.generateLegalNarrative === 'function') {
             try {
-                logAudit('🤖 [v13.3.0] A gerar Síntese Jurídica + Simulador Adversarial (IA)...', 'info');
+                logAudit('🤖 [v13.12.0] A gerar Síntese Jurídica + Simulador Adversarial (IA)...', 'info');
                 _enrichLegalNarrative = await window.generateLegalNarrative(UNIFEDSystem.analysis);
-                logAudit('✅ [v13.3.0] Síntese Jurídica + Contra-Interrogatório gerados.', 'success');
+                logAudit('✅ [v13.12.0] Síntese Jurídica + Contra-Interrogatório gerados.', 'success');
             } catch (_aiErr) {
                 _enrichLegalNarrative = '[Síntese jurídica indisponível — motor forense íntegro]';
-                logAudit('⚠ [v13.3.0] IA indisponível — PDF gerado sem síntese (CORS/offline).', 'warning');
+                logAudit('⚠ [v13.12.0] IA indisponível — PDF gerado sem síntese (CORS/offline).', 'warning');
             }
         }
 
         if (typeof window.renderSankeyToImage === 'function') {
             try {
-                logAudit('📊 [v13.3.0] A renderizar Diagrama de Fluxo Financeiro (Sankey)...', 'info');
+                logAudit('📊 [v13.12.0] A renderizar Diagrama de Fluxo Financeiro (Sankey)...', 'info');
                 _enrichSankeyImage = await window.renderSankeyToImage(UNIFEDSystem.analysis);
                 if (_enrichSankeyImage) {
-                    logAudit('✅ [v13.3.0] Diagrama Sankey renderizado com sucesso.', 'success');
+                    logAudit('✅ [v13.12.0] Diagrama Sankey renderizado com sucesso.', 'success');
                 } else {
-                    logAudit('⚠ [v13.3.0] Diagrama Sankey indisponível — PDF gerado sem gráfico.', 'warning');
+                    logAudit('⚠ [v13.12.0] Diagrama Sankey indisponível — PDF gerado sem gráfico.', 'warning');
                 }
             } catch (_sankeyErr) {
                 _enrichSankeyImage = null;
-                logAudit('⚠ [v13.3.0] Erro Sankey — PDF gerado sem diagrama.', 'warning');
+                logAudit('⚠ [v13.12.0] Erro Sankey — PDF gerado sem diagrama.', 'warning');
             }
         }
         if (typeof window.generateTemporalChartImage === 'function') {
             try {
-                logAudit('📅 [v13.3.0] A renderizar Gráfico ATF (Análise Temporal Forense)...', 'info');
+                logAudit('📅 [v13.12.0] A renderizar Gráfico ATF (Análise Temporal Forense)...', 'info');
                 _enrichTemporalImage = await window.generateTemporalChartImage(UNIFEDSystem.monthlyData, UNIFEDSystem.analysis);
                 if (_enrichTemporalImage) {
-                    logAudit('✅ [v13.3.0] Gráfico ATF renderizado com sucesso.', 'success');
+                    logAudit('✅ [v13.12.0] Gráfico ATF renderizado com sucesso.', 'success');
                 }
             } catch (_atfErr) {
                 _enrichTemporalImage = null;
-                logAudit('⚠ [v13.3.0] ATF gráfico indisponível — PDF sem análise temporal.', 'warning');
+                logAudit('⚠ [v13.12.0] ATF gráfico indisponível — PDF sem análise temporal.', 'warning');
             }
         }
 
@@ -7785,317 +7729,6 @@ function resetAuxiliaryData() {
     if (dac7NoteEl) dac7NoteEl.style.display = 'none';
 }
 
-function generateMasterHash() {
-    const forensicSummary = {
-        auxiliaryData: {
-            campanhas: UNIFEDSystem.auxiliaryData.campanhas,
-            portagens: UNIFEDSystem.auxiliaryData.portagens,
-            gorjetas: UNIFEDSystem.auxiliaryData.gorjetas,
-            cancelamentos: UNIFEDSystem.auxiliaryData.cancelamentos,
-            totalNaoSujeitos: UNIFEDSystem.auxiliaryData.totalNaoSujeitos,
-            processedFrom: UNIFEDSystem.auxiliaryData.processedFrom,
-            extractedAt: UNIFEDSystem.auxiliaryData.extractedAt,
-            legalBasis: currentLang === 'pt' ? 'Lei TVDE · 0% comissão · Art. 125.º CPP' : 'TVDE Law · 0% commission · Art. 125 CPP'
-        }
-    };
-
-    // Full SHA-256 recomputation: concatenate all evidence hashes
-    const evidenceHashes = UNIFEDSystem.analysis.evidenceIntegrity
-        .map(ev => ev.hash)
-        .filter(h => h && h.length === 64)
-        .sort();
-
-    const binaryConcat = evidenceHashes.join('') + JSON.stringify(forensicSummary) + UNIFEDSystem.sessionId;
-
-    const masterHashFull = CryptoJS.SHA256(binaryConcat).toString().toUpperCase();
-
-    UNIFEDSystem.masterHash = masterHashFull;
-    setElementText('masterHashValue', UNIFEDSystem.masterHash);
-    generateQRCode();
-    window.activeForensicSession = {
-        sessionId: UNIFEDSystem.sessionId,
-        masterHash: UNIFEDSystem.masterHash
-    };
-    try { sessionStorage.setItem('currentSession', JSON.stringify(window.activeForensicSession)); } catch (_e) { }
-}
-
-function logAudit(message, type = 'info') {
-    const now = Date.now();
-    if (now - lastLogTime < LOG_THROTTLE && type !== 'error' && type !== 'success') {
-        return;
-    }
-    lastLogTime = now;
-
-    const timestamp = new Date().toLocaleTimeString('pt-PT');
-    const entry = { timestamp, message, type };
-    UNIFEDSystem.logs.push(entry);
-
-    const consoleOutput = document.getElementById('consoleOutput');
-    if (consoleOutput) {
-        const logEl = document.createElement('div');
-        logEl.className = `log-entry log-${type}`;
-        logEl.textContent = `[${timestamp}] ${message}`;
-        consoleOutput.appendChild(logEl);
-        consoleOutput.scrollTop = consoleOutput.scrollHeight;
-    }
-}
-
-function showToast(message, type = 'info') {
-    const container = document.getElementById('toastContainer');
-    if (!container) return;
-
-    const toast = document.createElement('div');
-    toast.className = `toast-notification ${type}`;
-
-    const icons = {
-        success: 'fa-check-circle',
-        error: 'fa-exclamation-triangle',
-        warning: 'fa-exclamation-circle',
-        info: 'fa-info-circle'
-    };
-
-    toast.innerHTML = `<i class="fas ${icons[type] || icons.info}"></i><p>${message}</p>`;
-    container.appendChild(toast);
-
-    setTimeout(() => {
-        toast.style.animation = 'slideIn 0.3s ease reverse';
-        setTimeout(() => toast.remove(), 300);
-    }, 4000);
-}
-
-function clearConsole() {
-    UNIFEDSystem.documents = {
-        control: { files: [], hashes: {}, totals: { records: 0 } },
-        saft: { files: [], hashes: {}, totals: { records: 0, iliquido: 0, iva: 0, bruto: 0 } },
-        invoices: { files: [], hashes: {}, totals: { records: 0, invoiceValue: 0 } },
-        statements: { files: [], hashes: {}, totals: { records: 0, ganhos: 0, despesas: 0, ganhosLiquidos: 0 } },
-        dac7: { files: [], hashes: {}, totals: { records: 0, q1: 0, q2: 0, q3: 0, q4: 0, total: 0 } }
-    };
-    UNIFEDSystem.analysis.evidenceIntegrity = [];
-    UNIFEDSystem.dataMonths = new Set();
-    UNIFEDSystem.monthlyData = {};
-    UNIFEDSystem.processedFiles = new Set();
-
-    UNIFEDSystem.client = null;
-    document.querySelectorAll('.client-data-field').forEach(el => el.textContent = '---');
-    const clientNameInput = document.getElementById('clientNameFixed');
-    const clientNIFInput = document.getElementById('clientNIFFixed');
-    const clientStatus = document.getElementById('clientStatusFixed');
-    if (clientNameInput) clientNameInput.value = '';
-    if (clientNIFInput) clientNIFInput.value = '';
-    if (clientStatus) clientStatus.style.display = 'none';
-    localStorage.removeItem('ifde_client_data_v12_8');
-
-    const fieldsToClear = ['subject-name', 'subject-nif', 'subject-address', 'audit-period', 'audit-hash', 'audit-status', 'saft-total', 'saft-iva', 'saft-iliquido', 'extract-ganhos', 'extract-despesas', 'dac7-total', 'revenue-gap', 'expense-gap'];
-    fieldsToClear.forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = '---'; });
-
-    const consoleLogs = document.getElementById('consoleOutput');
-    if (consoleLogs) consoleLogs.innerHTML = '';
-
-    document.querySelectorAll('.led-red-blink, .led-yellow-blink').forEach(led => { led.className = 'led-status led-off'; });
-    document.querySelectorAll('.box-border-blink, .box-despesas-blink').forEach(box => {
-        box.classList.remove('box-border-blink', 'box-despesas-blink');
-    });
-    const statCommCardWipe = document.getElementById('statCommCard');
-    if (statCommCardWipe) {
-        statCommCardWipe.classList.remove('alert-intermitent', 'box-despesas-blink');
-        statCommCardWipe.style.borderColor = '';
-        statCommCardWipe.style.boxShadow = '';
-    }
-    UNIFEDSystem.demoMode = false;
-    UNIFEDSystem.casoRealAnonimizado = false;
-    if (UNIFEDSystem.fileSources) UNIFEDSystem.fileSources.clear();
-
-    resetAllValues();
-
-    logAudit('🧹 SISTEMA PURGADO: Reset total executado. Sujeito Passivo eliminado.', 'warn');
-    ForensicLogger.addEntry('CONSOLE_CLEARED', { clientPurged: true });
-    showToast(currentLang === 'pt' ? 'Sistema purgado com sucesso' : 'System purged successfully', 'success');
-}
-
-function resetAllValues() {
-    UNIFEDSystem.documents.saft.totals = { records: 0, iliquido: 0, iva: 0, bruto: 0 };
-    UNIFEDSystem.documents.statements.totals = { records: 0, ganhos: 0, despesas: 0, ganhosLiquidos: 0 };
-    UNIFEDSystem.documents.invoices.totals = { invoiceValue: 0, records: 0 };
-    UNIFEDSystem.documents.dac7.totals = {
-        records: 0, q1: 0, q2: 0, q3: 0, q4: 0,
-        totalPeriodo: 0, receitaAnual: 0
-    };
-    UNIFEDSystem.documents.control.totals = { records: 0 };
-
-    UNIFEDSystem.documents.statements.files = [];
-    UNIFEDSystem.documents.invoices.files = [];
-    UNIFEDSystem.documents.saft.files = [];
-    UNIFEDSystem.documents.control.files = [];
-    UNIFEDSystem.documents.dac7.files = [];
-
-    UNIFEDSystem.processedFiles.clear();
-    UNIFEDSystem.dataMonths.clear();
-    UNIFEDSystem.analysis.evidenceIntegrity = [];
-    ValueSource.sources.clear();
-
-    UNIFEDSystem.analysis.totals = {
-        saftBruto: 0,
-        saftIliquido: 0,
-        saftIva: 0,
-        ganhos: 0,
-        despesas: 0,
-        ganhosLiquidos: 0,
-        faturaPlataforma: 0,
-        dac7Q1: 0,
-        dac7Q2: 0,
-        dac7Q3: 0,
-        dac7Q4: 0,
-        dac7TotalPeriodo: 0
-    };
-
-    UNIFEDSystem.analysis.twoAxis = {
-        revenueGap: 0,
-        expenseGap: 0,
-        revenueGapActive: false,
-        expenseGapActive: false
-    };
-
-    UNIFEDSystem.analysis.crossings = {
-        delta: 0,
-        bigDataAlertActive: false,
-        invoiceDivergence: false,
-        comissaoDivergencia: 0,
-        saftVsDac7Alert: false,
-        saftVsGanhosAlert: false,
-        discrepanciaCritica: 0,
-        discrepanciaSaftVsDac7: 0,
-        percentagemOmissao: 0,
-        percentagemDiscrepancia: 0,
-        percentagemSaftVsDac7: 0,
-        ivaFalta: 0,
-        ivaFalta6: 0,
-        btor: 0,
-        btf: 0,
-        impactoMensalMercado: 0,
-        impactoAnualMercado: 0,
-        impactoSeteAnosMercado: 0,
-        discrepancia5IMT: 0,
-        agravamentoBrutoIRC: 0,
-        ircEstimado: 0,
-        asfixiaFinanceira: 0
-    };
-    UNIFEDSystem.analysis.verdict = null;
-    UNIFEDSystem.analysis.selectedQuestions = [];
-    UNIFEDSystem.monthlyData = {};
-    UNIFEDSystem.demoMode = false;
-    UNIFEDSystem.casoRealAnonimizado = false;
-    if (UNIFEDSystem.fileSources) UNIFEDSystem.fileSources.clear();
-
-    const elementsToReset = [
-        'saftIliquidoValue', 'saftIvaValue', 'saftBrutoValue',
-        'stmtGanhosValue', 'stmtDespesasValue', 'stmtGanhosLiquidosValue',
-        'dac7Q1Value', 'dac7Q2Value', 'dac7Q3Value', 'dac7Q4Value',
-        'statNet', 'statComm', 'statJuros',
-        'kpiGrossValue', 'kpiCommValue', 'kpiNetValue', 'kpiInvValue',
-        'quantumValue', 'verdictLevel', 'verdictPercentValue', 'alertDeltaValue',
-        'discrepancy5Value', 'agravamentoBrutoValue', 'ircValue', 'iva6Value', 'iva23Value',
-        'revenueGapValue', 'expenseGapValue'
-    ];
-
-    elementsToReset.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-            if (id.includes('Value') || id.includes('stat') || id.includes('kpi') || id.includes('quantum') || id.includes('alert') || id.includes('Gap')) {
-                el.textContent = '0,00 €';
-            } else {
-                el.textContent = 'AGUARDANDO ANÁLISE';
-            }
-        }
-    });
-
-    const verdictDesc = document.getElementById('verdictDesc');
-    if (verdictDesc) verdictDesc.innerHTML = 'Execute a perícia para obter o veredicto.';
-
-    const verdictPercentSpan = document.getElementById('verdictPercentSpan');
-    if (verdictPercentSpan) verdictPercentSpan.textContent = '0,00%';
-
-    const sourceElements = document.querySelectorAll('[id$="Source"]');
-    sourceElements.forEach(el => {
-        el.textContent = '';
-        el.removeAttribute('data-tooltip');
-        el.removeAttribute('data-original-file');
-    });
-
-    const listIds = ['controlFileListModal', 'saftFileListModal', 'invoicesFileListModal', 'statementsFileListModal', 'dac7FileListModal'];
-    listIds.forEach(id => {
-        const list = document.getElementById(id);
-        if (list) {
-            list.innerHTML = '';
-            list.style.display = 'none';
-        }
-    });
-
-    const bigDataAlert = document.getElementById('bigDataAlert');
-    if (bigDataAlert) bigDataAlert.style.display = 'none';
-
-    const quantumBox = document.getElementById('quantumBox');
-    if (quantumBox) {
-        quantumBox.style.display = 'none';
-        const breakdown = document.getElementById('quantumBreakdown');
-        if (breakdown) breakdown.innerHTML = '';
-    }
-
-    const verdictDisplay = document.getElementById('verdictDisplay');
-    if (verdictDisplay) verdictDisplay.style.display = 'none';
-
-    const jurosCard = document.getElementById('jurosCard');
-    if (jurosCard) jurosCard.style.display = 'none';
-
-    const alertCards = ['discrepancy5Card', 'agravamentoBrutoCard', 'ircCard', 'iva6Card', 'iva23Card', 'revenueGapCard', 'expenseGapCard', 'omissaoDespesasPctCard'];
-    alertCards.forEach(id => {
-        const card = document.getElementById(id);
-        if (card) card.style.display = 'none';
-    });
-
-    const alertElements = ['kpiInvCard', 'statCommCard', 'kpiCommCard'];
-    alertElements.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.classList.remove('alert-intermitent');
-    });
-
-    updateCounters();
-    updateEvidenceSummary();
-
-    if (UNIFEDSystem.chart) {
-        UNIFEDSystem.chart.destroy();
-        UNIFEDSystem.chart = null;
-    }
-
-    if (UNIFEDSystem.discrepancyChart) {
-        UNIFEDSystem.discrepancyChart.destroy();
-        UNIFEDSystem.discrepancyChart = null;
-    }
-
-    generateMasterHash();
-    ForensicLogger.addEntry('VALUES_RESET');
-
-    resetAuxiliaryData();  // Garantir que os dados auxiliares também são limpos
-}
-
-function resetSystem() {
-    if (!confirm(currentLang === 'pt' ? '[!] Tem a certeza que deseja reiniciar o sistema? Todos os dados serão perdidos.' : '[!] Are you sure you want to restart the system? All data will be lost.')) return;
-
-    ForensicLogger.addEntry('SYSTEM_RESET');
-
-    localStorage.removeItem('ifde_client_data_v12_8');
-    location.reload();
-}
-
-function updateAnalysisButton() {
-    const btn = document.getElementById('analyzeBtn');
-    if (btn) {
-        const hasFiles = Object.values(UNIFEDSystem.documents).some(d => d.files && d.files.length > 0);
-        const hasClient = UNIFEDSystem.client !== null;
-        btn.disabled = !(hasFiles && hasClient);
-    }
-}
-
 // ============================================================================
 // 26. GESTÃO DE LOGS (ART. 30 RGPD)
 // ============================================================================
@@ -8213,7 +7846,7 @@ function setupWipeButton() {
 
             ForensicLogger.addEntry('WIPE_COMPLETED');
 
-            generateMasterHash();
+            UNIFEDSystem.generateMasterHash().catch(e => console.error('[MASTERHASH] Erro após wipe:', e));
             updateAnalysisButton();
         }
     });
