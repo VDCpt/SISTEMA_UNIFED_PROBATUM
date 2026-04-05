@@ -64,13 +64,13 @@ html, body {
   font-family: var(--pure-font-mono);
 }
 
-/* ── Header da secção ─────────────────────────────────────────────────────── */
+/* ── Header da secção (CORREÇÃO DE LAYOUT) ─────────────────────────────────── */
 .pure-section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  text-align: center !important;
+  width: 100% !important;
   border-bottom: 1px solid var(--pure-border);
   padding-bottom: 14px;
   margin-bottom: 20px;

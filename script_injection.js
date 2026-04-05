@@ -161,6 +161,9 @@
         }
 
         console.log('[UNIFED] Iniciando Sincronização Forense...');
+
+        // Calcular total de fluxos não sujeitos a comissão (campanhas + gorjetas + portagens)
+        const totalNaoSujeitosCalc = (t.campanhas || 0) + (t.gorjetas || 0) + (t.portagens || 0);
         
         const mapping = {
             'pure-ganhos':           fmt(t.ganhos),
@@ -177,8 +180,8 @@
             'pure-iva-23':            fmt(t.iva23Omitido),
             'pure-irc':               fmt(ircEstimado),
             'pure-disc-c2-grid':      fmt(discrepanciaC2),
-            'pure-iva-devido':        fmt(asfixiaFinanceira),   // Asfixia Financeira
-            'pure-nao-sujeitos':      fmt(t.totalNaoSujeitos),
+            'pure-iva-devido':        fmt(asfixiaFinanceira),
+            'pure-nao-sujeitos':      fmt(totalNaoSujeitosCalc),
             'pure-atf-sp':            data.atf.score + '/100',
             'pure-atf-trend':         data.atf.trend,
             'pure-atf-outliers':      data.atf.outliers + ' outliers > 2σ',
@@ -186,7 +189,7 @@
             'pure-nc-campanhas':       fmt(t.campanhas),
             'pure-nc-gorjetas':        fmt(t.gorjetas),
             'pure-nc-portagens':       fmt(t.portagens),
-            'pure-nc-total':           fmt(t.totalNaoSujeitos),
+            'pure-nc-total':           fmt(totalNaoSujeitosCalc),
             'pure-verdict':            'RISCO ELEVADO · CONTRA-ORDENAÇÃO',
             'pure-verdict-pct':        percentC2.toFixed(2) + '%',
             'pure-hash-prefix-verdict': data.masterHash.substring(0, 16) + '...',
@@ -211,11 +214,10 @@
             'pure-fat-qty':            data.counts.fat.toString(),
             'pure-ext-qty':            data.counts.ext.toString(),
             'pure-dac7-qty':           data.counts.dac7.toString(),
-	    'pure-ganhos-tri':         fmt(t.ganhos),
+            'pure-ganhos-tri':         fmt(t.ganhos),
             'pure-despesas-tri':       fmt(t.despesas),
             'pure-liquido-tri':        fmt(t.ganhosLiquidos),
             'pure-fatura-tri':         fmt(t.faturaPlataforma),
-
         };
 
         const missing = [];

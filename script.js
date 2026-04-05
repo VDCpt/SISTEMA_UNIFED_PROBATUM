@@ -7887,66 +7887,6 @@ function setupDualScreenDetection() {
 }
 
 // ============================================================================
-// 31. FUNÇÕES GLOBAIS DE UTILIDADE (clearConsole, resetSystem)
-// ============================================================================
-window.clearConsole = function clearConsole() {
-    // Limpar a área de log do DOM
-    const consoleOutput = document.getElementById('consoleOutput');
-    if (consoleOutput) consoleOutput.innerHTML = '';
-    // Limpar a consola do browser (apenas visual, não afecta logs forenses)
-    console.clear();
-    // Registrar a acção no logger forense
-    ForensicLogger.addEntry('CONSOLE_CLEARED', { by: 'user' });
-    logAudit('🧹 Consola e área de log limpas.', 'info');
-};
-
-window.resetSystem = async function resetSystem() {
-    if (!confirm(currentLang === 'pt' ? 'Reiniciar o sistema irá apagar todas as evidências e análises. Continuar?' : 'Resetting the system will delete all evidence and analysis. Continue?')) {
-        return;
-    }
-    ForensicLogger.addEntry('SYSTEM_RESET_REQUESTED');
-    
-    // 1. Limpar dados do UNIFEDSystem (manter apenas estrutura mínima)
-    UNIFEDSystem.analysis = {
-        totals: { saftBruto:0, saftIliquido:0, saftIva:0, ganhos:0, despesas:0, ganhosLiquidos:0, faturaPlataforma:0, dac7Q1:0, dac7Q2:0, dac7Q3:0, dac7Q4:0, dac7TotalPeriodo:0 },
-        twoAxis: { revenueGap:0, expenseGap:0, revenueGapActive:false, expenseGapActive:false },
-        crossings: { discrepanciaCritica:0, discrepanciaSaftVsDac7:0, percentagemOmissao:0, percentagemSaftVsDac7:0, ivaFalta:0, ivaFalta6:0, btor:0, btf:0, agravamentoBrutoIRC:0, ircEstimado:0, asfixiaFinanceira:0 },
-        verdict: null,
-        evidenceIntegrity: [],
-        selectedQuestions: []
-    };
-    UNIFEDSystem.documents = {
-        control: { files:[], hashes:{}, totals:{ records:0 } },
-        saft: { files:[], hashes:{}, totals:{ records:0, iliquido:0, iva:0, bruto:0 } },
-        invoices: { files:[], hashes:{}, totals:{ records:0, invoiceValue:0 } },
-        statements: { files:[], hashes:{}, totals:{ records:0, ganhos:0, despesas:0, ganhosLiquidos:0 } },
-        dac7: { files:[], hashes:{}, totals:{ records:0, q1:0, q2:0, q3:0, q4:0, receitaAnual:0 } }
-    };
-    UNIFEDSystem.monthlyData = {};
-    UNIFEDSystem.dataMonths.clear();
-    UNIFEDSystem.processedFiles.clear();
-    UNIFEDSystem.fileSources.clear();
-    resetAuxiliaryData();   // função já existente
-    
-    // 2. Regenerar hash mestre
-    await UNIFEDSystem.generateMasterHash();
-    
-    // 3. Actualizar interface
-    updateModulesUI();
-    updateDashboard();
-    renderChart();
-    renderDiscrepancyChart();
-    forensicDataSynchronization();
-    
-    // 4. Disparar evento para que outros módulos (nexus, triada) se reinicializem
-    window.dispatchEvent(new CustomEvent('UNIFED_CORE_READY', { detail: { reset: true } }));
-    
-    logAudit('🔄 Sistema reiniciado – todas as evidências e análises foram limpas.', 'success');
-    showToast(currentLang === 'pt' ? 'Sistema reiniciado com sucesso.' : 'System reset successfully.', 'success');
-    ForensicLogger.addEntry('SYSTEM_RESET_COMPLETED');
-};
-
-// ============================================================================
 // 30. EXPOSIÇÃO GLOBAL
 // ============================================================================
 window.UNIFEDSystem = UNIFEDSystem;
@@ -8034,6 +7974,66 @@ if (typeof window.dispatchEvent === 'function') {
 }
 
 // ============================================================================
+// 31. FUNÇÕES GLOBAIS DE UTILIDADE (clearConsole, resetSystem)
+// ============================================================================
+window.clearConsole = function clearConsole() {
+    // Limpar a área de log do DOM
+    const consoleOutput = document.getElementById('consoleOutput');
+    if (consoleOutput) consoleOutput.innerHTML = '';
+    // Limpar a consola do browser (apenas visual, não afecta logs forenses)
+    console.clear();
+    // Registrar a acção no logger forense
+    ForensicLogger.addEntry('CONSOLE_CLEARED', { by: 'user' });
+    logAudit('🧹 Consola e área de log limpas.', 'info');
+};
+
+window.resetSystem = async function resetSystem() {
+    if (!confirm(currentLang === 'pt' ? 'Reiniciar o sistema irá apagar todas as evidências e análises. Continuar?' : 'Resetting the system will delete all evidence and analysis. Continue?')) {
+        return;
+    }
+    ForensicLogger.addEntry('SYSTEM_RESET_REQUESTED');
+    
+    // 1. Limpar dados do UNIFEDSystem (manter apenas estrutura mínima)
+    UNIFEDSystem.analysis = {
+        totals: { saftBruto:0, saftIliquido:0, saftIva:0, ganhos:0, despesas:0, ganhosLiquidos:0, faturaPlataforma:0, dac7Q1:0, dac7Q2:0, dac7Q3:0, dac7Q4:0, dac7TotalPeriodo:0 },
+        twoAxis: { revenueGap:0, expenseGap:0, revenueGapActive:false, expenseGapActive:false },
+        crossings: { discrepanciaCritica:0, discrepanciaSaftVsDac7:0, percentagemOmissao:0, percentagemSaftVsDac7:0, ivaFalta:0, ivaFalta6:0, btor:0, btf:0, agravamentoBrutoIRC:0, ircEstimado:0, asfixiaFinanceira:0 },
+        verdict: null,
+        evidenceIntegrity: [],
+        selectedQuestions: []
+    };
+    UNIFEDSystem.documents = {
+        control: { files:[], hashes:{}, totals:{ records:0 } },
+        saft: { files:[], hashes:{}, totals:{ records:0, iliquido:0, iva:0, bruto:0 } },
+        invoices: { files:[], hashes:{}, totals:{ records:0, invoiceValue:0 } },
+        statements: { files:[], hashes:{}, totals:{ records:0, ganhos:0, despesas:0, ganhosLiquidos:0 } },
+        dac7: { files:[], hashes:{}, totals:{ records:0, q1:0, q2:0, q3:0, q4:0, receitaAnual:0 } }
+    };
+    UNIFEDSystem.monthlyData = {};
+    UNIFEDSystem.dataMonths.clear();
+    UNIFEDSystem.processedFiles.clear();
+    UNIFEDSystem.fileSources.clear();
+    resetAuxiliaryData();   // função já existente
+    
+    // 2. Regenerar hash mestre
+    await UNIFEDSystem.generateMasterHash();
+    
+    // 3. Actualizar interface
+    updateModulesUI();
+    updateDashboard();
+    renderChart();
+    renderDiscrepancyChart();
+    forensicDataSynchronization();
+    
+    // 4. Disparar evento para que outros módulos (nexus, triada) se reinicializem
+    window.dispatchEvent(new CustomEvent('UNIFED_CORE_READY', { detail: { reset: true } }));
+    
+    logAudit('🔄 Sistema reiniciado – todas as evidências e análises foram limpas.', 'success');
+    showToast(currentLang === 'pt' ? 'Sistema reiniciado com sucesso.' : 'System reset successfully.', 'success');
+    ForensicLogger.addEntry('SYSTEM_RESET_COMPLETED');
+};
+
+// ============================================================================
 // 32. FUNÇÃO GLOBAL showToast (Notificações Temporárias)
 // ============================================================================
 window.showToast = function showToast(message, type = 'info') {
@@ -8062,33 +8062,33 @@ window.showToast = function showToast(message, type = 'info') {
     `;
 
     let icon = '';
-    if (type === 'success') icon = '✅ ';
-    else if (type === 'error') icon = '❌ ';
-    else if (type === 'warning') icon = '⚠️ ';
-    else icon = 'ℹ️ ';
+    if (type === 'success') icon = '🟢';
+    else if (type === 'error') icon = '🔴';
+    else if (type === 'warning') icon = '⚠️';
+    else icon = '📈';
 
     toast.innerHTML = `${icon}${message}`;
     container.appendChild(toast);
 
     setTimeout(() => {
-        toast.style.opacity = '0';
+        toast.style.opacity = 0;
         toast.style.transition = 'opacity 0.3s';
         setTimeout(() => {
             if (toast.parentNode) toast.remove();
         }, 300);
     }, 4000);
+
+    if (!document.querySelector('#toastAnimationStyle')) {
+        const style = document.createElement('style');
+        style.id = 'toastAnimationStyle';
+        style.textContent = `
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+`;
+        document.head.appendChild(style);
+    }
 };
 
-if (!document.querySelector('#toastAnimationStyle')) {
-    const style = document.createElement('style');
-    style.id = 'toastAnimationStyle';
-    style.textContent = `
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-    `;
-    document.head.appendChild(style);
-}
-
-console.log('UNIFED - PROBATUM v13.12.0-PURE · DORA COMPLIANT · ATF · INTEGRITY SEAL · DOCX · AI ADVERSARIAL · NIFAF GUARD · NEXUS · ATIVADO');
+console.log('UNIFED - PROBATUM v13.12.0-PURE - DORA COMPLIANT - ATF - INTEGRITY SEAL - DOCX - AI ADVERSARIAL - NIFAF GUARD - NEXUS - ATIVADO');
