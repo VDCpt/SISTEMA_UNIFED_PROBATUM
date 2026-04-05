@@ -210,7 +210,7 @@
             'pure-saft-qty':           data.counts.saft.toString(),
             'pure-fat-qty':            data.counts.fat.toString(),
             'pure-ext-qty':            data.counts.ext.toString(),
-            'pure-dac7-qty':           data.counts.dac7.toString()
+            'pure-dac7-qty':           data.counts.dac7.toString(),
 	    'pure-ganhos-tri':         fmt(t.ganhos),
             'pure-despesas-tri':       fmt(t.despesas),
             'pure-liquido-tri':        fmt(t.ganhosLiquidos),

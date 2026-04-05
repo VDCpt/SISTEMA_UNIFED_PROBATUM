@@ -8029,6 +8029,69 @@ if (typeof window.dispatchEvent === 'function') {
             timestamp: Date.now(),
             version: UNIFEDSystem._pureModuleVersion || 'v13.12.0-PURE'
         }
+
+// ============================================================================
+// 32. FUNÇÃO GLOBAL showToast (Notificações Temporárias)
+// ============================================================================
+window.showToast = function showToast(message, type = 'info') {
+    // Criar container se não existir
+    let container = document.getElementById('toastContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toastContainer';
+        container.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:10000;display:flex;flex-direction:column;gap:10px;';
+        document.body.appendChild(container);
+    }
+
+    // Criar o toast
+    const toast = document.createElement('div');
+    toast.className = `toast-notification ${type}`;
+    toast.style.cssText = `
+        background: var(--bg-tertiary, #1e293b);
+        color: var(--text-primary, #f1f5f9);
+        padding: 0.75rem 1.25rem;
+        border-radius: 4px;
+        border-left: 4px solid ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : type === 'warning' ? '#f59e0b' : '#00e5ff'};
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.8rem;
+        animation: slideIn 0.3s ease;
+        max-width: 350px;
+        word-break: break-word;
+    `;
+
+    // Ícone conforme o tipo
+    let icon = '';
+    if (type === 'success') icon = '✅ ';
+    else if (type === 'error') icon = '❌ ';
+    else if (type === 'warning') icon = '⚠️ ';
+    else icon = 'ℹ️ ';
+
+    toast.innerHTML = `${icon}${message}`;
+    container.appendChild(toast);
+
+    // Remover após 4 segundos
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s';
+        setTimeout(() => {
+            if (toast.parentNode) toast.remove();
+        }, 300);
+    }, 4000);
+};
+
+// Garantir que a animação slideIn existe no CSS (se não existir, adicionar dinamicamente)
+if (!document.querySelector('#toastAnimationStyle')) {
+    const style = document.createElement('style');
+    style.id = 'toastAnimationStyle';
+    style.textContent = `
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    `;
+    document.head.appendChild(style);
+}
     }));
     console.log('[UNIFED-CORE] Evento UNIFED_CORE_READY despachado.');
 }
