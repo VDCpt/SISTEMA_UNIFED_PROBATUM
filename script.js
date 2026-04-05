@@ -2954,7 +2954,8 @@ const UNIFEDSystem = {
             impactoSeteAnosMercado: 0,
             discrepancia5IMT: 0,
             agravamentoBrutoIRC: 0,
-            ircEstimado: 0
+            ircEstimado: 0,
+            asfixiaFinanceira: 0  // Novo campo v13.11
         },
         verdict: null,
         evidenceIntegrity: [],
@@ -3815,9 +3816,10 @@ async function processFile(file, type) {
 
             if (mesMatch) {
                 const meses = {
-                    'jan': '01', 'fev': '02', 'mar': '03', 'abr': '04',
-                    'mai': '05', 'jun': '06', 'jul': '07', 'ago': '08',
-                    'set': '09', 'out': '10', 'nov': '11', 'dez': '12'
+                    'jan': '01', 'fev': '02', 'mar': '03', 'apr': '04',
+                    'abr': '04', 'mai': '05', 'may': '05', 'jun': '06',
+                    'jul': '07', 'ago': '08', 'set': '09', 'sep': '09',
+                    'out': '10', 'oct': '10', 'nov': '11', 'dez': '12', 'dec': '12'
                 };
                 const ano = mesMatch[3];
                 const mes = meses[mesMatch[2].toLowerCase()];
@@ -4423,6 +4425,7 @@ function performForensicCrossings() {
     cross.percentagemOmissao = cross.c2_pct;
     cross.ivaFalta = cross.discrepanciaCritica * 0.23;
     cross.ivaFalta6 = cross.discrepanciaCritica * 0.06;
+    cross.asfixiaFinanceira = saftBruto * 0.06; // v13.11: Asfixia Financeira
 
     cross.c3_saftBruto = saftBruto;
     cross.c3_ganhos = ganhos;
@@ -4469,6 +4472,7 @@ function performForensicCrossings() {
     logAudit(`[C4] Líquido Declarado (${formatCurrency(cross.c4_liquidoDeclarado)}) vs Líquido Real (${formatCurrency(ganhosLiquidos)}) → Δ ${formatCurrency(cross.c4_delta)} (${cross.c4_pct.toFixed(2)}%) — Diferença final no bolso`, 'error');
     logAudit(`💰 IVA em falta (23%): ${formatCurrency(cross.ivaFalta)} | IVA em falta (6%): ${formatCurrency(cross.ivaFalta6)}`, 'error');
     logAudit(`📐 Agravamento IRC Anual (C2/meses×12): ${formatCurrency(cross.agravamentoBrutoIRC)} | IRC Est. (21%): ${formatCurrency(cross.ircEstimado)}`, 'info');
+    logAudit(`📉 Asfixia Financeira (IVA 6% sobre SAF-T Bruto): ${formatCurrency(cross.asfixiaFinanceira)} — Art. 405.º C. Civil`, 'info');
 
     ForensicLogger.addEntry('CROSSINGS_CALCULATED_4AXES', {
         c1_saftVsDac7: { delta: cross.c1_delta, pct: cross.c1_pct },
@@ -4480,7 +4484,8 @@ function performForensicCrossings() {
         percentage: cross.percentagemOmissao,
         percentageSaftVsDac7: cross.percentagemSaftVsDac7,
         vat23: cross.ivaFalta,
-        vat6: cross.ivaFalta6
+        vat6: cross.ivaFalta6,
+        asfixiaFinanceira: cross.asfixiaFinanceira
     });
 }
 
@@ -4659,6 +4664,7 @@ function updateDashboard() {
     setElementText('ircValue', formatCurrency(cross.ircEstimado || 0));
     setElementText('iva6Value', formatCurrency(cross.ivaFalta6 || 0));
     setElementText('iva23Value', formatCurrency(cross.ivaFalta || 0));
+    setElementText('asfixiaFinanceiraValue', formatCurrency(cross.asfixiaFinanceira || 0));
 
     setElementText('quantumValue', formatCurrency(cross.impactoSeteAnosMercado || 0));
 
@@ -5680,7 +5686,8 @@ async function exportPDF() {
             { desc: currentLang === 'pt' ? '[!] SAF-T Valor Bruto Total vs DAC7 (Revenue Omission)' : '[!] SAF-T Gross Value vs DAC7 (Revenue Omission)',       value: cross.discrepanciaSaftVsDac7,      source: currentLang === 'pt' ? 'Smoking Gun 1' : 'Smoking Gun 1', isGap: true },
             { desc: currentLang === 'pt' ? `[X] Diferencial de Base em Análise (Despesas/Comissões vs Fatura) [${_pctOmissaoStr}]` : `[X] Base Differential Under Analysis (Expenses/Commissions vs Invoice) [${_pctOmissaoStr}]`, value: cross.discrepanciaCritica, source: currentLang === 'pt' ? 'Smoking Gun 2' : 'Smoking Gun 2', isCritical: true },
             { desc: currentLang === 'pt' ? 'IVA Omitido (23% · Autoliquidação CIVA)' : 'Missing VAT (23% · VAT Self-Liquidation)',         value: cross.ivaFalta,          source: currentLang === 'pt' ? 'Cálculo CIVA' : 'VAT Calculation',  isGap: true },
-            { desc: currentLang === 'pt' ? 'IVA Omitido (6% · Serviços Transporte)' : 'Missing VAT (6% · Transport Services)',          value: cross.ivaFalta6,           source: currentLang === 'pt' ? 'Cálculo CIVA' : 'VAT Calculation',  isGap: true }
+            { desc: currentLang === 'pt' ? 'IVA Omitido (6% · Serviços Transporte)' : 'Missing VAT (6% · Transport Services)',          value: cross.ivaFalta6,           source: currentLang === 'pt' ? 'Cálculo CIVA' : 'VAT Calculation',  isGap: true },
+            { desc: currentLang === 'pt' ? 'Asfixia Financeira (IVA 6% sobre SAF-T Bruto)' : 'Financial Suffocation (6% VAT on SAF-T Gross)', value: cross.asfixiaFinanceira, source: 'Art. 405.º C. Civil · Verba 2.18 CIVA', isGap: true }
         ];
 
         rows.forEach(row => {
@@ -5808,6 +5815,8 @@ async function exportPDF() {
         doc.setFont('helvetica', 'normal');
         doc.text(`${currentLang === 'pt' ? 'IVA Omitido (23%):' : 'Missing VAT (23%):'}  ${formatCurrency(cross.ivaFalta)}`, left, y); y += 4;
         doc.text(`${currentLang === 'pt' ? 'IVA Omitido (6%):' : 'Missing VAT (6%):'}   ${formatCurrency(cross.ivaFalta6)}`, left, y); y += 8;
+        doc.text(`${currentLang === 'pt' ? 'Asfixia Financeira (IVA 6% sobre Bruto):' : 'Financial Suffocation (6% VAT on Gross):'} ${formatCurrency(cross.asfixiaFinanceira)}`, left, y); y += 4;
+
         doc.setDrawColor(200, 200, 200);
         doc.setLineWidth(0.2);
         if (y < 270) {
@@ -6151,7 +6160,8 @@ async function exportPDF() {
             { desc: currentLang === 'pt' ? 'Impacto Mensal · 38.000 condutores PT' : 'Monthly Impact · 38,000 drivers PT',               val: cross.impactoMensalMercado,          pct: null,      highlight: false },
             { desc: currentLang === 'pt' ? 'Impacto Anual · 38.000 condutores × 12 meses PT' : 'Annual Impact · 38,000 drivers × 12 months PT',    val: cross.impactoAnualMercado,           pct: null,      highlight: false },
             { desc: currentLang === 'pt' ? '% Omissão Receita SAF-T vs DAC7' : '% Revenue Omission SAF-T vs DAC7',                     val: null,                                pct: (cross.percentagemSaftVsDac7 || 0).toFixed(2) + '%', highlight: false },
-            { desc: currentLang === 'pt' ? '% Diferencial de Base em Análise (Desp. vs Fat.)' : '% Base Differential Under Analysis (Exp. vs Inv.)',    val: null,                                pct: (cross.percentagemOmissao || 0).toFixed(2) + '%',    highlight: false }
+            { desc: currentLang === 'pt' ? '% Diferencial de Base em Análise (Desp. vs Fat.)' : '% Base Differential Under Analysis (Exp. vs Inv.)',    val: null,                                pct: (cross.percentagemOmissao || 0).toFixed(2) + '%',    highlight: false },
+            { desc: currentLang === 'pt' ? 'Asfixia Financeira (IVA 6% sobre Bruto)' : 'Financial Suffocation (6% VAT on Gross)',            val: cross.asfixiaFinanceira,             pct: null,      highlight: false }
         ];
 
         fisRows.forEach((row, i) => {
@@ -6355,6 +6365,7 @@ async function exportPDF() {
         doc.text(`  ${currentLang === 'pt' ? 'VAT 6% / IVA 6% Omitido (Transporte):' : 'VAT 6% / Missing VAT 6% (Transport):'}            ${formatCurrency(cross.ivaFalta6)}`, left, y); y += 4;
         doc.text(`  ${currentLang === 'pt' ? 'Revenue Omission (DAC7) / Omissão Receita:' : 'Revenue Omission (DAC7) / Omissão Receita:'}        ${formatCurrency(cross.discrepanciaSaftVsDac7)} (${_pctReceitaStr})`, left, y); y += 4;
         doc.text(`  ${currentLang === 'pt' ? 'Expense Omission / Omissão Custos (BTF):' : 'Expense Omission / Omissão Custos (BTF):'}          ${formatCurrency(cross.discrepanciaCritica)} (${_pctOmissaoStr})`, left, y); y += 6;
+        doc.text(`  ${currentLang === 'pt' ? 'Asfixia Financeira (IVA 6% sobre Bruto):' : 'Financial Suffocation (6% VAT on Gross):'}    ${formatCurrency(cross.asfixiaFinanceira)}`, left, y); y += 4;
         doc.text(`  ${currentLang === 'pt' ? 'Contribuição IMT/AMT Omitida (5%):' : 'Missing IMT/AMT Contribution (5%):'}              ${formatCurrency(cross.discrepancia5IMT)}`, left, y); y += 4;
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(10);
@@ -6511,6 +6522,7 @@ async function exportPDF() {
             if (cross.discrepanciaSaftVsDac7 > 0){ doc.text(`  · ${currentLang === 'pt' ? 'Omissão de receita (SAF-T vs DAC7):' : 'Revenue omission (SAF-T vs DAC7):'} ${formatCurrency(cross.discrepanciaSaftVsDac7)}`, left, y); y += 4; }
             if (cross.discrepanciaCritica > 0)   { doc.text(`  · ${currentLang === 'pt' ? 'Omissão de custos (BTF):' : 'Expense omission (BTF):'} ${formatCurrency(cross.discrepanciaCritica)} (${_pctOmissaoStr})`, left, y); y += 4; }
             if (cross.ircEstimado > 0)           { doc.text(`  · ${currentLang === 'pt' ? 'IRC estimado omitido:' : 'Estimated omitted IRC:'} ${formatCurrency(cross.ircEstimado)}`, left, y); y += 4; }
+            if (cross.asfixiaFinanceira > 0)      { doc.text(`  · ${currentLang === 'pt' ? 'Asfixia Financeira (6% IVA sobre Bruto):' : 'Financial Suffocation (6% VAT on Gross):'} ${formatCurrency(cross.asfixiaFinanceira)}`, left, y); y += 4; }
 
             doc.setFontSize(6);
             doc.setFont('courier', 'normal');
@@ -7965,7 +7977,8 @@ function resetAllValues() {
         impactoSeteAnosMercado: 0,
         discrepancia5IMT: 0,
         agravamentoBrutoIRC: 0,
-        ircEstimado: 0
+        ircEstimado: 0,
+        asfixiaFinanceira: 0
     };
     UNIFEDSystem.analysis.verdict = null;
     UNIFEDSystem.analysis.selectedQuestions = [];

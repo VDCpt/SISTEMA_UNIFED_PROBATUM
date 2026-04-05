@@ -9,6 +9,8 @@
     - Ajuste de layout (eliminação do gap entre gráfico e log)
     - Contadores de evidências visíveis na UI (movidos para o bloco de gestão)
     - Escudo CORS mantido (freetsa.org)
+    - Adicionado cartão "Risco de Asfixia Financeira" (Art. 405.º C. Civil)
+    - Adicionado suporte para análise macroeconómica (7 anos · 38.000 operadores)
   Conformidade: ISO/IEC 27037:2012 · Art. 125.º CPP · Art. 119.º RGIT
   ============================================================================
 -->
@@ -50,12 +52,13 @@
   </div>
 
   <!-- ── GESTÃO DE EVIDÊNCIAS (com contadores visíveis) ───────────────────── -->
-  <div class="evidence-management-section-solid" style="margin-bottom: 1rem;">
+  <!-- CORRECÇÃO v13.11.4-FIX: IDs duplicados removidos deste painel. Os controlos interactivos existem exclusivamente em index.html -->
+  <div id="pureEvidenceSection" class="evidence-management-section-solid" style="margin-bottom: 1rem; display: none;">
     <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
-      <button id="openEvidenceModalBtn" class="evidence-management-btn-solid" style="flex: 1;">
-        <span><i class="fas fa-folder-open"></i> <span id="btnEvidence">GESTÃO DE EVIDÊNCIAS</span></span>
-        <span id="evidenceCountTotal" class="evidence-count-solid">0</span>
-      </button>
+      <div class="evidence-management-btn-solid" style="flex: 1; cursor: default;">
+        <span><i class="fas fa-folder-open"></i> <span>EVIDÊNCIAS CARREGADAS</span></span>
+        <span id="pure-evidence-count-display" class="evidence-count-solid">0</span>
+      </div>
       <div class="pure-evidence-stats" style="display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: flex-end;">
         <div class="pure-evidence-item" style="background: rgba(0,229,255,0.08); padding: 4px 8px; border-radius: 4px; font-size: 0.7rem;">CTRL: <span id="pure-ctrl-qty" class="pure-accent" style="font-weight: 800;">0</span></div>
         <div class="pure-evidence-item" style="background: rgba(0,229,255,0.08); padding: 4px 8px; border-radius: 4px; font-size: 0.7rem;">SAF-T: <span id="pure-saft-qty" class="pure-accent" style="font-weight: 800;">0</span></div>
@@ -65,13 +68,12 @@
       </div>
     </div>
     <div class="counters-compact" style="margin-top: 0.5rem;">
-      <div class="counter-item-compact"><span id="controlCountCompact" class="counter-value-compact">0</span><span class="counter-label-compact">CTRL</span></div>
-      <div class="counter-item-compact"><span id="saftCountCompact" class="counter-value-compact">0</span><span class="counter-label-compact">SAF-T</span></div>
-      <div class="counter-item-compact"><span id="invoiceCountCompact" class="counter-value-compact">0</span><span class="counter-label-compact">FAT</span></div>
-      <div class="counter-item-compact"><span id="statementCountCompact" class="counter-value-compact">0</span><span class="counter-label-compact">EXT</span></div>
-      <div class="counter-item-compact"><span id="dac7CountCompact" class="counter-value-compact">0</span><span class="counter-label-compact">DAC7</span></div>
+      <div class="counter-item-compact"><span id="pure-counter-ctrl" class="counter-value-compact">0</span><span class="counter-label-compact">CTRL</span></div>
+      <div class="counter-item-compact"><span id="pure-counter-saft" class="counter-value-compact">0</span><span class="counter-label-compact">SAF-T</span></div>
+      <div class="counter-item-compact"><span id="pure-counter-fat" class="counter-value-compact">0</span><span class="counter-label-compact">FAT</span></div>
+      <div class="counter-item-compact"><span id="pure-counter-ext" class="counter-value-compact">0</span><span class="counter-label-compact">EXT</span></div>
+      <div class="counter-item-compact"><span id="pure-counter-dac7" class="counter-value-compact">0</span><span class="counter-label-compact">DAC7</span></div>
     </div>
-    <button id="analyzeBtn" class="btn-forensic" disabled><i class="fas fa-search-dollar"></i> <span id="btnAnalyze">EXECUTAR PERÍCIA</span></button>
   </div>
 
   <!-- ── GRID DE PAINÉIS (pure-card-grid) ─────────────────────────────────── -->

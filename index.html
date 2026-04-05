@@ -187,7 +187,7 @@
                     <!-- NIFAF — Non-Intrusive Forensic Auditory Feedback · v13.3.0-DIAMOND -->
                     <!-- Movido para o header para acesso permanente durante auditorias ao vivo -->
                     <button id="audioToggleBtn"
-                        onclick="const _s = window.NIFAF ? NIFAF.toggle() : false; this.innerHTML = _s ? '<i class=\'fas fa-volume-up\'></i>' : '<i class=\'fas fa-volume-mute\'></i>'; this.style.borderColor = _s ? 'var(--accent-cyan)' : ''; this.style.color = _s ? 'var(--accent-cyan)' : '';"
+                        onclick="var _s = window.NIFAF ? NIFAF.toggle() : false; this.innerHTML = _s ? '<i class=\'fas fa-volume-up\'></i>' : '<i class=\'fas fa-volume-mute\'></i>'; this.style.borderColor = _s ? 'var(--accent-cyan)' : ''; this.style.color = _s ? 'var(--accent-cyan)' : '';"
                         class="btn-tool"
                         style="font-size: 0.8rem;"
                         title="Alerta Auditivo Forense (NIFAF) — 180Hz/140Hz · Ativa quando omissão > 15%">
@@ -542,6 +542,13 @@
                         <p id="iva23Value">0,00 €</p>
                         <span class="stat-desc" id="descIva23" data-pt="Valor não pago pelo sujeito passivo" data-en="Amount unpaid by the taxpayer">Valor não pago pelo sujeito passivo</span>
                     </div>
+
+                    <!-- ── NOVO CARTÃO: ASFIXIA FINANCEIRA (v13.11) ───────────────────── -->
+                    <div class="stat-card warning" id="asfixiaFinanceiraCard" style="display: none;">
+                        <h4><i class="fas fa-percent"></i> <span id="asfixiaFinanceiraTitle" data-pt="ASFIXIA FINANCEIRA (IVA 6% SOBRE BRUTO)" data-en="FINANCIAL SUFFOCATION (6% VAT ON GROSS)">ASFIXIA FINANCEIRA (IVA 6% SOBRE BRUTO)</span></h4>
+                        <p id="asfixiaFinanceiraValue">0,00 €</p>
+                        <span class="stat-desc" id="asfixiaFinanceiraDesc" data-pt="Art. 405.º C. Civil · Verba 2.18 CIVA" data-en="Art. 405 CC · Item 2.18 CIVA">Art. 405.º C. Civil · Verba 2.18 CIVA</span>
+                    </div>
                 </div>
 
                 <!-- TRIANGULAÇÃO FINANCEIRA -->
@@ -866,7 +873,7 @@
                     <button class="custody-export-btn" onclick="clearCustodyLogs()" style="border-color:#ef4444;color:#ef4444;">
                         <i class="fas fa-trash"></i> LIMPAR
                     </button>
-                    <button class="custody-export-btn" onclick="closeCustodyChainModal()" id="btnCloseCustodyPanel">
+                    <button class="custody-export-btn" onclick="closeCustodyChainModal()" id="btnCustodyClose">
                         <span id="btnCustodyClose">FECHAR PAINEL</span>
                     </button>
 

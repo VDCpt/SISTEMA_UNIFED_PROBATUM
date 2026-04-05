@@ -9,6 +9,8 @@
  * - Guard clause no syncMetrics para mitigar o erro Array(42).
  * - Adicionadas contagens de evidências (counts) no dataset mestre.
  * - Tratamento silencioso de erro DNS (api.unifed.com) com fallback estático.
+ * - Adicionado suporte para cartão "Risco de Asfixia Financeira" (Art. 405.º C. Civil)
+ * - Adicionado bloco de análise macroeconómica (7 anos · 38.000 operadores)
  * ============================================================================
  */
 
@@ -42,7 +44,7 @@
             dac7TotalPeriodo:  7755.16,
             iva6Omitido:        131.10,
             iva23Omitido:       502.54,
-            asfixiaFinanceira:  493.68,
+            asfixiaFinanceira:  493.68,   // 6% sobre SAF-T Bruto (8227,97 * 0,06)
             totalNaoSujeitos:   451.15,
             gorjetas:           46.00,
             portagens:           0.15,
@@ -144,6 +146,8 @@
     const discrepanciaC1 = t.saftBruto - t.dac7TotalPeriodo;
     const percentC1 = (t.saftBruto > 0) ? (discrepanciaC1 / t.saftBruto) * 100 : 0;
     const ircEstimado = discrepanciaC2 * 0.21;
+    // Asfixia Financeira: IVA 6% sobre o SAF-T Bruto (Verba 2.18 Lista I CIVA)
+    const asfixiaFinanceira = t.saftBruto * 0.06;
 
     window.UNIFED_INTERNAL.syncMetrics = function() {
         // [CORREÇÃO CIRÚRGICA]: Evita erro Array(42) se o DOM não estiver pronto
@@ -169,7 +173,7 @@
             'pure-iva-23':            fmt(t.iva23Omitido),
             'pure-irc':               fmt(ircEstimado),
             'pure-disc-c2-grid':      fmt(discrepanciaC2),
-            'pure-iva-devido':        fmt(t.iva6Omitido),
+            'pure-iva-devido':        fmt(asfixiaFinanceira),   // Asfixia Financeira
             'pure-nao-sujeitos':      fmt(t.totalNaoSujeitos),
             'pure-atf-sp':            data.atf.score + '/100',
             'pure-atf-trend':         data.atf.trend,
@@ -195,7 +199,7 @@
             'pure-atf-zscore':         data.atf.zScore.toString(),
             'pure-atf-confianca':      data.atf.confianca,
             'pure-atf-score-val':      data.atf.score + '/100',
-            'pure-iva-devido-val':     fmt(t.iva6Omitido),
+            'pure-iva-devido-val':     fmt(asfixiaFinanceira),
             'pure-impacto-macro':      fmt(data.macro_analysis.estimated_systemic_gap),
             // IDs para contagem de evidências
             'pure-ctrl-qty':           data.counts.ctrl.toString(),
@@ -255,6 +259,10 @@
         if (sg1SaftEl) sg1SaftEl.textContent = fmt(t.saftBruto);
         const sg1Dac7El = document.getElementById('pure-sg1-dac7-val');
         if (sg1Dac7El) sg1Dac7El.textContent = fmt(t.dac7TotalPeriodo);
+        
+        // Atualizar elemento do cartão de Asfixia Financeira com valor calculado
+        const asfixiaEl = document.getElementById('pure-iva-devido');
+        if (asfixiaEl) asfixiaEl.textContent = fmt(asfixiaFinanceira);
     };
     console.log('[UNIFED] Camada 2: OK.');
 })();
@@ -282,7 +290,7 @@
                         <th style="text-align:left; padding:10px;">FONTE DE PROVA</th>
                         <th style="text-align:right; padding:10px;">VALOR</th>
                         <th style="text-align:right; padding:10px; color:#EF4444;">DISCREPÂNCIA</th>
-                    </table>
+                    <tr>
                 </thead>
                 <tbody>
                     <tr><td style="padding:10px;">📄 SAF-T PT (Faturação)</td><td style="padding:10px; text-align:right;">${fmt(t.saftBruto)}</td><td style="padding:10px; text-align:right;">-${fmt(deltaSaft)}</td></tr>
@@ -325,9 +333,6 @@
                 margin: 0 !important;
                 box-sizing: border-box !important;
             }
-            #pureEvidenceSection,
-            #controlCountCompact, #saftCountCompact, #invoiceCountCompact,
-            #statementCountCompact, #dac7CountCompact,
             .evidence-counter, .evidence-summary {
                 display: none !important;
             }
@@ -440,7 +445,7 @@
             { id: 'pure-iva-23', val: data.totals.iva23Omitido },
             { id: 'pure-irc', val: (data.totals.despesas - data.totals.faturaPlataforma) * 0.21 },
             { id: 'pure-disc-c2-grid', val: data.totals.despesas - data.totals.faturaPlataforma },
-            { id: 'pure-iva-devido', val: data.totals.iva6Omitido },
+            { id: 'pure-iva-devido', val: data.totals.asfixiaFinanceira },
             { id: 'pure-nao-sujeitos', val: data.totals.totalNaoSujeitos },
             { id: 'pure-atf-sp', val: data.atf.score + '/100' },
             { id: 'pure-atf-trend', val: data.atf.trend },
@@ -466,7 +471,7 @@
             { id: 'pure-atf-zscore', val: data.atf.zScore },
             { id: 'pure-atf-confianca', val: data.atf.confianca },
             { id: 'pure-atf-score-val', val: data.atf.score + '/100' },
-            { id: 'pure-iva-devido-val', val: data.totals.iva6Omitido },
+            { id: 'pure-iva-devido-val', val: data.totals.asfixiaFinanceira },
             { id: 'pure-impacto-macro', val: data.macro_analysis.estimated_systemic_gap },
             { id: 'pure-ctrl-qty', val: data.counts.ctrl },
             { id: 'pure-saft-qty', val: data.counts.saft },
@@ -729,6 +734,7 @@
                 const ivaFalta6 = discrepanciaCritica * 0.06;
                 const agravamentoBrutoIRC = discrepanciaCritica;
                 const ircEstimado = discrepanciaCritica * 0.21;
+                const asfixiaFinanceira = t.saftBruto * 0.06;
 
                 if (!sys.analysis.crossings) sys.analysis.crossings = {};
                 sys.analysis.crossings.discrepanciaSaftVsDac7 = discrepanciaSaftVsDac7;
@@ -739,6 +745,7 @@
                 sys.analysis.crossings.ivaFalta6 = ivaFalta6;
                 sys.analysis.crossings.agravamentoBrutoIRC = agravamentoBrutoIRC;
                 sys.analysis.crossings.ircEstimado = ircEstimado;
+                sys.analysis.crossings.asfixiaFinanceira = asfixiaFinanceira;
                 sys.analysis.crossings.btor = t.despesas;
                 sys.analysis.crossings.btf = t.faturaPlataforma;
                 sys.analysis.crossings.c1_delta = discrepanciaSaftVsDac7;
@@ -995,7 +1002,6 @@
         }).then(() => {
             initializeCoreDashboard();
             setupRealCaseButton();
-            // [CORREÇÃO CIRÚRGICA]: Removida a linha que ocultava a consola de identificação
             console.log('[UNIFED] ✅ Aplicação pronta. Clique em "CASO REAL ANONIMIZADO" para carregar as evidências.');
         }).catch(err => {
             console.error('[UNIFED] Erro na inicialização:', err);
