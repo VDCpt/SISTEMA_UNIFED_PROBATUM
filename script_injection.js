@@ -4,7 +4,7 @@
  * Missão: Injeção Forense e Reconstituição da Verdade Material
  * Conformidade: DORA (UE) 2022/2554 · Art. 125.º CPP · ISO/IEC 27037:2012
  * ============================================================================
- * RETIFICAÇÕES v13.11.17:
+ * RETIFICAÇÕES v13.12.0-PURE (2026-04-06):
  * - CORRECÇÃO I: Espaço vazio – função _hideDiscrepancyChart() reescrita para
  *   eliminar completamente o contentor .chart-section (height:0, display:none,
  *   margin/padding zero).
@@ -15,6 +15,8 @@
  *   incluindo 'pure-verdict-value', 'pure-verdict-pct', 'quantumValue'.
  * - Adicionado suporte para cartão "Risco de Asfixia Financeira" (Art. 405.º C. Civil)
  * - Adicionado bloco de análise macroeconómica (7 anos · 38.000 operadores)
+ * - CORRECÇÃO V: Garantia de que o painel #pureDashboardWrapper é sempre visível
+ *   após reset do sistema.
  * ============================================================================
  */
 
@@ -99,7 +101,6 @@
                 console.warn('[UNIFED] ⚙ Modo Standalone Ativo: Selagem TSA externa indisponível (promise).');
                 event.preventDefault();
             }
-            // Tratamento silencioso do erro DNS api.unifed.com
             if (event.reason && event.reason.message && event.reason.message.indexOf('api.unifed.com') !== -1) {
                 console.warn('[UNIFED] ⚙ Modo Standalone Ativo: Proxy IA indisponível (DNS). Fallback estático ativo.');
                 event.preventDefault();
@@ -150,11 +151,9 @@
     const discrepanciaC1 = t.saftBruto - t.dac7TotalPeriodo;
     const percentC1 = (t.saftBruto > 0) ? (discrepanciaC1 / t.saftBruto) * 100 : 0;
     const ircEstimado = discrepanciaC2 * 0.21;
-    // Asfixia Financeira: IVA 6% sobre o SAF-T Bruto (Verba 2.18 Lista I CIVA)
     const asfixiaFinanceira = t.saftBruto * 0.06;
 
     window.UNIFED_INTERNAL.syncMetrics = function() {
-        // [CORREÇÃO CIRÚRGICA]: Evita erro Array(42) se o DOM não estiver pronto
         if (!document.getElementById('pureDashboard')) {
             console.info('[UNIFED] syncMetrics abortado: painel pureDashboard ainda não injetado no DOM.');
             return;
@@ -162,7 +161,6 @@
 
         console.log('[UNIFED] Iniciando Sincronização Forense...');
 
-        // Calcular total de fluxos não sujeitos a comissão (campanhas + gorjetas + portagens)
         const totalNaoSujeitosCalc = (t.campanhas || 0) + (t.gorjetas || 0) + (t.portagens || 0);
         
         const mapping = {
@@ -208,7 +206,6 @@
             'pure-atf-score-val':      data.atf.score + '/100',
             'pure-iva-devido-val':     fmt(asfixiaFinanceira),
             'pure-impacto-macro':      fmt(data.macro_analysis.estimated_systemic_gap),
-            // IDs para contagem de evidências
             'pure-ctrl-qty':           data.counts.ctrl.toString(),
             'pure-saft-qty':           data.counts.saft.toString(),
             'pure-fat-qty':            data.counts.fat.toString(),
@@ -271,7 +268,6 @@
         const sg1Dac7El = document.getElementById('pure-sg1-dac7-val');
         if (sg1Dac7El) sg1Dac7El.textContent = fmt(t.dac7TotalPeriodo);
         
-        // Atualizar elemento do cartão de Asfixia Financeira com valor calculado
         const asfixiaEl = document.getElementById('pure-iva-devido');
         if (asfixiaEl) asfixiaEl.textContent = fmt(asfixiaFinanceira);
     };
@@ -301,7 +297,7 @@
                         <th style="text-align:left; padding:10px;">FONTE DE PROVA</th>
                         <th style="text-align:right; padding:10px;">VALOR</th>
                         <th style="text-align:right; padding:10px; color:#EF4444;">DISCREPÂNCIA</th>
-                    </tr>
+                     </tr>
                 </thead>
                 <tbody>
                     <tr><td style="padding:10px;">📄 SAF-T PT (Faturação)</td><td style="padding:10px; text-align:right;">${fmt(t.saftBruto)}</td><td style="padding:10px; text-align:right;">-${fmt(deltaSaft)}</td></tr>
@@ -365,7 +361,6 @@
         console.log('[UNIFED] CSS injetado.');
     }
 
-    // CORRECÇÃO I: Eliminação completa do espaço vazio
     function _hideDiscrepancyChart() {
         const canvas = document.getElementById('discrepancyChart');
         if (canvas) {
@@ -378,7 +373,6 @@
                 section.style.overflow = 'hidden';
             }
         }
-        // Remover também o segundo gráfico se existir
         const chart2 = document.getElementById('mainChart');
         if (chart2) {
             const section2 = chart2.closest('.chart-section');
@@ -725,7 +719,6 @@
                 sys.documents.dac7.totals.totalPeriodo = t.dac7TotalPeriodo;
                 sys.documents.dac7.totals.records = dac7Files.length;
 
-                                // ========== [FIX] PREENCHER DADOS AUXILIARES ==========
                 if (!sys.auxiliaryData) sys.auxiliaryData = {};
                 sys.auxiliaryData.campanhas = t.campanhas || 0;
                 sys.auxiliaryData.portagens = t.portagens || 0;
@@ -734,7 +727,6 @@
                 sys.auxiliaryData.totalNaoSujeitos = (t.campanhas || 0) + (t.portagens || 0) + (t.gorjetas || 0);
                 sys.auxiliaryData.processedFrom = [];
                 sys.auxiliaryData.extractedAt = new Date().toISOString();
-                // =====================================================
 
                 if (!sys.monthlyData) sys.monthlyData = {};
                 const monthlyGanhos = [2450.00, 2560.00, 2480.00, 2667.73];
@@ -890,26 +882,26 @@
         removeZeroDac7Kpis, simulateEvidenceUpload, updateEvidenceCountersAndShow
     } = window.UNIFED_INTERNAL;
 
-function showClientIdentificationBlock() {
-    let block = document.getElementById('clientIdentificationBlock');
-    if (!block) {
-        const sidebarHeader = document.querySelector('.sidebar-header-fixed');
-        if (sidebarHeader) {
-            sidebarHeader.id = 'clientIdentificationBlock';
-            block = sidebarHeader;
-            console.log('[UNIFED] ID clientIdentificationBlock atribuído dinamicamente ao .sidebar-header-fixed');
-        } else {
-            console.warn('[UNIFED] Elemento .sidebar-header-fixed não encontrado. O bloco de identificação não será exibido.');
-            return;
+    function showClientIdentificationBlock() {
+        let block = document.getElementById('clientIdentificationBlock');
+        if (!block) {
+            const sidebarHeader = document.querySelector('.sidebar-header-fixed');
+            if (sidebarHeader) {
+                sidebarHeader.id = 'clientIdentificationBlock';
+                block = sidebarHeader;
+                console.log('[UNIFED] ID clientIdentificationBlock atribuído dinamicamente ao .sidebar-header-fixed');
+            } else {
+                console.warn('[UNIFED] Elemento .sidebar-header-fixed não encontrado. O bloco de identificação não será exibido.');
+                return;
+            }
+        }
+        const subjectHeader = document.getElementById('pure-subject-header');
+        if (subjectHeader) {
+            subjectHeader.style.display = 'block';
+            console.log('[UNIFED] Bloco de identificação do sujeito passivo revelado.');
         }
     }
-    // Revelar o cabeçalho do sujeito passivo
-    const subjectHeader = document.getElementById('pure-subject-header');
-    if (subjectHeader) {
-        subjectHeader.style.display = 'block';
-        console.log('[UNIFED] Bloco de identificação do sujeito passivo revelado.');
-    }
-}
+
     function waitForPureDashboard() {
         return new Promise((resolve) => {
             if (document.getElementById('pureDashboard')) {
@@ -930,11 +922,9 @@ function showClientIdentificationBlock() {
     function initializeCoreDashboard() {
         waitForPureDashboard().then(() => {
             setTimeout(() => {
-                // CORRECÇÃO III: Injetar primeiro as caixas auxiliares no DOM
                 if (typeof window.injectAuxiliaryHelperBoxes === 'function') {
                     window.injectAuxiliaryHelperBoxes();
                 }
-                // Executar os mapeamentos e sincronizações
                 if (typeof syncMetrics === 'function') syncMetrics();
                 if (typeof renderMatrix === 'function') renderMatrix();
                 if (typeof injectMacroCard === 'function') injectMacroCard();
@@ -955,14 +945,13 @@ function showClientIdentificationBlock() {
         }).catch(err => console.warn('[UNIFED] Erro ao aguardar #pureDashboard', err));
     }
 
-       async function initializeFullWithEvidence() {
+    async function initializeFullWithEvidence() {
         console.log('[UNIFED] A carregar evidências do caso real...');
         await waitForPureDashboard();
         try {
             await simulateEvidenceUpload();
             updateEvidenceCountersAndShow();
 
-            // ========== [FIX] FORÇAR ATUALIZAÇÃO DAS CAIXAS AUXILIARES ==========
             if (window.UNIFEDSystem && window.UNIFEDSystem.auxiliaryData) {
                 const sys = window.UNIFEDSystem;
                 const _fmtLocal = (v) => new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(v);
@@ -978,7 +967,6 @@ function showClientIdentificationBlock() {
                 const note = document.getElementById('auxDac7ReconciliationNote');
                 if (note && sys.auxiliaryData.totalNaoSujeitos > 0) note.style.display = 'block';
             }
-            // ====================================================================
 
             if (window.UNIFEDSystem && window.UNIFEDSystem.masterHash) {
                 const hashEl = document.getElementById('masterHashValue');
