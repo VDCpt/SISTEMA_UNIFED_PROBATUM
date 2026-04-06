@@ -725,6 +725,17 @@
                 sys.documents.dac7.totals.totalPeriodo = t.dac7TotalPeriodo;
                 sys.documents.dac7.totals.records = dac7Files.length;
 
+                                // ========== [FIX] PREENCHER DADOS AUXILIARES ==========
+                if (!sys.auxiliaryData) sys.auxiliaryData = {};
+                sys.auxiliaryData.campanhas = t.campanhas || 0;
+                sys.auxiliaryData.portagens = t.portagens || 0;
+                sys.auxiliaryData.gorjetas = t.gorjetas || 0;
+                sys.auxiliaryData.cancelamentos = t.cancelamentos || 0;
+                sys.auxiliaryData.totalNaoSujeitos = (t.campanhas || 0) + (t.portagens || 0) + (t.gorjetas || 0);
+                sys.auxiliaryData.processedFrom = [];
+                sys.auxiliaryData.extractedAt = new Date().toISOString();
+                // =====================================================
+
                 if (!sys.monthlyData) sys.monthlyData = {};
                 const monthlyGanhos = [2450.00, 2560.00, 2480.00, 2667.73];
                 const monthlyDespesas = [590.00, 615.00, 600.00, 642.89];
@@ -944,12 +955,31 @@ function showClientIdentificationBlock() {
         }).catch(err => console.warn('[UNIFED] Erro ao aguardar #pureDashboard', err));
     }
 
-    async function initializeFullWithEvidence() {
+       async function initializeFullWithEvidence() {
         console.log('[UNIFED] A carregar evidências do caso real...');
         await waitForPureDashboard();
         try {
             await simulateEvidenceUpload();
             updateEvidenceCountersAndShow();
+
+            // ========== [FIX] FORÇAR ATUALIZAÇÃO DAS CAIXAS AUXILIARES ==========
+            if (window.UNIFEDSystem && window.UNIFEDSystem.auxiliaryData) {
+                const sys = window.UNIFEDSystem;
+                const _fmtLocal = (v) => new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(v);
+                const setBox = (id, val) => {
+                    const el = document.getElementById(id);
+                    if (el) el.textContent = _fmtLocal(val);
+                };
+                setBox('auxBoxCampanhasValue', sys.auxiliaryData.campanhas);
+                setBox('auxBoxPortagensValue', sys.auxiliaryData.portagens);
+                setBox('auxBoxGorjetasValue', sys.auxiliaryData.gorjetas);
+                setBox('auxBoxTotalNSValue', sys.auxiliaryData.totalNaoSujeitos);
+                setBox('auxBoxCancelValue', sys.auxiliaryData.cancelamentos);
+                const note = document.getElementById('auxDac7ReconciliationNote');
+                if (note && sys.auxiliaryData.totalNaoSujeitos > 0) note.style.display = 'block';
+            }
+            // ====================================================================
+
             if (window.UNIFEDSystem && window.UNIFEDSystem.masterHash) {
                 const hashEl = document.getElementById('masterHashValue');
                 if (hashEl) hashEl.textContent = window.UNIFEDSystem.masterHash;
