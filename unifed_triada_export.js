@@ -215,25 +215,38 @@
             const qrPayload = `UNIFED|${sessionId}|${masterHash}`;
             const qrCanvas  = document.createElement('canvas');
 
-            if (typeof QRCode !== 'undefined') {
-                await new Promise((resolve) => {
-                    QRCode.toCanvas(qrCanvas, qrPayload, { width: 200, margin: 2 }, function(error) {
-                        if (!error) {
-                            const qrImgData = qrCanvas.toDataURL('image/png');
-                            const qrSize    = 45;
-                            const qrX       = (pageWidth - qrSize) / 2;
-                            doc.addImage(qrImgData, 'PNG', qrX, currentY, qrSize, qrSize);
-                            currentY += qrSize + 8;
-                        } else {
-                            doc.text(
-                                lang === 'en' ? '(QR Code unavailable)' : '(QR Code indisponível)',
-                                marginX, currentY
-                            );
-                            currentY += 10;
-                        }
-                        resolve();
-                    });
-                });
+if (typeof QRCode !== 'undefined') {
+    await new Promise((resolve) => {
+        // Criar um elemento div temporário para gerar o QR Code
+        const tmpDiv = document.createElement('div');
+        tmpDiv.style.cssText = 'position:absolute;left:-9999px;top:-9999px;';
+        document.body.appendChild(tmpDiv);
+        new QRCode(tmpDiv, {
+            text: qrPayload,
+            width: 200,
+            height: 200,
+            colorDark: '#000000',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.L
+        });
+        // Aguardar a renderização
+        setTimeout(() => {
+            const canvas = tmpDiv.querySelector('canvas');
+            if (canvas) {
+                const qrImgData = canvas.toDataURL('image/png');
+                const qrSize = 45;
+                const qrX = (pageWidth - qrSize) / 2;
+                doc.addImage(qrImgData, 'PNG', qrX, currentY, qrSize, qrSize);
+                currentY += qrSize + 8;
+            } else {
+                doc.text(lang === 'en' ? '(QR Code unavailable)' : '(QR Code indisponível)', marginX, currentY);
+                currentY += 10;
+            }
+            document.body.removeChild(tmpDiv);
+            resolve();
+        }, 100);
+    });
+}
             } else {
                 doc.text(
                     lang === 'en' ? '(QR Code not supported)' : '(QR Code não suportado)',
