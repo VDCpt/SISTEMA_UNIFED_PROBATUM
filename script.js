@@ -18,6 +18,8 @@
 
 'use strict';
 
+window.showToast = window.showToast || function(m, t) { console.log(`[Toast-Fallback] ${t}: ${m}`); alert(m); };
+
 // [FIX CORRETIVO] Declaração Global Forçada
 window.updateAnalysisButton = function() {
     const btn = document.getElementById('analyzeBtn');
@@ -8176,6 +8178,9 @@ window.showToast = function(message, type = 'info') {
         toast.style.transform = 'translateX(100%)';
         setTimeout(() => toast.remove(), 400);
     }, 5000);
+};
+    window.showToast = function(message, type = 'info') {
+   // ... resto do código da função ...
 };
 
 // [FIM ABSOLUTO DO FICHEIRO]
