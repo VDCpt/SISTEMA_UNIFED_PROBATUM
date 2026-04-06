@@ -7923,7 +7923,7 @@ function setupWipeButton() {
             localStorage.removeItem('ifde_client_data_v12_8');
             localStorage.removeItem(ForensicLogger.STORAGE_KEY);
 
-            resetAllValues();
+            resetSystem();      // CORRECTO
 
             ForensicLogger.clearLogs();
 
@@ -8048,6 +8048,7 @@ async function resetSystem() {
 
 window.clearConsole = clearConsole;
 window.resetSystem = resetSystem;
+window.resetAllValues = resetSystem;
 window.activeForensicSession = null;
 
 // ============================================================================
