@@ -3222,7 +3222,7 @@ function startGatekeeperSession() {
             }
         }, 500);
     }
-    UNIFEDSystem.sessionId = generateSessionId();
+       UNIFEDSystem.sessionId = generateSessionId();
     UNIFEDSystem._sessionStart = Date.now();
     setElementText('sessionIdDisplay', UNIFEDSystem.sessionId);
     setElementText('verdictSessionId', UNIFEDSystem.sessionId);
@@ -3230,13 +3230,13 @@ function startGatekeeperSession() {
 
     ForensicLogger.addEntry('SESSION_CREATED', { sessionId: UNIFEDSystem.sessionId });
 
-   // [CORREÇÃO APLICADA]: Declaração 'async' na callback do setTimeout
+    // Inicialização assíncrona com temporização única
     setTimeout(async () => {
         if (typeof updateLoadingProgress === 'function') updateLoadingProgress(40);
         if (typeof populateYears === 'function') populateYears();
         if (typeof populateAnoFiscal === 'function') populateAnoFiscal();
         if (typeof startClockAndDate === 'function') startClockAndDate();
-        if (typeof setupMainListeners === 'function') setupMainListeners();
+        if (typeof setupMainListeners === 'function') setupMainListeners();   // <- chamada única e necessária
         
         if (UNIFEDSystem.generateMasterHash) {
             await UNIFEDSystem.generateMasterHash();
