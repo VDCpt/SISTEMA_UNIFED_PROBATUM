@@ -879,7 +879,7 @@
         removeZeroDac7Kpis, simulateEvidenceUpload, updateEvidenceCountersAndShow
     } = window.UNIFED_INTERNAL;
 
- function showClientIdentificationBlock() {
+function showClientIdentificationBlock() {
     let block = document.getElementById('clientIdentificationBlock');
     if (!block) {
         const sidebarHeader = document.querySelector('.sidebar-header-fixed');
@@ -892,16 +892,13 @@
             return;
         }
     }
-// Bloco de revelação do cabeçalho do sujeito passivo
-        const block = document.getElementById('pure-subject-header');
-        if (block) {
-            block.style.display = 'block'; 
-            console.log('[UNIFED] Bloco de identificação do sujeito passivo revelado.');
-        }
-    } catch (err) {
-        console.error('[UNIFED] Erro na injeção de estilo:', err);
+    // Revelar o cabeçalho do sujeito passivo
+    const subjectHeader = document.getElementById('pure-subject-header');
+    if (subjectHeader) {
+        subjectHeader.style.display = 'block';
+        console.log('[UNIFED] Bloco de identificação do sujeito passivo revelado.');
     }
-
+}
     function waitForPureDashboard() {
         return new Promise((resolve) => {
             if (document.getElementById('pureDashboard')) {
