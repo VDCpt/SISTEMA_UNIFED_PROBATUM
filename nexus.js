@@ -18,12 +18,14 @@
 // ============================================================================
 // MÓDULO 1 · PASSIVE NETWORK OBSERVER — Proxy Wrapper Transparente
 // ============================================================================
+window.UNIFEDSystem = window.UNIFEDSystem || {};
+window.UNIFEDSystem.demoMode = true;   // força modo demo
+
 (function _nexusForensicProxy() {
     if (window.fetch.__isNexusProxy) {
         console.info('[NEXUS·M1] Proxy Wrapper já está activo. Nenhuma acção tomada.');
         return;
     }
-
     const originalFetch = window.fetch;
 
     const handler = {
@@ -35,13 +37,18 @@
             }
 
             return Reflect.apply(target, thisArg, argumentsList)
-                .catch(err => {
-                    console.warn(`[NEXUS-AUDIT] Falha de comunicação externa: ${url} | Motivo: ${err.message}`);
-                    ForensicLogger?.addEntry('NETWORK_FAILURE', { url, error: err.message });
-                    throw err;
-                });
-        }
-    };
+              .catch(err => {
+    const url = argumentsList[0];
+    // Silenciar completamente as falhas para api.unifed.com (não mostra na consola)
+    if (typeof url === 'string' && url.includes('api.unifed.com')) {
+        // Não emite warn, apenas regista internamente (opcional)
+        ForensicLogger?.addEntry('NETWORK_FAILURE_SILENT', { url, error: err.message });
+        throw err;
+    }
+    console.warn(`[NEXUS-AUDIT] Falha de comunicação externa: ${url} | Motivo: ${err.message}`);
+    ForensicLogger?.addEntry('NETWORK_FAILURE', { url, error: err.message });
+    throw err;
+});
 
     const proxiedFetch = new Proxy(originalFetch, handler);
     proxiedFetch.__isNexusProxy = true;
