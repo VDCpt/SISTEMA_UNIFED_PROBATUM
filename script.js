@@ -8023,12 +8023,11 @@ async function resetSystem() {
     renderDiscrepancyChart();
     forensicDataSynchronization();
     
-    // Garantir que o painel do caso real seja activado após reset
     if (typeof window._activatePurePanel === 'function') {
         window._activatePurePanel();
-if (UNIFEDSystem.masterHash) {
-    window.activeForensicSession = { sessionId: UNIFEDSystem.sessionId, masterHash: UNIFEDSystem.masterHash };
-
+        if (UNIFEDSystem.masterHash) {
+            window.activeForensicSession = { sessionId: UNIFEDSystem.sessionId, masterHash: UNIFEDSystem.masterHash };
+        }
     }
     
     window.dispatchEvent(new CustomEvent('UNIFED_CORE_READY', { detail: { reset: true } }));
