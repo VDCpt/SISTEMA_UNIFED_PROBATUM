@@ -780,3 +780,17 @@ html, body {
         min-width: auto !important;
     }
 }
+
+/* ============================================================================
+   GARANTIA DE VISIBILIDADE DOS GRÁFICOS – v13.12.0-PURE
+   ============================================================================ */
+.chart-section {
+    display: block !important;
+    min-height: 350px !important;
+    overflow: visible !important;
+}
+
+canvas#mainChart, canvas#discrepancyChart {
+    width: 100% !important;
+    height: 300px !important;
+}

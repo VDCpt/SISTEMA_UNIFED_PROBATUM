@@ -2,21 +2,22 @@
  * UNIFED - PROBATUM · v13.12.0-PURE · MÓDULO DE EXPORTAÇÃO — TRÍADE DOCUMENTAL
  * ============================================================================
  * Ficheiro      : unifed_triada_export.js
- * Versão        : 1.0.17-TRIADA-FINAL (Rectificação Risco E — DOMContentLoaded)
+ * Versão        : 1.0.18-TRIADA-FINAL (Rectificação Sintaxe + QR Code)
  * ============================================================================
- * RECTIFICAÇÕES v1.0.17-TRIADA (2026-04-01):
+ * RECTIFICAÇÕES v1.0.18-TRIADA (2026-04-06):
  *   [FIX-E] Estratégia robusta de 3 camadas de inicialização (UNIFED_CORE_READY, DOMContentLoaded, MutationObserver).
  *   [FIX-E2] Labels PT/EN dos botões reflectem currentLang dinamicamente via _resolveLabels().
  *   [FIX-E3] ID do container mantido: 'export-tools-container'.
  *   [FIX-PDF] Rodapé centralizado com Master Hash SHA-256 em todas as páginas do PDF.
  *   [FIX-QR] QR Code de integridade injetado na última página do relatório pericial.
+ *   [FIX-SYNTAX] Corrigido bloco try/catch e uso de await no gerarAnexoCustodia.
  * ============================================================================
  */
 
 'use strict';
 
 (function _unifedTriadaModule() {
-    const _VERSION = '1.0.17-TRIADA-FINAL';
+    const _VERSION = '1.0.18-TRIADA-FINAL';
 
     // ── UTILITÁRIO DE LOG ────────────────────────────────────────────────────
     function _log(msg, type = 'log') {
@@ -215,38 +216,37 @@
             const qrPayload = `UNIFED|${sessionId}|${masterHash}`;
             const qrCanvas  = document.createElement('canvas');
 
-if (typeof QRCode !== 'undefined') {
-    await new Promise((resolve) => {
-        // Criar um elemento div temporário para gerar o QR Code
-        const tmpDiv = document.createElement('div');
-        tmpDiv.style.cssText = 'position:absolute;left:-9999px;top:-9999px;';
-        document.body.appendChild(tmpDiv);
-        new QRCode(tmpDiv, {
-            text: qrPayload,
-            width: 200,
-            height: 200,
-            colorDark: '#000000',
-            colorLight: '#ffffff',
-            correctLevel: QRCode.CorrectLevel.L
-        });
-        // Aguardar a renderização
-        setTimeout(() => {
-            const canvas = tmpDiv.querySelector('canvas');
-            if (canvas) {
-                const qrImgData = canvas.toDataURL('image/png');
-                const qrSize = 45;
-                const qrX = (pageWidth - qrSize) / 2;
-                doc.addImage(qrImgData, 'PNG', qrX, currentY, qrSize, qrSize);
-                currentY += qrSize + 8;
-            } else {
-                doc.text(lang === 'en' ? '(QR Code unavailable)' : '(QR Code indisponível)', marginX, currentY);
-                currentY += 10;
-            }
-            document.body.removeChild(tmpDiv);
-            resolve();
-        }, 100);
-    });
-}
+            if (typeof QRCode !== 'undefined') {
+                // Criar um elemento div temporário para gerar o QR Code
+                const tmpDiv = document.createElement('div');
+                tmpDiv.style.cssText = 'position:absolute;left:-9999px;top:-9999px;';
+                document.body.appendChild(tmpDiv);
+                new QRCode(tmpDiv, {
+                    text: qrPayload,
+                    width: 200,
+                    height: 200,
+                    colorDark: '#000000',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.L
+                });
+                // Aguardar a renderização (usar setTimeout, sem await dentro de loop síncrono)
+                await new Promise((resolve) => {
+                    setTimeout(() => {
+                        const canvas = tmpDiv.querySelector('canvas');
+                        if (canvas) {
+                            const qrImgData = canvas.toDataURL('image/png');
+                            const qrSize = 45;
+                            const qrX = (pageWidth - qrSize) / 2;
+                            doc.addImage(qrImgData, 'PNG', qrX, currentY, qrSize, qrSize);
+                            currentY += qrSize + 8;
+                        } else {
+                            doc.text(lang === 'en' ? '(QR Code unavailable)' : '(QR Code indisponível)', marginX, currentY);
+                            currentY += 10;
+                        }
+                        document.body.removeChild(tmpDiv);
+                        resolve();
+                    }, 100);
+                });
             } else {
                 doc.text(
                     lang === 'en' ? '(QR Code not supported)' : '(QR Code não suportado)',
