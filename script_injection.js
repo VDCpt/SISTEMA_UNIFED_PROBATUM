@@ -892,12 +892,14 @@
             return;
         }
     }
-if (block) {
-            block.style.display = 'block'; // Alterado para 'block' para garantir compatibilidade
+// Bloco de revelação do cabeçalho do sujeito passivo
+        const block = document.getElementById('pure-subject-header');
+        if (block) {
+            block.style.display = 'block'; 
             console.log('[UNIFED] Bloco de identificação do sujeito passivo revelado.');
         }
     } catch (err) {
-        console.error('[UNIFED] Erro ao revelar bloco:', err);
+        console.error('[UNIFED] Erro na injeção de estilo:', err);
     }
 
     function waitForPureDashboard() {
