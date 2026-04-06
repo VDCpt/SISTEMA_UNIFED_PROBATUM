@@ -11,36 +11,6 @@
  *   3. MOTOR PREDITIVO ATF          — Forecasting 6M (Regressão Linear + Chart.js)
  *   4. BLOCKCHAIN EVIDENCE EXPLORER — OTS Individual por Ficheiro (SHA-256 + DOM UI)
  * ============================================================================
- *
- * ── NOTA FORENSE — AUDITORIA AUDIT-3RD-2026-04-05 ──────────────────────────
- *
- * MÓDULO 1 · PASSIVE NETWORK OBSERVER — PROXY WRAPPER TRANSPARENTE
- *   O antigo Módulo M1 (Stealth Network Interceptor) foi removido por
- *   completo, pois realizava monkey-patching de window.fetch e suppressão
- *   silenciosa de erros, violando o Art. 167.º do CPP (nulidade da prova
- *   obtida por meios fraudulentos).
- *
- *   Nova implementação: utiliza window.fetch = new Proxy(window.fetch, ...)
- *   APENAS para registo passivo de chamadas de rede, SEM interferência
- *   na resolução da Promise original. Os erros são propagados (throw err)
- *   e não ocultados. Nenhum event.preventDefault() é utilizado.
- *
- *   Conformidade: ISO/IEC 27037:2012, cláusula 8.3 (Registo de eventos de auditoria).
- *
- * MÓDULO 2 · RAG JURISPRUDENCIAL — WRAP DE window.exportDOCX
- *   Substitui window.exportDOCX pela função _nexusExportDOCX, que chama a
- *   implementação original de enrichment.js e injecta secções de jurisprudência.
- *
- * MÓDULO 3 · MOTOR PREDITIVO ATF — FORECASTING 6M
- *   Mantido inalterado. Nota: os coeficientes de regressão linear são baseados
- *   em dados históricos limitados (n≥2). Os valores de forecasting não devem
- *   ser citados em sede judicial sem validação estatística independente.
- *
- * MÓDULO 4 · BLOCKCHAIN EVIDENCE EXPLORER
- *   Mantido inalterado. Permite visualizar o SHA-256 individual de cada
- *   evidência e o respectivo estado de selagem (Nível 1/OTS/RFC 3161).
- *
- * ───────────────────────────────────────────────────────────────────────────
  */
 
 'use strict';
@@ -49,8 +19,6 @@
 // MÓDULO 1 · PASSIVE NETWORK OBSERVER — Proxy Wrapper Transparente
 // ============================================================================
 (function _nexusForensicProxy() {
-    // Verificar se window.fetch já foi substituído por algum outro código.
-    // Se já existir um proxy, não substituir novamente para evitar encadeamento infinito.
     if (window.fetch.__isNexusProxy) {
         console.info('[NEXUS·M1] Proxy Wrapper já está activo. Nenhuma acção tomada.');
         return;
@@ -61,19 +29,15 @@
     const handler = {
         apply: function(target, thisArg, argumentsList) {
             const url = argumentsList[0];
-            // Registo passivo no log de custódia sem interferência na rede
             if (typeof url === 'string') {
                 console.debug(`[NEXUS-AUDIT] Network Call: ${url}`);
                 ForensicLogger?.addEntry('NETWORK_CALL', { url });
             }
 
-            // Executar o fetch original e propagar o resultado/erro sem supressão
             return Reflect.apply(target, thisArg, argumentsList)
                 .catch(err => {
-                    // Auditoria da falha sem ocultação do erro original
                     console.warn(`[NEXUS-AUDIT] Falha de comunicação externa: ${url} | Motivo: ${err.message}`);
                     ForensicLogger?.addEntry('NETWORK_FAILURE', { url, error: err.message });
-                    // Rejeitar a promise com o erro original — NUNCA silenciar
                     throw err;
                 });
         }
@@ -82,11 +46,6 @@
     const proxiedFetch = new Proxy(originalFetch, handler);
     proxiedFetch.__isNexusProxy = true;
     window.fetch = proxiedFetch;
-
-    // Remover quaisquer event listeners que suprimiam erros (antigo Stealth)
-    // Nota: os listeners antigos foram completamente eliminados. Se existirem
-    // por algum motivo, a remoção é garantida pela substituição do código.
-    // O código original não é mais carregado, portanto não há risco residual.
 
     console.info(
         '[NEXUS·M1] ✅ Passive Network Observer activo — Proxy Wrapper Transparente (ISO/IEC 27037:2012).\n' +
@@ -553,7 +512,7 @@
                             '<th style="border:1px solid rgba(168,85,247,0.25);padding:6px 10px;background:rgba(168,85,247,0.15);color:#A855F7;text-align:right">' + _T('Omissão Proj.','Proj. Omission') + '</th>' +
                             '<th style="border:1px solid rgba(168,85,247,0.25);padding:6px 10px;background:rgba(168,85,247,0.15);color:#F97316;text-align:right">' + _T('IVA 23% Proj.','VAT 23% Proj.') + '</th>' +
                             '<th style="border:1px solid rgba(168,85,247,0.25);padding:6px 10px;background:rgba(168,85,247,0.15);color:rgba(255,255,255,0.5);text-align:center">' + _T('Risco','Risk') + '</th>' +
-                        '</tr>' +
+                        '<tr>' +
                     '</thead>' +
                     '<tbody>' +
                         forecast.labels.map(function(lbl, i) {
@@ -571,7 +530,7 @@
                                         (pct > 75 ? '[!] ' + _T('ALTO','HIGH') : pct > 45 ? '[^] ' + _T('MED','MED') : '[OK] ' + _T('MOD','LOW')) +
                                     '</div>' +
                                 '</td>' +
-                            '</td>';
+                            '</tr>';
                         }).join('') +
                     '</tbody>' +
                 '</table>' +
@@ -1021,9 +980,6 @@
 
 })();
 
-// ============================================================================
-// NEXUS · EXPOSIÇÃO GLOBAL E LOG DE ARRANQUE
-// ============================================================================
 console.info(
     '%c[NEXUS · UNIFED-PROBATUM · v13.12.0-PURE]\n' +
     '%c  M1 · Passive Network Observer       — Proxy Wrapper Transparente ATIVO (ISO/IEC 27037:2012)\n' +
