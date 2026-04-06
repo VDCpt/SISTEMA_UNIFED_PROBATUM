@@ -3121,7 +3121,7 @@ document.addEventListener('DOMContentLoaded', () => {
     populateAnoFiscal();
     populateYears();
     startClockAndDate();
-    loadSystemRecursively();
+    // loadSystemRecursively();  // REMOVIDO – função não definida
     setupDragAndDrop();
     generateQRCode();
     setupLogsModal();
@@ -3175,7 +3175,13 @@ function startGatekeeperSession() {
         setTimeout(() => {
             splash.style.display = 'none';
             loading.style.display = 'flex';
-            loadSystemCore();
+            // loadSystemCore();  // REMOVIDO – função não definida
+            // Em vez disso, invocamos diretamente a função que mostra a interface principal
+            if (typeof window.showMainInterface === 'function') {
+                window.showMainInterface();
+            } else {
+                console.error('[UNIFED] window.showMainInterface não definida. Verifique a ordem de carregamento.');
+            }
         }, 500);
     }
 }
