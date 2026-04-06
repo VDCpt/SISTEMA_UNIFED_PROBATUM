@@ -9,14 +9,7 @@
 
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔬</text></svg>">
 
-    <!-- ══ UNIFED - PROBATUM v13.3.0-DIAMOND · OTS DYNAMIC LOADER ══════════════════
-         SCP: Bloco de injeção dinâmica — substitui document.write e tag síncrona.
-         Implementa Dynamic Script Injection com fallback CDN sequencial.
-         Elimina parser-blocking e o aviso "document.write" do Chrome.
-         A Cadeia de Custódia (Nível 1 · PROBATUM INTERNAL SEAL) mantém-se
-         activa independentemente da disponibilidade dos CDN externos.
-         Conformidade: DORA (UE) 2022/2554 · RFC 3161 · ISO/IEC 27037:2012
-         ══════════════════════════════════════════════════════════════════ -->
+    <!-- ══ UNIFED - PROBATUM v13.3.0-DIAMOND · OTS DYNAMIC LOADER ══════════════════ -->
     <script>
     (function loadOTSWithFallback() {
         var CDN_PRIMARY   = 'https://unpkg.com/javascript-opentimestamps@0.0.12/dist/opentimestamps.min.js';
@@ -85,7 +78,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <!-- SCP: SHIM OTS integrado no OTS Dynamic Loader acima (Core Freeze) -->
 
     <link rel="stylesheet" href="style.css">
 </head>
@@ -185,7 +177,6 @@
                         <i class="fas fa-history"></i>
                     </button>
                     <!-- NIFAF — Non-Intrusive Forensic Auditory Feedback · v13.3.0-DIAMOND -->
-                    <!-- Movido para o header para acesso permanente durante auditorias ao vivo -->
                     <button id="audioToggleBtn"
                         onclick="var _s = window.NIFAF ? NIFAF.toggle() : false; this.innerHTML = _s ? '<i class=\'fas fa-volume-up\'></i>' : '<i class=\'fas fa-volume-mute\'></i>'; this.style.borderColor = _s ? 'var(--accent-cyan)' : ''; this.style.color = _s ? 'var(--accent-cyan)' : '';"
                         class="btn-tool"
@@ -211,7 +202,6 @@
             <aside class="sidebar">
                 
                 <!-- IDENTIFICAÇÃO DO SUJEITO PASSIVO -->
-                <!-- CORREÇÃO: Adicionado id="clientIdentificationBlock" para referência no JavaScript -->
                 <div class="sidebar-header-fixed" id="clientIdentificationBlock">
                     <h3 id="sidebarIdTitle"><i class="fas fa-user-shield"></i> IDENTIFICAÇÃO DO SUJEITO PASSIVO</h3>
                     <div class="client-identification-fixed">
@@ -340,12 +330,10 @@
                         <button id="exportPDFBtn" class="btn-tool" disabled>
                             <i class="fas fa-file-pdf"></i> <span id="btnPDF">PARECER TÉCNICO</span>
                         </button>
-                        <!-- v13.3.0-DIAMOND: Minuta de Petição Inicial DOCX -->
                         <button id="exportDOCXBtn" class="btn-tool"
                             title="Exportar Minuta de Petição Inicial (.docx) — OOXML editável pelo advogado">
                             <i class="fas fa-file-word"></i> <span id="btnDOCX">MINUTA WORD</span>
                         </button>
-                        <!-- v13.3.0-DIAMOND: ATF — Análise Temporal Forense -->
                         <button id="atfModalBtn" class="btn-tool"
                             title="Análise Temporal Forense — Tendências · Outliers 2σ · Score de Persistência">
                             <i class="fas fa-chart-line"></i> <span id="btnATF">&#x23F3; TENDÊNCIA ATF</span>
@@ -553,7 +541,7 @@
 
                 <!-- TRIANGULAÇÃO FINANCEIRA -->
                 <div class="kpi-section">
-                    <h3 id="kpiTitle"><i class="fas fa-project-diagram"></i> TRIANGULAÇÃO FINANCEIRA · BIG DATA ALGORITHM v13.0</h3>
+                    <h3 id="kpiTitle"><i class="fas fa-project-diagram"></i> TRIANGULAÇÃO FINANCEIRA · BIG DATA ALGORITHM v13.12.0-PURE</h3>
                     <div class="kpi-grid">
                         <div class="kpi-card highlight">
                             <h4 id="kpiGross">GANHOS (EXTRATO)</h4>
@@ -590,12 +578,8 @@
                     </div>
                 </div>
 
-                <!-- ══ UNIFED - PROBATUM v13.12.0-PURE · PAINEL DE CASO REAL ANONIMIZADO ══════
-                     Reconstituição da Verdade Material — Dados verificados JSON UNIFED-MMLADX8Q-CV69L
-                     Activação: UNIFEDSystem.loadAnonymizedRealCase() (chamada em script_injection.js)
-                     Conformidade: ISO/IEC 27037 · Art. 125.º CPP · DORA (UE) 2022/2554
-                     ══════════════════════════════════════════════════════════════════════════════ -->
-                <div id="pureDashboardWrapper" style="display:none; opacity:0; transition: opacity 0.2s ease;">
+                <!-- ══ UNIFED - PROBATUM v13.12.0-PURE · PAINEL DE CASO REAL ANONIMIZADO ══════ -->
+                <div id="pureDashboardWrapper" style="display:block; opacity:0; transition: opacity 0.2s ease;">
                     <!-- Conteúdo injectado via innerHTML pelo script_injection_v13.12.0-PURE.js -->
                 </div>
 
@@ -890,45 +874,19 @@
             window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         }
     </script>
-    <!-- SCP: Fallback document.write removido — substituído pelo OTS Dynamic Loader no <head> -->
-    <!-- UNIFED PROBATUM v13.11.3-PURE — Ordem de carregamento corrigida:             -->
+    <!-- UNIFED PROBATUM v13.12.0-PURE — Ordem de carregamento corrigida:             -->
     <!-- 1. script.js (motor principal)                                                -->
     <!-- 2. enrichment.js (Output Enrichment Layer — Read-Only)                       -->
     <!-- 3. nexus.js (NEXUS Adaptive Extension Layer)                                  -->
     <!-- 4. script_injection.js (Dados do Caso Real Anonimizado)                       -->
     <!-- 5. unifed_triada_export.js (Exportação Tríada)                               -->
     <script src="script.js"></script>
-    <!-- UNIFED PROBATUM v13.11.3-PURE — Output Enrichment Layer -->
-    <!-- Carregado APÓS script.js. Padrão: Read-Only · Asynchronous Post-Computation  -->
     <script src="enrichment.js"></script>
-    <!-- ══ UNIFED PROBATUM v13.12.0-PURE — NEXUS Adaptive Extension Layer ══════
-         Carregado APÓS enrichment.js e script.js. Consome UNIFEDSystem em Read-Only.
-         NÃO altera fórmulas fiscais nem o Dashboard. Módulos:
-           M1 · Stealth Network Interceptor (Anti-F12 Protocol)
-           M2 · RAG Jurisprudencial DOCX (Art. 103/104 RGIT · Art. 78 CIVA · STA)
-           M3 · Motor Preditivo ATF Forecasting 6M (Regressão Linear + EMA)
-           M4 · Blockchain Evidence Explorer (SHA-256 Individual · OTS UI)
-         Conformidade: DORA (UE) 2022/2554 · ISO/IEC 27037:2012 · Art. 125.º CPP
-         ══════════════════════════════════════════════════════════════════════════ -->
     <script src="nexus.js"></script>
-
-    <!-- ══ UNIFED - PROBATUM v13.12.0-PURE · CASO REAL ANONIMIZADO ═══════════════
-         Carregado APÓS nexus.js. Injeta os dados reais verificados (UNIFED-MMLADX8Q-CV69L)
-         no UNIFEDSystem e activa o painel #pureDashboard.
-         Conformidade: ISO/IEC 27037 · Art. 125.º CPP · DORA (UE) 2022/2554
-         Core Freeze: não altera fórmulas de script.js nem módulos enrichment/nexus.
-         ══════════════════════════════════════════════════════════════════════════ -->
     <link rel="stylesheet" href="style_additions.css">
     <script src="script_injection.js"></script>
     <script>
         // ── Activação do Painel v13.12.0-PURE ───────────────────────────────────
-        // Aguarda UNIFEDSystem estar disponível, depois:
-        //   1. Injeta o HTML do painel no wrapper
-        //   2. Chama loadAnonymizedRealCase() para popular os dados
-        //   3. Torna o wrapper visível com transição suave
-        // O fetch do panel.html é local — sem dependências externas.
-        // Painel v13.12.0-PURE: NÃO auto-executa.
-        // Activação exclusiva via window._activatePurePanel() chamado em activateDemoMode().
         window._activatePurePanel = function() {
             fetch('panel.html')
                 .then(function(r) { return r.text(); })
@@ -936,8 +894,6 @@
                     var wrapper = document.getElementById('pureDashboardWrapper');
                     if (wrapper) {
                         wrapper.innerHTML = html;
-                        // v13.11.4: display:block sem opacity manual.
-                        // _syncPureDashboard() adiciona .pure-visible após injecção de dados.
                         wrapper.style.display = 'block';
                         if (typeof UNIFEDSystem !== 'undefined' && typeof UNIFEDSystem.loadAnonymizedRealCase === 'function') {
                             UNIFEDSystem.loadAnonymizedRealCase();
@@ -953,7 +909,6 @@
                 });
         };
     </script>
-    <!-- TRÍADE DOCUMENTAL - MÓDULO DE EXPORTAÇÃO -->
     <script src="unifed_triada_export.js"></script>
 
 </body>
