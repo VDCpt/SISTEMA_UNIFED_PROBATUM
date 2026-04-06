@@ -284,9 +284,8 @@
 
     // ── INICIALIZAÇÃO DA INTERFACE DOS BOTÕES ────────────────────────────────
     function initInterface() {
-        // [FIX-E3] ID corrigido mantido: 'export-tools-container'
         const container = document.getElementById('export-tools-container');
-        if (!container) return false; // Retorna false para sinalizar que não foi inicializado
+        if (!container) return false;
 
         container.innerHTML = '';
         const labels = _resolveLabels();
@@ -362,39 +361,31 @@
             container.appendChild(btn);
         });
 
-        // Ocultar botões antigos para evitar duplicação
         ['exportPDFBtn', 'exportDOCXBtn'].forEach(id => {
             const old = document.getElementById(id);
             if (old) old.style.display = 'none';
         });
 
         _log(`Interface Tríade Documental ${_VERSION} activada.`);
-        return true; // Inicialização bem-sucedida
+        return true;
     }
 
-    // ── [FIX-E] ESTRATÉGIA ROBUSTA DE 3 CAMADAS DE INICIALIZAÇÃO ────────────
-    // Camada 1: Tentativa imediata após UNIFED_CORE_READY
+    // ── ESTRATÉGIA ROBUSTA DE 3 CAMADAS DE INICIALIZAÇÃO ─────────────────────
     window.addEventListener('UNIFED_CORE_READY', () => {
-        // Tentativa directa — se DOM já estiver pronto, funciona imediatamente
         if (initInterface()) return;
 
-        // Camada 2: DOMContentLoaded — para casos em que o DOM ainda não está pronto
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => {
                 if (initInterface()) return;
-                // Camada 3: MutationObserver — para dispositivos com DOM tardio (tablets em tribunal)
                 _startMutationObserver();
             }, { once: true });
         } else {
-            // DOM já carregado mas container ainda não injectado — usar MutationObserver
             _startMutationObserver();
         }
     });
 
-    // ── Camada 3: MutationObserver ────────────────────────────────────────────
     function _startMutationObserver() {
         if (!('MutationObserver' in window)) {
-            // Fallback de último recurso para browsers muito antigos
             setTimeout(initInterface, 500);
             _log('MutationObserver indisponível — setTimeout(500ms) activado.', 'warn');
             return;
@@ -414,17 +405,14 @@
             subtree:   true
         });
 
-        // Segurança: desligar o observer após 15 segundos para evitar memory leak
         setTimeout(() => {
             _observer.disconnect();
             _log('MutationObserver desligado após timeout de segurança (15s).', 'warn');
         }, 15000);
     }
 
-    // ── EXPOSIÇÃO GLOBAL ──────────────────────────────────────────────────────
     window.gerarAnexoCustodia   = gerarAnexoCustodia;
     window.initTriadaButtons    = initInterface;
     window.UNIFEDSystem         = window.UNIFEDSystem || {};
     window.UNIFEDSystem.triadaUpdateLabels = initInterface;
-
 })();
