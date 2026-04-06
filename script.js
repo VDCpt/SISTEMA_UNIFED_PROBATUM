@@ -3220,7 +3220,7 @@ function startGatekeeperSession() {
         }
     };
 
-    // 3. Ativação de Controlos
+        // 3. Ativação de Controlos
     const idsToEnable = ['analyzeBtn', 'exportPDFBtn', 'exportJSONBtn'];
     idsToEnable.forEach(id => {
         const btn = document.getElementById(id);
@@ -3232,8 +3232,6 @@ function startGatekeeperSession() {
     setTimeout(() => {
         if (typeof forensicDataSynchronization === 'function') forensicDataSynchronization();
     }, 1000);
-})(); // Fecho do IIFE principal que envolve todo o script.js
-
 function populateAnoFiscal() {
     const selectAno = document.getElementById('anoFiscal');
     if (!selectAno) return;
