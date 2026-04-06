@@ -8162,4 +8162,5 @@ window.showToast = function showToast(message, type = 'info') {
         setTimeout(() => toast.remove(), 300);
     }, 5000);
 };
+}
 console.log('UNIFED - PROBATUM v13.12.0-PURE - DORA COMPLIANT - ATF - INTEGRITY SEAL - DOCX - AI ADVERSARIAL - NIFAF GUARD - NEXUS - ATIVADO');
