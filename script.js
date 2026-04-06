@@ -17,6 +17,15 @@
  */
 
 'use strict';
+// Definição global de logAudit (fallback)
+window.logAudit = window.logAudit || function(msg, level = 'info') {
+    const prefix = '[UNIFED] ';
+    if (level === 'error') console.error(prefix + msg);
+    else if (level === 'warn') console.warn(prefix + msg);
+    else if (level === 'success') console.info(prefix + msg);
+    else console.log(prefix + msg);
+};
+const logAudit = window.logAudit; // alias local
 
 window.showToast = window.showToast || function(m, t) { console.log(`[Toast-Fallback] ${t}: ${m}`); alert(m); };
 
