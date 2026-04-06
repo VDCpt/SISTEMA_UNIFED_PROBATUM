@@ -1081,21 +1081,7 @@ window.openATFModal = openATFModal;
 // Fallback: narrativa estática pericial com todas as secções obrigatórias.
 // ============================================================================
 window.generateLegalNarrative = async function(analysis) {
-    const t = (analysis && analysis.totals)    || {};
-    const c = (analysis && analysis.crossings) || {};
-    const _fmtLocal = (typeof window.formatCurrency === 'function')
-        ? window.formatCurrency.bind(window)
-        : function(v) { return new Intl.NumberFormat('pt-PT',{style:'currency',currency:'EUR'}).format(v||0); };
-
-    const valorOmissao  = _fmtLocal(c.discrepanciaSaftVsDac7 || 2402.57);
-    const valorBTOR     = _fmtLocal(c.btor  || 2447.89);
-    const valorBTF      = _fmtLocal(c.btf   || 262.94);
-    const valorDelta    = _fmtLocal((c.btor||2447.89) - (c.btf||262.94));
-    const saftBruto     = t.saftBruto || 8227.97;
-    const valorIva6     = _fmtLocal(saftBruto * 0.06);
-
-    // ── Forçar fallback estático (sem qualquer chamada de rede) ───────────────
-    // Isto elimina completamente os erros de DNS/CORS.
+    // Fallback estático – sem qualquer tentativa de fetch para evitar erros de rede
     console.log('[UNIFED-AI] Modo de segurança ativo – a usar narrativa jurídica local (fallback estático).');
     return _fallbackNarrative('Execução em modo standalone (narrativa local)');
 };
