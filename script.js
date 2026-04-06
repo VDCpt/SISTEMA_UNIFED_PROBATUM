@@ -3219,16 +3219,19 @@ function startGatekeeperSession() {
 
     ForensicLogger.addEntry('SESSION_CREATED', { sessionId: UNIFEDSystem.sessionId });
 
-    setTimeout(() => {
+   // [CORREÇÃO APLICADA]: Declaração 'async' na callback do setTimeout
+    setTimeout(async () => {
         if (typeof updateLoadingProgress === 'function') updateLoadingProgress(40);
         if (typeof populateYears === 'function') populateYears();
         if (typeof populateAnoFiscal === 'function') populateAnoFiscal();
         if (typeof startClockAndDate === 'function') startClockAndDate();
         if (typeof setupMainListeners === 'function') setupMainListeners();
-       if (UNIFEDSystem.generateMasterHash) {
-    await UNIFEDSystem.generateMasterHash();
-    window.activeForensicSession = { sessionId: UNIFEDSystem.sessionId, masterHash: UNIFEDSystem.masterHash };
-}
+        
+        if (UNIFEDSystem.generateMasterHash) {
+            await UNIFEDSystem.generateMasterHash();
+            window.activeForensicSession = { sessionId: UNIFEDSystem.sessionId, masterHash: UNIFEDSystem.masterHash };
+        }
+        
         if (typeof updateLoadingProgress === 'function') updateLoadingProgress(80);
     }, 500);
 
@@ -8148,56 +8151,14 @@ window.showToast = function showToast(message, type = 'info') {
         max-width: 350px;
         word-break: break-word;
     `;
-
-   async function resetSystem() {
-    if (!confirm(currentLang === 'pt' ? 'Reiniciar o sistema irá apagar todas as evidências e análises. Continuar?' : 'Resetting the system will delete all evidence and analysis. Continue?')) {
-        return;
-    }
-    ForensicLogger.addEntry('SYSTEM_RESET_REQUESTED');
     
-    UNIFEDSystem.analysis = {
-        totals: { saftBruto:0, saftIliquido:0, saftIva:0, ganhos:0, despesas:0, ganhosLiquidos:0, faturaPlataforma:0, dac7Q1:0, dac7Q2:0, dac7Q3:0, dac7Q4:0, dac7TotalPeriodo:0 },
-        twoAxis: { revenueGap:0, expenseGap:0, revenueGapActive:false, expenseGapActive:false },
-        crossings: { discrepanciaCritica:0, discrepanciaSaftVsDac7:0, percentagemOmissao:0, percentagemSaftVsDac7:0, ivaFalta:0, ivaFalta6:0, btor:0, btf:0, agravamentoBrutoIRC:0, ircEstimado:0, asfixiaFinanceira:0 },
-        verdict: null,
-        evidenceIntegrity: [],
-        selectedQuestions: []
-    };
-    UNIFEDSystem.documents = {
-        control: { files:[], hashes:{}, totals:{ records:0 } },
-        saft: { files:[], hashes:{}, totals:{ records:0, iliquido:0, iva:0, bruto:0 } },
-        invoices: { files:[], hashes:{}, totals:{ records:0, invoiceValue:0 } },
-        statements: { files:[], hashes:{}, totals:{ records:0, ganhos:0, despesas:0, ganhosLiquidos:0 } },
-        dac7: { files:[], hashes:{}, totals:{ records:0, q1:0, q2:0, q3:0, q4:0, receitaAnual:0 } }
-    };
-    UNIFEDSystem.monthlyData = {};
-    UNIFEDSystem.dataMonths.clear();
-    UNIFEDSystem.processedFiles.clear();
-    UNIFEDSystem.fileSources.clear();
-    resetAuxiliaryData();
+    // [CORREÇÃO APLICADA]: Fecho da estrutura do DOM Element
+    toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i><p>${message}</p>`;
     
-    await UNIFEDSystem.generateMasterHash();
-    // Sincronizar activeForensicSession após regenerar hash
-    window.activeForensicSession = { sessionId: UNIFEDSystem.sessionId, masterHash: UNIFEDSystem.masterHash };
+    container.appendChild(toast);
     
-    updateModulesUI();
-    updateDashboard();
-    renderChart();
-    renderDiscrepancyChart();
-    forensicDataSynchronization();
-    
-    // Garantir que o painel do caso real seja activado após reset
-    if (typeof window._activatePurePanel === 'function') {
-        window._activatePurePanel();
-        // Reforçar a sessão forense após injeção do painel
-        if (UNIFEDSystem.masterHash) {
-            window.activeForensicSession = { sessionId: UNIFEDSystem.sessionId, masterHash: UNIFEDSystem.masterHash };
-        }
-    }
-    
-    window.dispatchEvent(new CustomEvent('UNIFED_CORE_READY', { detail: { reset: true } }));
-    
-    logAudit('🔄 Sistema reiniciado – todas as evidências e análises foram limpas.', 'success');
-    showToast(currentLang === 'pt' ? 'Sistema reiniciado com sucesso.' : 'System reset successfully.', 'success');
-    ForensicLogger.addEntry('SYSTEM_RESET_COMPLETED');
-}
+    setTimeout(() => {
+        toast.style.animation = 'slideIn 0.3s ease reverse forwards';
+        setTimeout(() => toast.remove(), 300);
+    }, 5000);
+};
