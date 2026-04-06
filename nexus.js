@@ -28,27 +28,29 @@ window.UNIFEDSystem.demoMode = true;   // força modo demo
     }
     const originalFetch = window.fetch;
 
-    const handler = {
-        apply: function(target, thisArg, argumentsList) {
-            const url = argumentsList[0];
-            if (typeof url === 'string') {
-                console.debug(`[NEXUS-AUDIT] Network Call: ${url}`);
-                ForensicLogger?.addEntry('NETWORK_CALL', { url });
-            }
+   const handler = {
+    apply: function(target, thisArg, argumentsList) {
+        const url = argumentsList[0];
+        if (typeof url === 'string') {
+            console.debug(`[NEXUS-AUDIT] Network Call: ${url}`);
+            ForensicLogger?.addEntry('NETWORK_CALL', { url });
+        }
 
-            return Reflect.apply(target, thisArg, argumentsList)
-              .catch(err => {
-    const url = argumentsList[0];
-    // Silenciar completamente as falhas para api.unifed.com (não mostra na consola)
-    if (typeof url === 'string' && url.includes('api.unifed.com')) {
-        // Não emite warn, apenas regista internamente (opcional)
-        ForensicLogger?.addEntry('NETWORK_FAILURE_SILENT', { url, error: err.message });
-        throw err;
+        return Reflect.apply(target, thisArg, argumentsList)
+            .catch(err => {
+                const reqUrl = argumentsList[0];
+                // Silenciar erros para api.unifed.com (não mostrar na consola)
+                if (typeof reqUrl === 'string' && reqUrl.includes('api.unifed.com')) {
+                    // Apenas regista internamente, sem console.warn
+                    ForensicLogger?.addEntry('NETWORK_FAILURE_SILENT', { url: reqUrl, error: err.message });
+                    throw err;
+                }
+                console.warn(`[NEXUS-AUDIT] Falha de comunicação externa: ${reqUrl} | Motivo: ${err.message}`);
+                ForensicLogger?.addEntry('NETWORK_FAILURE', { url: reqUrl, error: err.message });
+                throw err;
+            });
     }
-    console.warn(`[NEXUS-AUDIT] Falha de comunicação externa: ${url} | Motivo: ${err.message}`);
-    ForensicLogger?.addEntry('NETWORK_FAILURE', { url, error: err.message });
-    throw err;
-});
+};
 
     const proxiedFetch = new Proxy(originalFetch, handler);
     proxiedFetch.__isNexusProxy = true;
