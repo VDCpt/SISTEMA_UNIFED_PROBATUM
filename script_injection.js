@@ -217,7 +217,7 @@
             'pure-fatura-tri':         fmt(t.faturaPlataforma),
         };
 
-        const missing = [];
+      const missing = [];
         Object.entries(mapping).forEach(([id, value]) => {
             const el = document.getElementById(id);
             if (el) {
@@ -225,6 +225,8 @@
             } else {
                 missing.push(id);
             }
+        }); // [CORREÇÃO APLICADA]: Fecho obrigatório do loop forEach
+
         // Verificar se Chart.js está disponível e se os gráficos podem ser renderizados
         if (typeof Chart === 'undefined') {
         const chartSections = document.querySelectorAll('.chart-section');
