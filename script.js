@@ -8125,47 +8125,57 @@ if (typeof window.dispatchEvent === 'function') {
 }
 
 // ============================================================================
-// 32. FUNÇÃO GLOBAL showToast (Notificações Temporárias)
+// 32. FUNÇÕES GLOBAIS DE INTERFACE (EXPORTAÇÃO FORÇADA)
 // ============================================================================
-window.showToast = function showToast(message, type = 'info') {
+
+/**
+ * Exibe notificações Toast no canto inferior direito.
+ * Definida como propriedade de 'window' para garantir visibilidade global.
+ */
+window.showToast = function(message, type = 'info') {
     let container = document.getElementById('toastContainer');
     if (!container) {
         container = document.createElement('div');
         container.id = 'toastContainer';
-        container.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:10000;display:flex;flex-direction:column;gap:10px;';
+        container.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:10000;display:flex;flex-direction:column;gap:10px;pointer-events:none;';
         document.body.appendChild(container);
     }
 
     const toast = document.createElement('div');
     toast.className = `toast-notification ${type}`;
     toast.style.cssText = `
-        background: var(--bg-tertiary, #1e293b);
-        color: var(--text-primary, #f1f5f9);
-        padding: 0.75rem 1.25rem;
-        border-radius: 4px;
-        border-left: 4px solid ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : type === 'warning' ? '#f59e0b' : '#00e5ff'};
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        background: #1e293b;
+        color: #f1f5f9;
+        padding: 12px 20px;
+        border-radius: 6px;
+        border-left: 5px solid ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#f59e0b'};
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.4);
         font-family: 'JetBrains Mono', monospace;
-        font-size: 0.8rem;
-        animation: slideIn 0.3s ease;
-        max-width: 350px;
-        word-break: break-word;
+        font-size: 13px;
+        pointer-events: auto;
+        min-width: 280px;
+        opacity: 0;
+        transform: translateX(100%);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     `;
-    
-    let icon = '';
-    if (type === 'success') icon = '🟢 ';
-    else if (type === 'error') icon = '🔴 ';
-    else if (type === 'warning') icon = '⚠️ ';
-    else icon = '📈 ';
 
-    toast.innerHTML = `<span>${icon}${message}</span>`;
+    const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : '⚠️';
+    toast.innerHTML = `<div style="display:flex;align-items:center;gap:10px;"><span>${icon}</span><span>${message}</span></div>`;
+    
     container.appendChild(toast);
 
+    // Forçar reflow para animação
+    setTimeout(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateX(0)';
+    }, 10);
+
+    // Auto-destruição
     setTimeout(() => {
         toast.style.opacity = '0';
-        toast.style.transition = 'opacity 0.3s ease';
-        setTimeout(() => { if (toast.parentNode) toast.remove(); }, 300);
-    }, 4000);
+        toast.style.transform = 'translateX(100%)';
+        setTimeout(() => toast.remove(), 400);
+    }, 5000);
 };
- }
-// [FIM DO FICHEIRO - NÃO ADICIONAR MAIS NADA ABAIXO DESTA LINHA]
+
+// [FIM ABSOLUTO DO FICHEIRO]
