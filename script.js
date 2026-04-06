@@ -8165,13 +8165,11 @@ window.showToast = function(message, type = 'info') {
     
     container.appendChild(toast);
 
-    // Forçar reflow para animação
     setTimeout(() => {
         toast.style.opacity = '1';
         toast.style.transform = 'translateX(0)';
     }, 10);
 
-    // Auto-destruição
     setTimeout(() => {
         toast.style.opacity = '0';
         toast.style.transform = 'translateX(100%)';
@@ -8179,7 +8177,6 @@ window.showToast = function(message, type = 'info') {
             if (toast.parentNode) toast.remove();
         }, 400);
     }, 5000);
-     };
-}
+};
 
 // [FIM DO FICHEIRO - GARANTA QUE NÃO HÁ CHAVETAS SOLTAS ABAIXO DESTA LINHA]
