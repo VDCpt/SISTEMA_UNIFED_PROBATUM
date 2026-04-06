@@ -3197,19 +3197,14 @@ function startGatekeeperSession() {
         UNIFEDSystem.generateMasterHash().catch(e => console.error('[MASTERHASH] Erro:', e));
         updateLoadingProgress(80);
 
-        setTimeout(() => {
-            updateLoadingProgress(100);
-            setTimeout(showMainInterface, 500);
-        }, 500);
-    }, 500);
-}
-
-function updateLoadingProgress(percent) {
-    const bar = document.getElementById('loadingProgress');
-    const text = document.getElementById('loadingStatusText');
-    if (bar) bar.style.width = percent + '%';
-    if (text) text.textContent = `MÓDULO FORENSE BIG DATA v13.12.0-PURE · DORA COMPLIANT... ${percent}%`;
-}
+   // ... código anterior do PDF ...
+            doc.save(`Relatorio_Forense_${sys.sessionId.substring(0,8)}.pdf`);
+            if (typeof showToast === 'function') showToast('PDF gerado com sucesso!', 'success');
+        }, 500); // Fecha o setTimeout
+    } catch (err) {
+        console.error('Erro no PDF:', err);
+    }
+}; // Fecha a função exportToPDF
 
 function showMainInterface() {
     const loading = document.getElementById('loadingOverlay');
