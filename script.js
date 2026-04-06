@@ -3232,7 +3232,6 @@ function startGatekeeperSession() {
     setTimeout(() => {
         if (typeof forensicDataSynchronization === 'function') forensicDataSynchronization();
     }, 1000);
-
 })(); // Fecho do IIFE principal que envolve todo o script.js
 
 function populateAnoFiscal() {
@@ -3260,7 +3259,7 @@ function populateYears() {
         sel.appendChild(opt);
     }
 }
-
+ 
 function startClockAndDate() {
     const update = () => {
         const now = new Date();
