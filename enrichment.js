@@ -1094,14 +1094,10 @@ window.generateLegalNarrative = async function(analysis) {
     const saftBruto     = t.saftBruto || 8227.97;
     const valorIva6     = _fmtLocal(saftBruto * 0.06);
 
-    // ── FORÇAR FALLBACK ESTÁTICO (sem tentar fetch) ───────────────────────────
-    // Isto elimina completamente os erros de rede na consola.
-    // O fallback estático contém todas as secções jurídicas (A, B, C, D)
-    // e mantém a credibilidade pericial.
+    // ── Forçar fallback estático (sem qualquer chamada de rede) ───────────────
+    // Isto elimina completamente os erros de DNS/CORS.
     console.log('[UNIFED-AI] Modo de segurança ativo – a usar narrativa jurídica local (fallback estático).');
-    return _staticNarrative();  // usaremos a função já existente _fallbackNarrative
-
-    // (opcional: pode manter o código do fetch comentado ou removido)
+    return _fallbackNarrative('Execução em modo standalone (narrativa local)');
 };
             if (response.ok) {
                 const data = await response.json();
