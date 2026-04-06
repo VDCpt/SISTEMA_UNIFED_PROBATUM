@@ -225,7 +225,13 @@
             } else {
                 missing.push(id);
             }
+        // Verificar se Chart.js está disponível e se os gráficos podem ser renderizados
+        if (typeof Chart === 'undefined') {
+        const chartSections = document.querySelectorAll('.chart-section');
+        chartSections.forEach(section => {
+        section.style.display = 'none';
         });
+        }
 
         if (missing.length > 0) {
             console.warn(`[UNIFED] IDs em falta no DOM: Array(${missing.length})`, missing);
@@ -596,237 +602,241 @@
         });
     }
 
-    function _simulateEvidenceUpload() {
-        return new Promise((resolve, reject) => {
-            try {
-                if (typeof window.UNIFEDSystem === 'undefined') {
-                    console.warn('[UNIFED] UNIFEDSystem não disponível para simular upload.');
-                    reject(new Error('UNIFEDSystem not found'));
-                    return;
-                }
-                const sys = window.UNIFEDSystem;
-                const t = data.totals;
-                if (!sys.documents) sys.documents = {};
-                if (!sys.documents.control) sys.documents.control = { files: [], totals: { records: 0 } };
-                if (!sys.documents.saft) sys.documents.saft = { files: [], totals: { bruto: 0, iliquido: 0, iva: 0, records: 0 } };
-                if (!sys.documents.statements) sys.documents.statements = { files: [], totals: { ganhos: 0, despesas: 0, ganhosLiquidos: 0, records: 0 } };
-                if (!sys.documents.invoices) sys.documents.invoices = { files: [], totals: { invoiceValue: 0, records: 0 } };
-                if (!sys.documents.dac7) sys.documents.dac7 = { files: [], totals: { q1: 0, q2: 0, q3: 0, q4: 0, totalPeriodo: 0, records: 0 } };
-                if (!sys.analysis) sys.analysis = { evidenceIntegrity: [] };
-                if (!sys.analysis.evidenceIntegrity) sys.analysis.evidenceIntegrity = [];
-
-                sys.documents.control.files = [];
-                sys.documents.saft.files = [];
-                sys.documents.statements.files = [];
-                sys.documents.invoices.files = [];
-                sys.documents.dac7.files = [];
-                sys.analysis.evidenceIntegrity = [];
-
-                const controlFiles = [
-                    { name: 'controlo_autenticidade_1.csv', type: 'control', size: 256 },
-                    { name: 'controlo_autenticidade_2.csv', type: 'control', size: 256 },
-                    { name: 'controlo_autenticidade_3.csv', type: 'control', size: 256 },
-                    { name: 'controlo_autenticidade_4.csv', type: 'control', size: 256 }
-                ];
-                controlFiles.forEach(file => {
-                    sys.documents.control.files.push({ name: file.name, size: file.size });
-                    sys.analysis.evidenceIntegrity.push({
-                        filename: file.name,
-                        type: 'control',
-                        hash: CryptoJS.SHA256(file.name + 'control_demo').toString().toUpperCase(),
-                        timestamp: new Date().toISOString(),
-                        size: file.size
-                    });
-                });
-                sys.documents.control.totals.records = controlFiles.length;
-
-                const saftFiles = [
-                    { name: '131509_202409.csv', type: 'saft', size: 1024 },
-                    { name: '131509_202410.csv', type: 'saft', size: 1024 },
-                    { name: '131509_202411.csv', type: 'saft', size: 1024 },
-                    { name: '131509_202412.csv', type: 'saft', size: 1024 }
-                ];
-                saftFiles.forEach(file => {
-                    sys.documents.saft.files.push({ name: file.name, size: file.size });
-                    sys.analysis.evidenceIntegrity.push({
-                        filename: file.name,
-                        type: 'saft',
-                        hash: CryptoJS.SHA256(file.name + 'saft_demo').toString().toUpperCase(),
-                        timestamp: new Date().toISOString(),
-                        size: file.size
-                    });
-                });
-                sys.documents.saft.totals.bruto = t.saftBruto;
-                sys.documents.saft.totals.iliquido = t.saftIliquido;
-                sys.documents.saft.totals.iva = t.saftIva;
-                sys.documents.saft.totals.records = saftFiles.length;
-
-                const statementFiles = [
-                    { name: 'extrato_setembro_2024.pdf', type: 'statement', size: 2048 },
-                    { name: 'extrato_outubro_2024.pdf', type: 'statement', size: 2048 },
-                    { name: 'extrato_novembro_2024.pdf', type: 'statement', size: 2048 },
-                    { name: 'extrato_dezembro_2024.pdf', type: 'statement', size: 2048 }
-                ];
-                statementFiles.forEach(file => {
-                    sys.documents.statements.files.push({ name: file.name, size: file.size });
-                    sys.analysis.evidenceIntegrity.push({
-                        filename: file.name,
-                        type: 'statement',
-                        hash: CryptoJS.SHA256(file.name + 'statement_demo').toString().toUpperCase(),
-                        timestamp: new Date().toISOString(),
-                        size: file.size
-                    });
-                });
-                sys.documents.statements.totals.ganhos = t.ganhos;
-                sys.documents.statements.totals.despesas = t.despesas;
-                sys.documents.statements.totals.ganhosLiquidos = t.ganhosLiquidos;
-                sys.documents.statements.totals.records = statementFiles.length;
-
-                const invoiceFiles = [
-                    { name: 'PT1124_202412.pdf', type: 'invoice', size: 512 },
-                    { name: 'PT1125_202412.pdf', type: 'invoice', size: 512 }
-                ];
-                invoiceFiles.forEach(file => {
-                    sys.documents.invoices.files.push({ name: file.name, size: file.size });
-                    sys.analysis.evidenceIntegrity.push({
-                        filename: file.name,
-                        type: 'invoice',
-                        hash: CryptoJS.SHA256(file.name + 'invoice_demo').toString().toUpperCase(),
-                        timestamp: new Date().toISOString(),
-                        size: file.size
-                    });
-                });
-                sys.documents.invoices.totals.invoiceValue = t.faturaPlataforma;
-                sys.documents.invoices.totals.records = invoiceFiles.length;
-
-                const dac7Files = [
-                    { name: 'dac7_2024_semestre2.pdf', type: 'dac7', size: 1024 }
-                ];
-                dac7Files.forEach(file => {
-                    sys.documents.dac7.files.push({ name: file.name, size: file.size });
-                    sys.analysis.evidenceIntegrity.push({
-                        filename: file.name,
-                        type: 'dac7',
-                        hash: CryptoJS.SHA256(file.name + 'dac7_demo').toString().toUpperCase(),
-                        timestamp: new Date().toISOString(),
-                        size: file.size
-                    });
-                });
-                sys.documents.dac7.totals.q4 = t.dac7TotalPeriodo;
-                sys.documents.dac7.totals.q3 = 0;
-                sys.documents.dac7.totals.q1 = 0;
-                sys.documents.dac7.totals.q2 = 0;
-                sys.documents.dac7.totals.totalPeriodo = t.dac7TotalPeriodo;
-                sys.documents.dac7.totals.records = dac7Files.length;
-
-                if (!sys.auxiliaryData) sys.auxiliaryData = {};
-                sys.auxiliaryData.campanhas = t.campanhas || 0;
-                sys.auxiliaryData.portagens = t.portagens || 0;
-                sys.auxiliaryData.gorjetas = t.gorjetas || 0;
-                sys.auxiliaryData.cancelamentos = t.cancelamentos || 0;
-                sys.auxiliaryData.totalNaoSujeitos = (t.campanhas || 0) + (t.portagens || 0) + (t.gorjetas || 0);
-                sys.auxiliaryData.processedFrom = [];
-                sys.auxiliaryData.extractedAt = new Date().toISOString();
-
-                if (!sys.monthlyData) sys.monthlyData = {};
-                const monthlyGanhos = [2450.00, 2560.00, 2480.00, 2667.73];
-                const monthlyDespesas = [590.00, 615.00, 600.00, 642.89];
-                const monthlyGanhosLiq = [1860.00, 1945.00, 1880.00, 2024.84];
-                const months = ['202409', '202410', '202411', '202412'];
-                months.forEach((month, idx) => {
-                    sys.monthlyData[month] = {
-                        ganhos: monthlyGanhos[idx],
-                        despesas: monthlyDespesas[idx],
-                        ganhosLiq: monthlyGanhosLiq[idx]
-                    };
-                });
-                sys.dataMonths = new Set(months);
-
-                if (!sys.analysis.totals) sys.analysis.totals = {};
-                sys.analysis.totals.saftBruto = t.saftBruto;
-                sys.analysis.totals.saftIliquido = t.saftIliquido;
-                sys.analysis.totals.saftIva = t.saftIva;
-                sys.analysis.totals.ganhos = t.ganhos;
-                sys.analysis.totals.despesas = t.despesas;
-                sys.analysis.totals.ganhosLiquidos = t.ganhosLiquidos;
-                sys.analysis.totals.faturaPlataforma = t.faturaPlataforma;
-                sys.analysis.totals.dac7Q1 = 0;
-                sys.analysis.totals.dac7Q2 = 0;
-                sys.analysis.totals.dac7Q3 = 0;
-                sys.analysis.totals.dac7Q4 = t.dac7TotalPeriodo;
-                sys.analysis.totals.dac7TotalPeriodo = t.dac7TotalPeriodo;
-
-                const discrepanciaSaftVsDac7 = t.saftBruto - t.dac7TotalPeriodo;
-                const percentagemSaftVsDac7 = t.saftBruto > 0 ? (discrepanciaSaftVsDac7 / t.saftBruto) * 100 : 0;
-                const discrepanciaCritica = t.despesas - t.faturaPlataforma;
-                const percentagemOmissao = t.despesas > 0 ? (discrepanciaCritica / t.despesas) * 100 : 0;
-                const ivaFalta = discrepanciaCritica * 0.23;
-                const ivaFalta6 = discrepanciaCritica * 0.06;
-                const agravamentoBrutoIRC = discrepanciaCritica;
-                const ircEstimado = discrepanciaCritica * 0.21;
-                const asfixiaFinanceira = t.saftBruto * 0.06;
-
-                if (!sys.analysis.crossings) sys.analysis.crossings = {};
-                sys.analysis.crossings.discrepanciaSaftVsDac7 = discrepanciaSaftVsDac7;
-                sys.analysis.crossings.percentagemSaftVsDac7 = percentagemSaftVsDac7;
-                sys.analysis.crossings.discrepanciaCritica = discrepanciaCritica;
-                sys.analysis.crossings.percentagemOmissao = percentagemOmissao;
-                sys.analysis.crossings.ivaFalta = ivaFalta;
-                sys.analysis.crossings.ivaFalta6 = ivaFalta6;
-                sys.analysis.crossings.agravamentoBrutoIRC = agravamentoBrutoIRC;
-                sys.analysis.crossings.ircEstimado = ircEstimado;
-                sys.analysis.crossings.asfixiaFinanceira = asfixiaFinanceira;
-                sys.analysis.crossings.btor = t.despesas;
-                sys.analysis.crossings.btf = t.faturaPlataforma;
-                sys.analysis.crossings.c1_delta = discrepanciaSaftVsDac7;
-                sys.analysis.crossings.c1_pct = percentagemSaftVsDac7;
-                sys.analysis.crossings.c2_delta = discrepanciaCritica;
-                sys.analysis.crossings.c2_pct = percentagemOmissao;
-
-                if (!sys.client && data.client) {
-                    sys.client = { name: data.client.name, nif: data.client.nif, platform: data.client.platform };
-                    const clientStatus = document.getElementById('clientStatusFixed');
-                    if (clientStatus) {
-                        clientStatus.style.display = 'flex';
-                        const nameSpan = document.getElementById('clientNameDisplayFixed');
-                        const nifSpan = document.getElementById('clientNifDisplayFixed');
-                        if (nameSpan) nameSpan.textContent = data.client.name;
-                        if (nifSpan) nifSpan.textContent = data.client.nif;
-                    }
-                    const nameInput = document.getElementById('clientNameFixed');
-                    const nifInput = document.getElementById('clientNIFFixed');
-                    if (nameInput) nameInput.value = data.client.name;
-                    if (nifInput) nifInput.value = data.client.nif;
-                }
-
-                const periodSelect = document.getElementById('periodoAnalise');
-                if (periodSelect) {
-                    periodSelect.value = '2s';
-                    if (typeof window.UNIFEDSystem !== 'undefined') window.UNIFEDSystem.selectedPeriodo = '2s';
-                    const changeEvent = new Event('change', { bubbles: true });
-                    periodSelect.dispatchEvent(changeEvent);
-                }
-                const trimestralContainer = document.getElementById('trimestralSelectorContainer');
-                if (trimestralContainer) trimestralContainer.style.display = 'none';
-
-                const evidenceHashes = sys.analysis.evidenceIntegrity
-                    .map(ev => ev.hash)
-                    .filter(h => h && h.length === 64)
-                    .sort();
-                const binaryConcat = evidenceHashes.join('') + JSON.stringify({ client: sys.client, totals: t }) + sys.sessionId;
-                const masterHashFull = CryptoJS.SHA256(binaryConcat).toString().toUpperCase();
-                sys.masterHash = masterHashFull;
-                window.activeForensicSession = { sessionId: sys.sessionId, masterHash: masterHashFull };
-
-                console.log('[UNIFED] Evidências simuladas carregadas. Total: 15 ficheiros.');
-                resolve(true);
-            } catch (err) {
-                console.error('[UNIFED] Erro na simulação de evidências:', err);
-                reject(err);
+    async function _simulateEvidenceUpload() {
+    return new Promise(async (resolve, reject) => {
+        try {
+            if (typeof window.UNIFEDSystem === 'undefined') {
+                console.warn('[UNIFED] UNIFEDSystem não disponível para simular upload.');
+                reject(new Error('UNIFEDSystem not found'));
+                return;
             }
-        });
-    }
+            const sys = window.UNIFEDSystem;
+            const t = data.totals;
+            if (!sys.documents) sys.documents = {};
+            if (!sys.documents.control) sys.documents.control = { files: [], totals: { records: 0 } };
+            if (!sys.documents.saft) sys.documents.saft = { files: [], totals: { bruto: 0, iliquido: 0, iva: 0, records: 0 } };
+            if (!sys.documents.statements) sys.documents.statements = { files: [], totals: { ganhos: 0, despesas: 0, ganhosLiquidos: 0, records: 0 } };
+            if (!sys.documents.invoices) sys.documents.invoices = { files: [], totals: { invoiceValue: 0, records: 0 } };
+            if (!sys.documents.dac7) sys.documents.dac7 = { files: [], totals: { q1: 0, q2: 0, q3: 0, q4: 0, totalPeriodo: 0, records: 0 } };
+            if (!sys.analysis) sys.analysis = { evidenceIntegrity: [] };
+            if (!sys.analysis.evidenceIntegrity) sys.analysis.evidenceIntegrity = [];
 
+            sys.documents.control.files = [];
+            sys.documents.saft.files = [];
+            sys.documents.statements.files = [];
+            sys.documents.invoices.files = [];
+            sys.documents.dac7.files = [];
+            sys.analysis.evidenceIntegrity = [];
+
+            const controlFiles = [
+                { name: 'controlo_autenticidade_1.csv', type: 'control', size: 256 },
+                { name: 'controlo_autenticidade_2.csv', type: 'control', size: 256 },
+                { name: 'controlo_autenticidade_3.csv', type: 'control', size: 256 },
+                { name: 'controlo_autenticidade_4.csv', type: 'control', size: 256 }
+            ];
+            for (const file of controlFiles) {
+                sys.documents.control.files.push({ name: file.name, size: file.size });
+                const hash = await window.generateForensicHash(file.name + 'control_demo');
+                sys.analysis.evidenceIntegrity.push({
+                    filename: file.name,
+                    type: 'control',
+                    hash: hash,
+                    timestamp: new Date().toISOString(),
+                    size: file.size
+                });
+            }
+            sys.documents.control.totals.records = controlFiles.length;
+
+            const saftFiles = [
+                { name: '131509_202409.csv', type: 'saft', size: 1024 },
+                { name: '131509_202410.csv', type: 'saft', size: 1024 },
+                { name: '131509_202411.csv', type: 'saft', size: 1024 },
+                { name: '131509_202412.csv', type: 'saft', size: 1024 }
+            ];
+            for (const file of saftFiles) {
+                sys.documents.saft.files.push({ name: file.name, size: file.size });
+                const hash = await window.generateForensicHash(file.name + 'saft_demo');
+                sys.analysis.evidenceIntegrity.push({
+                    filename: file.name,
+                    type: 'saft',
+                    hash: hash,
+                    timestamp: new Date().toISOString(),
+                    size: file.size
+                });
+            }
+            sys.documents.saft.totals.bruto = t.saftBruto;
+            sys.documents.saft.totals.iliquido = t.saftIliquido;
+            sys.documents.saft.totals.iva = t.saftIva;
+            sys.documents.saft.totals.records = saftFiles.length;
+
+            const statementFiles = [
+                { name: 'extrato_setembro_2024.pdf', type: 'statement', size: 2048 },
+                { name: 'extrato_outubro_2024.pdf', type: 'statement', size: 2048 },
+                { name: 'extrato_novembro_2024.pdf', type: 'statement', size: 2048 },
+                { name: 'extrato_dezembro_2024.pdf', type: 'statement', size: 2048 }
+            ];
+            for (const file of statementFiles) {
+                sys.documents.statements.files.push({ name: file.name, size: file.size });
+                const hash = await window.generateForensicHash(file.name + 'statement_demo');
+                sys.analysis.evidenceIntegrity.push({
+                    filename: file.name,
+                    type: 'statement',
+                    hash: hash,
+                    timestamp: new Date().toISOString(),
+                    size: file.size
+                });
+            }
+            sys.documents.statements.totals.ganhos = t.ganhos;
+            sys.documents.statements.totals.despesas = t.despesas;
+            sys.documents.statements.totals.ganhosLiquidos = t.ganhosLiquidos;
+            sys.documents.statements.totals.records = statementFiles.length;
+
+            const invoiceFiles = [
+                { name: 'PT1124_202412.pdf', type: 'invoice', size: 512 },
+                { name: 'PT1125_202412.pdf', type: 'invoice', size: 512 }
+            ];
+            for (const file of invoiceFiles) {
+                sys.documents.invoices.files.push({ name: file.name, size: file.size });
+                const hash = await window.generateForensicHash(file.name + 'invoice_demo');
+                sys.analysis.evidenceIntegrity.push({
+                    filename: file.name,
+                    type: 'invoice',
+                    hash: hash,
+                    timestamp: new Date().toISOString(),
+                    size: file.size
+                });
+            }
+            sys.documents.invoices.totals.invoiceValue = t.faturaPlataforma;
+            sys.documents.invoices.totals.records = invoiceFiles.length;
+
+            const dac7Files = [
+                { name: 'dac7_2024_semestre2.pdf', type: 'dac7', size: 1024 }
+            ];
+            for (const file of dac7Files) {
+                sys.documents.dac7.files.push({ name: file.name, size: file.size });
+                const hash = await window.generateForensicHash(file.name + 'dac7_demo');
+                sys.analysis.evidenceIntegrity.push({
+                    filename: file.name,
+                    type: 'dac7',
+                    hash: hash,
+                    timestamp: new Date().toISOString(),
+                    size: file.size
+                });
+            }
+            sys.documents.dac7.totals.q4 = t.dac7TotalPeriodo;
+            sys.documents.dac7.totals.q3 = 0;
+            sys.documents.dac7.totals.q1 = 0;
+            sys.documents.dac7.totals.q2 = 0;
+            sys.documents.dac7.totals.totalPeriodo = t.dac7TotalPeriodo;
+            sys.documents.dac7.totals.records = dac7Files.length;
+
+            if (!sys.auxiliaryData) sys.auxiliaryData = {};
+            sys.auxiliaryData.campanhas = t.campanhas || 0;
+            sys.auxiliaryData.portagens = t.portagens || 0;
+            sys.auxiliaryData.gorjetas = t.gorjetas || 0;
+            sys.auxiliaryData.cancelamentos = t.cancelamentos || 0;
+            sys.auxiliaryData.totalNaoSujeitos = (t.campanhas || 0) + (t.portagens || 0) + (t.gorjetas || 0);
+            sys.auxiliaryData.processedFrom = [];
+            sys.auxiliaryData.extractedAt = new Date().toISOString();
+
+            if (!sys.monthlyData) sys.monthlyData = {};
+            const monthlyGanhos = [2450.00, 2560.00, 2480.00, 2667.73];
+            const monthlyDespesas = [590.00, 615.00, 600.00, 642.89];
+            const monthlyGanhosLiq = [1860.00, 1945.00, 1880.00, 2024.84];
+            const months = ['202409', '202410', '202411', '202412'];
+            months.forEach((month, idx) => {
+                sys.monthlyData[month] = {
+                    ganhos: monthlyGanhos[idx],
+                    despesas: monthlyDespesas[idx],
+                    ganhosLiq: monthlyGanhosLiq[idx]
+                };
+            });
+            sys.dataMonths = new Set(months);
+
+            if (!sys.analysis.totals) sys.analysis.totals = {};
+            sys.analysis.totals.saftBruto = t.saftBruto;
+            sys.analysis.totals.saftIliquido = t.saftIliquido;
+            sys.analysis.totals.saftIva = t.saftIva;
+            sys.analysis.totals.ganhos = t.ganhos;
+            sys.analysis.totals.despesas = t.despesas;
+            sys.analysis.totals.ganhosLiquidos = t.ganhosLiquidos;
+            sys.analysis.totals.faturaPlataforma = t.faturaPlataforma;
+            sys.analysis.totals.dac7Q1 = 0;
+            sys.analysis.totals.dac7Q2 = 0;
+            sys.analysis.totals.dac7Q3 = 0;
+            sys.analysis.totals.dac7Q4 = t.dac7TotalPeriodo;
+            sys.analysis.totals.dac7TotalPeriodo = t.dac7TotalPeriodo;
+
+            const discrepanciaSaftVsDac7 = t.saftBruto - t.dac7TotalPeriodo;
+            const percentagemSaftVsDac7 = t.saftBruto > 0 ? (discrepanciaSaftVsDac7 / t.saftBruto) * 100 : 0;
+            const discrepanciaCritica = t.despesas - t.faturaPlataforma;
+            const percentagemOmissao = t.despesas > 0 ? (discrepanciaCritica / t.despesas) * 100 : 0;
+            const ivaFalta = discrepanciaCritica * 0.23;
+            const ivaFalta6 = discrepanciaCritica * 0.06;
+            const agravamentoBrutoIRC = discrepanciaCritica;
+            const ircEstimado = discrepanciaCritica * 0.21;
+            const asfixiaFinanceira = t.saftBruto * 0.06;
+
+            if (!sys.analysis.crossings) sys.analysis.crossings = {};
+            sys.analysis.crossings.discrepanciaSaftVsDac7 = discrepanciaSaftVsDac7;
+            sys.analysis.crossings.percentagemSaftVsDac7 = percentagemSaftVsDac7;
+            sys.analysis.crossings.discrepanciaCritica = discrepanciaCritica;
+            sys.analysis.crossings.percentagemOmissao = percentagemOmissao;
+            sys.analysis.crossings.ivaFalta = ivaFalta;
+            sys.analysis.crossings.ivaFalta6 = ivaFalta6;
+            sys.analysis.crossings.agravamentoBrutoIRC = agravamentoBrutoIRC;
+            sys.analysis.crossings.ircEstimado = ircEstimado;
+            sys.analysis.crossings.asfixiaFinanceira = asfixiaFinanceira;
+            sys.analysis.crossings.btor = t.despesas;
+            sys.analysis.crossings.btf = t.faturaPlataforma;
+            sys.analysis.crossings.c1_delta = discrepanciaSaftVsDac7;
+            sys.analysis.crossings.c1_pct = percentagemSaftVsDac7;
+            sys.analysis.crossings.c2_delta = discrepanciaCritica;
+            sys.analysis.crossings.c2_pct = percentagemOmissao;
+
+            if (!sys.client && data.client) {
+                sys.client = { name: data.client.name, nif: data.client.nif, platform: data.client.platform };
+                const clientStatus = document.getElementById('clientStatusFixed');
+                if (clientStatus) {
+                    clientStatus.style.display = 'flex';
+                    const nameSpan = document.getElementById('clientNameDisplayFixed');
+                    const nifSpan = document.getElementById('clientNifDisplayFixed');
+                    if (nameSpan) nameSpan.textContent = data.client.name;
+                    if (nifSpan) nifSpan.textContent = data.client.nif;
+                }
+                const nameInput = document.getElementById('clientNameFixed');
+                const nifInput = document.getElementById('clientNIFFixed');
+                if (nameInput) nameInput.value = data.client.name;
+                if (nifInput) nifInput.value = data.client.nif;
+            }
+
+            const periodSelect = document.getElementById('periodoAnalise');
+            if (periodSelect) {
+                periodSelect.value = '2s';
+                if (typeof window.UNIFEDSystem !== 'undefined') window.UNIFEDSystem.selectedPeriodo = '2s';
+                const changeEvent = new Event('change', { bubbles: true });
+                periodSelect.dispatchEvent(changeEvent);
+            }
+            const trimestralContainer = document.getElementById('trimestralSelectorContainer');
+            if (trimestralContainer) trimestralContainer.style.display = 'none';
+
+            const evidenceHashes = sys.analysis.evidenceIntegrity
+                .map(ev => ev.hash)
+                .filter(h => h && h.length === 64)
+                .sort();
+            const binaryConcat = evidenceHashes.join('') + JSON.stringify({ client: sys.client, totals: t }) + sys.sessionId;
+            const masterHashFull = await window.generateForensicHash(binaryConcat);
+            sys.masterHash = masterHashFull;
+            window.activeForensicSession = { sessionId: sys.sessionId, masterHash: masterHashFull };
+
+            console.log('[UNIFED] Evidências simuladas carregadas. Total: 15 ficheiros.');
+            resolve(true);
+        } catch (err) {
+            console.error('[UNIFED] Erro na simulação de evidências:', err);
+            reject(err);
+        }
+    });
+}
     function _updateEvidenceCountersAndShow() {
         const sys = window.UNIFEDSystem;
         if (!sys || !sys.documents) return;
@@ -936,6 +946,13 @@
                 
                 if (document.getElementById('pureDashboard')) {
                     if (typeof updateAuxiliaryUI === 'function') updateAuxiliaryUI();
+// Ocultar secções de gráfico se Chart.js não estiver disponível
+if (typeof Chart === 'undefined') {
+    const chartSections = document.querySelectorAll('.chart-section');
+    chartSections.forEach(section => {
+        section.style.display = 'none';
+    });
+}
                 } else {
                     console.info('[UNIFED] Aguardando renderização do painel para sincronização auxiliar.');
                 }
