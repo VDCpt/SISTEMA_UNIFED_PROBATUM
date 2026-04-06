@@ -8152,15 +8152,20 @@ window.showToast = function showToast(message, type = 'info') {
         word-break: break-word;
     `;
     
-    // [CORREÇÃO APLICADA]: Fecho da estrutura do DOM Element
-    toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i><p>${message}</p>`;
-    
+    let icon = '';
+    if (type === 'success') icon = '🟢 ';
+    else if (type === 'error') icon = '🔴 ';
+    else if (type === 'warning') icon = '⚠️ ';
+    else icon = '📈 ';
+
+    toast.innerHTML = `<span>${icon}${message}</span>`;
     container.appendChild(toast);
-    
+
     setTimeout(() => {
-        toast.style.animation = 'slideIn 0.3s ease reverse forwards';
-        setTimeout(() => toast.remove(), 300);
-    }, 5000);
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => { if (toast.parentNode) toast.remove(); }, 300);
+    }, 4000);
 };
-}
-console.log('UNIFED - PROBATUM v13.12.0-PURE - DORA COMPLIANT - ATF - INTEGRITY SEAL - DOCX - AI ADVERSARIAL - NIFAF GUARD - NEXUS - ATIVADO');
+
+// [FIM DO FICHEIRO - NÃO ADICIONAR MAIS NADA ABAIXO DESTA LINHA]
