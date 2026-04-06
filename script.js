@@ -8167,5 +8167,5 @@ window.showToast = function showToast(message, type = 'info') {
         setTimeout(() => { if (toast.parentNode) toast.remove(); }, 300);
     }, 4000);
 };
-
+ }
 // [FIM DO FICHEIRO - NÃO ADICIONAR MAIS NADA ABAIXO DESTA LINHA]
