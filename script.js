@@ -7976,7 +7976,7 @@ function setupDualScreenDetection() {
 }
 
 // ============================================================================
-// 31. FUNÇÕES GLOBAIS DE UTILIDADE (clearConsole, resetSystem)
+// 30. FUNÇÕES GLOBAIS DE UTILIDADE (clearConsole, resetSystem)
 // ============================================================================
 function clearConsole() {
     const consoleOutput = document.getElementById('consoleOutput');
@@ -8041,7 +8041,7 @@ window.resetSystem = resetSystem;
 window.activeForensicSession = null;
 
 // ============================================================================
-// 30. EXPOSIÇÃO GLOBAL (restantes exportações)
+// 31. EXPOSIÇÃO GLOBAL (restantes exportações)
 // ============================================================================
 window.UNIFEDSystem = UNIFEDSystem;
 
