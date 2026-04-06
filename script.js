@@ -8125,8 +8125,7 @@ if (typeof window.dispatchEvent === 'function') {
     }));
     console.log('[UNIFED-CORE] Evento UNIFED_CORE_READY despachado.');
 }
-
-// ============================================================================
+    // ============================================================================
 // 32. FUNÇÕES GLOBAIS DE INTERFACE (EXPORTAÇÃO FORÇADA)
 // ============================================================================
 
@@ -8176,11 +8175,10 @@ window.showToast = function(message, type = 'info') {
     setTimeout(() => {
         toast.style.opacity = '0';
         toast.style.transform = 'translateX(100%)';
-        setTimeout(() => toast.remove(), 400);
+        setTimeout(() => {
+            if (toast.parentNode) toast.remove();
+        }, 400);
     }, 5000);
 };
-    window.showToast = function(message, type = 'info') {
-   // ... resto do código da função ...
-};
 
-// [FIM ABSOLUTO DO FICHEIRO]
+// [FIM DO FICHEIRO - GARANTA QUE NÃO HÁ CHAVETAS SOLTAS ABAIXO DESTA LINHA]
