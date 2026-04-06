@@ -3185,6 +3185,9 @@ function startGatekeeperSession() {
     setElementText('verdictSessionId', UNIFEDSystem.sessionId);
     generateQRCode();
 
+  // --- FIM DA FUNÇÃO ANTERIOR (Certifique-se que a anterior fechou bem) ---
+
+    // 1. Bloco de Inicialização (Corrigido)
     ForensicLogger.addEntry('SESSION_CREATED', { sessionId: UNIFEDSystem.sessionId });
 
     setTimeout(() => {
@@ -3194,32 +3197,29 @@ function startGatekeeperSession() {
         startClockAndDate();
         setupMainListeners();
         updateLoadingProgress(60);
-        UNIFEDSystem.generateMasterHash().catch(e => console.error('[MASTERHASH] Erro:', e));
+        if (UNIFEDSystem.generateMasterHash) {
+            UNIFEDSystem.generateMasterHash().catch(e => console.error('[MASTERHASH] Erro:', e));
+        }
         updateLoadingProgress(80);
+    }, 500); 
 
-   // ... código anterior do PDF ...
-            doc.save(`Relatorio_Forense_${sys.sessionId.substring(0,8)}.pdf`);
-            if (typeof showToast === 'function') showToast('PDF gerado com sucesso!', 'success');
-        }, 500); // Fecha o setTimeout
-    } catch (err) {
-        console.error('Erro no PDF:', err);
+    // 2. Função de Interface (Corrigida)
+    function showMainInterface() {
+        const loading = document.getElementById('loadingOverlay');
+        const main = document.getElementById('mainContainer');
+        if (loading && main) {
+            loading.style.opacity = '0';
+            setTimeout(() => {
+                loading.style.display = 'none';
+                main.style.display = 'block';
+                setTimeout(() => main.style.opacity = '1', 50);
+                ForensicLogger.addEntry('MAIN_INTERFACE_SHOWN');
+            }, 500);
+        }
+        if (typeof logAudit === 'function') {
+            logAudit('SISTEMA UNIFED - PROBATUM v13.12.0-PURE · DORA COMPLIANT · MODO PROFISSIONAL ATIVADO', 'success');
+        }
     }
-}; // Fecha a função exportToPDF
-
-function showMainInterface() {
-    const loading = document.getElementById('loadingOverlay');
-    const main = document.getElementById('mainContainer');
-    if (loading && main) {
-        loading.style.opacity = '0';
-        setTimeout(() => {
-            loading.style.display = 'none';
-            main.style.display = 'block';
-            setTimeout(() => main.style.opacity = '1', 50);
-            ForensicLogger.addEntry('MAIN_INTERFACE_SHOWN');
-        }, 500);
-    }
-    logAudit('SISTEMA UNIFED - PROBATUM v13.12.0-PURE · DORA COMPLIANT · MODO PROFISSIONAL ATIVADO · EXTRAÇÃO PRECISA · CSC ONLINE', 'success');
-
     const analyzeBtn = document.getElementById('analyzeBtn');
     if (analyzeBtn) analyzeBtn.disabled = false;
 
