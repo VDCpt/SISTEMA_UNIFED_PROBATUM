@@ -3235,33 +3235,6 @@ function startGatekeeperSession() {
 
 })(); // Fecho do IIFE principal que envolve todo o script.js
 
-// 4. Função de Carregamento Recursivo (Fora do bloco principal)
-function loadSystemRecursively() {
-    try {
-        console.log('[UNIFED] Iniciando carga recursiva de artefactos...');
-        // Lógica de carga aqui
-    } catch (e) {
-        console.error('[UNIFED] Falha na carga recursiva:', e);
-    }
-}
-        const stored = localStorage.getItem('ifde_client_data_v12_8');
-        if (stored) {
-            const client = JSON.parse(stored);
-            if (client && client.name && client.nif) {
-                UNIFEDSystem.client = client;
-                document.getElementById('clientStatusFixed').style.display = 'flex';
-                setElementText('clientNameDisplayFixed', client.name);
-                setElementText('clientNifDisplayFixed', client.nif);
-                document.getElementById('clientNameFixed').value = client.name;
-                document.getElementById('clientNIFFixed').value = client.nif;
-                logAudit(`Sujeito passivo recuperado: ${client.name}`, 'success');
-                ForensicLogger.addEntry('CLIENT_RESTORED', { name: client.name, nif: client.nif });
-            }
-        }
-    } catch (e) { console.warn('Cache limpo'); }
-    startClockAndDate();
-}
-
 function populateAnoFiscal() {
     const selectAno = document.getElementById('anoFiscal');
     if (!selectAno) return;
