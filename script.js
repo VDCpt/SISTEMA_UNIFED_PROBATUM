@@ -3183,28 +3183,27 @@ function startGatekeeperSession() {
     UNIFEDSystem._sessionStart = Date.now();
     setElementText('sessionIdDisplay', UNIFEDSystem.sessionId);
     setElementText('verdictSessionId', UNIFEDSystem.sessionId);
-    generateQRCode();
+   // --- FINALIZAÇÃO DO MÓDULO ---
+    if (typeof generateQRCode === 'function') generateQRCode();
 
-  // --- FIM DA FUNÇÃO ANTERIOR (Certifique-se que a anterior fechou bem) ---
-
-    // 1. Bloco de Inicialização (Corrigido)
+    // 1. Bloco de Inicialização Forense
     ForensicLogger.addEntry('SESSION_CREATED', { sessionId: UNIFEDSystem.sessionId });
 
     setTimeout(() => {
-        updateLoadingProgress(40);
-        populateYears();
-        populateAnoFiscal();
-        startClockAndDate();
-        setupMainListeners();
-        updateLoadingProgress(60);
+        if (typeof updateLoadingProgress === 'function') updateLoadingProgress(40);
+        if (typeof populateYears === 'function') populateYears();
+        if (typeof populateAnoFiscal === 'function') populateAnoFiscal();
+        if (typeof startClockAndDate === 'function') startClockAndDate();
+        if (typeof setupMainListeners === 'function') setupMainListeners();
+        
         if (UNIFEDSystem.generateMasterHash) {
             UNIFEDSystem.generateMasterHash().catch(e => console.error('[MASTERHASH] Erro:', e));
         }
-        updateLoadingProgress(80);
-    }, 500); 
+        if (typeof updateLoadingProgress === 'function') updateLoadingProgress(80);
+    }, 500);
 
-    // 2. Função de Interface (Corrigida)
-    function showMainInterface() {
+    // 2. Função de Interface (Exposta ao Window para acesso global)
+    window.showMainInterface = function() {
         const loading = document.getElementById('loadingOverlay');
         const main = document.getElementById('mainContainer');
         if (loading && main) {
@@ -3219,23 +3218,32 @@ function startGatekeeperSession() {
         if (typeof logAudit === 'function') {
             logAudit('SISTEMA UNIFED - PROBATUM v13.12.0-PURE · DORA COMPLIANT · MODO PROFISSIONAL ATIVADO', 'success');
         }
-    }
-    const analyzeBtn = document.getElementById('analyzeBtn');
-    if (analyzeBtn) analyzeBtn.disabled = false;
+    };
 
-    const exportPDFBtn = document.getElementById('exportPDFBtn');
-    if (exportPDFBtn) exportPDFBtn.disabled = false;
+    // 3. Ativação de Controlos
+    const idsToEnable = ['analyzeBtn', 'exportPDFBtn', 'exportJSONBtn'];
+    idsToEnable.forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.disabled = false;
+    });
 
-    const exportJSONBtn = document.getElementById('exportJSONBtn');
-    if (exportJSONBtn) exportJSONBtn.disabled = false;
+    if (typeof injectAuxiliaryHelperBoxes === 'function') injectAuxiliaryHelperBoxes();
 
-    injectAuxiliaryHelperBoxes();
+    setTimeout(() => {
+        if (typeof forensicDataSynchronization === 'function') forensicDataSynchronization();
+    }, 1000);
 
-    setTimeout(forensicDataSynchronization, 1000);
-}
+})(); // Fecho do IIFE principal que envolve todo o script.js
 
+// 4. Função de Carregamento Recursivo (Fora do bloco principal)
 function loadSystemRecursively() {
     try {
+        console.log('[UNIFED] Iniciando carga recursiva de artefactos...');
+        // Lógica de carga aqui
+    } catch (e) {
+        console.error('[UNIFED] Falha na carga recursiva:', e);
+    }
+}
         const stored = localStorage.getItem('ifde_client_data_v12_8');
         if (stored) {
             const client = JSON.parse(stored);
