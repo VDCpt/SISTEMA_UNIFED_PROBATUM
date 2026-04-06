@@ -10,6 +10,9 @@
  * 5. Sistema de Tradução Completo PT/EN - 100% de cobertura
  * 6. Integração do Módulo de Exportação PDF Mod. 03-B (PAGINAÇÃO ROBUSTA)
  * 7. Full-Length SHA-256 (64‑hex) em todas as evidências e logs
+ * 8. CORRECÇÃO: Botão "Limpar Console" agora executa resetSystem() completo
+ * 9. CORRECÇÃO: Log de Custódia é renderizado após cada operação
+ * 10. CORRECÇÃO: Espaço vazio eliminado - painel PURE activado após reset
  * ====================================================================
  */
 
@@ -1600,6 +1603,12 @@ const ForensicLogger = {
 
         this._persist();
 
+        // Renderizar logs no elemento de console, se existir
+        const consoleOutput = document.getElementById('consoleOutput');
+        if (consoleOutput) {
+            this.renderLogsToElement('consoleOutput');
+        }
+
         return entry;
     },
 
@@ -1632,6 +1641,8 @@ const ForensicLogger = {
         this.logs = [];
         localStorage.removeItem(this.STORAGE_KEY);
         this.addEntry('SYSTEM_LOGS_CLEARED', { action: 'Logs purgados pelo operador', rgpd: 'Art. 17.º Direito ao Apagamento' });
+        const consoleOutput = document.getElementById('consoleOutput');
+        if (consoleOutput) consoleOutput.innerHTML = '';
     },
 
     renderLogsToElement(elementId) {
@@ -3121,7 +3132,6 @@ document.addEventListener('DOMContentLoaded', () => {
     populateAnoFiscal();
     populateYears();
     startClockAndDate();
-    // loadSystemRecursively();  // REMOVIDO – função não definida
     setupDragAndDrop();
     generateQRCode();
     setupLogsModal();
@@ -3175,8 +3185,6 @@ function startGatekeeperSession() {
         setTimeout(() => {
             splash.style.display = 'none';
             loading.style.display = 'flex';
-            // loadSystemCore();  // REMOVIDO – função não definida
-            // Em vez disso, invocamos diretamente a função que mostra a interface principal
             if (typeof window.showMainInterface === 'function') {
                 window.showMainInterface();
             } else {
@@ -3184,15 +3192,12 @@ function startGatekeeperSession() {
             }
         }, 500);
     }
-}
     UNIFEDSystem.sessionId = generateSessionId();
     UNIFEDSystem._sessionStart = Date.now();
     setElementText('sessionIdDisplay', UNIFEDSystem.sessionId);
     setElementText('verdictSessionId', UNIFEDSystem.sessionId);
-   // --- FINALIZAÇÃO DO MÓDULO ---
     if (typeof generateQRCode === 'function') generateQRCode();
 
-    // 1. Bloco de Inicialização Forense
     ForensicLogger.addEntry('SESSION_CREATED', { sessionId: UNIFEDSystem.sessionId });
 
     setTimeout(() => {
@@ -3208,7 +3213,6 @@ function startGatekeeperSession() {
         if (typeof updateLoadingProgress === 'function') updateLoadingProgress(80);
     }, 500);
 
-    // 2. Função de Interface (Exposta ao Window para acesso global)
     window.showMainInterface = function() {
         const loading = document.getElementById('loadingOverlay');
         const main = document.getElementById('mainContainer');
@@ -3226,7 +3230,6 @@ function startGatekeeperSession() {
         }
     };
 
-        // 3. Ativação de Controlos
     const idsToEnable = ['analyzeBtn', 'exportPDFBtn', 'exportJSONBtn'];
     idsToEnable.forEach(id => {
         const btn = document.getElementById(id);
@@ -3238,6 +3241,8 @@ function startGatekeeperSession() {
     setTimeout(() => {
         if (typeof forensicDataSynchronization === 'function') forensicDataSynchronization();
     }, 1000);
+}
+
 function populateAnoFiscal() {
     const selectAno = document.getElementById('anoFiscal');
     if (!selectAno) return;
@@ -3429,13 +3434,16 @@ function setupMainListeners() {
 }
 
 // ============================================================================
-// 15. SETUP DO BOTÃO LIMPAR CONSOLE
+// 15. SETUP DO BOTÃO LIMPAR CONSOLE (CORRECÇÃO: agora chama resetSystem)
 // ============================================================================
 function setupClearConsoleButton() {
     const clearBtn = document.getElementById('clearConsoleBtn');
     if (clearBtn) {
-        clearBtn.addEventListener('click', clearConsole);
-        console.log('Listener clearConsoleBtn adicionado');
+        clearBtn.addEventListener('click', () => {
+            console.log('[UNIFED] Botão "Limpar Console" clicado – a executar reset completo do sistema.');
+            resetSystem();
+        });
+        console.log('Listener clearConsoleBtn adicionado (resetSystem)');
     } else {
         console.error('Botão clearConsoleBtn não encontrado');
     }
@@ -7876,14 +7884,10 @@ function setupDualScreenDetection() {
 // ============================================================================
 // 31. FUNÇÕES GLOBAIS DE UTILIDADE (clearConsole, resetSystem)
 // ============================================================================
-// Definição das funções com hoisting (declarações)
 function clearConsole() {
-    // Limpar a área de log do DOM
     const consoleOutput = document.getElementById('consoleOutput');
     if (consoleOutput) consoleOutput.innerHTML = '';
-    // Limpar a consola do browser (apenas visual, não afecta logs forenses)
     console.clear();
-    // Registrar a acção no logger forense
     ForensicLogger.addEntry('CONSOLE_CLEARED', { by: 'user' });
     logAudit('🧹 Consola e área de log limpas.', 'info');
 }
@@ -7894,7 +7898,6 @@ async function resetSystem() {
     }
     ForensicLogger.addEntry('SYSTEM_RESET_REQUESTED');
     
-    // 1. Limpar dados do UNIFEDSystem (manter apenas estrutura mínima)
     UNIFEDSystem.analysis = {
         totals: { saftBruto:0, saftIliquido:0, saftIva:0, ganhos:0, despesas:0, ganhosLiquidos:0, faturaPlataforma:0, dac7Q1:0, dac7Q2:0, dac7Q3:0, dac7Q4:0, dac7TotalPeriodo:0 },
         twoAxis: { revenueGap:0, expenseGap:0, revenueGapActive:false, expenseGapActive:false },
@@ -7914,19 +7917,21 @@ async function resetSystem() {
     UNIFEDSystem.dataMonths.clear();
     UNIFEDSystem.processedFiles.clear();
     UNIFEDSystem.fileSources.clear();
-    resetAuxiliaryData();   // função já existente
+    resetAuxiliaryData();
     
-    // 2. Regenerar hash mestre
     await UNIFEDSystem.generateMasterHash();
     
-    // 3. Actualizar interface
     updateModulesUI();
     updateDashboard();
     renderChart();
     renderDiscrepancyChart();
     forensicDataSynchronization();
     
-    // 4. Disparar evento para que outros módulos (nexus, triada) se reinicializem
+    // Garantir que o painel do caso real seja activado após reset
+    if (typeof window._activatePurePanel === 'function') {
+        window._activatePurePanel();
+    }
+    
     window.dispatchEvent(new CustomEvent('UNIFED_CORE_READY', { detail: { reset: true } }));
     
     logAudit('🔄 Sistema reiniciado – todas as evidências e análises foram limpas.', 'success');
@@ -7934,7 +7939,6 @@ async function resetSystem() {
     ForensicLogger.addEntry('SYSTEM_RESET_COMPLETED');
 }
 
-// Atribuição ao objeto window (exposição global)
 window.clearConsole = clearConsole;
 window.resetSystem = resetSystem;
 
@@ -7956,7 +7960,6 @@ window.forensicDataSynchronization = forensicDataSynchronization;
 window.switchLanguage = switchLanguage;
 window.openLogsModal = openLogsModal;
 window.openHashModal = openHashModal;
-// Nota: clearConsole e resetSystem já foram atribuídos acima, não repetir
 window.filterDAC7ByPeriod = filterDAC7ByPeriod;
 window.processAuxiliaryPlatformData = processAuxiliaryPlatformData;
 window.injectAuxiliaryHelperBoxes = injectAuxiliaryHelperBoxes;
@@ -7972,9 +7975,7 @@ window.resetAuxiliaryData = resetAuxiliaryData;
     UNIFEDSystem._pureModuleLoaded = true;
 
     if (typeof UNIFEDSystem.loadAnonymizedRealCase !== 'function') {
-        UNIFEDSystem.loadAnonymizedRealCase = function _pureStub() {
-            // console.warn('[UNIFED-PURE] ⚠ script_injection_v13.12.0-PURE.js não carregado. Verificar ordem de carregamento em index.html.');
-        };
+        UNIFEDSystem.loadAnonymizedRealCase = function _pureStub() {};
     }
 
     if (
