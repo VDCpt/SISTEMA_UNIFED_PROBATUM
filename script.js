@@ -8179,6 +8179,6 @@ window.showToast = function(message, type = 'info') {
             if (toast.parentNode) toast.remove();
         }, 400);
     }, 5000);
-};
+}
 
 // [FIM DO FICHEIRO - GARANTA QUE NÃO HÁ CHAVETAS SOLTAS ABAIXO DESTA LINHA]
