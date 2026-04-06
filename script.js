@@ -15,6 +15,17 @@
 
 'use strict';
 
+// [FIX CORRETIVO] Declaração Global Forçada
+window.updateAnalysisButton = function() {
+    const btn = document.getElementById('analyzeBtn');
+    if (btn) {
+        const hasClient = !!(window.UNIFEDSystem && window.UNIFEDSystem.client);
+        const hasFiles = window.UNIFEDSystem && window.UNIFEDSystem.documents && 
+                         Object.values(window.UNIFEDSystem.documents).some(d => d.files && d.files.length > 0);
+        btn.disabled = !(hasClient && hasFiles);
+    }
+};
+
 console.log('UNIFED - PROBATUM SCRIPT v13.12.0-PURE · DORA COMPLIANT · ATF · INTEGRITY SEAL · DOCX · AI ADVERSARIAL · NIFAF GUARD · NEXUS · ATIVADO');
 
 // ============================================================================
@@ -3168,9 +3179,6 @@ function startGatekeeperSession() {
         }, 500);
     }
 }
-
-function loadSystemCore() {
-    updateLoadingProgress(20);
     UNIFEDSystem.sessionId = generateSessionId();
     UNIFEDSystem._sessionStart = Date.now();
     setElementText('sessionIdDisplay', UNIFEDSystem.sessionId);
