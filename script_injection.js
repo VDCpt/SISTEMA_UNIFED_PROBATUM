@@ -38,7 +38,7 @@
             dac7: 1
         },
         totals: {
-            ganhosbrutos:      10157.73,
+            ganhos:           10157.73,
             ganhosLiquidos:    7709.84,
             saftBruto:         8227.97,
             saftIliquido:      7761.67,
