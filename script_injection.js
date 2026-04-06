@@ -23,6 +23,15 @@
 (function() {
     'use strict';
 
+    window.logAudit = window.logAudit || function(msg, level = 'info') {
+    const prefix = '[UNIFED] ';
+    if (level === 'error') console.error(prefix + msg);
+    else if (level === 'warn') console.warn(prefix + msg);
+    else if (level === 'success') console.info(prefix + msg);
+    else console.log(prefix + msg);
+};
+const logAudit = window.logAudit;
+
     // 1. DATASET MESTRE (OBJETO IMUTÁVEL) — VALORES REAIS ORIGINAIS + MACRO + COUNTS
     const _PDF_CASE = Object.freeze({
         sessionId:  "UNIFED-MNGFN3C0-X57MO",
@@ -945,6 +954,11 @@
                 
                 if (document.getElementById('pureDashboard')) {
                     if (typeof updateAuxiliaryUI === 'function') updateAuxiliaryUI();
+                    // Forçar exibição das secções de gráfico
+document.querySelectorAll('.chart-section').forEach(section => {
+    section.style.display = 'block';
+    section.style.height = '400px';
+});
                 } else {
                     // Após o loop de mapeamento e antes do console.info, adicionar:
 if (typeof Chart === 'undefined') {
