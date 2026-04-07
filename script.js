@@ -129,8 +129,6 @@ const QUESTIONS_CACHE = [
     { id: 8, text: "O sistema de logs regista o IP de origem e o \"Fingerprint\" do dispositivo para cada validação de fatura manual?", type: "medium" },
     { id: 9, text: "Existe evidência de purga de base de dados (DROP/TRUNCATE) nos 15 minutos que antecederam a extração de auditoria?", type: "critical" },
     { id: 10, text: "Os valores reportados no ficheiro SAF-T coincidem com o \"Checksum\" verificado no cruzamento direto com a API da AT?", type: "high" }
-    // Nota: O array prossegue até às 40 questões, mantendo o padrão de escape \".
-];
     { id: 11, text: "O sistema permite a edição retroativa de registos de faturação já selados? Como é auditado e quem autorizou as alterações?", type: "high" },
     { id: 12, text: "Como é determinada a origem geográfica para efeitos de IVA nas transações e qual o impacto na taxa aplicada no período?", type: "med" },
     { id: 13, text: "Qual o protocolo de redundância quando a API de faturação falha em tempo real? Existem registos de falhas no período em análise?", type: "med" },
