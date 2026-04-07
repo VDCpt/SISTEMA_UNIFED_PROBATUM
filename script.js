@@ -8103,27 +8103,27 @@ if (typeof window.dispatchEvent === 'function') {
 
 /**
  * Exibe notificações Toast no canto inferior direito.
- * Definida como propriedade de "window" para garantir visibilidade global.
+ * Definida como propriedade de 'window' para garantir visibilidade global.
  */
-window.showToast = function(message, type = "info") {
-    let container = document.getElementById("toastContainer");
+window.showToast = function(message, type = 'info') {
+    let container = document.getElementById('toastContainer');
     if (!container) {
-        container = document.createElement("div");
-        container.id = "toastContainer";
-        container.style.cssText = "position:fixed;bottom:20px;right:20px;z-index:10000;display:flex;flex-direction:column;gap:10px;pointer-events:none;";
+        container = document.createElement('div');
+        container.id = 'toastContainer';
+        container.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:10000;display:flex;flex-direction:column;gap:10px;pointer-events:none;';
         document.body.appendChild(container);
     }
 
-    const toast = document.createElement("div");
+    const toast = document.createElement('div');
     toast.className = `toast-notification ${type}`;
     toast.style.cssText = `
         background: #1e293b;
         color: #f1f5f9;
         padding: 12px 20px;
         border-radius: 6px;
-        border-left: 5px solid ${type === "success" ? "#10b981" : type === "error" ? "#ef4444" : "#f59e0b"};
+        border-left: 5px solid ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#f59e0b'};
         box-shadow: 0 10px 15px -3px rgba(0,0,0,0.4);
-        font-family: "JetBrains Mono", monospace;
+        font-family: 'JetBrains Mono', monospace;
         font-size: 13px;
         pointer-events: auto;
         min-width: 280px;
@@ -8132,19 +8132,19 @@ window.showToast = function(message, type = "info") {
         transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     `;
 
-    const icon = type === "success" ? "✅" : type === "error" ? "❌" : "⚠️";
+    const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : '⚠️';
     toast.innerHTML = `<div style="display:flex;align-items:center;gap:10px;"><span>${icon}</span><span>${message}</span></div>`;
     
     container.appendChild(toast);
 
     setTimeout(() => {
-        toast.style.opacity = "1";
-        toast.style.transform = "translateX(0)";
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateX(0)';
     }, 10);
 
     setTimeout(() => {
-        toast.style.opacity = "0";
-        toast.style.transform = "translateX(100%)';
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
         setTimeout(() => {
             if (toast.parentNode) toast.remove();
         }, 400);
