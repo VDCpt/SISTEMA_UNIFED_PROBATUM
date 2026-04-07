@@ -423,7 +423,7 @@ const getRiskVerdict = (delta, gross) => {
 
     const pct = Math.abs((delta / gross) * 100);
     const pctFormatted = pct.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
-
+};
     if (pct <= 3) return {
         level: { pt: 'BAIXO RISCO', en: 'LOW RISK' },
         key: 'low',
