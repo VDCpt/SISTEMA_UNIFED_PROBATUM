@@ -966,6 +966,9 @@
                 const setBox = (id, val) => {
                     const el = document.getElementById(id);
                     if (el) el.textContent = _fmtLocal(val);
+                    // Forçar atualização dos gráficos
+if (typeof window.renderChart === 'function') window.renderChart();
+if (typeof window.renderDiscrepancyChart === 'function') window.renderDiscrepancyChart();
                 };
                 setBox('auxBoxCampanhasValue', sys.auxiliaryData.campanhas);
                 setBox('auxBoxPortagensValue', sys.auxiliaryData.portagens);
