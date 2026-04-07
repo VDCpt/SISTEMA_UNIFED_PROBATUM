@@ -128,7 +128,7 @@ const QUESTIONS_CACHE = [
     { id: 7, text: "Identifique a correlação entre os fluxos de saída e os períodos de \"Shadow Economy\" detetados.", type: "critical" },
     { id: 8, text: "O sistema de logs regista o IP de origem e o \"Fingerprint\" do dispositivo para cada validação?", type: "medium" },
     { id: 9, text: "Existe evidência de purga de base de dados (DROP/TRUNCATE) nos 15 minutos que antecederam a extração?", type: "critical" },
-    { id: 10, text: "Os valores reportados no ficheiro SAF-T coincidem com o \"Checksum\" verificado na API da AT?", type: "high" }
+    { id: 10, text: "Os valores reportados no ficheiro SAF-T coincidem com o \"Checksum\" verificado na API da AT?", type: "high" },
     { id: 11, text: "O sistema permite a edição retroativa de registos de faturação já selados? Como é auditado e quem autorizou as alterações?", type: "high" },
     { id: 12, text: "Como é determinada a origem geográfica para efeitos de IVA nas transações e qual o impacto na taxa aplicada no período?", type: "med" },
     { id: 13, text: "Qual o protocolo de redundância quando a API de faturação falha em tempo real? Existem registos de falhas no período em análise?", type: "med" },
