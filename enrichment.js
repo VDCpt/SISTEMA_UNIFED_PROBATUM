@@ -1091,7 +1091,6 @@ function generateBurdenOfProofSection(discrepancyValue) {
         'na retenção da discrepância apurada de ' + _fmtVal + '.\n' +
         '---------------------------------------------------------------------------'
     );
-}
 window.generateBurdenOfProofSection = generateBurdenOfProofSection;
 
 console.log('[UNIFED-ENRICHMENT] \u2705 Output Enrichment Layer v13.12.0-PURE carregado.');
