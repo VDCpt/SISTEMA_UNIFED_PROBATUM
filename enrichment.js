@@ -12,98 +12,132 @@
  * ============================================================================
  */
 
+/**
+ * UNIFED - PROBATUM · OUTPUT ENRICHMENT LAYER · v13.12.0-PURE
+ * ============================================================================
+ * Missão: Reconstrução de Prova Material e Argumentação Jurídica
+ * ============================================================================
+ */
+
 'use strict';
 
-// ============================================================================
-// UNIFEDSystem.utils — UTILITÁRIOS CENTRALIZADOS
-// ============================================================================
 (function _installUNIFEDUtils() {
     if (typeof window.UNIFEDSystem === 'undefined') { window.UNIFEDSystem = {}; }
     if (typeof window.UNIFEDSystem.utils === 'undefined') { window.UNIFEDSystem.utils = {}; }
     var _utils = window.UNIFEDSystem.utils;
 
-    if (typeof _utils.formatCurrency !== 'function') {
-        _utils.formatCurrency = function _uFormatCurrency(val) {
-            if (typeof window.formatCurrency === 'function' &&
-                window.formatCurrency !== _utils.formatCurrency) {
-                return window.formatCurrency(val);
-            }
-            var _raw = (val === null || val === undefined || isNaN(Number(val))) ? 0 : Number(val);
-            var _lang = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
-            var _locale = (_lang === 'en') ? 'en-GB' : 'pt-PT';
-            return new Intl.NumberFormat(_locale, {
-                style: 'currency', currency: 'EUR',
-                minimumFractionDigits: 2, maximumFractionDigits: 2
-            }).format(_raw);
-        };
-    }
-    if (typeof window.formatCurrency !== 'function') {
-        window.formatCurrency = _utils.formatCurrency;
-    }
-
-    if (typeof _utils.log !== 'function') {
-        _utils.log = function _uLog(msg, level) {
-            if (typeof window.logAudit === 'function' && window.logAudit !== _utils.log) {
-                window.logAudit(msg, level);
-                return;
-            }
-            var prefix = '[UNIFED-ENRICHMENT] ';
-            if (level === 'error') console.error(prefix + msg);
-            else if (level === 'warn') console.warn(prefix + msg);
-            else if (level === 'success') console.info(prefix + msg);
-            else console.log(prefix + msg);
-        };
-    }
-    if (typeof window.logAudit !== 'function') {
-        window.logAudit = _utils.log;
-    }
-
-    window._enrichmentRefreshLang = function _enrichmentRefreshLang(lang) {
-        var _newLang = lang || (typeof window.currentLang !== 'undefined' ? window.currentLang : 'pt');
-        var _atfCanvas = document.getElementById('atfChartCanvas');
-        if (_atfCanvas && typeof Chart !== 'undefined') {
-            try {
-                var _chart = Chart.getChart(_atfCanvas);
-                if (_chart) {
-                    var _newLocale = _newLang === 'en' ? 'en-GB' : 'pt-PT';
-                    if (_chart.options && _chart.options.scales && _chart.options.scales.y) {
-                        _chart.options.scales.y.ticks.callback = function(v2) {
-                            return new Intl.NumberFormat(_newLocale, {
-                                style: 'currency', currency: 'EUR', maximumFractionDigits: 0
-                            }).format(v2);
-                        };
-                    }
-                    if (_chart.options && _chart.options.plugins && _chart.options.plugins.tooltip) {
-                        _chart.options.plugins.tooltip.callbacks.label = function(c2) {
-                            return ' ' + c2.dataset.label + ': ' + new Intl.NumberFormat(_newLocale, {
-                                style: 'currency', currency: 'EUR'
-                            }).format(c2.raw || 0);
-                        };
-                    }
-                    _chart.update('none');
-                }
-            } catch (_e) { }
-        }
-        var _atfModal = document.getElementById('atfModal');
-        if (_atfModal) {
-            var _outlierDivs = _atfModal.querySelectorAll('[data-disc-value]');
-            _outlierDivs.forEach(function(el) {
-                var _raw = parseFloat(el.getAttribute('data-disc-value'));
-                if (!isNaN(_raw)) {
-                    var _fmtd = _utils.formatCurrency(_raw);
-                    var _strong = el.querySelector('strong');
-                    if (_strong && _strong.nextSibling) {
-                        _strong.nextSibling.textContent = '\n\u0394 ' + _fmtd;
-                    }
-                }
-            });
-        }
-        console.log('[UNIFED-ENRICHMENT] _enrichmentRefreshLang() executado — lang: ' + _newLang);
+    _utils.formatCurrency = function(val) {
+        var _raw = (val === null || val === undefined || isNaN(Number(val))) ? 0 : Number(val);
+        var _lang = window.currentLang || 'pt';
+        return new Intl.NumberFormat(_lang === 'en' ? 'en-GB' : 'pt-PT', {
+            style: 'currency', currency: 'EUR'
+        }).format(_raw);
     };
-    console.log('[UNIFED-ENRICHMENT] \u2705 UNIFEDSystem.utils inicializado');
+
+    window.formatCurrency = _utils.formatCurrency;
+    console.log('[UNIFED-ENRICHMENT] ✅ Utils carregado.');
 })();
 
-const _fmtEur = (val) => window.UNIFEDSystem.utils.formatCurrency(val);
+// --- MOTOR DE ARGUMENTAÇÃO JURÍDICA (MINUTA WORD) ---
+async function generateLegalNarrative() {
+    const sys = window.UNIFEDSystem;
+    const t = sys.analysis.totals;
+    const disc = sys.analysis.crossings.c2_gap;
+    
+    let narrativa = `EXMO. SENHOR JUIZ DE DIREITO,\n\n`;
+    narrativa += `O Requerente, perante a discrepância material de ${window.formatCurrency(disc)} (${sys.analysis.crossings.c2_pct}%), `;
+    narrativa += `vem expor que a Retenção Ilegal de rendimentos configura Abuso de Confiança Fiscal (Art. 108.º RGIT).\n\n`;
+    narrativa += `DA PROVA MATERIAL:\nAs evidências digitais extraídas (Hash: ${sys.masterHash}) confirmam que os Ganhos Reais excedem os reportados no SAF-T.`;
+    
+    return narrativa;
+}
+
+// --- EXPORTAÇÃO DOCX (REQUISITO 1) ---
+async function exportDOCX() {
+    window.logAudit('A gerar Minuta de Petição Inicial (DOCX)...', 'info');
+    try {
+        const content = await generateLegalNarrative();
+        const blob = new Blob([content], { type: 'application/msword' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `MINUTA_PETICAO_UNIFED_${new Date().getTime()}.doc`;
+        a.click();
+        window.logAudit('✅ Minuta exportada com sucesso.', 'success');
+    } catch (e) {
+        window.logAudit('Erro na exportação DOCX: ' + e.message, 'error');
+    }
+}
+
+// --- MODAL DE TENDÊNCIA ATF (REQUISITO 1) ---
+function openATFModal() {
+    const modal = document.getElementById('atfModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        window.logAudit('Visualização de Tendência ATF (Forecasting 6M) activada.', 'info');
+        if (typeof window.renderTemporalChart === 'function') window.renderTemporalChart();
+    } else {
+        window.logAudit('Erro: Modal ATF não encontrado no DOM.', 'error');
+    }
+}
+
+window.exportDOCX = exportDOCX;
+window.openATFModal = openATFModal;
+
+/**
+ * UNIFED - PROBATUM · CORE · v13.12.0-PURE
+ * FIX: Persistência de botões após Reset.
+ */
+
+async function resetSystem() {
+    if (!confirm('Deseja reiniciar o sistema? Todos os dados serão zerados.')) return;
+    
+    // Limpeza de Estado
+    window.UNIFEDSystem.analysis = null;
+    window.UNIFEDSystem.client = null;
+    
+    // RESET UI - Não sobrescrever o header com o template errado
+    const logArea = document.getElementById('forensicLog');
+    if (logArea) logArea.innerHTML = '';
+    
+    // Repor contadores a Zero (Requisito 2)
+    const counters = document.querySelectorAll('.pure-subject-value[id*="qty"]');
+    counters.forEach(c => c.textContent = '0');
+    
+    // Manter botões originais
+    updateHeaderButtons('initial');
+    
+    console.clear();
+    window.logAudit('Sistema reiniciado. Aguardando carregamento de evidências.', 'warn');
+}
+
+function updateHeaderButtons(state) {
+    const header = document.querySelector('.pure-action-bar');
+    if (!header) return;
+    
+    if (state === 'initial') {
+        header.innerHTML = `
+            <button id="parecerBtn">PARECER TÉCNICO</button>
+            <button id="exportDOCXBtn">MINUTA WORD</button>
+            <button id="atfBtn">TENDÊNCIA ATF</button>
+            <button id="resetBtn" onclick="resetSystem()">REINICIAR</button>
+            <button id="clearBtn" onclick="clearConsole()">LIMPAR CONSOLE</button>
+        `;
+        setupMainListeners();
+    }
+}
+
+function setupMainListeners() {
+    document.getElementById('exportDOCXBtn')?.addEventListener('click', () => window.exportDOCX());
+    document.getElementById('atfBtn')?.addEventListener('click', () => window.openATFModal());
+}
+
+window.resetSystem = resetSystem;
+window.clearConsole = () => { 
+    const log = document.getElementById('forensicLog');
+    if(log) log.innerHTML = ''; 
+    window.logAudit('Consola limpa.', 'info');
+};
 
 // ============================================================================
 // 1. BASE LEGAL ESTATICA (RAG — Knowledge Base)
@@ -1091,15 +1125,8 @@ function generateBurdenOfProofSection(discrepancyValue) {
         'na retenção da discrepância apurada de ' + _fmtVal + '.\n' +
         '---------------------------------------------------------------------------'
     );
-window.generateBurdenOfProofSection = generateBurdenOfProofSection;
-
-console.log('[UNIFED-ENRICHMENT] \u2705 Output Enrichment Layer v13.12.0-PURE carregado.');
-console.log('[UNIFED-ENRICHMENT]   . generateLegalNarrative()     - IA Argumentativa + AI Adversarial Simulator');
-console.log('[UNIFED-ENRICHMENT]   . renderSankeyToImage()        - Dynamic Canvas-to-PDF (Sankey)');
-console.log('[UNIFED-ENRICHMENT]   . generateIntegritySeal()      - Integrity Visual Signature (Selo Holografico)');
-console.log('[UNIFED-ENRICHMENT]   . exportDOCX()                 - Structural DOCX (Minuta Peticao Inicial)');
-console.log('[UNIFED-ENRICHMENT]   . NIFAF (delegado)             - Implementação principal em script.js');
-console.log('[UNIFED-ENRICHMENT]   . generateTemporalChartImage() - ATF Grafico Canvas-to-PDF');
-console.log('[UNIFED-ENRICHMENT]   . computeTemporalAnalysis()    - ATF Analytics (2sigma SP Outliers)');
-console.log('[UNIFED-ENRICHMENT]   . openATFModal()               - ATF Dashboard Modal (Chart.js)');
-console.log('[UNIFED-ENRICHMENT]   . Modo: Read-Only - Fonte: UNIFEDSystem.analysis + monthlyData');
+// --- FECHO CRÍTICO DE SINTAXE ---
+    window.exportDOCX = exportDOCX;
+    window.openATFModal = openATFModal;
+    console.log('[UNIFED-ENRICHMENT] ✅ Sintaxe rectificada. Funções globais exportadas.');
+})(); // Garanta que este fecho existe para encerrar o bloco iniciado no topo.

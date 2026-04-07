@@ -23,6 +23,28 @@
         else console.log(prefix + msg);
     };
     const logAudit = window.logAudit;
+(function() {
+    'use strict';
+    
+    // Requisito 2: Garantir que abre a zeros
+    function initializeZeroState() {
+        const ids = ['pure-saft-qty', 'pure-ctrl-qty', 'pure-fat-qty', 'pure-ext-qty', 'pure-dac7-qty'];
+        ids.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = '0';
+        });
+        window.logAudit('Sistema pronto. Contadores inicializados a zero.', 'info');
+    }
+
+    // Só preenche ao clicar no botão
+    window.loadAnonymizedRealCase = function() {
+        window.logAudit('A carregar Caso Real Anonimizado...', 'info');
+        // Injeção de dados do _PDF_CASE aqui...
+        syncMetricsWithRealData(_PDF_CASE);
+    };
+
+    window.addEventListener('DOMContentLoaded', initializeZeroState);
+})();
 
     // 1. DATASET MESTRE (OBJETO IMUTÁVEL) — VALORES REAIS ORIGINAIS + MACRO + COUNTS
     const _PDF_CASE = Object.freeze({

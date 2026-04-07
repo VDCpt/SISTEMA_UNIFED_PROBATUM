@@ -3572,26 +3572,21 @@ body.dual-screen .stat-card p {
     display: block !important;
 }
 
-.pure-card-grid .box {
-    flex: 1 1 100% !important;
-    margin-bottom: 15px !important;
+/* Eliminação de gaps e garantia de visibilidade */
+.chart-section {
+    margin-bottom: 0.5rem !important;
 }
 
-/* Elimina o flash branco de transição */
-#pureDashboardWrapper {
-    background: #020617 !important;
-    transition: opacity 0.2s ease-in !important;
-}
-
-/* CORREÇÃO: Remover gap entre análise de discrepâncias e log de custódia */
-.chart-section:last-of-type {
-    margin-bottom: 0 !important;
+#pure-asfixia-card, #pure-macro-card {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    min-height: 150px;
 }
 
 .console-section {
-    margin-top: 0 !important;
+    margin-top: 1rem !important;
 }
-
 .pure-card:last-child,
 .pure-card-grid .pure-card:last-of-type {
     margin-bottom: 0;
