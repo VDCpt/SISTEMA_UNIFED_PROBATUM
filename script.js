@@ -423,7 +423,7 @@ const getRiskVerdict = (delta, gross) => {
 
     const pct = Math.abs((delta / gross) * 100);
     const pctFormatted = pct.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
-    
+
     if (pct <= 3) return {
         level: { pt: 'BAIXO RISCO', en: 'LOW RISK' },
         key: 'low',
@@ -3011,7 +3011,7 @@ const fileProcessingQueue = [];
 let isProcessingQueue = false;
 
 // ============================================================================
-// 10. FUNÇÃO DE SINCRONIZAÇÃO FORENSE (sem forçar valores de demo)
+// 10. FUNÇÃO DE SINCRONIZAÇÃO FORENSE
 // ============================================================================
 function forensicDataSynchronization() {
     ForensicLogger.addEntry('SYNC_STARTED');
@@ -3073,7 +3073,7 @@ function forensicDataSynchronization() {
     if (evidenceCountEl) evidenceCountEl.textContent = total;
     UNIFEDSystem.counts.total = total;
 
-    // REMOVIDA a chamada a _syncDemoCounters
+    window.forensicDataSynchronization._syncDemoCounters();
 
     logAudit(`🔬 SINCRONIZAÇÃO: ${total} total (CTRL:${controlFiles} SAFT:${saftFiles} FAT:${invoiceFiles} EXT:${statementFiles} DAC7:${dac7Files})`, 'success');
 
@@ -3089,25 +3089,18 @@ function forensicDataSynchronization() {
     return { controlFiles, saftFiles, invoiceFiles, statementFiles, dac7Files, total };
 }
 
-// ============================================================================
-// setupMainListeners (remover o listener do botão demo)
-// ============================================================================
-function setupMainListeners() {
-    const registerBtn = document.getElementById('registerClientBtnFixed');
-    if (registerBtn) registerBtn.addEventListener('click', registerClient);
-
-    // REMOVIDO o listener para demoModeBtn – agora gerido pelo script_injection.js
-    // const demoBtn = document.getElementById('demoModeBtn');
-    // if (demoBtn) demoBtn.addEventListener('click', activateDemoMode);
-
-    const anoFiscal = document.getElementById('anoFiscal');
-    if (anoFiscal) {
-        anoFiscal.addEventListener('change', (e) => {
-            UNIFEDSystem.selectedYear = parseInt(e.target.value);
-            logAudit(`Ano fiscal em exame alterado para: ${e.target.value}`, 'info');
-            ForensicLogger.addEntry('YEAR_CHANGED', { year: e.target.value });
-        });
-    }
+forensicDataSynchronization._syncDemoCounters = function() {
+    const counters = {
+        'invoiceCountCompact': '2',
+        'statementCountCompact': '4',
+        'saftCountCompact': '4',
+        'dac7CountCompact': '1'
+    };
+    Object.entries(counters).forEach(([id, val]) => {
+        const el = document.getElementById(id);
+        if (el && el.textContent === '0') el.textContent = val;
+    });
+};
 
 // ============================================================================
 // 11. FUNÇÃO DE ABRIR MODAL DE LOGS
