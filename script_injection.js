@@ -4,21 +4,11 @@
  * Missão: Injeção Forense e Reconstituição da Verdade Material
  * Conformidade: DORA (UE) 2022/2554 · Art. 125.º CPP · ISO/IEC 27037:2012
  * ============================================================================
- * RETIFICAÇÕES v13.12.0-PURE (2026-04-06):
- * - CORRECÇÃO I: Espaço vazio – função _hideDiscrepancyChart() reescrita para
- *   eliminar completamente o contentor .chart-section (height:0, display:none,
- *   margin/padding zero).
- * - CORRECÇÃO II: Identificação do sujeito passivo – flex-wrap agora respeitado.
- * - CORRECÇÃO III: Fluxos não sujeitos – injectAuxiliaryHelperBoxes() chamado
- *   antes de syncMetrics().
- * - CORRECÇÃO IV: Risco elevado – mapeamento blindado dos valores no syncMetrics,
- *   incluindo 'pure-verdict-value', 'pure-verdict-pct', 'quantumValue'.
- * - Adicionado suporte para cartão "Risco de Asfixia Financeira" (Art. 405.º C. Civil)
- * - Adicionado bloco de análise macroeconómica (7 anos · 38.000 operadores)
- * - CORRECÇÃO V: Garantia de que o painel #pureDashboardWrapper é sempre visível
- *   após reset do sistema.
- * - CORRECÇÃO VI: Removida ocultação forçada dos gráficos; agora são exibidos
- *   e atualizados com os dados reais.
+ * RETIFICAÇÕES v13.12.0-PURE (2026-04-07):
+ * - Garantia de que os contadores começam a zero.
+ * - Injeção das boxes auxiliares antes da atualização dos valores.
+ * - Renderização forçada dos gráficos após carregamento dos dados.
+ * - Nota de reconciliação DAC7 agora exibe valores corretos.
  * ============================================================================
  */
 
@@ -61,7 +51,7 @@
             dac7TotalPeriodo:  7755.16,
             iva6Omitido:        131.10,
             iva23Omitido:       502.54,
-            asfixiaFinanceira:  493.68,   // 6% sobre SAF-T Bruto (8227,97 * 0,06)
+            asfixiaFinanceira:  493.68,
             totalNaoSujeitos:   451.15,
             gorjetas:           46.00,
             portagens:           0.15,
@@ -238,9 +228,8 @@
             }
         });
 
-        // Verificar se Chart.js está disponível e se os gráficos podem ser renderizados
+        // Forçar renderização dos gráficos se Chart.js estiver disponível
         if (typeof Chart !== 'undefined') {
-            // Re-renderizar gráficos se existirem
             if (typeof window.renderChart === 'function') window.renderChart();
             if (typeof window.renderDiscrepancyChart === 'function') window.renderDiscrepancyChart();
         } else {
@@ -373,7 +362,6 @@
                     grid-template-columns: 1fr !important;
                 }
             }
-            /* Garantir que os gráficos sejam exibidos */
             .chart-section {
                 display: block !important;
                 height: auto !important;
@@ -391,9 +379,6 @@
         document.head.appendChild(style);
         console.log('[UNIFED] CSS injetado.');
     }
-
-    // REMOVIDA A FUNÇÃO _hideDiscrepancyChart – os gráficos devem aparecer
-    // REMOVIDA A FUNÇÃO _hideNexusForecast – o motor preditivo pode aparecer se disponível
 
     function _injectMacroCard() {
         const target = document.getElementById('pureDashboard');
@@ -553,7 +538,6 @@
     }
 
     window.UNIFED_INTERNAL.injectAuxiliaryBoxesCSS = _injectAuxiliaryBoxesCSS;
-    // Removidas as funções de ocultação
     window.UNIFED_INTERNAL.injectMacroCard = _injectMacroCard;
     window.UNIFED_INTERNAL.updateAuxiliaryUI = _updateAuxiliaryUI;
     console.log('[UNIFED] Camada 4: OK.');
@@ -610,6 +594,7 @@
             if (!sys.analysis) sys.analysis = { evidenceIntegrity: [] };
             if (!sys.analysis.evidenceIntegrity) sys.analysis.evidenceIntegrity = [];
 
+            // Limpar dados existentes
             sys.documents.control.files = [];
             sys.documents.saft.files = [];
             sys.documents.statements.files = [];
@@ -932,7 +917,6 @@
                 
                 if (document.getElementById('pureDashboard')) {
                     if (typeof updateAuxiliaryUI === 'function') updateAuxiliaryUI();
-                    // Forçar exibição das secções de gráfico
                     document.querySelectorAll('.chart-section').forEach(section => {
                         section.style.display = 'block';
                         section.style.height = '400px';
@@ -960,24 +944,11 @@
             await simulateEvidenceUpload();
             updateEvidenceCountersAndShow();
 
-            if (window.UNIFEDSystem && window.UNIFEDSystem.auxiliaryData) {
-                const sys = window.UNIFEDSystem;
-                const _fmtLocal = (v) => new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(v);
-                const setBox = (id, val) => {
-                    const el = document.getElementById(id);
-                    if (el) el.textContent = _fmtLocal(val);
-                    // Forçar atualização dos gráficos
-if (typeof window.renderChart === 'function') window.renderChart();
-if (typeof window.renderDiscrepancyChart === 'function') window.renderDiscrepancyChart();
-                };
-                setBox('auxBoxCampanhasValue', sys.auxiliaryData.campanhas);
-                setBox('auxBoxPortagensValue', sys.auxiliaryData.portagens);
-                setBox('auxBoxGorjetasValue', sys.auxiliaryData.gorjetas);
-                setBox('auxBoxTotalNSValue', sys.auxiliaryData.totalNaoSujeitos);
-                setBox('auxBoxCancelValue', sys.auxiliaryData.cancelamentos);
-                const note = document.getElementById('auxDac7ReconciliationNote');
-                if (note && sys.auxiliaryData.totalNaoSujeitos > 0) note.style.display = 'block';
+            // Garantir que as boxes auxiliares estão injetadas
+            if (typeof window.injectAuxiliaryHelperBoxes === 'function') {
+                window.injectAuxiliaryHelperBoxes();
             }
+            if (typeof updateAuxiliaryUI === 'function') updateAuxiliaryUI();
 
             if (window.UNIFEDSystem && window.UNIFEDSystem.masterHash) {
                 const hashEl = document.getElementById('masterHashValue');
@@ -986,7 +957,7 @@ if (typeof window.renderDiscrepancyChart === 'function') window.renderDiscrepanc
             }
             showClientIdentificationBlock();
             
-            // Forçar atualização dos gráficos
+            // Forçar renderização dos gráficos
             if (typeof window.renderChart === 'function') window.renderChart();
             if (typeof window.renderDiscrepancyChart === 'function') window.renderDiscrepancyChart();
             
