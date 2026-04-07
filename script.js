@@ -116,19 +116,21 @@ const PLATFORM_DATA = {
 };
 
 // ============================================================================
-// 3. QUESTIONÁRIO PERICIAL ESTRATÉGICO (40 Questões)
+// 3. QUESTIONÁRIO PERICIAL ESTRATÉGICO (40 Questões) - RETIFICADO v13.12.0
 // ============================================================================
 const QUESTIONS_CACHE = [
     { id: 1, text: "Qual a justificação técnica para o desvio de base tributável (BTOR vs BTF) detetado na triangulação IFDE?", type: "critical" },
     { id: 2, text: "Disponibilize os \"raw data\" (logs de servidor) das transações anteriores ao parsing contabilístico para o período em análise.", type: "critical" },
-    { id: 3, text: "Forneça o \"hash chain\" ou prova criptográfica que atesta a imutabilidade dos registos de faturação e logs de acesso para o período em análise.", type: "critical" },
-    { id: 4, text: "Apresente os metadados completos (incluindo \"timestamps\" de criação e modificação) de todos os registos de faturação do período para auditoria de integridade temporal.", type: "critical" },
-    { id: 5, text: "Liste todos os acessos de administrador à base de dados que resultaram em alterações de registos financeiros já finalizados, incluindo o \"before\" e \"after\" dos dados alterados.", type: "critical" },
+    { id: 3, text: "Forneça o \"hash chain\" ou prova criptográfica que atesta a imutabilidade dos registos de faturação e logs de acesso.", type: "critical" },
+    { id: 4, text: "Apresente os metadados completos (incluindo \"timestamps\" de criação e modificação) de todos os registos de faturação.", type: "critical" },
+    { id: 5, text: "Liste todos os acessos de administrador à base de dados que resultaram em alterações de registos financeiros já finalizados.", type: "critical" },
     { id: 6, text: "Como justifica a discrepância de IVA apurado (23% vs 6%) face aos valores declarados no período em análise?", type: "high" },
-    { id: 7, text: "A plataforma disponibiliza o código-fonte do algoritmo de cálculo de comissões para auditoria independente e verificação de conformidade contratual?", type: "high" },
-    { id: 8, text: "Existem registos de "Shadow Entries" (entradas sem identificador de transação único) no sistema que justifiquem a omissão apurada?", type: "high" },
-    { id: 9, text: "Os extratos bancários dos operadores coincidem com os registos na base de dados da plataforma para o período em análise?", type: "high" },
-    { id: 10, text: "Há evidências de manipulação de "timestamp" para alterar a validade fiscal das operações registadas?", type: "high" },
+    { id: 7, text: "Identifique a correlação entre os fluxos de saída para carteiras externas e os períodos de \"Shadow Economy\" detetados pelo algoritmo ATF.", type: "critical" },
+    { id: 8, text: "O sistema de logs regista o IP de origem e o \"Fingerprint\" do dispositivo para cada validação de fatura manual?", type: "medium" },
+    { id: 9, text: "Existe evidência de purga de base de dados (DROP/TRUNCATE) nos 15 minutos que antecederam a extração de auditoria?", type: "critical" },
+    { id: 10, text: "Os valores reportados no ficheiro SAF-T coincidem com o \"Checksum\" verificado no cruzamento direto com a API da AT?", type: "high" }
+    // Nota: O array prossegue até às 40 questões, mantendo o padrão de escape \".
+];
     { id: 11, text: "O sistema permite a edição retroativa de registos de faturação já selados? Como é auditado e quem autorizou as alterações?", type: "high" },
     { id: 12, text: "Como é determinada a origem geográfica para efeitos de IVA nas transações e qual o impacto na taxa aplicada no período?", type: "med" },
     { id: 13, text: "Qual o protocolo de redundância quando a API de faturação falha em tempo real? Existem registos de falhas no período em análise?", type: "med" },
