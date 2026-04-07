@@ -3222,7 +3222,7 @@ function startGatekeeperSession() {
             }
         }, 500);
     }
-       UNIFEDSystem.sessionId = generateSessionId();
+        UNIFEDSystem.sessionId = generateSessionId();
     UNIFEDSystem._sessionStart = Date.now();
     setElementText('sessionIdDisplay', UNIFEDSystem.sessionId);
     setElementText('verdictSessionId', UNIFEDSystem.sessionId);
@@ -3230,13 +3230,13 @@ function startGatekeeperSession() {
 
     ForensicLogger.addEntry('SESSION_CREATED', { sessionId: UNIFEDSystem.sessionId });
 
-    // Inicialização assíncrona com temporização única
+    // Inicialização única com temporização
     setTimeout(async () => {
         if (typeof updateLoadingProgress === 'function') updateLoadingProgress(40);
         if (typeof populateYears === 'function') populateYears();
         if (typeof populateAnoFiscal === 'function') populateAnoFiscal();
         if (typeof startClockAndDate === 'function') startClockAndDate();
-        if (typeof setupMainListeners === 'function') setupMainListeners();   // <- chamada única e necessária
+        if (typeof setupMainListeners === 'function') setupMainListeners();   // garante que os botões são ligados
         
         if (UNIFEDSystem.generateMasterHash) {
             await UNIFEDSystem.generateMasterHash();
@@ -3262,19 +3262,6 @@ function startGatekeeperSession() {
             logAudit('SISTEMA UNIFED - PROBATUM v13.12.0-PURE · DORA COMPLIANT · MODO PROFISSIONAL ATIVADO', 'success');
         }
     };
-
-    const idsToEnable = ['analyzeBtn', 'exportPDFBtn', 'exportJSONBtn'];
-    idsToEnable.forEach(id => {
-        const btn = document.getElementById(id);
-        if (btn) btn.disabled = false;
-    });
-
-    if (typeof injectAuxiliaryHelperBoxes === 'function') injectAuxiliaryHelperBoxes();
-
-    setTimeout(() => {
-        if (typeof forensicDataSynchronization === 'function') forensicDataSynchronization();
-    }, 1000);
-}
 
 function populateAnoFiscal() {
     const selectAno = document.getElementById('anoFiscal');
