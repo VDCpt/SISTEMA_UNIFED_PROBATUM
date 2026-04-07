@@ -3222,7 +3222,7 @@ function startGatekeeperSession() {
             }
         }, 500);
     }
-        UNIFEDSystem.sessionId = generateSessionId();
+    UNIFEDSystem.sessionId = generateSessionId();
     UNIFEDSystem._sessionStart = Date.now();
     setElementText('sessionIdDisplay', UNIFEDSystem.sessionId);
     setElementText('verdictSessionId', UNIFEDSystem.sessionId);
@@ -3236,7 +3236,7 @@ function startGatekeeperSession() {
         if (typeof populateYears === 'function') populateYears();
         if (typeof populateAnoFiscal === 'function') populateAnoFiscal();
         if (typeof startClockAndDate === 'function') startClockAndDate();
-        if (typeof setupMainListeners === 'function') setupMainListeners();   // garante que os botões são ligados
+        if (typeof setupMainListeners === 'function') setupMainListeners();
         
         if (UNIFEDSystem.generateMasterHash) {
             await UNIFEDSystem.generateMasterHash();
@@ -3262,6 +3262,19 @@ function startGatekeeperSession() {
             logAudit('SISTEMA UNIFED - PROBATUM v13.12.0-PURE · DORA COMPLIANT · MODO PROFISSIONAL ATIVADO', 'success');
         }
     };
+
+    const idsToEnable = ['analyzeBtn', 'exportPDFBtn', 'exportJSONBtn'];
+    idsToEnable.forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.disabled = false;
+    });
+
+    if (typeof injectAuxiliaryHelperBoxes === 'function') injectAuxiliaryHelperBoxes();
+
+    setTimeout(() => {
+        if (typeof forensicDataSynchronization === 'function') forensicDataSynchronization();
+    }, 1000);
+}
 
 function populateAnoFiscal() {
     const selectAno = document.getElementById('anoFiscal');
@@ -3895,57 +3908,56 @@ async function processFile(file, type) {
         }
     }
 
-if (type === 'saft' && file.name.match(/131509.*\.csv$/i)) {
-    try {
-        const monthMatch = file.name.match(/131509_(\d{6})/);
-        if (monthMatch && monthMatch[1]) {
-            const yearMonth = monthMatch[1];
-            UNIFEDSystem.dataMonths.add(yearMonth);
-            logAudit(`   Mês detetado: ${yearMonth}`, 'info');
-        }
+    if (type === 'saft' && file.name.match(/131509.*\.csv$/i)) {
+        try {
+            const monthMatch = file.name.match(/131509_(\d{6})/);
+            if (monthMatch && monthMatch[1]) {
+                const yearMonth = monthMatch[1];
+                UNIFEDSystem.dataMonths.add(yearMonth);
+                logAudit(`   Mês detetado: ${yearMonth}`, 'info');
+            }
 
-        if (text.charCodeAt(0) === 0xFEFF || text.charCodeAt(0) === 0xFFFE) {
-            text = text.substring(1);
-        }
+            if (text.charCodeAt(0) === 0xFEFF || text.charCodeAt(0) === 0xFFFE) {
+                text = text.substring(1);
+            }
 
-        // Processamento assíncrono com PapaParse para não bloquear UI
-        await new Promise((resolve, reject) => {
-            Papa.parse(text, {
-                header: true,
-                skipEmptyLines: true,
-                quotes: true,
-                delimiter: ',',
-                complete: (parseResult) => {
-                    try {
-                        const extracted = SchemaRegistry.processSAFT(parseResult, file.name);
-                        if (!UNIFEDSystem.documents.saft.totals) {
-                            UNIFEDSystem.documents.saft.totals = { records: 0, iliquido: 0, iva: 0, bruto: 0 };
+            await new Promise((resolve, reject) => {
+                Papa.parse(text, {
+                    header: true,
+                    skipEmptyLines: true,
+                    quotes: true,
+                    delimiter: ',',
+                    complete: (parseResult) => {
+                        try {
+                            const extracted = SchemaRegistry.processSAFT(parseResult, file.name);
+                            if (!UNIFEDSystem.documents.saft.totals) {
+                                UNIFEDSystem.documents.saft.totals = { records: 0, iliquido: 0, iva: 0, bruto: 0 };
+                            }
+                            UNIFEDSystem.documents.saft.totals.bruto = (UNIFEDSystem.documents.saft.totals.bruto || 0) + extracted.totalBruto;
+                            UNIFEDSystem.documents.saft.totals.iva = (UNIFEDSystem.documents.saft.totals.iva || 0) + extracted.totalIVA;
+                            UNIFEDSystem.documents.saft.totals.iliquido = (UNIFEDSystem.documents.saft.totals.iliquido || 0) + extracted.totalIliquido;
+                            UNIFEDSystem.documents.saft.totals.records = (UNIFEDSystem.documents.saft.totals.records || 0) + extracted.recordCount;
+
+                            ValueSource.registerValue('saftBrutoValue', extracted.totalBruto, file.name, 'soma direta coluna 16');
+                            ValueSource.registerValue('saftIvaValue', extracted.totalIVA, file.name, 'soma direta coluna 15');
+                            ValueSource.registerValue('saftIliquidoValue', extracted.totalIliquido, file.name, 'soma direta coluna 14');
+
+                            logAudit(`📊 SAF-T CSV: ${file.name} | +${formatCurrency(extracted.totalBruto)} (${extracted.recordCount} registos) | IVA: +${formatCurrency(extracted.totalIVA)} | Ilíquido: +${formatCurrency(extracted.totalIliquido)}`, 'success');
+                            ForensicLogger.addEntry('SAFT_PROCESSED', { filename: file.name, total: extracted.totalBruto, iva: extracted.totalIVA, iliquido: extracted.totalIliquido });
+                            resolve();
+                        } catch (e) {
+                            reject(e);
                         }
-                        UNIFEDSystem.documents.saft.totals.bruto = (UNIFEDSystem.documents.saft.totals.bruto || 0) + extracted.totalBruto;
-                        UNIFEDSystem.documents.saft.totals.iva = (UNIFEDSystem.documents.saft.totals.iva || 0) + extracted.totalIVA;
-                        UNIFEDSystem.documents.saft.totals.iliquido = (UNIFEDSystem.documents.saft.totals.iliquido || 0) + extracted.totalIliquido;
-                        UNIFEDSystem.documents.saft.totals.records = (UNIFEDSystem.documents.saft.totals.records || 0) + extracted.recordCount;
-
-                        ValueSource.registerValue('saftBrutoValue', extracted.totalBruto, file.name, 'soma direta coluna 16');
-                        ValueSource.registerValue('saftIvaValue', extracted.totalIVA, file.name, 'soma direta coluna 15');
-                        ValueSource.registerValue('saftIliquidoValue', extracted.totalIliquido, file.name, 'soma direta coluna 14');
-
-                        logAudit(`📊 SAF-T CSV: ${file.name} | +${formatCurrency(extracted.totalBruto)} (${extracted.recordCount} registos) | IVA: +${formatCurrency(extracted.totalIVA)} | Ilíquido: +${formatCurrency(extracted.totalIliquido)}`, 'success');
-                        ForensicLogger.addEntry('SAFT_PROCESSED', { filename: file.name, total: extracted.totalBruto, iva: extracted.totalIVA, iliquido: extracted.totalIliquido });
-                        resolve();
-                    } catch (e) {
-                        reject(e);
-                    }
-                },
-                error: (err) => reject(err)
+                    },
+                    error: (err) => reject(err)
+                });
             });
-        });
-    } catch (e) {
-        console.warn(`Erro ao processar SAF-T ${file.name}:`, e);
-        logAudit(`[!] Erro no processamento SAF-T: ${e.message}`, 'warning');
-        ForensicLogger.addEntry('SAFT_PROCESSING_ERROR', { filename: file.name, error: e.message });
+        } catch (e) {
+            console.warn(`Erro ao processar SAF-T ${file.name}:`, e);
+            logAudit(`[!] Erro no processamento SAF-T: ${e.message}`, 'warning');
+            ForensicLogger.addEntry('SAFT_PROCESSING_ERROR', { filename: file.name, error: e.message });
+        }
     }
-}
     if (type === 'dac7') {
         try {
             const extracted = SchemaRegistry.processDAC7(text, file.name, UNIFEDSystem.selectedPeriodo);
@@ -5198,7 +5210,7 @@ window.activeForensicSession = { sessionId: UNIFEDSystem.sessionId, masterHash: 
 
     try {
         const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();performAudit 
+        const doc = new jsPDF();
         const t = translations[currentLang];
         const platform = PLATFORM_DATA[UNIFEDSystem.selectedPlatform] || PLATFORM_DATA.outra;
         const totals = UNIFEDSystem.analysis.totals;
@@ -5272,106 +5284,62 @@ window.activeForensicSession = { sessionId: UNIFEDSystem.sessionId, masterHash: 
             console.warn('[UNIFED-PDF] ⚠ QR Code não disponível (biblioteca QRCode ausente).');
         }
 
-let _enrichLegalNarrative = null;
-let _enrichSankeyImage = null;
-let _enrichTemporalImage = null;
+        let _enrichLegalNarrative = null;
+        let _enrichSankeyImage = null;
+        let _enrichTemporalImage = null;
 
-const TIMEOUT_MS = 8000;
+        const TIMEOUT_MS = 8000;
 
-const timeoutPromise = (ms) => new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), ms));
+        const timeoutPromise = (ms) => new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), ms));
 
-if (typeof window.generateLegalNarrative === 'function') {
-    try {
-        logAudit('🤖 [v13.12.0] A gerar Síntese Jurídica + Simulador Adversarial (IA)...', 'info');
-        _enrichLegalNarrative = await Promise.race([
-            window.generateLegalNarrative(UNIFEDSystem.analysis),
-            timeoutPromise(TIMEOUT_MS)
-        ]).catch(() => null);
-        if (_enrichLegalNarrative) {
-            logAudit('✅ [v13.12.0] Síntese Jurídica + Contra-Interrogatório gerados.', 'success');
-        } else {
-            _enrichLegalNarrative = '[Síntese jurídica indisponível — tempo limite excedido]';
-            logAudit('⚠ [v13.12.0] IA timeout — PDF gerado sem síntese.', 'warning');
+        if (typeof window.generateLegalNarrative === 'function') {
+            try {
+                logAudit('🤖 [v13.12.0] A gerar Síntese Jurídica + Simulador Adversarial (IA)...', 'info');
+                _enrichLegalNarrative = await Promise.race([
+                    window.generateLegalNarrative(UNIFEDSystem.analysis),
+                    timeoutPromise(TIMEOUT_MS)
+                ]).catch(() => null);
+                if (_enrichLegalNarrative) {
+                    logAudit('✅ [v13.12.0] Síntese Jurídica + Contra-Interrogatório gerados.', 'success');
+                } else {
+                    _enrichLegalNarrative = '[Síntese jurídica indisponível — tempo limite excedido]';
+                    logAudit('⚠ [v13.12.0] IA timeout — PDF gerado sem síntese.', 'warning');
+                }
+            } catch (_aiErr) {
+                _enrichLegalNarrative = '[Síntese jurídica indisponível — motor forense íntegro]';
+                logAudit('⚠ [v13.12.0] IA indisponível — PDF gerado sem síntese (CORS/offline).', 'warning');
+            }
         }
-    } catch (_aiErr) {
-        _enrichLegalNarrative = '[Síntese jurídica indisponível — motor forense íntegro]';
-        logAudit('⚠ [v13.12.0] IA indisponível — PDF gerado sem síntese (CORS/offline).', 'warning');
-    }
-}
 
-if (typeof window.renderSankeyToImage === 'function') {
-    try {
-        logAudit('📊 [v13.12.0] A renderizar Diagrama de Fluxo Financeiro (Sankey)...', 'info');
-        _enrichSankeyImage = await Promise.race([
-            window.renderSankeyToImage(UNIFEDSystem.analysis),
-            timeoutPromise(TIMEOUT_MS)
-        ]).catch(() => null);
-        if (_enrichSankeyImage) {
-            logAudit('✅ [v13.12.0] Diagrama Sankey renderizado com sucesso.', 'success');
-        } else {
-            logAudit('⚠ [v13.12.0] Diagrama Sankey timeout — PDF gerado sem gráfico.', 'warning');
-        }
-    } catch (_sankeyErr) {
-        _enrichSankeyImage = null;
-        logAudit('⚠ [v13.12.0] Erro Sankey — PDF gerado sem diagrama.', 'warning');
-    }
-}
-
-if (typeof window.generateTemporalChartImage === 'function') {
-    try {
-        logAudit('📅 [v13.12.0] A renderizar Gráfico ATF (Análise Temporal Forense)...', 'info');
-        _enrichTemporalImage = await Promise.race([
-            window.generateTemporalChartImage(UNIFEDSystem.monthlyData, UNIFEDSystem.analysis),
-            timeoutPromise(TIMEOUT_MS)
-        ]).catch(() => null);
-        if (_enrichTemporalImage) {
-            logAudit('✅ [v13.12.0] Gráfico ATF renderizado com sucesso.', 'success');
-        } else {
-            logAudit('⚠ [v13.12.0] ATF gráfico timeout — PDF sem análise temporal.', 'warning');
-        }
-    } catch (_atfErr) {
-        _enrichTemporalImage = null;
-        logAudit('⚠ [v13.12.0] ATF gráfico indisponível — PDF sem análise temporal.', 'warning');
-    }
-}
-
-if (typeof window.generateTemporalChartImage === 'function') {
-    try {
-        logAudit('📅 [v13.12.0] A renderizar Gráfico ATF (Análise Temporal Forense)...', 'info');
-        _enrichTemporalImage = await Promise.race([
-            window.generateTemporalChartImage(UNIFEDSystem.monthlyData, UNIFEDSystem.analysis),
-            timeoutPromise(TIMEOUT_MS, null)
-        ]).catch(() => null);
-        if (_enrichTemporalImage) {
-            logAudit('✅ [v13.12.0] Gráfico ATF renderizado com sucesso.', 'success');
-        } else {
-            logAudit('⚠ [v13.12.0] ATF gráfico timeout — PDF sem análise temporal.', 'warning');
-        }
-    } catch (_atfErr) {
-        _enrichTemporalImage = null;
-        logAudit('⚠ [v13.12.0] ATF gráfico indisponível — PDF sem análise temporal.', 'warning');
-    }
-}
         if (typeof window.renderSankeyToImage === 'function') {
             try {
                 logAudit('📊 [v13.12.0] A renderizar Diagrama de Fluxo Financeiro (Sankey)...', 'info');
-                _enrichSankeyImage = await window.renderSankeyToImage(UNIFEDSystem.analysis);
+                _enrichSankeyImage = await Promise.race([
+                    window.renderSankeyToImage(UNIFEDSystem.analysis),
+                    timeoutPromise(TIMEOUT_MS)
+                ]).catch(() => null);
                 if (_enrichSankeyImage) {
                     logAudit('✅ [v13.12.0] Diagrama Sankey renderizado com sucesso.', 'success');
                 } else {
-                    logAudit('⚠ [v13.12.0] Diagrama Sankey indisponível — PDF gerado sem gráfico.', 'warning');
+                    logAudit('⚠ [v13.12.0] Diagrama Sankey timeout — PDF gerado sem gráfico.', 'warning');
                 }
             } catch (_sankeyErr) {
                 _enrichSankeyImage = null;
                 logAudit('⚠ [v13.12.0] Erro Sankey — PDF gerado sem diagrama.', 'warning');
             }
         }
+
         if (typeof window.generateTemporalChartImage === 'function') {
             try {
                 logAudit('📅 [v13.12.0] A renderizar Gráfico ATF (Análise Temporal Forense)...', 'info');
-                _enrichTemporalImage = await window.generateTemporalChartImage(UNIFEDSystem.monthlyData, UNIFEDSystem.analysis);
+                _enrichTemporalImage = await Promise.race([
+                    window.generateTemporalChartImage(UNIFEDSystem.monthlyData, UNIFEDSystem.analysis),
+                    timeoutPromise(TIMEOUT_MS)
+                ]).catch(() => null);
                 if (_enrichTemporalImage) {
                     logAudit('✅ [v13.12.0] Gráfico ATF renderizado com sucesso.', 'success');
+                } else {
+                    logAudit('⚠ [v13.12.0] ATF gráfico timeout — PDF sem análise temporal.', 'warning');
                 }
             } catch (_atfErr) {
                 _enrichTemporalImage = null;
@@ -8121,7 +8089,8 @@ if (typeof window.dispatchEvent === 'function') {
     }));
     console.log('[UNIFED-CORE] Evento UNIFED_CORE_READY despachado.');
 }
- // ============================================================================
+
+// ============================================================================
 // 32. FUNÇÕES GLOBAIS DE INTERFACE (EXPORTAÇÃO FORÇADA)
 // ============================================================================
 
