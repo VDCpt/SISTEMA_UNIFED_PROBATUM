@@ -8121,7 +8121,7 @@ if (typeof window.dispatchEvent === 'function') {
     }));
     console.log('[UNIFED-CORE] Evento UNIFED_CORE_READY despachado.');
 }
-    // ============================================================================
+ // ============================================================================
 // 32. FUNÇÕES GLOBAIS DE INTERFACE (EXPORTAÇÃO FORÇADA)
 // ============================================================================
 
@@ -8173,8 +8173,10 @@ window.showToast = function(message, type = 'info') {
             if (toast.parentNode) toast.remove();
         }, 400);
     }, 5000);
-    window.renderChart = renderChart;
-window.renderDiscrepancyChart = renderDiscrepancyChart;
 };
+
+// Exposição global das funções de renderização de gráficos
+window.renderChart = renderChart;
+window.renderDiscrepancyChart = renderDiscrepancyChart;
 
 // [FIM DO FICHEIRO - GARANTA QUE NÃO HÁ CHAVETAS SOLTAS ABAIXO DESTA LINHA]
