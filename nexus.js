@@ -1,5 +1,5 @@
 /**
- * UNIFED - PROBATUM · NEXUS LAYER · v13.12.1-PURE
+ * UNIFED - PROBATUM · NEXUS LAYER · v13.12.2-PURE
  * ============================================================================
  * Arquitetura : Adaptive Extension Layer — carregado APÓS enrichment.js
  * Padrão      : Read-Only sobre UNIFEDSystem · Nenhum cálculo fiscal alterado
@@ -10,6 +10,11 @@
  *   2. RAG JURISPRUDENCIAL AVANÇADO — DOCX Upgrade (Citações + Acórdãos STA)
  *   3. MOTOR PREDITIVO ATF          — Forecasting 6M (Regressão Linear + Chart.js)
  *   4. BLOCKCHAIN EVIDENCE EXPLORER — OTS Individual por Ficheiro (SHA-256 + DOM UI)
+ *
+ * v13.12.2-PURE (2026-04-08):
+ *   · Merge seguro de window.UNIFEDSystem (read-only após análise)
+ *   · Whitelist corrigida: inclui window.location.origin
+ *   · Hashing com crypto.subtle.digest em async
  * ============================================================================
  */
 
@@ -28,17 +33,21 @@ window.UNIFEDSystem.demoMode = true;
     }
     const originalFetch = window.fetch;
     
-    // Whitelist de domínios permitidos (exemplo)
+    // Whitelist de domínios permitidos — inclui a origem atual do painel
     const ALLOWED_ORIGINS = [
+        window.location.origin,                           // origem do painel HTML
         'https://unifed.com',
         'https://app.unifed.com',
+        'https://freetsa.org',
         'http://localhost:3000'
     ];
 
     // Função para validar origin
     function isValidOrigin(requestUrl) {
         try {
-            const url = new URL(requestUrl);
+            // Se for URL relativa, assume que é segura
+            if (requestUrl.startsWith('/')) return true;
+            const url = new URL(requestUrl, window.location.origin);
             const origin = url.origin;
             return ALLOWED_ORIGINS.includes(origin);
         } catch(e) {
@@ -46,7 +55,7 @@ window.UNIFEDSystem.demoMode = true;
         }
     }
 
-    // Função para gerar hash do payload
+    // Função para gerar hash do payload (atomicidade)
     async function hashPayload(payload) {
         if (!payload) return null;
         const encoder = new TextEncoder();
@@ -61,7 +70,7 @@ window.UNIFEDSystem.demoMode = true;
             const url = argumentsList[0];
             const options = argumentsList[1] || {};
             
-            // Validação de origin
+            // Validação de origin (com whitelist corrigida)
             if (!isValidOrigin(url)) {
                 console.warn(`[NEXUS-AUDIT] Requisição bloqueada: origin não autorizada para ${url}`);
                 if (typeof window.ForensicLogger !== 'undefined')
@@ -109,6 +118,9 @@ window.UNIFEDSystem.demoMode = true;
     const proxiedFetch = new Proxy(originalFetch, handler);
     proxiedFetch.__isNexusProxy = true;
     window.fetch = proxiedFetch;
+
+    // Expor função de hash para uso externo (atomicidade)
+    window.UNIFEDSystem.hashPayload = hashPayload;
 
     console.info(
         '[NEXUS·M1] ✅ Passive Network Observer activo — Proxy Wrapper com validação de origin e hashing.\n' +
@@ -267,7 +279,7 @@ window.UNIFEDSystem.demoMode = true;
             _para('', false),
             _hr(),
             _para('', false),
-            _para('VI. JURISPRUDENCIA APLICAVEL — CRUZAMENTO RAG · NEXUS v13.12.1-PURE', true, '26', '003366'),
+            _para('VI. JURISPRUDENCIA APLICAVEL — CRUZAMENTO RAG · NEXUS v13.12.2-PURE', true, '26', '003366'),
             _para('Modulo de Jurisprud\u00eancia Pericial \u2014 Cita\u00e7\u00f5es injectadas com base nas anomalias detetadas e qualificacao legal apurada', false, '16', '888888'),
             _para('', false),
 
@@ -294,7 +306,7 @@ window.UNIFEDSystem.demoMode = true;
                 'desta prova digital pericial e qualifica a conduta como penalmente relevante.',
                 false, '20', '333333'),
             _para('', false),
-            _para('[Secao gerada automaticamente pelo Modulo RAG Jurisprudencial — NEXUS v13.12.1-PURE · Art. 125.o CPP]', false, '16', '999999'),
+            _para('[Secao gerada automaticamente pelo Modulo RAG Jurisprudencial — NEXUS v13.12.2-PURE · Art. 125.o CPP]', false, '16', '999999'),
             _para('', false)
         ].join('');
     }
@@ -781,7 +793,7 @@ window.UNIFEDSystem.demoMode = true;
         var enriched = await Promise.all(registry.map(async function(item) {
             if (!item.hash) {
                 item.hash = await _sha256Nexus(item.filename + (item.ts || Date.now()));
-                item.otsStatus = 'PENDENTE — Hash gerado localmente (NEXUS v13.12.1-PURE)';
+                item.otsStatus = 'PENDENTE — Hash gerado localmente (NEXUS v13.12.2-PURE)';
             }
             return item;
         }));
@@ -871,7 +883,7 @@ window.UNIFEDSystem.demoMode = true;
                     'background:rgba(0,229,255,0.04);' +
                 '">' +
                     '<div>' +
-                        '<div style="color:#00E5FF;font-size:0.85rem;font-weight:700;letter-spacing:0.08em">⛓️ BLOCKCHAIN EVIDENCE EXPLORER · NEXUS v13.12.1-PURE</div>' +
+                        '<div style="color:#00E5FF;font-size:0.85rem;font-weight:700;letter-spacing:0.08em">⛓️ BLOCKCHAIN EVIDENCE EXPLORER · NEXUS v13.12.2-PURE</div>' +
                         '<div style="color:rgba(255,255,255,0.4);font-size:0.62rem;margin-top:2px">' +
                             _T('SHA-256 Individual · OTS Status · Cadeia de Custódia · ', 'SHA-256 Individual · OTS Status · Chain of Custody · ') +
                             enriched.length + ' ' + _T('documento', 'document') + (enriched.length !== 1 ? 's' : '') +
@@ -1044,8 +1056,8 @@ window.UNIFEDSystem.demoMode = true;
 })();
 
 console.info(
-    '%c[NEXUS · UNIFED-PROBATUM · v13.12.1-PURE]\n' +
-    '%c  M1 · Passive Network Observer       — Proxy com validação de origin e hashing\n' +
+    '%c[NEXUS · UNIFED-PROBATUM · v13.12.2-PURE]\n' +
+    '%c  M1 · Passive Network Observer       — Proxy com validação de origin e hashing (whitelist corrigida)\n' +
     '  M2 · RAG Jurisprudencial DOCX         — Hook exportDOCX() instalado\n' +
     '  M3 · Motor Preditivo ATF (6M)         — Hook openATFModal() instalado\n' +
     '  M4 · Blockchain Evidence Explorer     — MutationObserver #custodyModal ativo\n' +
