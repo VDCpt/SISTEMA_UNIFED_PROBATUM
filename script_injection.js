@@ -16,61 +16,57 @@
 (function() {
     'use strict';
 
-    // Logger centralizado – usa o definido globalmente (script.js)
-    if (typeof window.logAudit !== 'function') {
-        window.logAudit = function(msg, level) {
-            const prefix = '[UNIFED] ';
-            if (level === 'error') console.error(prefix + msg);
-            else if (level === 'warn') console.warn(prefix + msg);
-            else console.log(prefix + msg);
-        };
-    }
-    const logAudit = window.logAudit;
+    const logAudit = window.logAudit || console.log;
 
-    // ============================================================================
-    // ZERO-STATE MANAGEMENT (Requisito 2)
-    // ============================================================================
-    function initializeZeroState() {
-        const forensicCounters = [
-            'pure-saft-qty', 'pure-ctrl-qty', 'pure-fat-qty',
-            'pure-ext-qty', 'pure-dac7-qty', 'pure-evidence-count'
-        ];
-        
-        forensicCounters.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.textContent = '0';
-        });
-
-        // Oculta badges de alerta até haver dados
-        document.querySelectorAll('.pure-badge-alert').forEach(b => b.style.display = 'none');
-        
-        logAudit('Zero-State inicializado. Contadores resetados e badges ocultos.', 'info');
-    }
-
-    // Função principal de carga – exposta no namespace UNIFEDSystem (para compatibilidade com index.html)
-    window.UNIFEDSystem = window.UNIFEDSystem || {};
-    window.UNIFEDSystem.loadAnonymizedRealCase = async function() {
-        logAudit('Carregando Caso Real Anonimizado... Populando evidências.', 'info');
-        
-        // Forçar visibilidade do wrapper para contornar qualquer bloqueio de opacidade
-        const wrapper = document.getElementById('pureDashboardWrapper');
-        if (wrapper) {
-            wrapper.style.display = 'block';
-            wrapper.style.opacity = '1';
-            wrapper.style.visibility = 'visible';
+    // 1. DATASET MESTRE (OBJETO IMUTÁVEL)
+    const _PDF_CASE = Object.freeze({
+        sessionId: "UNIFED-MNGFN3C0-X57MO",
+        masterHash: "a3f8c9e2d5b6a7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1",
+        client: { 
+            name: "Real Demo - Unipessoal, Lda", 
+            nif: "999999990", 
+            platform: "Plataforma A" 
         }
-        
-      // Injeção de dados via Bridge (Retificado)
-        if (window.UNIFEDSystem && typeof window.UNIFEDSystem.processAnalysis === 'function') {
-            await window.UNIFEDSystem.processAnalysis();
+    });
+
+    async function loadAnonymizedRealCase() {
+        logAudit('Iniciando carga de caso real...', 'info');
+
+        // Reconstituição de dados via Bridge
+        if (window.UNIFEDSystem && window.UNIFEDSystem.utils && typeof window.UNIFEDSystem.utils.syncVisualDOM === 'function') {
+            window.UNIFEDSystem.utils.syncVisualDOM();
         } else {
-            // Reconstituição de dados via Bridge se o motor principal estiver em bypass
-            if (window.UNIFEDSystem.utils && typeof window.UNIFEDSystem.utils.syncVisualDOM === 'function') {
-                window.UNIFEDSystem.utils.syncVisualDOM();
-            } else {
-                console.warn('[UNIFED] syncVisualDOM não encontrado em enrichment.js');
-            }
-        } // Fecho do ELSE
+            console.warn('[UNIFED] syncVisualDOM não disponível.');
+        }
+
+        // Mostrar badges e gerar QR
+        document.querySelectorAll('.pure-badge-alert').forEach(b => b.style.display = 'inline-block');
+        
+        if (typeof window.generateQRCode === 'function') {
+            window.generateQRCode(_PDF_CASE.masterHash);
+        }
+
+        logAudit('Evidências do caso real carregadas com sucesso.', 'success');
+    }
+
+    // Expor para o namespace global
+    window.UNIFEDSystem = window.UNIFEDSystem || {};
+    window.UNIFEDSystem.loadAnonymizedRealCase = loadAnonymizedRealCase;
+
+    // Inicialização do botão
+    function setupRealCaseButton() {
+        const btn = document.getElementById('btnLoadRealCase');
+        if (btn) {
+            btn.addEventListener('click', loadAnonymizedRealCase);
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupRealCaseButton);
+    } else {
+        setupRealCaseButton();
+    }
+})();
 
         // Mostrar contadores após carga
         document.querySelectorAll('.pure-badge-alert').forEach(b => b.style.display = 'inline-block');
