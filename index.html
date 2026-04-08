@@ -3,13 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="UNIFED - PROBATUM (Unidade Independente de Inteligência Forense Económica e Digital) v13.12.0-PURE · DORA COMPLIANT · COURT READY · PROVA DIGITAL MATERIAL">
+    <meta name="description" content="UNIFED - PROBATUM (Unidade Independente de Inteligência Forense Económica e Digital) v13.11.4-PURE · DORA COMPLIANT · COURT READY · PROVA DIGITAL MATERIAL">
     <meta name="author" content="UNIFED - PROBATUM · Unidade Independente de Inteligência Forense Económica e Digital">
-    <title>UNIFED - PROBATUM · v13.12.0-PURE · DORA COMPLIANT · COURT READY · SMOKING GUN · CADEIA DE CUSTÓDIA</title>
+    <title>UNIFED - PROBATUM · v13.11.4-PURE · DORA COMPLIANT · COURT READY · SMOKING GUN · CADEIA DE CUSTÓDIA</title>
 
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔬</text></svg>">
 
-    <!-- ══ UNIFED - PROBATUM v13.3.0-DIAMOND · OTS DYNAMIC LOADER ══════════════════ -->
+    <!-- ══ UNIFED - PROBATUM v13.3.0-DIAMOND · OTS DYNAMIC LOADER ══════════════════
+         SCP: Bloco de injeção dinâmica — substitui document.write e tag síncrona.
+         Implementa Dynamic Script Injection com fallback CDN sequencial.
+         Elimina parser-blocking e o aviso "document.write" do Chrome.
+         A Cadeia de Custódia (Nível 1 · PROBATUM INTERNAL SEAL) mantém-se
+         activa independentemente da disponibilidade dos CDN externos.
+         Conformidade: DORA (UE) 2022/2554 · RFC 3161 · ISO/IEC 27037:2012
+         ══════════════════════════════════════════════════════════════════ -->
     <script>
     (function loadOTSWithFallback() {
         var CDN_PRIMARY   = 'https://unpkg.com/javascript-opentimestamps@0.0.12/dist/opentimestamps.min.js';
@@ -78,8 +85,14 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- SCP: SHIM OTS integrado no OTS Dynamic Loader acima (Core Freeze) -->
 
     <link rel="stylesheet" href="style.css">
+    <!-- PATCH A-07 (RTF-UNIFED-2026-0406-001): style_additions.css movido do body para o <head>.
+         Garante que as regras de visibilidade (#pureDashboardWrapper { visibility:hidden })
+         estão computadas ANTES da inicialização de qualquer script, eliminando o risco
+         de flash of unstyled content (FOUC) capturável em screenshots ou gravações. -->
+    <link rel="stylesheet" href="style_additions.css">
 </head>
 <body>
 
@@ -108,7 +121,7 @@
             <div class="splash-right">
                 <div class="metadata-panel">
                     <p><strong>Módulo:</strong> Investigação Digital · ISO/IEC 27037</p>
-                    <p><strong>Big Data Accumulator:</strong> v13.12.0-PURE · DORA Compliant · Smoking Gun · NEXUS</p>
+                    <p><strong>Big Data Accumulator:</strong> v13.11.4-PURE · DORA Compliant · Smoking Gun · NEXUS</p>
                     <p><strong>CSC:</strong> Cadeia de Custódia Ativa</p>
                 </div>
                 
@@ -129,7 +142,7 @@
                     <small>Este sistema destina-se exclusivamente a uso pericial autorizado. O acesso não autorizado constitui crime de Acesso Ilegítimo, previsto no Artigo 6.º da Lei do Cibercrime (Lei n.º 109/2009, de 15 de setembro). Ao iniciar o utilizador aceita os termos e condições aqui mencionados.</small>
                 </div>
                 
-                <p class="version-footer">UNIFED - PROBATUM © 2024/2026 EM v13.12.0-PURE · DORA COMPLIANT · SMOKING GUN · COURT READY · NEXUS · BIG DATA</p>
+                <p class="version-footer">UNIFED - PROBATUM © 2024/2026 EM v13.11.4-PURE · DORA COMPLIANT · SMOKING GUN · COURT READY · NEXUS · BIG DATA</p>
             </div>
         </div>
     </div>
@@ -158,7 +171,7 @@
                     <div>
                         <h1>
                             UNIFED - PROBATUM 
-                            <span class="version-badge">v13.12.0-PURE</span>
+                            <span class="version-badge">v13.11.4-PURE</span>
                         </h1>
                         <p class="subtitle" id="headerSubtitle">ISO/IEC 27037 | NIST SP 800-86 | INTERPOL · CSC | BIG DATA</p>
                     </div>
@@ -177,6 +190,7 @@
                         <i class="fas fa-history"></i>
                     </button>
                     <!-- NIFAF — Non-Intrusive Forensic Auditory Feedback · v13.3.0-DIAMOND -->
+                    <!-- Movido para o header para acesso permanente durante auditorias ao vivo -->
                     <button id="audioToggleBtn"
                         onclick="var _s = window.NIFAF ? NIFAF.toggle() : false; this.innerHTML = _s ? '<i class=\'fas fa-volume-up\'></i>' : '<i class=\'fas fa-volume-mute\'></i>'; this.style.borderColor = _s ? 'var(--accent-cyan)' : ''; this.style.color = _s ? 'var(--accent-cyan)' : '';"
                         class="btn-tool"
@@ -202,6 +216,7 @@
             <aside class="sidebar">
                 
                 <!-- IDENTIFICAÇÃO DO SUJEITO PASSIVO -->
+                <!-- CORREÇÃO: Adicionado id="clientIdentificationBlock" para referência no JavaScript -->
                 <div class="sidebar-header-fixed" id="clientIdentificationBlock">
                     <h3 id="sidebarIdTitle"><i class="fas fa-user-shield"></i> IDENTIFICAÇÃO DO SUJEITO PASSIVO</h3>
                     <div class="client-identification-fixed">
@@ -330,10 +345,12 @@
                         <button id="exportPDFBtn" class="btn-tool" disabled>
                             <i class="fas fa-file-pdf"></i> <span id="btnPDF">PARECER TÉCNICO</span>
                         </button>
+                        <!-- v13.3.0-DIAMOND: Minuta de Petição Inicial DOCX -->
                         <button id="exportDOCXBtn" class="btn-tool"
                             title="Exportar Minuta de Petição Inicial (.docx) — OOXML editável pelo advogado">
                             <i class="fas fa-file-word"></i> <span id="btnDOCX">MINUTA WORD</span>
                         </button>
+                        <!-- v13.3.0-DIAMOND: ATF — Análise Temporal Forense -->
                         <button id="atfModalBtn" class="btn-tool"
                             title="Análise Temporal Forense — Tendências · Outliers 2σ · Score de Persistência">
                             <i class="fas fa-chart-line"></i> <span id="btnATF">&#x23F3; TENDÊNCIA ATF</span>
@@ -530,18 +547,11 @@
                         <p id="iva23Value">0,00 €</p>
                         <span class="stat-desc" id="descIva23" data-pt="Valor não pago pelo sujeito passivo" data-en="Amount unpaid by the taxpayer">Valor não pago pelo sujeito passivo</span>
                     </div>
-
-                    <!-- ── NOVO CARTÃO: ASFIXIA FINANCEIRA (v13.11) ───────────────────── -->
-                    <div class="stat-card warning" id="asfixiaFinanceiraCard" style="display: none;">
-                        <h4><i class="fas fa-percent"></i> <span id="asfixiaFinanceiraTitle" data-pt="ASFIXIA FINANCEIRA (IVA 6% SOBRE BRUTO)" data-en="FINANCIAL SUFFOCATION (6% VAT ON GROSS)">ASFIXIA FINANCEIRA (IVA 6% SOBRE BRUTO)</span></h4>
-                        <p id="asfixiaFinanceiraValue">0,00 €</p>
-                        <span class="stat-desc" id="asfixiaFinanceiraDesc" data-pt="Art. 405.º C. Civil · Verba 2.18 CIVA" data-en="Art. 405 CC · Item 2.18 CIVA">Art. 405.º C. Civil · Verba 2.18 CIVA</span>
-                    </div>
                 </div>
 
                 <!-- TRIANGULAÇÃO FINANCEIRA -->
                 <div class="kpi-section">
-                    <h3 id="kpiTitle"><i class="fas fa-project-diagram"></i> TRIANGULAÇÃO FINANCEIRA · BIG DATA ALGORITHM v13.12.0-PURE</h3>
+                    <h3 id="kpiTitle"><i class="fas fa-project-diagram"></i> TRIANGULAÇÃO FINANCEIRA · BIG DATA ALGORITHM v13.0</h3>
                     <div class="kpi-grid">
                         <div class="kpi-card highlight">
                             <h4 id="kpiGross">GANHOS (EXTRATO)</h4>
@@ -578,9 +588,13 @@
                     </div>
                 </div>
 
-                <!-- ══ UNIFED - PROBATUM v13.12.0-PURE · PAINEL DE CASO REAL ANONIMIZADO ══════ -->
-                <div id="pureDashboardWrapper" style="display:block; opacity:0; transition: opacity 0.2s ease;">
-                    <!-- Conteúdo injectado via innerHTML pelo script_injection_v13.12.0-PURE.js -->
+                <!-- ══ UNIFED - PROBATUM v13.11.4-PURE · PAINEL DE CASO REAL ANONIMIZADO ══════
+                     Reconstituição da Verdade Material — Dados verificados JSON UNIFED-MMLADX8Q-CV69L
+                     Activação: UNIFEDSystem.loadAnonymizedRealCase() (chamada em script_injection.js)
+                     Conformidade: ISO/IEC 27037 · Art. 125.º CPP · DORA (UE) 2022/2554
+                     ══════════════════════════════════════════════════════════════════════════════ -->
+                <div id="pureDashboardWrapper" style="display:none; opacity:0; transition: opacity 0.2s ease;">
+                    <!-- Conteúdo injectado via innerHTML pelo script_injection_v13.11.4-PURE.js -->
                 </div>
 
                 <!-- CONSOLE DE AUDITORIA -->
@@ -599,7 +613,7 @@
                             <span id="masterHashValue">A aguardar dados...</span>
                         </div>
                         <div id="qrcodeContainer" style="margin-top: 10px; display: flex; justify-content: center;"></div>
-                        <p class="copyright">UNIFED - PROBATUM © 2024/2026 | EM | Módulo de Peritagem Forense v13.12.0-PURE | DORA COMPLIANT | COURT READY | DIAMOND | SMOKING GUN</p>
+                        <p class="copyright">UNIFED - PROBATUM © 2024/2026 | EM | Módulo de Peritagem Forense v13.11.4-PURE | DORA COMPLIANT | COURT READY | DIAMOND | SMOKING GUN</p>
                         <span id="pageCount" style="display: none;"></span>
 
                         <!-- ── Acesso à Cadeia de Custódia ── -->
@@ -857,65 +871,115 @@
                     <button class="custody-export-btn" onclick="clearCustodyLogs()" style="border-color:#ef4444;color:#ef4444;">
                         <i class="fas fa-trash"></i> LIMPAR
                     </button>
-                    <button class="custody-export-btn" onclick="closeCustodyChainModal()" id="btnCustodyClose">
+                    <button class="custody-export-btn" onclick="closeCustodyChainModal()" id="btnCloseCustodyPanel">
                         <span id="btnCustodyClose">FECHAR PAINEL</span>
                     </button>
-
                 </div>
             </div>
 
         </div>
     </div>
 
-    <!-- SCRIPTS (UNIFED PROBATUM v13.12.0-PURE - SEM DUPLICAÇÕES) -->
+    <!-- SCRIPTS (UNIFED PROBATUM v13.11.4-PURE - SEM DUPLICAÇÕES) -->
     <script>
         window.pdfjsLib = window['pdfjs-dist/build/pdf'];
         if (window.pdfjsLib) {
             window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         }
     </script>
-    <!-- UNIFED PROBATUM v13.12.0-PURE — Ordem de carregamento corrigida:             -->
-    <!-- 1. script.js (motor principal)                                                -->
-    <!-- 2. enrichment.js (Output Enrichment Layer — Read-Only)                       -->
-    <!-- 3. nexus.js (NEXUS Adaptive Extension Layer)                                  -->
-    <!-- 4. script_injection.js (Dados do Caso Real Anonimizado)                       -->
-    <!-- 5. unifed_triada_export.js (Exportação Tríada)                               -->
+    <!-- SCP: Fallback document.write removido — substituído pelo OTS Dynamic Loader no <head> -->
+    <!-- UNIFED PROBATUM v13.11.4-PURE — Ordem de carregamento:                         -->
+    <!-- 1. script.js (motor principal)                                                  -->
+    <!-- 2. enrichment.js (Output Enrichment Layer — Read-Only)                          -->
+    <!-- 3. nexus.js (NEXUS Adaptive Extension Layer)                                    -->
+    <!-- 4. script_injection.js (Dados do Caso Real Anonimizado)                         -->
+    <!-- 5. unifed_triada_export.js (Exportação Tríada)                                  -->
+    <!-- NOTA: style_additions.css foi movido para o <head> (Patch A-07).                -->
     <script src="script.js"></script>
+    <!-- UNIFED PROBATUM v13.11.4-PURE — Output Enrichment Layer -->
+    <!-- Carregado APÓS script.js. Padrão: Read-Only · Asynchronous Post-Computation  -->
     <script src="enrichment.js"></script>
+    <!-- ══ UNIFED PROBATUM v13.11.4-PURE — NEXUS Adaptive Extension Layer ══════
+         Carregado APÓS enrichment.js e script.js. Consome UNIFEDSystem em Read-Only.
+         NÃO altera fórmulas fiscais nem o Dashboard. Módulos:
+           M1 · Stealth Network Interceptor (Anti-F12 Protocol)
+           M2 · RAG Jurisprudencial DOCX (Art. 103/104 RGIT · Art. 78 CIVA · STA)
+           M3 · Motor Preditivo ATF Forecasting 6M (Regressão Linear + EMA)
+           M4 · Blockchain Evidence Explorer (SHA-256 Individual · OTS UI)
+         Conformidade: DORA (UE) 2022/2554 · ISO/IEC 27037:2012 · Art. 125.º CPP
+         ══════════════════════════════════════════════════════════════════════════ -->
     <script src="nexus.js"></script>
-    <link rel="stylesheet" href="style_additions.css">
+
+    <!-- ══ UNIFED - PROBATUM v13.11.4-PURE · CASO REAL ANONIMIZADO ═══════════════
+         Carregado APÓS nexus.js. Injeta os dados reais verificados (UNIFED-MMLADX8Q-CV69L)
+         no UNIFEDSystem e activa o painel #pureDashboard.
+         Conformidade: ISO/IEC 27037 · Art. 125.º CPP · DORA (UE) 2022/2554
+         Core Freeze: não altera fórmulas de script.js nem módulos enrichment/nexus.
+         ══════════════════════════════════════════════════════════════════════════ -->
     <script src="script_injection.js"></script>
-<script>
-   // ── Activação do Painel v13.12.0-PURE (Retificado) ──────────────────────────────
-window._activatePurePanel = function() {
-    fetch('panel.html')
-        .then(function(r) { return r.text(); })
-        .then(function(html) {
+    <script>
+        // ══ PATCH A-02 (RTF-UNIFED-2026-0406-001) ══════════════════════════════
+        // Correcção crítica: _syncPureDashboard() era referenciada em comentários
+        // mas não estava definida em nenhum ficheiro (0 definições no lote de 10).
+        // Sem esta função, a classe .pure-visible nunca era adicionada ao wrapper
+        // e o #pureDashboardWrapper permanecia com visibility:hidden (CSS L616).
+        //
+        // Esta implementação:
+        //   1. Define window._syncPureDashboard() como função global pública.
+        //   2. Corrige _activatePurePanel() para adicionar .pure-visible após
+        //      display:block, garantindo que o painel é visível.
+        // ═══════════════════════════════════════════════════════════════════════
+
+        // ── Definição centralizada de _syncPureDashboard (Patch A-02) ────────────
+        // Exposta globalmente para compatibilidade com referências em outros módulos.
+        window._syncPureDashboard = function() {
             var wrapper = document.getElementById('pureDashboardWrapper');
             if (wrapper) {
-                wrapper.innerHTML = html;
-                wrapper.style.display = 'block';
-                wrapper.style.opacity = '1';
-                wrapper.style.visibility = 'visible';
+                wrapper.classList.add('pure-visible');
+                console.info('[UNIFED-PURE] ✅ _syncPureDashboard: .pure-visible adicionada ao wrapper.');
+            } else {
+                console.warn('[UNIFED-PURE] ⚠ _syncPureDashboard: #pureDashboardWrapper não encontrado.');
+            }
+        };
 
-                // Garantir que os dados são populados APÓS a injeção do HTML
-                setTimeout(function() {
-                    if (typeof UNIFEDSystem !== 'undefined' && typeof UNIFEDSystem.loadAnonymizedRealCase === 'function') {
-                        UNIFEDSystem.loadAnonymizedRealCase();
-                        // Disparar sincronização visual manual se o observer falhar
-                        if (typeof UNIFEDSystem.utils.syncVisualDOM === 'function') {
-                            UNIFEDSystem.utils.syncVisualDOM();
+        // ── Activação do painel PURE v13.11.4-PURE (Patch A-02) ─────────────────
+        // Activação exclusiva via window._activatePurePanel() chamado em activateDemoMode().
+        // O fetch do panel.html é local — sem dependências externas.
+        window._activatePurePanel = function() {
+            fetch('panel.html')
+                .then(function(r) { return r.text(); })
+                .then(function(html) {
+                    var wrapper = document.getElementById('pureDashboardWrapper');
+                    if (wrapper) {
+                        wrapper.innerHTML = html;
+
+                        // Passo 1: tornar o elemento presente no layout (display:block).
+                        wrapper.style.display = 'block';
+
+                        // Passo 2 (PATCH A-02): adicionar .pure-visible para activar
+                        // a regra CSS: #pureDashboardWrapper.pure-visible { visibility: visible !important; }
+                        // Sem este passo, o wrapper permanece visibility:hidden.
+                        wrapper.classList.add('pure-visible');
+
+                        // Passo 3: carregar dados do caso anonimizado.
+                        if (typeof UNIFEDSystem !== 'undefined' &&
+                            typeof UNIFEDSystem.loadAnonymizedRealCase === 'function') {
+                            UNIFEDSystem.loadAnonymizedRealCase();
+                        }
+
+                        // Passo 4: tradução do painel se necessário.
+                        if (typeof window._translatePurePanel === 'function') {
+                            window._translatePurePanel(window.currentLang || 'pt');
                         }
                     }
-                }, 50); 
-            }
-            console.info('[UNIFED-PURE] ✅ Painel e Sincronização activados.');
-        })
-        .catch(function(err) {
-            console.error('[UNIFED-PURE] Falha na activação:', err);
-        });
-};
-</script>
+                    console.info('[UNIFED-PURE] ✅ Painel v13.11.4-PURE activado (Patch A-02 aplicado).');
+                })
+                .catch(function() {
+                    console.info('[UNIFED-PURE] [i] panel.html não encontrado — modo standalone.');
+                });
+        };
+    </script>
+    <!-- TRÍADE DOCUMENTAL - MÓDULO DE EXPORTAÇÃO -->
     <script src="unifed_triada_export.js"></script>
 
 </body>

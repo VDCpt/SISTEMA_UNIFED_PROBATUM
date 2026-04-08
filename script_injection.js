@@ -1,79 +1,40 @@
 /**
- * UNIFED - PROBATUM · CASO REAL ANONIMIZADO v13.12.2-PURE (COMPLETO)
+ * UNIFED - PROBATUM · CASO REAL ANONIMIZADO v13.11.16-PURE (COMPLETO)
  * ============================================================================
  * Missão: Injeção Forense e Reconstituição da Verdade Material
  * Conformidade: DORA (UE) 2022/2554 · Art. 125.º CPP · ISO/IEC 27037:2012
  * ============================================================================
- * RETIFICAÇÕES v13.12.2-PURE (2026-04-08):
- * - Zero-State Policy: contadores iniciados a zero e badges ocultos.
- * - Apenas loadAnonymizedRealCase() popula evidências.
- * - QR Code gerado apenas após wrapper visível (opacity:1 ou display:block).
- * - Centralização do logger (global window.logAudit).
- * - Correcção do namespace: método exposto em UNIFEDSystem.
+ * RETIFICAÇÕES v13.11.16:
+ * - Ocultação inicial do bloco de identificação removida (sempre visível).
+ * - Guard clause no syncMetrics para mitigar o erro Array(42).
+ * - Adicionadas contagens de evidências (counts) no dataset mestre.
+ * - Tratamento silencioso de erro DNS (api.unifed.com) com fallback estático.
+ *
+ * PATCH A-06 (RTF-UNIFED-2026-0406-001):
+ * - Sincronização de UNIFEDSystem.sessionId com _PDF_CASE.sessionId após
+ *   obtenção de sys = window.UNIFEDSystem em _simulateEvidenceUpload().
+ *   Garante consistência do masterHash com o identificador de sessão
+ *   apresentado no painel. Sem esta sincronização, o hash calculado em L778
+ *   (binaryConcat = ... + sys.sessionId) usava o sessionId dinâmico de
+ *   script.js enquanto o painel exibia o sessionId fixo do dataset, criando
+ *   uma inconsistência auditável vulnerável a contra-perícia.
  * ============================================================================
  */
 
 (function() {
     'use strict';
 
-    const logAudit = window.logAudit || console.log;
-
-    // 1. DATASET MESTRE (OBJETO IMUTÁVEL)
+    // 1. DATASET MESTRE (OBJETO IMUTÁVEL) — VALORES REAIS ORIGINAIS + MACRO + COUNTS
     const _PDF_CASE = Object.freeze({
-        sessionId: "UNIFED-MNGFN3C0-X57MO",
+        sessionId:  "UNIFED-MNGFN3C0-X57MO",
         masterHash: "a3f8c9e2d5b6a7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1",
         client: { 
             name: "Real Demo - Unipessoal, Lda", 
             nif: "999999990", 
             platform: "Plataforma A" 
-        }
-    });
-
-    async function loadAnonymizedRealCase() {
-        logAudit('Iniciando carga de caso real...', 'info');
-
-        // Reconstituição de dados via Bridge
-        if (window.UNIFEDSystem && window.UNIFEDSystem.utils && typeof window.UNIFEDSystem.utils.syncVisualDOM === 'function') {
-            window.UNIFEDSystem.utils.syncVisualDOM();
-        } else {
-            console.warn('[UNIFED] syncVisualDOM não disponível.');
-        }
-
-        // Mostrar badges e gerar QR
-        document.querySelectorAll('.pure-badge-alert').forEach(b => b.style.display = 'inline-block');
-        
-        if (typeof window.generateQRCode === 'function') {
-            window.generateQRCode(_PDF_CASE.masterHash);
-        }
-
-        logAudit('Evidências do caso real carregadas com sucesso.', 'success');
-    }
-
-    // Expor para o namespace global
-    window.UNIFEDSystem = window.UNIFEDSystem || {};
-    window.UNIFEDSystem.loadAnonymizedRealCase = loadAnonymizedRealCase;
-
-    // Inicialização do botão
-    function setupRealCaseButton() {
-        const btn = document.getElementById('btnLoadRealCase');
-        if (btn) {
-            btn.addEventListener('click', loadAnonymizedRealCase);
-        }
-    }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', setupRealCaseButton);
-    } else {
-        setupRealCaseButton();
-    }
-})();
-
-        // Mostrar contadores após carga
-        document.querySelectorAll('.pure-badge-alert').forEach(b => b.style.display = 'inline-block');
-        logAudit('Evidências do caso real carregadas com sucesso.', 'success');
-    }; // Fecho da função loadAnonymizedRealCase
+        },
         counts: {
-            ctrl: 12,
+            ctrl: 15,
             saft: 4,
             fat: 8,
             ext: 2,
@@ -102,7 +63,7 @@
             confianca: "99.2%",
             periodo: "Q4 2024",
             anomalias: 4,
-            version: "v13.12.2-PURE",
+            version: "v13.11.16-PURE",
             score: 40,
             trend: "DESCENDENTE",
             outliers: 0
@@ -141,6 +102,7 @@
                 console.warn('[UNIFED] ⚙ Modo Standalone Ativo: Selagem TSA externa indisponível (promise).');
                 event.preventDefault();
             }
+            // Tratamento silencioso do erro DNS api.unifed.com
             if (event.reason && event.reason.message && event.reason.message.indexOf('api.unifed.com') !== -1) {
                 console.warn('[UNIFED] ⚙ Modo Standalone Ativo: Proxy IA indisponível (DNS). Fallback estático ativo.');
                 event.preventDefault();
@@ -191,17 +153,15 @@
     const discrepanciaC1 = t.saftBruto - t.dac7TotalPeriodo;
     const percentC1 = (t.saftBruto > 0) ? (discrepanciaC1 / t.saftBruto) * 100 : 0;
     const ircEstimado = discrepanciaC2 * 0.21;
-    const asfixiaFinanceira = t.saftBruto * 0.06;
 
     window.UNIFED_INTERNAL.syncMetrics = function() {
+        // [CORREÇÃO CIRÚRGICA]: Evita erro Array(42) se o DOM não estiver pronto
         if (!document.getElementById('pureDashboard')) {
             console.info('[UNIFED] syncMetrics abortado: painel pureDashboard ainda não injetado no DOM.');
             return;
         }
 
         console.log('[UNIFED] Iniciando Sincronização Forense...');
-
-        const totalNaoSujeitosCalc = (t.campanhas || 0) + (t.gorjetas || 0) + (t.portagens || 0);
         
         const mapping = {
             'pure-ganhos':           fmt(t.ganhos),
@@ -218,8 +178,8 @@
             'pure-iva-23':            fmt(t.iva23Omitido),
             'pure-irc':               fmt(ircEstimado),
             'pure-disc-c2-grid':      fmt(discrepanciaC2),
-            'pure-iva-devido':        fmt(asfixiaFinanceira),
-            'pure-nao-sujeitos':      fmt(totalNaoSujeitosCalc),
+            'pure-iva-devido':        fmt(t.iva6Omitido),
+            'pure-nao-sujeitos':      fmt(t.totalNaoSujeitos),
             'pure-atf-sp':            data.atf.score + '/100',
             'pure-atf-trend':         data.atf.trend,
             'pure-atf-outliers':      data.atf.outliers + ' outliers > 2σ',
@@ -227,7 +187,7 @@
             'pure-nc-campanhas':       fmt(t.campanhas),
             'pure-nc-gorjetas':        fmt(t.gorjetas),
             'pure-nc-portagens':       fmt(t.portagens),
-            'pure-nc-total':           fmt(totalNaoSujeitosCalc),
+            'pure-nc-total':           fmt(t.totalNaoSujeitos),
             'pure-verdict':            'RISCO ELEVADO · CONTRA-ORDENAÇÃO',
             'pure-verdict-pct':        percentC2.toFixed(2) + '%',
             'pure-hash-prefix-verdict': data.masterHash.substring(0, 16) + '...',
@@ -244,17 +204,15 @@
             'pure-atf-zscore':         data.atf.zScore.toString(),
             'pure-atf-confianca':      data.atf.confianca,
             'pure-atf-score-val':      data.atf.score + '/100',
-            'pure-iva-devido-val':     fmt(asfixiaFinanceira),
+            'pure-iva-devido-val':     fmt(t.iva6Omitido),
             'pure-impacto-macro':      fmt(data.macro_analysis.estimated_systemic_gap),
+            'pure-asfixia-val': fmt(t.asfixiaFinanceira),
+            // IDs para contagem de evidências
             'pure-ctrl-qty':           data.counts.ctrl.toString(),
             'pure-saft-qty':           data.counts.saft.toString(),
             'pure-fat-qty':            data.counts.fat.toString(),
             'pure-ext-qty':            data.counts.ext.toString(),
-            'pure-dac7-qty':           data.counts.dac7.toString(),
-            'pure-ganhos-tri':         fmt(t.ganhos),
-            'pure-despesas-tri':       fmt(t.despesas),
-            'pure-liquido-tri':        fmt(t.ganhosLiquidos),
-            'pure-fatura-tri':         fmt(t.faturaPlataforma),
+            'pure-dac7-qty':           data.counts.dac7.toString()
         };
 
         const missing = [];
@@ -266,14 +224,6 @@
                 missing.push(id);
             }
         });
-
-        // Forçar renderização dos gráficos se Chart.js estiver disponível
-        if (typeof Chart !== 'undefined') {
-            if (typeof window.renderChart === 'function') window.renderChart();
-            if (typeof window.renderDiscrepancyChart === 'function') window.renderDiscrepancyChart();
-        } else {
-            console.warn('[UNIFED] Chart.js não disponível – gráficos não renderizados.');
-        }
 
         if (missing.length > 0) {
             console.warn(`[UNIFED] IDs em falta no DOM: Array(${missing.length})`, missing);
@@ -315,9 +265,6 @@
         if (sg1SaftEl) sg1SaftEl.textContent = fmt(t.saftBruto);
         const sg1Dac7El = document.getElementById('pure-sg1-dac7-val');
         if (sg1Dac7El) sg1Dac7El.textContent = fmt(t.dac7TotalPeriodo);
-        
-        const asfixiaEl = document.getElementById('pure-iva-devido');
-        if (asfixiaEl) asfixiaEl.textContent = fmt(asfixiaFinanceira);
     };
     console.log('[UNIFED] Camada 2: OK.');
 })();
@@ -345,7 +292,7 @@
                         <th style="text-align:left; padding:10px;">FONTE DE PROVA</th>
                         <th style="text-align:right; padding:10px;">VALOR</th>
                         <th style="text-align:right; padding:10px; color:#EF4444;">DISCREPÂNCIA</th>
-                    </tr>
+                    </table>
                 </thead>
                 <tbody>
                     <tr><td style="padding:10px;">📄 SAF-T PT (Faturação)</td><td style="padding:10px; text-align:right;">${fmt(t.saftBruto)}</td><td style="padding:10px; text-align:right;">-${fmt(deltaSaft)}</td></tr>
@@ -401,22 +348,34 @@
                     grid-template-columns: 1fr !important;
                 }
             }
-            .chart-section {
-                display: block !important;
-                height: auto !important;
-                min-height: 350px !important;
-                overflow: visible !important;
-            }
-            canvas#mainChart, canvas#discrepancyChart {
-                width: 100% !important;
-                height: 300px !important;
-            }
         `;
         const style = document.createElement('style');
         style.id = styleId;
         style.textContent = css;
         document.head.appendChild(style);
         console.log('[UNIFED] CSS injetado.');
+    }
+
+    function _hideDiscrepancyChart() {
+        const canvas = document.getElementById('discrepancyChart');
+        if (canvas) {
+            canvas.style.display = 'none';
+            const section = canvas.closest('.chart-section');
+            if (section && section.querySelectorAll('canvas').length === 1) {
+                section.style.display = 'none';
+            }
+        }
+    }
+
+    function _hideNexusForecast() {
+        const nexusPanel = document.getElementById('nexusForecastPanel');
+        if (nexusPanel) nexusPanel.style.display = 'none';
+        const atfModal = document.getElementById('atfModal');
+        if (atfModal) {
+            const forecastElements = atfModal.querySelectorAll('#nexusForecastPanel, [class*="nexus"], [id*="nexusForecast"]');
+            forecastElements.forEach(el => { if (el) el.style.display = 'none'; });
+        }
+        console.log('[UNIFED] Motor Preditivo NEXUS ATF ocultado.');
     }
 
     function _injectMacroCard() {
@@ -426,6 +385,7 @@
         const macro = data.macro_analysis;
         if (!macro) return;
         const monthlyLoss = (macro.sector_drivers || 38000) * (macro.avg_monthly_discrepancy || 546.24);
+        const _fmtLocal = (v) => new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(v);
         const cardHtml = `
         <div class="pure-card pure-card-macro" id="pureMacroCard">
             <h3 class="pure-card-title">
@@ -445,18 +405,18 @@
                 </div>
                 <div class="pure-macro-item" style="flex:1; min-width:160px; background:rgba(255,255,255,0.03); padding:12px; border-radius:6px;">
                     <div class="pure-macro-label" style="font-size:0.65rem; color:#94a3b8; text-transform:uppercase;" data-pt="Erosão Mensal Estimada" data-en="Estimated Monthly Erosion">Erosão Mensal Estimada</div>
-                    <div id="pure-macro-monthly-loss" class="pure-macro-value" style="font-size:1.4rem; font-weight:700; color:#F59E0B;">${_fmt(monthlyLoss)}</div>
+                    <div id="pure-macro-monthly-loss" class="pure-macro-value" style="font-size:1.4rem; font-weight:700; color:#F59E0B;">${_fmtLocal(monthlyLoss)}</div>
                     <div class="pure-macro-sub" style="font-size:0.6rem; color:#64748b;">Art. 119.º RGIT</div>
                 </div>
                 <div class="pure-macro-item pure-macro-highlight" style="flex:1.5; min-width:200px; background:rgba(239,68,68,0.08); border-left:3px solid #EF4444; padding:12px; border-radius:6px;">
                     <div class="pure-macro-label" style="font-size:0.65rem; color:#94a3b8; text-transform:uppercase;" data-pt="Erosão Fiscal Estimada (7 Anos)" data-en="Estimated Tax Erosion (7 Years)">Erosão Fiscal Estimada (7 Anos)</div>
-                    <div id="pure-macro-total-loss" class="pure-macro-value" style="font-size:1.6rem; font-weight:900; color:#EF4444;">${_fmt(macro.estimated_systemic_gap)}</div>
+                    <div id="pure-macro-total-loss" class="pure-macro-value" style="font-size:1.6rem; font-weight:900; color:#EF4444;">${_fmtLocal(macro.estimated_systemic_gap)}</div>
                     <div class="pure-macro-sub" style="font-size:0.6rem; color:#EF4444;">Art. 119.º RGIT (Iteração)</div>
                 </div>
             </div>
             <div class="pure-macro-disclaimer" style="margin-top:1rem; padding:0.75rem; background:rgba(0,0,0,0.3); border-left:3px solid #FACC15; font-size:0.7rem; color:#94a3b8;">
                 <i class="fas fa-gavel"></i> 
-                <span data-pt="Os valores de impacto sistémico constituem contexto macroeconómico e não prova directa de ilícito alheio, nos termos do Art. 128.º do CPP." data-en="Systemic impact values constitute macroeconomic context and not direct proof of third-party wrongdoing, under Art. 128 CPP.">Os valores de impacto sistémico constituem contexto macroeconómico e não prova directa de ilícito alheio, nos termos do Art. 128.º do CPP.</span>
+                <span data-pt="Os valores de impacto sistémico constituem contexto macroeconómico e não prova direta de ilícito alheio, nos termos do Art. 128.º do CPP." data-en="Systemic impact values constitute macroeconomic context and not direct proof of third-party wrongdoing, under Art. 128 CPP.">Os valores de impacto sistémico constituem contexto macroeconómico e não prova direta de ilícito alheio, nos termos do Art. 128.º do CPP.</span>
             </div>
         </div>`;
         target.insertAdjacentHTML('beforeend', cardHtml);
@@ -488,7 +448,7 @@
             { id: 'pure-iva-23', val: data.totals.iva23Omitido },
             { id: 'pure-irc', val: (data.totals.despesas - data.totals.faturaPlataforma) * 0.21 },
             { id: 'pure-disc-c2-grid', val: data.totals.despesas - data.totals.faturaPlataforma },
-            { id: 'pure-iva-devido', val: data.totals.asfixiaFinanceira },
+            { id: 'pure-iva-devido', val: data.totals.iva6Omitido },
             { id: 'pure-nao-sujeitos', val: data.totals.totalNaoSujeitos },
             { id: 'pure-atf-sp', val: data.atf.score + '/100' },
             { id: 'pure-atf-trend', val: data.atf.trend },
@@ -514,7 +474,7 @@
             { id: 'pure-atf-zscore', val: data.atf.zScore },
             { id: 'pure-atf-confianca', val: data.atf.confianca },
             { id: 'pure-atf-score-val', val: data.atf.score + '/100' },
-            { id: 'pure-iva-devido-val', val: data.totals.asfixiaFinanceira },
+            { id: 'pure-iva-devido-val', val: data.totals.iva6Omitido },
             { id: 'pure-impacto-macro', val: data.macro_analysis.estimated_systemic_gap },
             { id: 'pure-ctrl-qty', val: data.counts.ctrl },
             { id: 'pure-saft-qty', val: data.counts.saft },
@@ -527,6 +487,7 @@
             { id: 'auxBoxTotalNSValue', val: data.totals.totalNaoSujeitos },
             { id: 'auxBoxCancelValue', val: data.totals.cancelamentos },
             { id: 'auxDac7NoteValue', val: data.totals.totalNaoSujeitos },
+            { id: 'pure-asfixia-val', val: data.totals.asfixiaFinanceira },
             { id: 'auxDac7NoteValueQ', val: data.totals.totalNaoSujeitos }
         ];
 
@@ -577,6 +538,8 @@
     }
 
     window.UNIFED_INTERNAL.injectAuxiliaryBoxesCSS = _injectAuxiliaryBoxesCSS;
+    window.UNIFED_INTERNAL.hideDiscrepancyChart = _hideDiscrepancyChart;
+    window.UNIFED_INTERNAL.hideNexusForecast = _hideNexusForecast;
     window.UNIFED_INTERNAL.injectMacroCard = _injectMacroCard;
     window.UNIFED_INTERNAL.updateAuxiliaryUI = _updateAuxiliaryUI;
     console.log('[UNIFED] Camada 4: OK.');
@@ -616,238 +579,242 @@
         });
     }
 
-    async function _simulateEvidenceUpload() {
-        try {
-            if (typeof window.UNIFEDSystem === 'undefined') {
-                console.warn('[UNIFED] UNIFEDSystem não disponível para simular upload.');
-                throw new Error('UNIFEDSystem not found');
-            }
-            const sys = window.UNIFEDSystem;
-            const t = data.totals;
-            if (!sys.documents) sys.documents = {};
-            if (!sys.documents.control) sys.documents.control = { files: [], totals: { records: 0 } };
-            if (!sys.documents.saft) sys.documents.saft = { files: [], totals: { bruto: 0, iliquido: 0, iva: 0, records: 0 } };
-            if (!sys.documents.statements) sys.documents.statements = { files: [], totals: { ganhos: 0, despesas: 0, ganhosLiquidos: 0, records: 0 } };
-            if (!sys.documents.invoices) sys.documents.invoices = { files: [], totals: { invoiceValue: 0, records: 0 } };
-            if (!sys.documents.dac7) sys.documents.dac7 = { files: [], totals: { q1: 0, q2: 0, q3: 0, q4: 0, totalPeriodo: 0, records: 0 } };
-            if (!sys.analysis) sys.analysis = { evidenceIntegrity: [] };
-            if (!sys.analysis.evidenceIntegrity) sys.analysis.evidenceIntegrity = [];
-
-            // Limpar dados existentes
-            sys.documents.control.files = [];
-            sys.documents.saft.files = [];
-            sys.documents.statements.files = [];
-            sys.documents.invoices.files = [];
-            sys.documents.dac7.files = [];
-            sys.analysis.evidenceIntegrity = [];
-
-            const controlFiles = [
-                { name: 'controlo_autenticidade_1.csv', type: 'control', size: 256 },
-                { name: 'controlo_autenticidade_2.csv', type: 'control', size: 256 },
-                { name: 'controlo_autenticidade_3.csv', type: 'control', size: 256 },
-                { name: 'controlo_autenticidade_4.csv', type: 'control', size: 256 }
-            ];
-            for (const file of controlFiles) {
-                sys.documents.control.files.push({ name: file.name, size: file.size });
-                const hash = await window.generateForensicHash(file.name + 'control_demo');
-                sys.analysis.evidenceIntegrity.push({
-                    filename: file.name,
-                    type: 'control',
-                    hash: hash,
-                    timestamp: new Date().toISOString(),
-                    size: file.size
-                });
-            }
-            sys.documents.control.totals.records = controlFiles.length;
-
-            const saftFiles = [
-                { name: '131509_202409.csv', type: 'saft', size: 1024 },
-                { name: '131509_202410.csv', type: 'saft', size: 1024 },
-                { name: '131509_202411.csv', type: 'saft', size: 1024 },
-                { name: '131509_202412.csv', type: 'saft', size: 1024 }
-            ];
-            for (const file of saftFiles) {
-                sys.documents.saft.files.push({ name: file.name, size: file.size });
-                const hash = await window.generateForensicHash(file.name + 'saft_demo');
-                sys.analysis.evidenceIntegrity.push({
-                    filename: file.name,
-                    type: 'saft',
-                    hash: hash,
-                    timestamp: new Date().toISOString(),
-                    size: file.size
-                });
-            }
-            sys.documents.saft.totals.bruto = t.saftBruto;
-            sys.documents.saft.totals.iliquido = t.saftIliquido;
-            sys.documents.saft.totals.iva = t.saftIva;
-            sys.documents.saft.totals.records = saftFiles.length;
-
-            const statementFiles = [
-                { name: 'extrato_setembro_2024.pdf', type: 'statement', size: 2048 },
-                { name: 'extrato_outubro_2024.pdf', type: 'statement', size: 2048 },
-                { name: 'extrato_novembro_2024.pdf', type: 'statement', size: 2048 },
-                { name: 'extrato_dezembro_2024.pdf', type: 'statement', size: 2048 }
-            ];
-            for (const file of statementFiles) {
-                sys.documents.statements.files.push({ name: file.name, size: file.size });
-                const hash = await window.generateForensicHash(file.name + 'statement_demo');
-                sys.analysis.evidenceIntegrity.push({
-                    filename: file.name,
-                    type: 'statement',
-                    hash: hash,
-                    timestamp: new Date().toISOString(),
-                    size: file.size
-                });
-            }
-            sys.documents.statements.totals.ganhos = t.ganhos;
-            sys.documents.statements.totals.despesas = t.despesas;
-            sys.documents.statements.totals.ganhosLiquidos = t.ganhosLiquidos;
-            sys.documents.statements.totals.records = statementFiles.length;
-
-            const invoiceFiles = [
-                { name: 'PT1124_202412.pdf', type: 'invoice', size: 512 },
-                { name: 'PT1125_202412.pdf', type: 'invoice', size: 512 }
-            ];
-            for (const file of invoiceFiles) {
-                sys.documents.invoices.files.push({ name: file.name, size: file.size });
-                const hash = await window.generateForensicHash(file.name + 'invoice_demo');
-                sys.analysis.evidenceIntegrity.push({
-                    filename: file.name,
-                    type: 'invoice',
-                    hash: hash,
-                    timestamp: new Date().toISOString(),
-                    size: file.size
-                });
-            }
-            sys.documents.invoices.totals.invoiceValue = t.faturaPlataforma;
-            sys.documents.invoices.totals.records = invoiceFiles.length;
-
-            const dac7Files = [
-                { name: 'dac7_2024_semestre2.pdf', type: 'dac7', size: 1024 }
-            ];
-            for (const file of dac7Files) {
-                sys.documents.dac7.files.push({ name: file.name, size: file.size });
-                const hash = await window.generateForensicHash(file.name + 'dac7_demo');
-                sys.analysis.evidenceIntegrity.push({
-                    filename: file.name,
-                    type: 'dac7',
-                    hash: hash,
-                    timestamp: new Date().toISOString(),
-                    size: file.size
-                });
-            }
-            sys.documents.dac7.totals.q4 = t.dac7TotalPeriodo;
-            sys.documents.dac7.totals.q3 = 0;
-            sys.documents.dac7.totals.q1 = 0;
-            sys.documents.dac7.totals.q2 = 0;
-            sys.documents.dac7.totals.totalPeriodo = t.dac7TotalPeriodo;
-            sys.documents.dac7.totals.records = dac7Files.length;
-
-            if (!sys.auxiliaryData) sys.auxiliaryData = {};
-            sys.auxiliaryData.campanhas = t.campanhas || 0;
-            sys.auxiliaryData.portagens = t.portagens || 0;
-            sys.auxiliaryData.gorjetas = t.gorjetas || 0;
-            sys.auxiliaryData.cancelamentos = t.cancelamentos || 0;
-            sys.auxiliaryData.totalNaoSujeitos = (t.campanhas || 0) + (t.portagens || 0) + (t.gorjetas || 0);
-            sys.auxiliaryData.processedFrom = [];
-            sys.auxiliaryData.extractedAt = new Date().toISOString();
-
-            if (!sys.monthlyData) sys.monthlyData = {};
-            const monthlyGanhos = [2450.00, 2560.00, 2480.00, 2667.73];
-            const monthlyDespesas = [590.00, 615.00, 600.00, 642.89];
-            const monthlyGanhosLiq = [1860.00, 1945.00, 1880.00, 2024.84];
-            const months = ['202409', '202410', '202411', '202412'];
-            months.forEach((month, idx) => {
-                sys.monthlyData[month] = {
-                    ganhos: monthlyGanhos[idx],
-                    despesas: monthlyDespesas[idx],
-                    ganhosLiq: monthlyGanhosLiq[idx]
-                };
-            });
-            sys.dataMonths = new Set(months);
-
-            if (!sys.analysis.totals) sys.analysis.totals = {};
-            sys.analysis.totals.saftBruto = t.saftBruto;
-            sys.analysis.totals.saftIliquido = t.saftIliquido;
-            sys.analysis.totals.saftIva = t.saftIva;
-            sys.analysis.totals.ganhos = t.ganhos;
-            sys.analysis.totals.despesas = t.despesas;
-            sys.analysis.totals.ganhosLiquidos = t.ganhosLiquidos;
-            sys.analysis.totals.faturaPlataforma = t.faturaPlataforma;
-            sys.analysis.totals.dac7Q1 = 0;
-            sys.analysis.totals.dac7Q2 = 0;
-            sys.analysis.totals.dac7Q3 = 0;
-            sys.analysis.totals.dac7Q4 = t.dac7TotalPeriodo;
-            sys.analysis.totals.dac7TotalPeriodo = t.dac7TotalPeriodo;
-
-            const discrepanciaSaftVsDac7 = t.saftBruto - t.dac7TotalPeriodo;
-            const percentagemSaftVsDac7 = t.saftBruto > 0 ? (discrepanciaSaftVsDac7 / t.saftBruto) * 100 : 0;
-            const discrepanciaCritica = t.despesas - t.faturaPlataforma;
-            const percentagemOmissao = t.despesas > 0 ? (discrepanciaCritica / t.despesas) * 100 : 0;
-            const ivaFalta = discrepanciaCritica * 0.23;
-            const ivaFalta6 = discrepanciaCritica * 0.06;
-            const agravamentoBrutoIRC = discrepanciaCritica;
-            const ircEstimado = discrepanciaCritica * 0.21;
-            const asfixiaFinanceira = t.saftBruto * 0.06;
-
-            if (!sys.analysis.crossings) sys.analysis.crossings = {};
-            sys.analysis.crossings.discrepanciaSaftVsDac7 = discrepanciaSaftVsDac7;
-            sys.analysis.crossings.percentagemSaftVsDac7 = percentagemSaftVsDac7;
-            sys.analysis.crossings.discrepanciaCritica = discrepanciaCritica;
-            sys.analysis.crossings.percentagemOmissao = percentagemOmissao;
-            sys.analysis.crossings.ivaFalta = ivaFalta;
-            sys.analysis.crossings.ivaFalta6 = ivaFalta6;
-            sys.analysis.crossings.agravamentoBrutoIRC = agravamentoBrutoIRC;
-            sys.analysis.crossings.ircEstimado = ircEstimado;
-            sys.analysis.crossings.asfixiaFinanceira = asfixiaFinanceira;
-            sys.analysis.crossings.btor = t.despesas;
-            sys.analysis.crossings.btf = t.faturaPlataforma;
-            sys.analysis.crossings.c1_delta = discrepanciaSaftVsDac7;
-            sys.analysis.crossings.c1_pct = percentagemSaftVsDac7;
-            sys.analysis.crossings.c2_delta = discrepanciaCritica;
-            sys.analysis.crossings.c2_pct = percentagemOmissao;
-
-            if (!sys.client && data.client) {
-                sys.client = { name: data.client.name, nif: data.client.nif, platform: data.client.platform };
-                const clientStatus = document.getElementById('clientStatusFixed');
-                if (clientStatus) {
-                    clientStatus.style.display = 'flex';
-                    const nameSpan = document.getElementById('clientNameDisplayFixed');
-                    const nifSpan = document.getElementById('clientNifDisplayFixed');
-                    if (nameSpan) nameSpan.textContent = data.client.name;
-                    if (nifSpan) nifSpan.textContent = data.client.nif;
+    function _simulateEvidenceUpload() {
+        return new Promise((resolve, reject) => {
+            try {
+                if (typeof window.UNIFEDSystem === 'undefined') {
+                    console.warn('[UNIFED] UNIFEDSystem não disponível para simular upload.');
+                    reject(new Error('UNIFEDSystem not found'));
+                    return;
                 }
-                const nameInput = document.getElementById('clientNameFixed');
-                const nifInput = document.getElementById('clientNIFFixed');
-                if (nameInput) nameInput.value = data.client.name;
-                if (nifInput) nifInput.value = data.client.nif;
+                const sys = window.UNIFEDSystem;
+
+                // ── PATCH A-06 (RTF-UNIFED-2026-0406-001) ────────────────────────
+                // Sincronizar UNIFEDSystem.sessionId com o sessionId fixo do dataset.
+                // Sem esta sincronização, o masterHash calculado em binaryConcat usava
+                // o sessionId dinâmico de script.js, enquanto o painel apresentava o
+                // sessionId do _PDF_CASE — inconsistência auditável em contra-perícia.
+                if (data && data.sessionId) {
+                    const _previousSessionId = sys.sessionId;
+                    sys.sessionId = data.sessionId;
+                    if (_previousSessionId && _previousSessionId !== data.sessionId) {
+                        console.info(
+                            '[UNIFED-INJECTION] sessionId sincronizado (Patch A-06):',
+                            _previousSessionId, '→', data.sessionId
+                        );
+                    }
+                }
+                // ── FIM PATCH A-06 ────────────────────────────────────────────────
+
+                const t = data.totals;
+                if (!sys.documents) sys.documents = {};
+                if (!sys.documents.control) sys.documents.control = { files: [], totals: { records: 0 } };
+                if (!sys.documents.saft) sys.documents.saft = { files: [], totals: { bruto: 0, iliquido: 0, iva: 0, records: 0 } };
+                if (!sys.documents.statements) sys.documents.statements = { files: [], totals: { ganhos: 0, despesas: 0, ganhosLiquidos: 0, records: 0 } };
+                if (!sys.documents.invoices) sys.documents.invoices = { files: [], totals: { invoiceValue: 0, records: 0 } };
+                if (!sys.documents.dac7) sys.documents.dac7 = { files: [], totals: { q1: 0, q2: 0, q3: 0, q4: 0, totalPeriodo: 0, records: 0 } };
+                if (!sys.analysis) sys.analysis = { evidenceIntegrity: [] };
+                if (!sys.analysis.evidenceIntegrity) sys.analysis.evidenceIntegrity = [];
+
+                sys.documents.control.files = [];
+                sys.documents.saft.files = [];
+                sys.documents.statements.files = [];
+                sys.documents.invoices.files = [];
+                sys.documents.dac7.files = [];
+                sys.analysis.evidenceIntegrity = [];
+
+                const controlFiles = [
+                    { name: 'controlo_autenticidade_1.csv', type: 'control', size: 256 },
+                    { name: 'controlo_autenticidade_2.csv', type: 'control', size: 256 },
+                    { name: 'controlo_autenticidade_3.csv', type: 'control', size: 256 },
+                    { name: 'controlo_autenticidade_4.csv', type: 'control', size: 256 }
+                ];
+                controlFiles.forEach(file => {
+                    sys.documents.control.files.push({ name: file.name, size: file.size });
+                    sys.analysis.evidenceIntegrity.push({
+                        filename: file.name,
+                        type: 'control',
+                        hash: CryptoJS.SHA256(file.name + 'control_demo').toString().toUpperCase(),
+                        timestamp: new Date().toISOString(),
+                        size: file.size
+                    });
+                });
+                sys.documents.control.totals.records = controlFiles.length;
+
+                const saftFiles = [
+                    { name: '131509_202409.csv', type: 'saft', size: 1024 },
+                    { name: '131509_202410.csv', type: 'saft', size: 1024 },
+                    { name: '131509_202411.csv', type: 'saft', size: 1024 },
+                    { name: '131509_202412.csv', type: 'saft', size: 1024 }
+                ];
+                saftFiles.forEach(file => {
+                    sys.documents.saft.files.push({ name: file.name, size: file.size });
+                    sys.analysis.evidenceIntegrity.push({
+                        filename: file.name,
+                        type: 'saft',
+                        hash: CryptoJS.SHA256(file.name + 'saft_demo').toString().toUpperCase(),
+                        timestamp: new Date().toISOString(),
+                        size: file.size
+                    });
+                });
+                sys.documents.saft.totals.bruto = t.saftBruto;
+                sys.documents.saft.totals.iliquido = t.saftIliquido;
+                sys.documents.saft.totals.iva = t.saftIva;
+                sys.documents.saft.totals.records = saftFiles.length;
+
+                const statementFiles = [
+                    { name: 'extrato_setembro_2024.pdf', type: 'statement', size: 2048 },
+                    { name: 'extrato_outubro_2024.pdf', type: 'statement', size: 2048 },
+                    { name: 'extrato_novembro_2024.pdf', type: 'statement', size: 2048 },
+                    { name: 'extrato_dezembro_2024.pdf', type: 'statement', size: 2048 }
+                ];
+                statementFiles.forEach(file => {
+                    sys.documents.statements.files.push({ name: file.name, size: file.size });
+                    sys.analysis.evidenceIntegrity.push({
+                        filename: file.name,
+                        type: 'statement',
+                        hash: CryptoJS.SHA256(file.name + 'statement_demo').toString().toUpperCase(),
+                        timestamp: new Date().toISOString(),
+                        size: file.size
+                    });
+                });
+                sys.documents.statements.totals.ganhos = t.ganhos;
+                sys.documents.statements.totals.despesas = t.despesas;
+                sys.documents.statements.totals.ganhosLiquidos = t.ganhosLiquidos;
+                sys.documents.statements.totals.records = statementFiles.length;
+
+                const invoiceFiles = [
+                    { name: 'PT1124_202412.pdf', type: 'invoice', size: 512 },
+                    { name: 'PT1125_202412.pdf', type: 'invoice', size: 512 }
+                ];
+                invoiceFiles.forEach(file => {
+                    sys.documents.invoices.files.push({ name: file.name, size: file.size });
+                    sys.analysis.evidenceIntegrity.push({
+                        filename: file.name,
+                        type: 'invoice',
+                        hash: CryptoJS.SHA256(file.name + 'invoice_demo').toString().toUpperCase(),
+                        timestamp: new Date().toISOString(),
+                        size: file.size
+                    });
+                });
+                sys.documents.invoices.totals.invoiceValue = t.faturaPlataforma;
+                sys.documents.invoices.totals.records = invoiceFiles.length;
+
+                const dac7Files = [
+                    { name: 'dac7_2024_semestre2.pdf', type: 'dac7', size: 1024 }
+                ];
+                dac7Files.forEach(file => {
+                    sys.documents.dac7.files.push({ name: file.name, size: file.size });
+                    sys.analysis.evidenceIntegrity.push({
+                        filename: file.name,
+                        type: 'dac7',
+                        hash: CryptoJS.SHA256(file.name + 'dac7_demo').toString().toUpperCase(),
+                        timestamp: new Date().toISOString(),
+                        size: file.size
+                    });
+                });
+                sys.documents.dac7.totals.q4 = t.dac7TotalPeriodo;
+                sys.documents.dac7.totals.q3 = 0;
+                sys.documents.dac7.totals.q1 = 0;
+                sys.documents.dac7.totals.q2 = 0;
+                sys.documents.dac7.totals.totalPeriodo = t.dac7TotalPeriodo;
+                sys.documents.dac7.totals.records = dac7Files.length;
+
+                if (!sys.monthlyData) sys.monthlyData = {};
+                const monthlyGanhos = [2450.00, 2560.00, 2480.00, 2667.73];
+                const monthlyDespesas = [590.00, 615.00, 600.00, 642.89];
+                const monthlyGanhosLiq = [1860.00, 1945.00, 1880.00, 2024.84];
+                const months = ['202409', '202410', '202411', '202412'];
+                months.forEach((month, idx) => {
+                    sys.monthlyData[month] = {
+                        ganhos: monthlyGanhos[idx],
+                        despesas: monthlyDespesas[idx],
+                        ganhosLiq: monthlyGanhosLiq[idx]
+                    };
+                });
+                sys.dataMonths = new Set(months);
+
+                if (!sys.analysis.totals) sys.analysis.totals = {};
+                sys.analysis.totals.saftBruto = t.saftBruto;
+                sys.analysis.totals.saftIliquido = t.saftIliquido;
+                sys.analysis.totals.saftIva = t.saftIva;
+                sys.analysis.totals.ganhos = t.ganhos;
+                sys.analysis.totals.despesas = t.despesas;
+                sys.analysis.totals.ganhosLiquidos = t.ganhosLiquidos;
+                sys.analysis.totals.faturaPlataforma = t.faturaPlataforma;
+                sys.analysis.totals.dac7Q1 = 0;
+                sys.analysis.totals.dac7Q2 = 0;
+                sys.analysis.totals.dac7Q3 = 0;
+                sys.analysis.totals.dac7Q4 = t.dac7TotalPeriodo;
+                sys.analysis.totals.dac7TotalPeriodo = t.dac7TotalPeriodo;
+
+                const discrepanciaSaftVsDac7 = t.saftBruto - t.dac7TotalPeriodo;
+                const percentagemSaftVsDac7 = t.saftBruto > 0 ? (discrepanciaSaftVsDac7 / t.saftBruto) * 100 : 0;
+                const discrepanciaCritica = t.despesas - t.faturaPlataforma;
+                const percentagemOmissao = t.despesas > 0 ? (discrepanciaCritica / t.despesas) * 100 : 0;
+                const ivaFalta = discrepanciaCritica * 0.23;
+                const ivaFalta6 = discrepanciaCritica * 0.06;
+                const agravamentoBrutoIRC = discrepanciaCritica;
+                const ircEstimado = discrepanciaCritica * 0.21;
+
+                if (!sys.analysis.crossings) sys.analysis.crossings = {};
+                sys.analysis.crossings.discrepanciaSaftVsDac7 = discrepanciaSaftVsDac7;
+                sys.analysis.crossings.percentagemSaftVsDac7 = percentagemSaftVsDac7;
+                sys.analysis.crossings.discrepanciaCritica = discrepanciaCritica;
+                sys.analysis.crossings.percentagemOmissao = percentagemOmissao;
+                sys.analysis.crossings.ivaFalta = ivaFalta;
+                sys.analysis.crossings.ivaFalta6 = ivaFalta6;
+                sys.analysis.crossings.agravamentoBrutoIRC = agravamentoBrutoIRC;
+                sys.analysis.crossings.ircEstimado = ircEstimado;
+                sys.analysis.crossings.btor = t.despesas;
+                sys.analysis.crossings.btf = t.faturaPlataforma;
+                sys.analysis.crossings.c1_delta = discrepanciaSaftVsDac7;
+                sys.analysis.crossings.c1_pct = percentagemSaftVsDac7;
+                sys.analysis.crossings.c2_delta = discrepanciaCritica;
+                sys.analysis.crossings.c2_pct = percentagemOmissao;
+
+                if (!sys.client && data.client) {
+                    sys.client = { name: data.client.name, nif: data.client.nif, platform: data.client.platform };
+                    const clientStatus = document.getElementById('clientStatusFixed');
+                    if (clientStatus) {
+                        clientStatus.style.display = 'flex';
+                        const nameSpan = document.getElementById('clientNameDisplayFixed');
+                        const nifSpan = document.getElementById('clientNifDisplayFixed');
+                        if (nameSpan) nameSpan.textContent = data.client.name;
+                        if (nifSpan) nifSpan.textContent = data.client.nif;
+                    }
+                    const nameInput = document.getElementById('clientNameFixed');
+                    const nifInput = document.getElementById('clientNIFFixed');
+                    if (nameInput) nameInput.value = data.client.name;
+                    if (nifInput) nifInput.value = data.client.nif;
+                }
+
+                const periodSelect = document.getElementById('periodoAnalise');
+                if (periodSelect) {
+                    periodSelect.value = '2s';
+                    if (typeof window.UNIFEDSystem !== 'undefined') window.UNIFEDSystem.selectedPeriodo = '2s';
+                    const changeEvent = new Event('change', { bubbles: true });
+                    periodSelect.dispatchEvent(changeEvent);
+                }
+                const trimestralContainer = document.getElementById('trimestralSelectorContainer');
+                if (trimestralContainer) trimestralContainer.style.display = 'none';
+
+                const evidenceHashes = sys.analysis.evidenceIntegrity
+                    .map(ev => ev.hash)
+                    .filter(h => h && h.length === 64)
+                    .sort();
+                const binaryConcat = evidenceHashes.join('') + JSON.stringify({ client: sys.client, totals: t }) + sys.sessionId;
+                const masterHashFull = CryptoJS.SHA256(binaryConcat).toString().toUpperCase();
+                sys.masterHash = masterHashFull;
+                window.activeForensicSession = { sessionId: sys.sessionId, masterHash: masterHashFull };
+
+                console.log('[UNIFED] Evidências simuladas carregadas. Total: 15 ficheiros.');
+                resolve(true);
+            } catch (err) {
+                console.error('[UNIFED] Erro na simulação de evidências:', err);
+                reject(err);
             }
-
-            const periodSelect = document.getElementById('periodoAnalise');
-            if (periodSelect) {
-                periodSelect.value = '2s';
-                if (typeof window.UNIFEDSystem !== 'undefined') window.UNIFEDSystem.selectedPeriodo = '2s';
-                const changeEvent = new Event('change', { bubbles: true });
-                periodSelect.dispatchEvent(changeEvent);
-            }
-            const trimestralContainer = document.getElementById('trimestralSelectorContainer');
-            if (trimestralContainer) trimestralContainer.style.display = 'none';
-
-            const evidenceHashes = sys.analysis.evidenceIntegrity
-                .map(ev => ev.hash)
-                .filter(h => h && h.length === 64)
-                .sort();
-            const binaryConcat = evidenceHashes.join('') + JSON.stringify({ client: sys.client, totals: t }) + sys.sessionId;
-            const masterHashFull = await window.generateForensicHash(binaryConcat);
-            sys.masterHash = masterHashFull;
-            window.activeForensicSession = { sessionId: sys.sessionId, masterHash: masterHashFull };
-
-            console.log('[UNIFED] Evidências simuladas carregadas. Total: 15 ficheiros.');
-            return true;
-        } catch (err) {
-            console.error('[UNIFED] Erro na simulação de evidências:', err);
-            throw err;
-        }
+        });
     }
 
     function _updateEvidenceCountersAndShow() {
@@ -900,7 +867,8 @@
     if (!window.UNIFED_INTERNAL) return;
     const { data, fmt, set, syncMetrics, renderMatrix } = window.UNIFED_INTERNAL;
     const {
-        injectAuxiliaryBoxesCSS, injectMacroCard, updateAuxiliaryUI, forcePlatformReadOnly,
+        injectAuxiliaryBoxesCSS, hideDiscrepancyChart, hideNexusForecast,
+        injectMacroCard, updateAuxiliaryUI, forcePlatformReadOnly,
         removeZeroDac7Kpis, simulateEvidenceUpload, updateEvidenceCountersAndShow
     } = window.UNIFED_INTERNAL;
 
@@ -917,11 +885,8 @@
                 return;
             }
         }
-        const subjectHeader = document.getElementById('pure-subject-header');
-        if (subjectHeader) {
-            subjectHeader.style.display = 'block';
-            console.log('[UNIFED] Bloco de identificação do sujeito passivo revelado.');
-        }
+        block.style.display = 'flex';
+        console.log('[UNIFED] Bloco de identificação do sujeito passivo revelado.');
     }
 
     function waitForPureDashboard() {
@@ -944,30 +909,18 @@
     function initializeCoreDashboard() {
         waitForPureDashboard().then(() => {
             setTimeout(() => {
-                if (typeof window.injectAuxiliaryHelperBoxes === 'function') {
-                    window.injectAuxiliaryHelperBoxes();
-                }
                 if (typeof syncMetrics === 'function') syncMetrics();
                 if (typeof renderMatrix === 'function') renderMatrix();
                 if (typeof injectMacroCard === 'function') injectMacroCard();
                 if (typeof injectAuxiliaryBoxesCSS === 'function') injectAuxiliaryBoxesCSS();
+                if (typeof hideDiscrepancyChart === 'function') hideDiscrepancyChart();
+                if (typeof hideNexusForecast === 'function') hideNexusForecast();
                 if (typeof forcePlatformReadOnly === 'function') forcePlatformReadOnly();
                 if (typeof removeZeroDac7Kpis === 'function') removeZeroDac7Kpis();
                 
                 if (document.getElementById('pureDashboard')) {
                     if (typeof updateAuxiliaryUI === 'function') updateAuxiliaryUI();
-                    document.querySelectorAll('.chart-section').forEach(section => {
-                        section.style.display = 'block';
-                        section.style.height = '400px';
-                    });
                 } else {
-                    if (typeof Chart === 'undefined') {
-                        const chartSections = document.querySelectorAll('.chart-section');
-                        chartSections.forEach(section => {
-                            section.style.display = 'none';
-                        });
-                        console.warn('[UNIFED] Chart.js não disponível – secções de gráfico ocultadas.');
-                    }
                     console.info('[UNIFED] Aguardando renderização do painel para sincronização auxiliar.');
                 }
                 
@@ -982,24 +935,12 @@
         try {
             await simulateEvidenceUpload();
             updateEvidenceCountersAndShow();
-
-            // Garantir que as boxes auxiliares estão injetadas
-            if (typeof window.injectAuxiliaryHelperBoxes === 'function') {
-                window.injectAuxiliaryHelperBoxes();
-            }
-            if (typeof updateAuxiliaryUI === 'function') updateAuxiliaryUI();
-
             if (window.UNIFEDSystem && window.UNIFEDSystem.masterHash) {
                 const hashEl = document.getElementById('masterHashValue');
                 if (hashEl) hashEl.textContent = window.UNIFEDSystem.masterHash;
                 if (typeof generateQRCode === 'function') generateQRCode();
             }
             showClientIdentificationBlock();
-            
-            // Forçar renderização dos gráficos
-            if (typeof window.renderChart === 'function') window.renderChart();
-            if (typeof window.renderDiscrepancyChart === 'function') window.renderDiscrepancyChart();
-            
             console.log('[UNIFED] ✅ Evidências carregadas e secção revelada.');
         } catch (err) {
             console.error('[UNIFED] Falha ao carregar evidências:', err);
@@ -1050,34 +991,24 @@
         console.log('[UNIFED] Listener associado ao botão "CASO REAL ANONIMIZADO".');
     }
 
-    // Geração de QR Code com verificação de visibilidade do wrapper
     function generateQRCode() {
         const container = document.getElementById('qrcodeContainer');
         if (!container) return;
-        
-        const checkVisibility = setInterval(() => {
-            const wrapper = document.getElementById('pureDashboardWrapper');
-            if (wrapper && (wrapper.style.display === 'block' || getComputedStyle(wrapper).opacity === '1')) {
-                clearInterval(checkVisibility);
-                container.innerHTML = '';
-                const hashFull = window.UNIFEDSystem?.masterHash || 'HASH_INDISPONIVEL';
-                const sessionShort = window.UNIFEDSystem?.sessionId ? window.UNIFEDSystem.sessionId.substring(0, 16) : 'N/A';
-                const qrData = `UNIFED|${sessionShort}|${hashFull}`;
-                if (typeof QRCode !== 'undefined') {
-                    new QRCode(container, {
-                        text: qrData,
-                        width: 75,
-                        height: 75,
-                        colorDark: "#000000",
-                        colorLight: "#ffffff",
-                        correctLevel: QRCode.CorrectLevel.L
-                    });
-                }
-                container.setAttribute('data-tooltip', 'Clique para verificar a cadeia de custódia completa');
-                logAudit('QR Code gerado após confirmação de visibilidade do wrapper.', 'info');
-            }
-        }, 100);
-        setTimeout(() => clearInterval(checkVisibility), 5000);
+        container.innerHTML = '';
+        const hashFull = window.UNIFEDSystem?.masterHash || 'HASH_INDISPONIVEL';
+        const sessionShort = window.UNIFEDSystem?.sessionId ? window.UNIFEDSystem.sessionId.substring(0, 16) : 'N/A';
+        const qrData = `UNIFED|${sessionShort}|${hashFull}`;
+        if (typeof QRCode !== 'undefined') {
+            new QRCode(container, {
+                text: qrData,
+                width: 75,
+                height: 75,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.L
+            });
+        }
+        container.setAttribute('data-tooltip', 'Clique para verificar a cadeia de custódia completa');
     }
     window.generateQRCode = generateQRCode;
 
@@ -1091,6 +1022,7 @@
         }).then(() => {
             initializeCoreDashboard();
             setupRealCaseButton();
+            // [CORREÇÃO CIRÚRGICA]: Removida a linha que ocultava a consola de identificação
             console.log('[UNIFED] ✅ Aplicação pronta. Clique em "CASO REAL ANONIMIZADO" para carregar as evidências.');
         }).catch(err => {
             console.error('[UNIFED] Erro na inicialização:', err);

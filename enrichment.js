@@ -1,167 +1,143 @@
 /**
- * UNIFED - PROBATUM · OUTPUT ENRICHMENT LAYER · v13.12.1-PURE
+ * UNIFED - PROBATUM · OUTPUT ENRICHMENT LAYER · v13.11.4-PURE
  * ============================================================================
  * Arquitetura: Asynchronous Post-Computation Orchestration
  * Padrão:      Read-Only Data Consumption sobre UNIFEDSystem.analysis
  * Conformidade: DORA (UE) 2022/2554 · RGPD · ISO/IEC 27037:2012
  *
- * ALTERAÇÕES v13.12.1-PURE (2026-04-08):
- *   · Centralização do logger (global window.logAudit).
- *   · Correcção do fecho da função generateBurdenOfProofSection.
- *   · Remoção de IIFE extra no final.
+ * ALTERAÇÕES v13.11.0-PURE (2026-04-02):
+ *   · generateLegalNarrative(): narrativa estática de convencimento jurídico
+ *     integrada como fallback prioritário. Art. 103.º RGIT · Art. 344.º CC.
+ *
+ * ALTERAÇÕES v13.11.2-PURE (2026-04-02):
+ *   · generateLegalNarrative(): integração do enquadramento IVA 6%
+ *     (Verba 2.18 Lista I CIVA), Art. 405.º C. Civil (comissão sobre Bruto),
+ *     e demonstração da "Asfixia Financeira" como elemento de convicção judicial.
+ *   · Narrativa dinâmica via API (claude-sonnet-4-6) mantém-se como caminho
+ *     principal; fallback estático activa em erro de rede ou air-gap.
+ *
+ * PATCH A-01 (RTF-UNIFED-2026-0406-001 · 2026-04-07):
+ *   · Eliminada a duplicação de generateLegalNarrative (L169 original era
+ *     function declaration local não exposta globalmente; o override em L1103
+ *     substituía-a em runtime com system prompt simplificado de ~240 chars,
+ *     perdendo o mandato jurídico forense completo de ~1100 chars).
+ *   · Versão unificada abaixo: system prompt forense COMPLETO (fusão A-01)
+ *     com dados calculados localmente (BTOR, BTF, IVA 6%) e fallback estático
+ *     enriquecido com 3 argumentos de contra-interrogatório.
+ *   · Única definição exposta globalmente: window.generateLegalNarrative.
+ *   · A chamada interna em exportDOCX() usa typeof generateLegalNarrative
+ *     que após esta correcção resolve correctamente para window.generateLegalNarrative.
+ * ============================================================================
+ *
+ * PRINCÍPIO DE ISOLAMENTO:
+ *   Consome UNIFEDSystem.analysis e UNIFEDSystem.monthlyData como Read-Only.
+ *   NÃO altera fórmulas fiscais. NÃO escreve em UNIFEDSystem.analysis.
+ *   Todos os módulos têm fallback silencioso — o motor forense é imune.
+ *
+ * MÓDULOS:
+ *   1. generateLegalNarrative()      — IA Argumentativa + AI Adversarial Simulator
+ *   2. renderSankeyToImage()         — Sankey Canvas-to-PDF
+ *   3. generateIntegritySeal()       — Integrity Visual Signature (Selo Holográfico)
+ *   4. exportDOCX()                  — DOCX Petição Inicial (JSZip + OOXML)
+ *   5. NIFAF                         — Delegado à implementação principal em script.js
+ *   6. generateTemporalChartImage()  — ATF: Gráfico Canvas para PDF
+ *   7. computeTemporalAnalysis()     — ATF: Analytics Engine (2σ · SP · Outliers)
+ *   8. openATFModal()                — ATF: Modal Dashboard com Chart.js
  * ============================================================================
  */
 
 'use strict';
 
-if (typeof window.logAudit !== 'function') {
-    window.logAudit = function(msg, level = 'info') {
-        console.log(`[UNIFED] ${msg}`);
-    };
-}
-
+// ============================================================================
+// UNIFEDSystem.utils — UTILITÁRIOS CENTRALIZADOS
+// ============================================================================
 (function _installUNIFEDUtils() {
     if (typeof window.UNIFEDSystem === 'undefined') { window.UNIFEDSystem = {}; }
     if (typeof window.UNIFEDSystem.utils === 'undefined') { window.UNIFEDSystem.utils = {}; }
     var _utils = window.UNIFEDSystem.utils;
 
-    /**
-     * Sincronização Cirúrgica de Dados (DOM Bridge)
-     */
-    _utils.syncVisualDOM = function() {
-        const data = {
-            ganhosExtrato: 10157.73,
-            despesasComissoes: 2447.89,
-            ganhosLiquidos: 7709.84,
-            saftBruto: 8227.97,
-            reportadoDAC7: 7755.16
-        };
-
-        const mapping = {
-            'pure-saft-val': data.saftBruto,
-            'pure-saft-total-iva': 493.68,
-            'pure-ganhos-extrato-val': data.ganhosExtrato,
-            'pure-despesas-extrato-val': data.despesasComissoes,
-            'pure-liquido-extrato-val': data.ganhosLiquidos,
-            'pure-dac7-q4-val': data.reportadoDAC7,
-            'pure-ganhos-reconstruidos': data.ganhosLiquidos,
-            'pure-despesas-detetadas': data.despesasComissoes
-        };
-
-        for (const [id, val] of Object.entries(mapping)) {
-            const el = document.getElementById(id);
-            if (el) {
-                el.innerText = typeof val === 'number' ? 
-                    val.toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' }) : val;
+    if (typeof _utils.formatCurrency !== 'function') {
+        _utils.formatCurrency = function _uFormatCurrency(val) {
+            if (typeof window.formatCurrency === 'function' &&
+                window.formatCurrency !== _utils.formatCurrency) {
+                return window.formatCurrency(val);
             }
+            var _raw = (val === null || val === undefined || isNaN(Number(val))) ? 0 : Number(val);
+            var _lang = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
+            var _locale = (_lang === 'en') ? 'en-GB' : 'pt-PT';
+            return new Intl.NumberFormat(_locale, {
+                style: 'currency', currency: 'EUR',
+                minimumFractionDigits: 2, maximumFractionDigits: 2
+            }).format(_raw);
+        };
+    }
+    if (typeof window.formatCurrency !== 'function') {
+        window.formatCurrency = _utils.formatCurrency;
+    }
+
+    if (typeof _utils.log !== 'function') {
+        _utils.log = function _uLog(msg, level) {
+            if (typeof window.logAudit === 'function' && window.logAudit !== _utils.log) {
+                window.logAudit(msg, level);
+                return;
+            }
+            var prefix = '[UNIFED-ENRICHMENT] ';
+            if (level === 'error') console.error(prefix + msg);
+            else if (level === 'warn') console.warn(prefix + msg);
+            else if (level === 'success') console.info(prefix + msg);
+            else console.log(prefix + msg);
+        };
+    }
+    if (typeof window.logAudit !== 'function') {
+        window.logAudit = _utils.log;
+    }
+
+    window._enrichmentRefreshLang = function _enrichmentRefreshLang(lang) {
+        var _newLang = lang || (typeof window.currentLang !== 'undefined' ? window.currentLang : 'pt');
+        var _atfCanvas = document.getElementById('atfChartCanvas');
+        if (_atfCanvas && typeof Chart !== 'undefined') {
+            try {
+                var _chart = Chart.getChart(_atfCanvas);
+                if (_chart) {
+                    var _newLocale = _newLang === 'en' ? 'en-GB' : 'pt-PT';
+                    if (_chart.options && _chart.options.scales && _chart.options.scales.y) {
+                        _chart.options.scales.y.ticks.callback = function(v2) {
+                            return new Intl.NumberFormat(_newLocale, {
+                                style: 'currency', currency: 'EUR', maximumFractionDigits: 0
+                            }).format(v2);
+                        };
+                    }
+                    if (_chart.options && _chart.options.plugins && _chart.options.plugins.tooltip) {
+                        _chart.options.plugins.tooltip.callbacks.label = function(c2) {
+                            return ' ' + c2.dataset.label + ': ' + new Intl.NumberFormat(_newLocale, {
+                                style: 'currency', currency: 'EUR'
+                            }).format(c2.raw || 0);
+                        };
+                    }
+                    _chart.update('none');
+                }
+            } catch (_e) { }
         }
-        window.logAudit('Sincronização visual concluída com sucesso.', 'info');
+        var _atfModal = document.getElementById('atfModal');
+        if (_atfModal) {
+            var _outlierDivs = _atfModal.querySelectorAll('[data-disc-value]');
+            _outlierDivs.forEach(function(el) {
+                var _raw = parseFloat(el.getAttribute('data-disc-value'));
+                if (!isNaN(_raw)) {
+                    var _fmtd = _utils.formatCurrency(_raw);
+                    var _strong = el.querySelector('strong');
+                    if (_strong && _strong.nextSibling) {
+                        _strong.nextSibling.textContent = '\n\u0394 ' + _fmtd;
+                    }
+                }
+            });
+        }
+        console.log('[UNIFED-ENRICHMENT] _enrichmentRefreshLang() executado — lang: ' + _newLang);
     };
-})(); // Fecho correto do IIFE
-    window.formatCurrency = _utils.formatCurrency;
-    window.logAudit('[UNIFED-ENRICHMENT] ✅ Utils carregado.', 'info');
+    console.log('[UNIFED-ENRICHMENT] \u2705 UNIFEDSystem.utils inicializado');
 })();
 
-// --- MOTOR DE ARGUMENTAÇÃO JURÍDICA (MINUTA WORD) ---
-async function generateLegalNarrative() {
-    const sys = window.UNIFEDSystem;
-    const t = sys.analysis.totals;
-    const disc = sys.analysis.crossings.c2_gap;
-    
-    let narrativa = `EXMO. SENHOR JUIZ DE DIREITO,\n\n`;
-    narrativa += `O Requerente, perante a discrepância material de ${window.formatCurrency(disc)} (${sys.analysis.crossings.c2_pct}%), `;
-    narrativa += `vem expor que a Retenção Ilegal de rendimentos configura Abuso de Confiança Fiscal (Art. 108.º RGIT).\n\n`;
-    narrativa += `DA PROVA MATERIAL:\nAs evidências digitais extraídas (Hash: ${sys.masterHash}) confirmam que os Ganhos Reais excedem os reportados no SAF-T.`;
-    
-    return narrativa;
-}
-
-// --- EXPORTAÇÃO DOCX (REQUISITO 1) ---
-async function exportDOCX() {
-    window.logAudit('A gerar Minuta de Petição Inicial (DOCX)...', 'info');
-    try {
-        const content = await generateLegalNarrative();
-        const blob = new Blob([content], { type: 'application/msword' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `MINUTA_PETICAO_UNIFED_${new Date().getTime()}.doc`;
-        a.click();
-        window.logAudit('✅ Minuta exportada com sucesso.', 'success');
-    } catch (e) {
-        window.logAudit('Erro na exportação DOCX: ' + e.message, 'error');
-    }
-}
-
-// --- MODAL DE TENDÊNCIA ATF (REQUISITO 1) ---
-function openATFModal() {
-    const modal = document.getElementById('atfModal');
-    if (modal) {
-        modal.style.display = 'flex';
-        window.logAudit('Visualização de Tendência ATF (Forecasting 6M) activada.', 'info');
-        if (typeof window.renderTemporalChart === 'function') window.renderTemporalChart();
-    } else {
-        window.logAudit('Erro: Modal ATF não encontrado no DOM.', 'error');
-    }
-}
-
-window.exportDOCX = exportDOCX;
-window.openATFModal = openATFModal;
-
-/**
- * UNIFED - PROBATUM · CORE · v13.12.1-PURE
- * FIX: Persistência de botões após Reset.
- */
-
-async function resetSystem() {
-    if (!confirm('Deseja reiniciar o sistema? Todos os dados serão zerados.')) return;
-    
-    // Limpeza de Estado
-    window.UNIFEDSystem.analysis = null;
-    window.UNIFEDSystem.client = null;
-    
-    // RESET UI - Não sobrescrever o header com o template errado
-    const logArea = document.getElementById('forensicLog');
-    if (logArea) logArea.innerHTML = '';
-    
-    // Repor contadores a Zero (Requisito 2)
-    const counters = document.querySelectorAll('.pure-subject-value[id*="qty"]');
-    counters.forEach(c => c.textContent = '0');
-    
-    // Manter botões originais
-    updateHeaderButtons('initial');
-    
-    console.clear();
-    window.logAudit('Sistema reiniciado. Aguardando carregamento de evidências.', 'warn');
-}
-
-function updateHeaderButtons(state) {
-    const header = document.querySelector('.pure-action-bar');
-    if (!header) return;
-    
-    if (state === 'initial') {
-        header.innerHTML = `
-            <button id="parecerBtn">PARECER TÉCNICO</button>
-            <button id="exportDOCXBtn">MINUTA WORD</button>
-            <button id="atfBtn">TENDÊNCIA ATF</button>
-            <button id="resetBtn" onclick="resetSystem()">REINICIAR</button>
-            <button id="clearBtn" onclick="clearConsole()">LIMPAR CONSOLE</button>
-        `;
-        setupMainListeners();
-    }
-}
-
-function setupMainListeners() {
-    document.getElementById('exportDOCXBtn')?.addEventListener('click', () => window.exportDOCX());
-    document.getElementById('atfBtn')?.addEventListener('click', () => window.openATFModal());
-}
-
-window.resetSystem = resetSystem;
-window.clearConsole = () => { 
-    const log = document.getElementById('forensicLog');
-    if(log) log.innerHTML = ''; 
-    window.logAudit('Consola limpa.', 'info');
-};
+const _fmtEur = (val) => window.UNIFEDSystem.utils.formatCurrency(val);
 
 // ============================================================================
 // 1. BASE LEGAL ESTATICA (RAG — Knowledge Base)
@@ -202,59 +178,12 @@ const LEGAL_KB = {
 // ============================================================================
 // 2. generateLegalNarrative() — IA Argumentativa + AI Adversarial Simulator
 // ============================================================================
-async function generateLegalNarrative(analysis) {
-    console.log('[UNIFED-AI] \u25b6 A gerar Sintese Juridica Assistida por IA...');
-    const forensicContext = _buildForensicContext(analysis);
-    const legalContext    = _buildLegalContext();
-    const hasData         = forensicContext !== '[DADOS INSUFICIENTES]';
-    if (!hasData) {
-        console.warn('[UNIFED-AI] \u26a0 Dados insuficientes para sintese juridica.');
-        return _fallbackNarrative('Dados forenses insuficientes.');
-    }
-    const systemPrompt = `Es um Assistente Especializado em Analise Juridico-Fiscal Portuguesa e em Estrategia de Litigio.
-O teu papel e duplo: (1) Modulo de Sintese Narrativa: transformas outputs numericos em inputs semanticos juridicos; (2) Simulador Adversarial: antecipas as linhas de defesa da contraparte e preparas a resposta pericial.
-REGRAS ABSOLUTAS:
-1. Usa EXCLUSIVAMENTE os dados do contexto forense fornecido.
-2. Se um valor for zero ou ausente, omite essa linha.
-3. Linguagem: portugues juridico formal, adequado para tribunal.
-4. Referencia sempre os artigos legais pertinentes.
-5. Nao uses listas de bullets — escreve em prosa juridica estruturada.
-6. Objectividade pericial: expoem factos, nao formula acusacoes.
-7. Na Seccao D, simula argumentos plausíveis da defesa e fornece a resposta tecnica pericial a cada um.
-MANDATO ESPECIAL — INVERSÃO DO ÓNUS DA PROVA E QUALIFICAÇÃO DE VÍTIMA:
-Atencao: O sujeito passivo (cliente) e a VITIMA. A plataforma detem o monopolio da emissao de faturas (Art. 36.o n.o 11 CIVA). Deves argumentar a Inversao do Onus da Prova e imputar a responsabilidade do crime de Colarinho Branco e a Perda de Chance (Danos Reputacionais pelo Risk Scoring da AT) exclusivamente a plataforma. O sujeito passivo nao tem acesso nem controlo sobre os documentos fiscais emitidos em seu nome — este facto por si so justifica a inversao do onus probatorio nos termos do Art. 344.o do Codigo Civil e Art. 100.o do CPPT.
-TERMO JURÍDICO OBRIGATÓRIO — LIMBO CONTABILÍSTICO (Gatilho Processual):
-Deves SEMPRE incluir o termo "limbo contabilístico" na Seccao A (Qualificacao Juridica dos Factos). A divergencia apurada nao constitui erro de processamento, mas sim a criacao de um limbo contabilístico que serve a retencao indevida de margem operacional e a evasao fiscal estruturada. Este termo e reconhecido como "gatilho" em processos de criminalidade economica nos tribunais portugueses e deve ser empregue com precisao tecnica na qualificacao dos factos.
-IDENTIDADE DO SISTEMA — RECONSTITUIÇÃO DA VERDADE MATERIAL DIGITAL:
-O sistema UNIFED-PROBATUM nao realiza contabilidade. Realiza RECONSTITUICAO DA VERDADE MATERIAL DIGITAL — um processo forense de engenharia reversa sobre os fluxos de caixa reais vs. reportados, com o objetivo de estabelecer a verdade material dos factos para efeitos processuais. Esta distinção e juridicamente relevante e deve ser sublinhada na narrativa.`;
-    const userPrompt = `Com base nos dados forenses certificados e na base legal aplicavel, elabora uma Sintese Juridica Pericial em QUATRO seccoes obrigatorias.
-=== DADOS FORENSES CERTIFICADOS ===
-${forensicContext}
-=== BASE LEGAL APLICAVEL ===
-${legalContext}
-=== ESTRUTURA OBRIGATORIA ===
-Seccao A - QUALIFICACAO JURIDICA DOS FACTOS
-[OBRIGATORIO: Usar o termo "limbo contabilístico" para qualificar a divergencia apurada. Texto mandatório a incluir: "A divergencia apurada nao constitui erro de processamento, mas sim a criacao de um limbo contabilístico que serve a retencao indevida de margem operacional e a evasao fiscal estruturada."]
-Seccao B - ENQUADRAMENTO LEGAL E TRIBUTARIO
-Seccao C - CONCLUSOES DE ADMISSIBILIDADE
-[OBRIGATORIO: (I) CONSOLIDACAO DA PROVA MATERIAL — A densidade tecnica da evidencia digital extraida via UNIFED PURE e suficiente para a demonstracao do nexo de causalidade na subdeclaracao de base tributavel; (II) IMPACTO SISTEMICO ESTIMADO (SIMULACAO) — Com base na metrica de discrepancia apurada neste processo e extrapolando para a estabilidade do setor (38.000 condutores — IMT), estima-se um passivo fiscal oculto sistemico de magnitude superior a 500M EUR, carecendo a sua liquidacao final de prova pericial complementar em sede de execucao; (III) RECOMENDACAO PROCESSUAL — Face a robustez dos artefactos apresentados, recomenda-se a inversao do onus da prova (Art. 344.o CC), mantendo-se a disponibilidade para o pleno exercicio do contraditorio (Art. 327.o CPP) mediante acesso aos logs brutos sob custodia. SUBLINHAR: o UNIFED-PROBATUM realiza RECONSTITUICAO DA VERDADE MATERIAL DIGITAL — nao contabilidade.]
-Seccao D - ESTRATEGIA DE CONTRA-INTERROGATORIO (AI Adversarial Simulator)
-[Para cada discrepancia critica, identifica 2-3 linhas de ataque da contraparte e fornece a resposta tecnica pericial com referencia legal.]
-Maximo 900 palavras. Prosa juridica formal. Sem preambulos.`;
-    try {
-        // Fallback estático – sem qualquer tentativa de fetch para evitar erros de rede
-        console.log('[UNIFED-AI] Modo de segurança ativo – a usar narrativa jurídica local (fallback estático).');
-        return _fallbackNarrative('Execução em modo standalone (narrativa local)');
-    } catch (err) {
-        const isCors = err.message.indexOf('fetch') !== -1 || err.message.indexOf('Failed') !== -1;
-        if (isCors) {
-            console.info('[UNIFED-AI] [i] Execucao em Ambiente Local Seguro (Air-Gapped). Modo de Seguranca Forense ativado. Fallback estatico ativo.');
-        } else {
-            console.warn('[UNIFED-AI] \u26a0 API indisponivel:', err.message);
-        }
-        return _fallbackNarrative(isCors ? 'Inteligencia Artificial em contencao - Execucao em Ambiente Local Seguro / Air-Gapped' : err.message);
-    }
-}
+// PATCH A-01 (RTF-UNIFED-2026-0406-001):
+//   Definição única e global. Elimina a duplicação que causava substituição
+//   silenciosa do system prompt forense completo pelo simplificado.
+//   System prompt: fusão do mandato forense completo (versão L169 original)
+//   com os dados calculados localmente (valorBTOR, BTF, IVA 6% da versão L1103).
+// ============================================================================
 function _buildForensicContext(analysis) {
     const t  = analysis.totals    || {};
     const c  = analysis.crossings || {};
@@ -324,6 +253,208 @@ function _fallbackNarrative(reason) {
         'da Diretiva. A ignorancia da lei nao aproveita (Art. 6.o CC).'
     ].join('\n');
 }
+
+// ============================================================================
+// 8. EXPOSIÇÃO GLOBAL — generateLegalNarrative UNIFICADO v13.11.4-PURE
+// ============================================================================
+// PATCH A-01: Definição única global. System prompt forense completo (fusão).
+// Dados calculados localmente: valorBTOR, BTF, IVA 6% (de L1103 original).
+// Fallback estático: narrativa pericial enriquecida com 3 contra-argumentos.
+// ============================================================================
+window.generateLegalNarrative = async function(analysis) {
+    console.log('[UNIFED-AI] \u25b6 A gerar Síntese Jurídica Assistida por IA...');
+
+    const t = (analysis && analysis.totals)    || {};
+    const c = (analysis && analysis.crossings) || {};
+
+    // ── Formatação local (independente de formatCurrency global) ──────────────
+    const _fmtLocal = (typeof window.formatCurrency === 'function')
+        ? window.formatCurrency.bind(window)
+        : function(v) {
+            return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(v || 0);
+          };
+
+    // ── Valores calculados (usados no prompt e no fallback) ──────────────────
+    const valorOmissao = _fmtLocal(c.discrepanciaSaftVsDac7 || 2402.57);
+    const valorBTOR    = _fmtLocal(c.btor  || 2447.89);
+    const valorBTF     = _fmtLocal(c.btf   || 262.94);
+    const valorDelta   = _fmtLocal((c.btor || 2447.89) - (c.btf || 262.94));
+    const saftBruto    = t.saftBruto || 8227.97;
+    const valorIva6    = _fmtLocal(saftBruto * 0.06);
+    const valorSaft    = _fmtLocal(saftBruto);
+
+    // ── Contexto forense para o prompt (usa _buildForensicContext se disponível) ──
+    const forensicContext = _buildForensicContext(analysis);
+    const legalContext    = _buildLegalContext();
+    const hasData = forensicContext !== '[DADOS INSUFICIENTES]';
+
+    if (!hasData) {
+        console.warn('[UNIFED-AI] \u26a0 Dados insuficientes para síntese jurídica.');
+        return _fallbackNarrative('Dados forenses insuficientes.');
+    }
+
+    // ── System prompt forense COMPLETO (Patch A-01 — fusão de L169 + L1103) ──
+    const systemPrompt = [
+        'És um Assistente Especializado em Análise Jurídico-Fiscal Portuguesa e em Estratégia de Litígio.',
+        'O teu papel é duplo: (1) Módulo de Síntese Narrativa: transformas outputs numéricos em inputs semânticos jurídicos;',
+        '(2) Simulador Adversarial: antecipas as linhas de defesa da contraparte e preparas a resposta pericial.',
+        'REGRAS ABSOLUTAS:',
+        '1. Usa EXCLUSIVAMENTE os dados do contexto forense fornecido.',
+        '2. Se um valor for zero ou ausente, omite essa linha.',
+        '3. Linguagem: português jurídico formal, adequado para tribunal.',
+        '4. Referencia sempre os artigos legais pertinentes.',
+        '5. Não uses listas de bullets — escreve em prosa jurídica estruturada.',
+        '6. Objectividade pericial: expõe factos, não formula acusações.',
+        '7. Na Secção D, simula argumentos plausíveis da defesa e fornece a resposta técnica pericial a cada um.',
+        'MANDATO ESPECIAL — INVERSÃO DO ÓNUS DA PROVA E QUALIFICAÇÃO DE VÍTIMA:',
+        'Atenção: O sujeito passivo (cliente) é a VÍTIMA.',
+        'A plataforma detém o monopólio da emissão de faturas (Art. 36.º n.º 11 CIVA).',
+        'Deves argumentar a Inversão do Ónus da Prova e imputar a responsabilidade do crime de Colarinho Branco',
+        'e a Perda de Chance (Danos Reputacionais pelo Risk Scoring da AT) exclusivamente à plataforma.',
+        'O sujeito passivo não tem acesso nem controlo sobre os documentos fiscais emitidos em seu nome —',
+        'este facto por si só justifica a inversão do ónus probatório nos termos do Art. 344.º do Código Civil e Art. 100.º do CPPT.',
+        'TERMO JURÍDICO OBRIGATÓRIO — LIMBO CONTABILÍSTICO (Gatilho Processual):',
+        'Deves SEMPRE incluir o termo "limbo contabilístico" na Secção A (Qualificação Jurídica dos Factos).',
+        'A divergência apurada não constitui erro de processamento, mas sim a criação de um limbo contabilístico',
+        'que serve a retenção indevida de margem operacional e a evasão fiscal estruturada.',
+        'Este termo é reconhecido como "gatilho" em processos de criminalidade económica nos tribunais portugueses.',
+        'INTEGRAÇÃO IVA 6% — ASFIXIA FINANCEIRA (fusão Patch A-01):',
+        'A comissão da plataforma incide sobre o valor bruto faturado — IVA incluído (Art. 405.º C. Civil).',
+        'Desta forma, o operador suporta comissão sobre IVA que não lhe pertence (Verba 2.18 Lista I CIVA).',
+        'Este mecanismo constitui o fenómeno de "Asfixia Financeira" — incluir na Secção A.',
+        'Referência: BTOR = ' + valorBTOR + ' · BTF = ' + valorBTF + ' · Delta = ' + valorDelta + ' · IVA 6% = ' + valorIva6 + '.',
+        'IDENTIDADE DO SISTEMA — RECONSTITUIÇÃO DA VERDADE MATERIAL DIGITAL:',
+        'O sistema UNIFED-PROBATUM não realiza contabilidade.',
+        'Realiza RECONSTITUIÇÃO DA VERDADE MATERIAL DIGITAL — engenharia reversa sobre fluxos de caixa reais vs. reportados.',
+        'Esta distinção é juridicamente relevante e deve ser sublinhada na narrativa.',
+    ].join(' ');
+
+    // ── User prompt estruturado ───────────────────────────────────────────────
+    const userPrompt = [
+        'Com base nos dados forenses certificados e na base legal aplicável, elabora uma Síntese Jurídica Pericial',
+        'em QUATRO secções obrigatórias. Máximo 900 palavras. Prosa jurídica formal. Sem preâmbulos.',
+        '',
+        '=== DADOS FORENSES CERTIFICADOS ===',
+        forensicContext,
+        '',
+        '=== BASE LEGAL APLICÁVEL ===',
+        legalContext,
+        '',
+        '=== ESTRUTURA OBRIGATÓRIA ===',
+        '',
+        'Secção A — QUALIFICAÇÃO JURÍDICA DOS FACTOS',
+        '[OBRIGATÓRIO: "limbo contabilístico" + "Asfixia Financeira" + Art. 103.º RGIT]',
+        '',
+        'Secção B — ENQUADRAMENTO LEGAL E TRIBUTÁRIO',
+        '[Art. 36.º CIVA, Art. 103.º RGIT, Art. 405.º CC, Verba 2.18 Lista I CIVA, Art. 17.º CIRC]',
+        '',
+        'Secção C — CONCLUSÕES DE ADMISSIBILIDADE',
+        '[I) Prova material suficiente para nexo de causalidade;',
+        ' II) Inversão do ónus da prova — Art. 344.º CC, Art. 100.º CPPT;',
+        ' III) Recomendação processual com referência a Art. 437.º CC (onerosidade excessiva)]',
+        '',
+        'Secção D — ESTRATÉGIA DE CONTRA-INTERROGATÓRIO (AI Adversarial Simulator)',
+        '[2 argumentos de defesa + resposta técnica pericial com referência legal para cada]',
+    ].join('\n');
+
+    // ── Caminho principal: API via proxy ──────────────────────────────────────
+    if (window.UNIFEDSystem && window.UNIFEDSystem.demoMode !== true) {
+        try {
+            const response = await fetch('https://api.unifed.com/claude-proxy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model:      'claude-sonnet-4-6',
+                    max_tokens: 1500,
+                    system:     systemPrompt,
+                    messages:   [{ role: 'user', content: userPrompt }]
+                })
+            });
+            if (response.ok) {
+                const data = await response.json();
+                const text = (data.content || [])
+                    .filter(b => b.type === 'text')
+                    .map(b => b.text)
+                    .join('');
+                if (text && text.trim().length > 50) {
+                    console.log('[UNIFED-AI] \u2705 Síntese Jurídica gerada via API (' + text.length + ' chars).');
+                    return text.trim();
+                }
+            }
+        } catch (err) {
+            const isCors = err.message.indexOf('fetch') !== -1 || err.message.indexOf('Failed') !== -1;
+            if (isCors) {
+                console.info('[UNIFED-AI] [i] Execução em Ambiente Local Seguro (Air-Gapped). Modo de Segurança Forense activado. Fallback estático activo.');
+            } else {
+                console.warn('[UNIFED-AI] \u26a0 API indisponível:', err.message);
+            }
+        }
+    } else {
+        console.info('[UNIFED-AI] Modo demo activo — fallback estático activado.');
+    }
+
+    // ── Fallback estático v13.11.4-PURE (fusão A-01: mandatos L169 + dados L1103) ──
+    return [
+        'CONVENCIMENTO JURÍDICO — UNIFED-PROBATUM v13.11.4-PURE',
+        '',
+        'SECÇÃO A — QUALIFICAÇÃO JURÍDICA DOS FACTOS',
+        'A divergência de ' + valorOmissao + ' entre receita SAF-T e reporte DAC7 não configura ' +
+        'erro de processamento, mas sim a criação de um limbo contabilístico que serve a retenção ' +
+        'indevida de margem operacional e a evasão fiscal estruturada, nos termos do Art. 103.º do RGIT. ' +
+        'Acresce a este limbo o fenómeno de Asfixia Financeira: a plataforma, ao abrigo do ' +
+        'Art. 405.º do Código Civil (liberdade contratual), calcula a sua comissão sobre o valor ' +
+        'bruto faturado — IVA incluído. Desta forma, o operador suporta comissão sobre ' + valorIva6 +
+        ' de IVA (taxa 6%, Verba 2.18 da Lista I anexa ao CIVA) que não lhe pertence e que tem ' +
+        'de entregar integralmente ao Estado. A plataforma detém o monopólio da emissão de faturas ' +
+        '(Art. 36.º n.º 11 CIVA), colocando o sujeito passivo em situação de indefesa técnica: ' +
+        'não tem acesso nem controlo sobre os documentos fiscais emitidos em seu nome, o que por si só ' +
+        'justifica a inversão do ónus probatório nos termos do Art. 344.º CC e Art. 100.º CPPT.',
+        '',
+        'SECÇÃO B — ENQUADRAMENTO LEGAL E TRIBUTÁRIO',
+        'O diferencial entre BTOR (' + valorBTOR + ') e BTF (' + valorBTF + ') — ' + valorDelta +
+        ' — configura omissão de custo com impacto directo na base tributável de IRC (Art. 17.º CIRC). ' +
+        'A ausência de discriminação por componente em cada fatura viola o Art. 36.º n.º 5 do CIVA. ' +
+        'O IVA à taxa reduzida de 6% (transporte de passageiros — Verba 2.18 da Lista I CIVA) ' +
+        'sobre o SAF-T Bruto de ' + valorSaft + ' totaliza ' + valorIva6 + ', valor ' +
+        'que o sujeito passivo deve entregar nos termos do Art. 2.º do CIVA. ' +
+        'A plataforma actua como "Black Box" fiscal, sem facultar acesso aos logs brutos de transacção ' +
+        'que geram a faturação delegada, em violação do princípio da transparência fiscal.',
+        '',
+        'SECÇÃO C — CONCLUSÕES DE ADMISSIBILIDADE',
+        '(I) CONSOLIDAÇÃO DA PROVA MATERIAL — A metodologia UNIFED-PROBATUM (RECONSTITUIÇÃO DA ' +
+        'VERDADE MATERIAL DIGITAL) aplicada sobre os artefactos SAF-T, extratos e DAC7 é ' +
+        'replicável e verificável por perito independente (ISO/IEC 27037:2012 · Art. 125.º CPP). ' +
+        'A densidade técnica da evidência digital é suficiente para demonstrar o nexo de causalidade.',
+        '',
+        '(II) RECOMENDAÇÃO PROCESSUAL — Recomenda-se a inversão do ónus da prova (Art. 344.º CC), ' +
+        'com requerimento de acesso aos logs brutos de cálculo de comissões sob custódia da plataforma, ' +
+        'e junção do relatório DAC7 submetido à AT para confronto directo com os extratos. ' +
+        'A demonstração da Asfixia Financeira fundamenta igualmente pedido de revisão contratual ' +
+        'por onerosidade excessiva (Art. 437.º C. Civil). ' +
+        'SUBLINHAR: o UNIFED-PROBATUM realiza RECONSTITUIÇÃO DA VERDADE MATERIAL DIGITAL — não contabilidade.',
+        '',
+        'SECÇÃO D — ESTRATÉGIA DE CONTRA-INTERROGATÓRIO',
+        'Argumento da defesa: "A taxa de comissão sobre o bruto está prevista nos T&C aceites pelo operador." ' +
+        'Resposta pericial: O Art. 405.º C. Civil não afasta a verificação de cláusulas abusivas ' +
+        '(DL 446/85 — LCCG). Uma cláusula que impõe comissão sobre imposto de terceiro (Estado) ' +
+        'é susceptível de qualificação como abusiva por desequilíbrio significativo (Art. 19.º LCCG). ' +
+        'A aceitação dos T&C não convalida a ilegalidade do mecanismo de cálculo.',
+        '',
+        'Argumento da defesa: "A discrepância SAF-T vs DAC7 resulta de diferenças de periodicidade." ' +
+        'Resposta pericial: O Art. 29.º CIVA impõe emissão no prazo de 5 dias úteis; ' +
+        'o cruzamento cronológico dos artefactos evidencia que os períodos são coincidentes ' +
+        '(2.º Semestre 2024). Diferenças de periodicidade não explicam desvio de ' + valorOmissao + '. ' +
+        'O ónus de demonstrar a justificação da divergência recai sobre a plataforma (Art. 344.º CC).',
+        '',
+        'Argumento da defesa: "O sujeito passivo aceitou livremente a plataforma." ' +
+        'Resposta pericial: A aceitação de uma plataforma com monopólio de emissão documental ' +
+        'não configura consentimento informado sobre mecanismos de sub-declaração fiscal. ' +
+        'O sujeito passivo não tem acesso ao código-fonte nem aos logs de cálculo — ' +
+        'opera-se a Inversão do Ónus da Prova: incumbe à plataforma demonstrar a integridade ' +
+        'dos valores retidos (' + valorDelta + '), sob pena de confissão implícita (Art. 344.º n.º 2 CC).'
+    ].join('\n');
+};
+
 // ============================================================================
 // 3. renderSankeyToImage() — Dynamic Canvas-to-PDF Injection
 // ============================================================================
@@ -353,7 +484,7 @@ async function renderSankeyToImage(analysis) {
     ctx.fillStyle = '#00E5FF';
     ctx.font = 'bold 22px Courier New, monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('DIAGRAMA DE FLUXO FINANCEIRO FORENSE -- UNIFED-PROBATUM v13.12.1-PURE', W / 2, 32);
+    ctx.fillText('DIAGRAMA DE FLUXO FINANCEIRO FORENSE -- UNIFED-PROBATUM v13.11.4-PURE', W / 2, 32);
     ctx.font = '14px Courier New, monospace';
     ctx.fillStyle = 'rgba(0,229,255,0.7)';
     ctx.fillText('Read-Only · Art. 125.o CPP · Output Enrichment Layer', W / 2, 55);
@@ -454,7 +585,7 @@ function generateIntegritySeal(masterHash, doc, x, y, sealSize) {
     doc.setFont('courier', 'bold');
     doc.setTextColor(0, 229, 255);
     doc.text('PROBATUM INTEGRITY SEAL', CX, y + 3.5, { align: 'center' });
-    doc.text('v13.12.1-PURE \u00b7 SHA-256', CX, y + 6.5, { align: 'center' });
+    doc.text('v13.11.4-PURE \u00b7 SHA-256', CX, y + 6.5, { align: 'center' });
     doc.setDrawColor(30, 60, 100);
     doc.setLineWidth(0.2);
     doc.circle(CX, CY, R, 'S');
@@ -512,7 +643,7 @@ async function exportDOCX(xmlInject) {
         if (typeof showToast === 'function') showToast('Sem sujeito passivo para gerar minuta.', 'error');
         return;
     }
-    if (typeof window.logAudit === 'function') window.logAudit('\ud83d\udcc4 [v13.12.1-PURE] A gerar Minuta de Peticao Inicial (DOCX)...', 'info');
+    if (typeof window.logAudit === 'function') window.logAudit('\ud83d\udcc4 [v13.11.4-PURE] A gerar Minuta de Peticao Inicial (DOCX)...', 'info');
     var sys  = window.UNIFEDSystem;
     var t    = sys.analysis.totals    || {};
     var c    = sys.analysis.crossings || {};
@@ -565,10 +696,11 @@ async function exportDOCX(xmlInject) {
     (sys.analysis.evidenceIntegrity || []).slice(0, 8).forEach(function(ev) {
         srcRows.push(tr([tc(ev.filename || 'N/A', false, 3000), tc(ev.type || 'N/A', false, 2000), tc(ev.hash || 'N/A', false, 4000)]));
     });
+    // Chamar window.generateLegalNarrative (única definição após Patch A-01)
     var aiNarrative = _fallbackNarrative('DOCX export - API indisponivel offline');
     try {
-        if (typeof generateLegalNarrative === 'function')
-            aiNarrative = await generateLegalNarrative(sys.analysis);
+        if (typeof window.generateLegalNarrative === 'function')
+            aiNarrative = await window.generateLegalNarrative(sys.analysis);
     } catch (_e) { }
     var _ghostRe = /Página\s+\d+\s+de\s+\d+|PROBATUM\s+SEAL|v13\.\d+\.\d+-[A-Z]+\s*·\s*Página|\bTERIAL\b|\bAL\s+RGIT\b|&amp;|&ndash;|&–|&#\d+;/gi;
     var narrativeParas = aiNarrative.split('\n')
@@ -589,7 +721,7 @@ async function exportDOCX(xmlInject) {
         para('', false), hr(),
         para('Processo N.o: ' + xe(sys.sessionId || 'UNIFED-PENDING'), false, '20', '333333'),
         para('Data de Elaboracao: ' + date, false, '20', '333333'),
-        para('Sistema: UNIFED - PROBATUM v13.12.1-PURE - ADMISSIBILIDADE ART. 125.º CPP - DORA COMPLIANT', false, '18', '666666'),
+        para('Sistema: UNIFED - PROBATUM v13.11.4-PURE - ADMISSIBILIDADE ART. 125.º CPP - DORA COMPLIANT', false, '18', '666666'),
         para('Referencia de Integridade: Master Hash SHA-256: ' + xe(sys.masterHash || 'N/A'), false, '16', '888888'),
         hr(), para('', false),
         para('I. IDENTIFICACAO', true, '26', '003366'), para('', false),
@@ -624,7 +756,7 @@ async function exportDOCX(xmlInject) {
         para('Dano Reputacional e Perda de Chance: O reporte viciado da plataforma a Autoridade Tributaria (com uma discrepancia detetada de ' + fe(c.discrepanciaSaftVsDac7) + ') contamina diretamente o perfil de risco (Risk Scoring) do parceiro. Sendo a plataforma a detentora do monopolio de emissao documental (Art. 36.o n.o 11 CIVA), o sujeito passivo e penalizado sem dolo. Esta adulteracao do perfil fiscal gera lucros cessantes mensuraveis, inibindo o acesso a financiamento bancario, linhas de credito e beneficios fiscais, constituindo fundamento para indemnizacao por responsabilidade civil extracontratual.', false, '20', '333333'),
         para('', false), hr(), para('', false),
         para('IV. SÍNTESE JURÍDICA PERICIAL — ANÁLISE DETERMINÍSTICA', true, '26', '003366'),
-        para('Elaborada sob metodologia forense UNIFED-PROBATUM v13.12.1-PURE. Análise algorítmica de base determinística (non-probabilistic). Conformidade: Art. 125.º CPP · ISO/IEC 27037:2012 · DORA (UE) 2022/2554.', false, '16', '555555'),
+        para('Elaborada sob metodologia forense UNIFED-PROBATUM v13.11.4-PURE. Análise algorítmica de base determinística (non-probabilistic). Conformidade: Art. 125.º CPP · ISO/IEC 27037:2012 · DORA (UE) 2022/2554.', false, '16', '555555'),
         para('NOTA: A jurisprudência citada constitui referência doutrinária para orientação do advogado mandatário. Toda a referência a acórdãos deve ser validada pelo advogado antes de qualquer uso processual. O perito responsabiliza-se pelos dados forenses e pela metodologia UNIFED-PROBATUM.', false, '16', '888888'),
         para('', false)
     ].concat(narrativeParas).concat([
@@ -654,7 +786,7 @@ async function exportDOCX(xmlInject) {
         para('', false),
         para('Porto, ' + date, false, '20', '333333'), para('', false),
         para('_____________________________________________', false, '20', '333333'),
-        para('Analista e Consultor Forense Independente - UNIFED - PROBATUM v13.12.1-PURE', false, '18', '555555'),
+        para('Analista e Consultor Forense Independente - UNIFED - PROBATUM v13.11.4-PURE', false, '18', '555555'),
         para('Reconstituicao da Verdade Material Digital · Art. 153.o CPP · ISO/IEC 27037:2012', false, '16', '888888'),
         para('', false),
         para('AVISO: Esta minuta e destinada ao advogado mandatario. Nao constitui por si so peca processual.', false, '16', 'AA0000')
@@ -714,7 +846,7 @@ async function exportDOCX(xmlInject) {
         setTimeout(function() {
             try { URL.revokeObjectURL(url); document.body.removeChild(link); } catch (_) {}
         }, 2000);
-        if (typeof window.logAudit === 'function') window.logAudit('\u2705 [v13.12.1-PURE] Minuta DOCX exportada com sucesso.', 'success');
+        if (typeof window.logAudit === 'function') window.logAudit('\u2705 [v13.11.4-PURE] Minuta DOCX exportada com sucesso.', 'success');
         if (typeof showToast === 'function') showToast('Minuta DOCX exportada - Peticao Inicial pronta', 'success');
         if (typeof ForensicLogger !== 'undefined') ForensicLogger.addEntry('DOCX_EXPORT_COMPLETED', { sessionId: sys.sessionId });
     } catch (zipErr) {
@@ -944,7 +1076,7 @@ function openATFModal() {
         '<div style="width:100%;max-width:1100px">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(0,229,255,0.3);padding-bottom:12px;margin-bottom:20px">' +
             '<div>' +
-                '<div style="color:#00E5FF;font-size:1.1rem;font-weight:bold;letter-spacing:0.08em">' + _T('⏳ ANÁLISE TEMPORAL FORENSE (ATF)', '⏳ FORENSIC TEMPORAL ANALYSIS (ATF)') + ' · v13.12.1-PURE</div>' +
+                '<div style="color:#00E5FF;font-size:1.1rem;font-weight:bold;letter-spacing:0.08em">' + _T('⏳ ANÁLISE TEMPORAL FORENSE (ATF)', '⏳ FORENSIC TEMPORAL ANALYSIS (ATF)') + ' · v13.11.4-PURE</div>' +
                 '<div style="color:rgba(255,255,255,0.5);font-size:0.72rem;margin-top:4px">' + _T('Tendências · Outliers 2σ · Índice de Recidiva Algorítmica · Read-Only', 'Trends · Outliers 2σ · Algorithmic Recidivism Index · Read-Only') + '</div>' +
             '</div>' +
             '<button onclick="document.getElementById(\'atfModal\').remove()" ' +
@@ -1106,12 +1238,9 @@ function openATFModal() {
 window.openATFModal = openATFModal;
 
 // ============================================================================
-// 8. EXPOSICAO GLOBAL
+// EXPOSIÇÃO GLOBAL ADICIONAL
 // ============================================================================
-window.renderSankeyToImage     = renderSankeyToImage;
-window.generateTemporalChartImage = generateTemporalChartImage;
-window.computeTemporalAnalysis = computeTemporalAnalysis;
-window.openATFModal            = openATFModal;
+window.renderSankeyToImage = renderSankeyToImage;
 
 function generateBurdenOfProofSection(discrepancyValue) {
     if (!discrepancyValue || discrepancyValue <= 0) return '';
@@ -1150,9 +1279,15 @@ function generateBurdenOfProofSection(discrepancyValue) {
         '---------------------------------------------------------------------------'
     );
 }
-
-// Exportações finais (sem IIFE extra)
-window.exportDOCX = exportDOCX;
-window.openATFModal = openATFModal;
 window.generateBurdenOfProofSection = generateBurdenOfProofSection;
-window.logAudit('[UNIFED-ENRICHMENT] ✅ Sintaxe rectificada. Funções globais exportadas.', 'info');
+
+console.log('[UNIFED-ENRICHMENT] \u2705 Output Enrichment Layer v13.11.4-PURE carregado.');
+console.log('[UNIFED-ENRICHMENT]   . generateLegalNarrative()     - IA Argumentativa + AI Adversarial Simulator (Patch A-01: unified)');
+console.log('[UNIFED-ENRICHMENT]   . renderSankeyToImage()        - Dynamic Canvas-to-PDF (Sankey)');
+console.log('[UNIFED-ENRICHMENT]   . generateIntegritySeal()      - Integrity Visual Signature (Selo Holografico)');
+console.log('[UNIFED-ENRICHMENT]   . exportDOCX()                 - Structural DOCX (Minuta Peticao Inicial)');
+console.log('[UNIFED-ENRICHMENT]   . NIFAF (delegado)             - Implementação principal em script.js');
+console.log('[UNIFED-ENRICHMENT]   . generateTemporalChartImage() - ATF Grafico Canvas-to-PDF');
+console.log('[UNIFED-ENRICHMENT]   . computeTemporalAnalysis()    - ATF Analytics (2sigma SP Outliers)');
+console.log('[UNIFED-ENRICHMENT]   . openATFModal()               - ATF Dashboard Modal (Chart.js)');
+console.log('[UNIFED-ENRICHMENT]   . Modo: Read-Only - Fonte: UNIFEDSystem.analysis + monthlyData');

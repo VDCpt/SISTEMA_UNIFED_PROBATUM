@@ -2,7 +2,7 @@
  * ============================================================================
  * UNIFED - PROBATUM · CLOUDFLARE WORKER — Anthropic API Reverse Proxy
  * ============================================================================
- * Versão     : v13.12.0-PURE
+ * Versão     : v13.11.4-PURE
  * Deploy URL  : https://api.unifed.com/claude-proxy
  * Rota        : POST /claude-proxy  →  forward para api.anthropic.com/v1/messages
  *
@@ -23,13 +23,24 @@
  *   2. Definir variável de ambiente: ANTHROPIC_API_KEY = sk-ant-...
  *   3. Configurar Custom Domain: api.unifed.com → este Worker
  *   4. (Opcional) Adicionar regra de Rate Limiting: 60 req/min por IP
+ *   5. (Opcional) Para desenvolvimento local, definir variável DEV_MODE=true
+ *      e descomentar as entradas localhost em _corsHeaders().
+ *
+ * PATCH A-05 (RTF-UNIFED-2026-0406-001):
+ *   Removido cabeçalho 'anthropic-beta: messages-2023-12-15' (obsoleto).
+ *   O cabeçalho era inválido para modelos claude-sonnet-4-x e podia causar
+ *   rejeição ou comportamento degradado na API Anthropic.
+ *
+ * PATCH A-10 (RTF-UNIFED-2026-0406-001):
+ *   Adicionado suporte a DEV_MODE via variável de ambiente para activação
+ *   condicional de origens localhost sem modificação manual do código.
  *
  * CONFORMIDADE: DORA (UE) 2022/2554 · RGPD · ISO/IEC 27037:2012
  * ============================================================================
  */
 
 /** Versão do Worker — sincronizada com o ciclo de release UNIFED-PROBATUM. */
-const VERSION = "13.5.0-PURE";
+const VERSION = "13.11.4-PURE";
 
 // ES Modules format — obrigatório para Cloudflare Workers (module workers)
 export default {
@@ -37,7 +48,7 @@ export default {
     /**
      * Ponto de entrada do Worker.
      * @param {Request} request   - Pedido HTTP recebido do front-end
-     * @param {Object}  env       - Variáveis de ambiente (ANTHROPIC_API_KEY, etc.)
+     * @param {Object}  env       - Variáveis de ambiente (ANTHROPIC_API_KEY, DEV_MODE, etc.)
      * @param {Object}  ctx       - ExecutionContext (ctx.waitUntil, ctx.passThroughOnException)
      * @returns {Response}
      */
@@ -50,7 +61,7 @@ export default {
         if (request.method === 'OPTIONS') {
             return new Response(null, {
                 status: 204,
-                headers: _corsHeaders(request)
+                headers: _corsHeaders(request, env)
             });
         }
 
@@ -58,7 +69,7 @@ export default {
         if (request.method !== 'POST') {
             return new Response(JSON.stringify({ error: 'Method Not Allowed' }), {
                 status: 405,
-                headers: { ..._corsHeaders(request), 'Content-Type': 'application/json' }
+                headers: { ..._corsHeaders(request, env), 'Content-Type': 'application/json' }
             });
         }
 
@@ -72,7 +83,7 @@ export default {
                 hint: 'Set ANTHROPIC_API_KEY in Cloudflare Worker environment variables.'
             }), {
                 status: 503,
-                headers: { ..._corsHeaders(request), 'Content-Type': 'application/json' }
+                headers: { ..._corsHeaders(request, env), 'Content-Type': 'application/json' }
             });
         }
 
@@ -83,26 +94,32 @@ export default {
         } catch (_parseErr) {
             return new Response(JSON.stringify({ error: 'Invalid JSON payload.' }), {
                 status: 400,
-                headers: { ..._corsHeaders(request), 'Content-Type': 'application/json' }
+                headers: { ..._corsHeaders(request, env), 'Content-Type': 'application/json' }
             });
         }
 
-        // Guardar integralmente o payload original — apenas injectar cabeçalhos
-        // O Worker NÃO modifica o payload (modelo, max_tokens, system, messages)
+        // Guardar integralmente o payload original — apenas injectar cabeçalhos.
+        // O Worker NÃO modifica o payload (modelo, max_tokens, system, messages).
         const upstreamBody = JSON.stringify(body);
 
         // ── 5. FORWARD PARA API ANTHROPIC ─────────────────────────────────────
         // Injeta x-api-key de forma segura (variável de ambiente — não exposta
         // no código front-end nem nos logs de rede do browser).
+        //
+        // PATCH A-05: Removido 'anthropic-beta: messages-2023-12-15' (obsoleto).
+        // O cabeçalho 'anthropic-version' é mantido — é o identificador de versão
+        // da API REST, não um beta flag, e continua válido.
+        // Se uma beta específica for necessária para uma feature, adicionar aqui:
+        //   'anthropic-beta': 'nome-do-beta-activo',
         let upstreamResponse;
         try {
             upstreamResponse = await fetch('https://api.anthropic.com/v1/messages', {
                 method:  'POST',
                 headers: {
                     'Content-Type':      'application/json',
-                    'x-api-key':         env.ANTHROPIC_API_KEY,     // ← SEGURO: variável de ambiente
+                    'x-api-key':         env.ANTHROPIC_API_KEY,  // ← SEGURO: variável de ambiente
                     'anthropic-version': '2023-06-01',
-                    'anthropic-beta':    'messages-2023-12-15'
+                    // 'anthropic-beta': 'nome-do-beta-activo', // Descomentar apenas se necessário
                 },
                 body: upstreamBody
             });
@@ -113,7 +130,7 @@ export default {
                 detail: fetchErr.message
             }), {
                 status: 502,
-                headers: { ..._corsHeaders(request), 'Content-Type': 'application/json' }
+                headers: { ..._corsHeaders(request, env), 'Content-Type': 'application/json' }
             });
         }
 
@@ -124,7 +141,7 @@ export default {
         const responseHeaders = new Headers(upstreamResponse.headers);
 
         // Injectar cabeçalhos CORS na resposta — substitui ou adiciona
-        const cors = _corsHeaders(request);
+        const cors = _corsHeaders(request, env);
         Object.keys(cors).forEach(function(key) {
             responseHeaders.set(key, cors[key]);
         });
@@ -138,7 +155,7 @@ export default {
 
 
 // ============================================================================
-// UTILITÁRIO: _corsHeaders(request)
+// UTILITÁRIO: _corsHeaders(request, env)
 // Gera os cabeçalhos CORS correctos com Whitelisting estrito de origens.
 //
 // CORS HARDENING (Achado A7 — Auditoria AUDIT-2ND-2026-04-01):
@@ -154,17 +171,34 @@ export default {
 //   · Pedidos com Origin divergente da whitelist → Early Return idêntico.
 //   · Apenas origens explicitamente listadas recebem o cabeçalho ACAO.
 //
+// PATCH A-10 (RTF-UNIFED-2026-0406-001):
+//   Adicionado parâmetro env para suporte a DEV_MODE condicional.
+//   Quando env.DEV_MODE === 'true', as origens localhost são adicionadas
+//   dinamicamente à whitelist sem modificar o código-fonte.
+//   Nunca activar DEV_MODE em produção.
+//
 // CONFORMIDADE: DORA (UE) 2022/2554 · OWASP CORS Security Cheat Sheet
 // ============================================================================
-function _corsHeaders(request) {
+function _corsHeaders(request, env) {
     // ── Whitelist de origens permitidas (produção) ────────────────────────────
     const _ALLOWED_ORIGINS = [
         'https://app.unifed.com',
         'https://unifed.com',
         'https://www.unifed.com',
-        // 'http://localhost:5500',   // Descomentar para desenvolvimento local
-        // 'http://127.0.0.1:5500',   // Descomentar para desenvolvimento local
     ];
+
+    // PATCH A-10: Activação condicional de origens de desenvolvimento local.
+    // Controlado via variável de ambiente DEV_MODE (nunca hardcoded).
+    // Para activar: wrangler secret put DEV_MODE  →  valor: true
+    // Para desactivar em produção: remover a variável ou definir como 'false'.
+    if (env && env.DEV_MODE === 'true') {
+        _ALLOWED_ORIGINS.push(
+            'http://localhost:5500',
+            'http://127.0.0.1:5500',
+            'http://localhost:3000',
+            'http://127.0.0.1:3000'
+        );
+    }
 
     // ── EARLY RETURN: Origin ausente ou não autorizada ────────────────────────
     // Sem cabeçalho ACAO → o browser bloqueia a resposta em cross-origin.
@@ -181,11 +215,11 @@ function _corsHeaders(request) {
 
     // ── Origem autorizada: cabeçalhos CORS completos ──────────────────────────
     return {
-        'Access-Control-Allow-Origin':      origin,       // espelhar a origem exacta (não wildcard)
+        'Access-Control-Allow-Origin':      origin,         // espelhar a origem exacta (não wildcard)
         'Access-Control-Allow-Methods':     'POST, OPTIONS',
         'Access-Control-Allow-Headers':     'Content-Type, Authorization',
-        'Access-Control-Max-Age':           '86400',       // 24h cache do pre-flight
-        'Vary':                             'Origin'       // obrigatório para CDN correcta
+        'Access-Control-Max-Age':           '86400',         // 24h cache do pre-flight
+        'Vary':                             'Origin'         // obrigatório para CDN correcta
     };
 }
 
@@ -201,6 +235,7 @@ function _corsHeaders(request) {
    [vars]
    # Não colocar a chave aqui — usar secrets encriptados:
    # wrangler secret put ANTHROPIC_API_KEY
+   # wrangler secret put DEV_MODE   (valor: "true" em staging, ausente em produção)
 
    [[routes]]
    pattern = "api.unifed.com/claude-proxy"
@@ -215,4 +250,6 @@ function _corsHeaders(request) {
    · Usar "wrangler secret put ANTHROPIC_API_KEY" para deploy seguro.
    · Activar Cloudflare WAF para bloquear origens não autorizadas.
    · Monitorizar uso via Cloudflare Analytics → Workers → Métricas.
+   · DEV_MODE NUNCA deve ser 'true' em ambiente de produção.
+   · Verificar ausência de 'anthropic-beta' nos headers via wrangler tail.
    ============================================================================ */

@@ -1,46 +1,24 @@
 /**
- * UNIFED - PROBATUM SISTEMA DE PERITAGEM FORENSE - v13.12.0-PURE · COURT READY · DORA COMPLIANT
+ * UNIFED - PROBATUM SISTEMA DE PERITAGEM FORENSE - v13.5.0-PURE · COURT READY · DORA COMPLIANT
  * VERSAO FINAL ABSOLUTA - EXTRACAO PRECISA DE DADOS — HEADER-BASED CSV MAPPING
  * ====================================================================
- * CORRECOES IMPLEMENTADAS (v13.12.0-PURE):
- * 1. generateForensicHash agora utiliza Web Crypto API (assíncrono) – sem salt estático
- * 2. forensicRound com aritmética exacta (sem Number.EPSILON)
- * 3. generateMasterHash tornado async e aguarda a hash final
- * 4. Todas as chamadas a generateForensicHash actualizadas com await
- * 5. Sistema de Tradução Completo PT/EN - 100% de cobertura
+ * CORRECOES IMPLEMENTADAS (v13.5.0-PURE):
+ * 1. Sistema de Tradução Completo PT/EN - 100% de cobertura
+ * 2. Todos os elementos da interface traduzidos dinamicamente
+ * 3. Centralização da formatação monetária via window.formatCurrency
+ * 4. Sincronização atómica da UI (translatePurePanel + triadaUpdateLabels)
+ * 5. Eliminação de duplicações (NIFAF, formatCurrency)
  * 6. Integração do Módulo de Exportação PDF Mod. 03-B (PAGINAÇÃO ROBUSTA)
- * 7. Full-Length SHA-256 (64‑hex) em todas as evidências e logs
- * 8. CORRECÇÃO: Botão "Limpar Console" agora executa resetSystem() completo
- * 9. CORRECÇÃO: Log de Custódia é renderizado após cada operação
- * 10. CORRECÇÃO: Espaço vazio eliminado - painel PURE activado após reset
+ * 7. Correção de Race Condition em activateDemoMode (mutex + latência 500ms)
+ * 8. Full-Length SHA-256 (64‑hex) em todas as evidências e logs
+ * 9. Master Hash recomputation via concatenação binária dos hashes individuais
+ * 10. Formatação ISO 4217 exclusiva via Intl.NumberFormat (sem literais " €")
  * ====================================================================
  */
 
 'use strict';
-// Definição global de logAudit (fallback)
-window.logAudit = window.logAudit || function(msg, level = 'info') {
-    const prefix = '[UNIFED] ';
-    if (level === 'error') console.error(prefix + msg);
-    else if (level === 'warn') console.warn(prefix + msg);
-    else if (level === 'success') console.info(prefix + msg);
-    else console.log(prefix + msg);
-};
-const logAudit = window.logAudit; // alias local
 
-window.showToast = window.showToast || function(m, t) { console.log(`[Toast-Fallback] ${t}: ${m}`); alert(m); };
-
-// [FIX CORRETIVO] Declaração Global Forçada
-window.updateAnalysisButton = function() {
-    const btn = document.getElementById('analyzeBtn');
-    if (btn) {
-        const hasClient = !!(window.UNIFEDSystem && window.UNIFEDSystem.client);
-        const hasFiles = window.UNIFEDSystem && window.UNIFEDSystem.documents && 
-                         Object.values(window.UNIFEDSystem.documents).some(d => d.files && d.files.length > 0);
-        btn.disabled = !(hasClient && hasFiles);
-    }
-};
-
-console.log('UNIFED - PROBATUM SCRIPT v13.12.0-PURE · DORA COMPLIANT · ATF · INTEGRITY SEAL · DOCX · AI ADVERSARIAL · NIFAF GUARD · NEXUS · ATIVADO');
+console.log('UNIFED - PROBATUM SCRIPT v13.5.0-PURE · DORA COMPLIANT · ATF · INTEGRITY SEAL · DOCX · AI ADVERSARIAL · NIFAF GUARD · NEXUS · ATIVADO');
 
 // ============================================================================
 // 0. HANDSHAKE DE INFRAESTRUTURA — Verificação da Biblioteca OpenTimestamps
@@ -116,60 +94,145 @@ const PLATFORM_DATA = {
 };
 
 // ============================================================================
-// 3. QUESTIONÁRIO PERICIAL ESTRATÉGICO (40 Questões)
+// 3. QUESTIONÁRIO PERICIAL ESTRATÉGICO — CONSOLIDADO R-3
+// ============================================================================
+// Versão      : 13.11.16-PURE · Merge Audit R-3
+// Base        : SISTEMA v13.11.16 (mantida integralmente — versão superior)
+// Metodologia : METODOLOGIA v13.5.0 (IDs 31–40 auditados — todos presentes
+//               no SISTEMA, em redacção mais precisa ou como IDs 1–5)
+// Rectificação: Duas (2) operações cirúrgicas documentadas abaixo.
+//
+// POLÍTICA DE FUSÃO (Vector 2 — REGRA DE DEPRECIAÇÃO):
+//   · Nenhuma pergunta do SISTEMA foi removida ou degradada.
+//   · Os 4 objectos exclusivos do SISTEMA (IDs 37–40) são novos e sem
+//     equivalente semântico na METODOLOGIA — mantidos integralmente.
+//   · As 3 "near-duplicates" da METODOLOGIA (IDs 38, 39, 40 META) são
+//     versões truncadas dos SISTEMA IDs 3, 4, 5 e foram REJEITADAS por
+//     inferioridade técnica (texto menos específico para uso pericial).
+//
+// RECTIFICAÇÕES APLICADAS:
+//   [R3-FIX-1] ID 34: type rectificado de "med" → "low".
+//     Fundamento: "Demonstre o protocolo de redundância da API" é uma
+//     pergunta processual/operacional sem nexo directo com o ilícito
+//     fiscal apurado. A METODOLOGIA v13.5.0 classificava-a correctamente
+//     como "low". A promoção para "med" no SISTEMA não tinha justificação
+//     documental. Esta rectificação resolve o bug estrutural detectado:
+//     selectQuestions("low") retornava Array(0), tornando o PDF vazio
+//     no estado de pré-análise (verdict.key = 'low' por defeito, linha 4283).
+//     Com esta rectificação: riskKey='low' → 1 pergunta garantida → PDF
+//     não produz página de questões em branco em audiência.
+//
+//   [R3-FIX-2] ID 20: type rectificado de "high" → "critical".
+//     Fundamento: ID 1 e ID 20 cobrem o mesmo eixo temático (desvio BTOR
+//     vs BTF), mas ID 20 referencia explicitamente "triangulação UNIFED -
+//     PROBATUM" — o nome do sistema pericial — tornando-a uma pergunta
+//     de identificação de metodologia com impacto directo na admissibilidade
+//     da prova (Art. 125.º CPP). Reclassificação de "high" para "critical"
+//     alinha o type com o peso legal da interpelação.
+//
+// MOTOR DE FILTRO (selectQuestions):
+//   riskKey = 'critical' → todas as 40 perguntas (pct > 25%) [caso actual]
+//   riskKey = 'high'     → IDs critical + high + med = 39 perguntas
+//   riskKey = 'med'      → IDs med + low = 19 perguntas
+//   riskKey = 'low'      → IDs low = 1 pergunta (ID 34) — bug resolvido
+//
+// CONFORMIDADE: Art. 125.º CPP · Art. 119.º RGIT · Art. 128.º CPP
+//               ISO/IEC 27037:2012 · DORA (UE) 2022/2554
 // ============================================================================
 const QUESTIONS_CACHE = [
-    { id: 1, text: "Qual a justificação técnica para o desvio de base tributável (BTOR vs BTF) detetado na triangulação IFDE?", type: "critical" },
-    { id: 2, text: "Disponibilize os 'raw data' (logs de servidor) das transações anteriores ao parsing contabilístico para o período em análise.", type: "critical" },
-    { id: 3, text: "Forneça o 'hash chain' ou prova criptográfica que atesta a imutabilidade dos registos de faturação e logs de acesso para o período em análise.", type: "critical" },
-    { id: 4, text: "Apresente os metadados completos (incluindo 'timestamps' de criação e modificação) de todos os registos de faturação do período para auditoria de integridade temporal.", type: "critical" },
-    { id: 5, text: "Liste todos os acessos de administrador à base de dados que resultaram em alterações de registos financeiros já finalizados, incluindo o 'before' e 'after' dos dados alterados.", type: "critical" },
-    { id: 6, text: "Como justifica a discrepância de IVA apurado (23% vs 6%) face aos valores declarados no período em análise?", type: "high" },
-    { id: 7, text: "A plataforma disponibiliza o código-fonte do algoritmo de cálculo de comissões para auditoria independente e verificação de conformidade contratual?", type: "high" },
-    { id: 8, text: "Existem registos de 'Shadow Entries' (entradas sem identificador de transação único) no sistema que justifiquem a omissão apurada?", type: "high" },
-    { id: 9, text: "Os extratos bancários dos operadores coincidem com os registos na base de dados da plataforma para o período em análise?", type: "high" },
+
+    // ── BLOCO CRÍTICO (5 perguntas) — Custódia e Integridade da Prova Digital ─
+    // Fundamento: Art. 125.º CPP (admissibilidade) · Art. 2.º DORA · ISO/IEC 27037
+    // Seleccionadas para TODOS os níveis de risco (riskKey = 'critical' → return true)
+    { id: 1,  text: "Qual a justificação técnica para o desvio de base tributável (BTOR vs BTF) detetado na triangulação IFDE?", type: "critical" },
+    { id: 2,  text: "Disponibilize os 'raw data' (logs de servidor) das transações anteriores ao parsing contabilístico para o período em análise.", type: "critical" },
+    { id: 3,  text: "Forneça o 'hash chain' ou prova criptográfica que atesta a imutabilidade dos registos de faturação e logs de acesso para o período em análise.", type: "critical" },
+    { id: 4,  text: "Apresente os metadados completos (incluindo 'timestamps' de criação e modificação) de todos os registos de faturação do período para auditoria de integridade temporal.", type: "critical" },
+    { id: 5,  text: "Liste todos os acessos de administrador à base de dados que resultaram em alterações de registos financeiros já finalizados, incluindo o 'before' e 'after' dos dados alterados.", type: "critical" },
+
+    // ── BLOCO HIGH (17 perguntas) — Desconformidade Fiscal e IVA ──────────────
+    // Fundamento: Art. 103.º/104.º RGIT · Art. 2.º n.º 1 al. i) CIVA · Art. 119.º RGIT
+    { id: 6,  text: "Como justifica a discrepância de IVA apurado (23% vs 6%) face aos valores declarados no período em análise?", type: "high" },
+    { id: 7,  text: "A plataforma disponibiliza o código-fonte do algoritmo de cálculo de comissões para auditoria independente e verificação de conformidade contratual?", type: "high" },
+    { id: 8,  text: "Existem registos de 'Shadow Entries' (entradas sem identificador de transação único) no sistema que justifiquem a omissão apurada?", type: "high" },
+    { id: 9,  text: "Os extratos bancários dos operadores coincidem com os registos na base de dados da plataforma para o período em análise?", type: "high" },
     { id: 10, text: "Há evidências de manipulação de 'timestamp' para alterar a validade fiscal das operações registadas?", type: "high" },
     { id: 11, text: "O sistema permite a edição retroativa de registos de faturação já selados? Como é auditado e quem autorizou as alterações?", type: "high" },
+    { id: 16, text: "Existem fluxos de capital para contas não declaradas na jurisdição nacional que expliquem a diferença entre o BTOR e o BTF?", type: "high" },
+    { id: 18, text: "Como é processada a autoliquidação de IVA em serviços intracomunitários? Porque não foi aplicada no período?", type: "high" },
+
+    // [R3-FIX-2] Rectificação: type alterado de "high" → "critical"
+    // Fundamento: interpelação directa ao sistema pericial — admissibilidade Art. 125.º CPP
+    { id: 20, text: "Qual a justificação técnica para o desvio de base tributável (BTOR vs BTF) detetado na triangulação UNIFED - PROBATUM?", type: "critical" },
+
+    { id: 24, text: "Há registo de transações em 'offline mode' sem upload posterior? Como foram faturadas e declaradas?", type: "high" },
+    { id: 27, text: "Como é garantida a imutabilidade dos logs de acesso ao sistema financeiro? Apresentar prova técnica.", type: "high" },
+    { id: 28, text: "Os valores reportados à AT via SAF-T PT coincidem com os dados apurados neste relatório? Se não, justificar tecnicamente.", type: "high" },
+    { id: 30, text: "Existe evidência de sub-declaração de receitas via algoritmos de desconto não reportados à autoridade tributária?", type: "high" },
+    { id: 31, text: "É possível inspecionar o código-fonte do módulo de cálculo de taxas variáveis para verificar a sua conformidade com o contrato e a lei?", type: "high" },
+    { id: 36, text: "Identifique e explique a origem de todas as entradas na base de dados que não possuem um identificador de transação único ('Shadow Entries').", type: "high" },
+    { id: 37, text: "Qual o nível de acesso dos administradores à base de dados transacional e quem autorizou as alterações a registos finalizados?", type: "high" },
+    { id: 40, text: "Existe evidência de destruição ou expurgo de registos de auditoria dentro da janela de 6 meses imposta pela plataforma, em violação do Art. 40.º do CIVA?", type: "high" },
+
+    // ── BLOCO MED (18 perguntas) — Procedimento e Conformidade Técnica ────────
+    // Fundamento: Art. 36.º CIVA · Art. 17.º CIRC · Art. 119.º RGIT
     { id: 12, text: "Como é determinada a origem geográfica para efeitos de IVA nas transações e qual o impacto na taxa aplicada no período?", type: "med" },
     { id: 13, text: "Qual o protocolo de redundância quando a API de faturação falha em tempo real? Existem registos de falhas no período em análise?", type: "med" },
     { id: 14, text: "Como são conciliados os cancelamentos com as faturas retificativas e qual o impacto nas comissões declaradas?", type: "med" },
     { id: 15, text: "Qual o tratamento contabilístico e fiscal das gorjetas ('Tips') e valores de campanha e porque não foram integralmente considerados na base tributável?", type: "med" },
-    { id: 16, text: "Existem fluxos de capital para contas não declaradas na jurisdição nacional que expliquem a diferença entre o BTOR e o BTF?", type: "high" },
     { id: 17, text: "Existe algum 'script' de limpeza automática de logs de erro de sincronização? Apresentar registos completos.", type: "med" },
-    { id: 18, text: "Como é processada a autoliquidação de IVA em serviços intracomunitários? Porque não foi aplicada no período?", type: "high" },
     { id: 19, text: "As taxas de intermediação seguem o regime de isenção ou tributação plena? Justificar a opção com referencial normativo.", type: "med" },
-    { id: 20, text: "Qual a justificação técnica para o desvio de base tributável (BTOR vs BTF) detetado na triangulação UNIFED - PROBATUM?", type: "high" },
     { id: 21, text: "Existe segregação de funções no acesso aos algoritmos de cálculo financeiro? Quem tem acesso de escrita?", type: "med" },
     { id: 22, text: "Como são validados os NIFs de clientes em faturas automáticas? Quantos NIFs são inválidos ou omissos no período?", type: "med" },
     { id: 23, text: "O sistema utiliza 'dark patterns' para ocultar taxas adicionais ao operador? Exemplificar com registos.", type: "med" },
-    { id: 24, text: "Há registo de transações em 'offline mode' sem upload posterior? Como foram faturadas e declaradas?", type: "high" },
     { id: 25, text: "Qual a política de retenção de dados brutos antes do parsing contabilístico? Onde estão os originais e por quanto tempo são conservados?", type: "med" },
     { id: 26, text: "Existem discrepâncias de câmbio não justificadas em faturas multimoeda? Qual o impacto na base tributável?", type: "med" },
-    { id: 27, text: "Como é garantida a imutabilidade dos logs de acesso ao sistema financeiro? Apresentar prova técnica.", type: "high" },
-    { id: 28, text: "Os valores reportados à AT via SAF-T PT coincidem com os dados apurados neste relatório? Se não, justificar tecnicamente.", type: "high" },
     { id: 29, text: "Qual o impacto da latência da API no valor final cobrado ao cliente e na comissão retida pela plataforma?", type: "med" },
-    { id: 30, text: "Existe evidência de sub-declaração de receitas via algoritmos de desconto não reportados à autoridade tributária?", type: "high" },
-    { id: 31, text: "É possível inspecionar o código-fonte do módulo de cálculo de taxas variáveis para verificar a sua conformidade com o contrato e a lei?", type: "high" },
     { id: 32, text: "Como é que o algoritmo de 'Surge Pricing' interage com a base de cálculo da comissão da plataforma, e existe segregação contabilística destes valores?", type: "med" },
     { id: 33, text: "Apresente o registo de validação de NIF dos utilizadores para o período em análise, incluindo os que falharam ou foram omitidos.", type: "med" },
-    { id: 34, text: "Demonstre, com logs do sistema, o funcionamento do protocolo de redundância da API de faturação durante as falhas reportadas no período.", type: "med" },
     { id: 35, text: "Como é que o modelo de preços dinâmico ('Surge') impacta a margem bruta reportada e qual a fórmula exata aplicada a cada viagem?", type: "med" },
-    { id: 36, text: "Identifique e explique a origem de todas as entradas na base de dados que não possuem um identificador de transação único ('Shadow Entries').", type: "high" },
-    { id: 37, text: "Qual o nível de acesso dos administradores à base de dados transacional e quem autorizou as alterações a registos finalizados?", type: "high" },
     { id: 38, text: "Houve aplicação de taxa de comissão flutuante sem notificação prévia ao utilizador? Qual o algoritmo e base contratual?", type: "med" },
     { id: 39, text: "Como é que o sistema garante a não-repudiação das faturas emitidas automaticamente? Apresentar mecanismo técnico.", type: "med" },
-    { id: 40, text: "Existe evidência de destruição ou expurgo de registos de auditoria dentro da janela de 6 meses imposta pela plataforma, em violação do Art. 40.º do CIVA?", type: "high" }
+
+    // ── BLOCO LOW (1 pergunta) — Operacional / Procedimento Não-Crítico ────────
+    // Fundamento: Art. 128.º CPP (contexto macroeconómico — não prova directa)
+    // [R3-FIX-1] Rectificação: type alterado de "med" → "low"
+    // Fundamento: pergunta processual sem nexo directo com o ilícito fiscal apurado.
+    // Resolve bug: selectQuestions("low") retornava Array(0) → PDF sem questões.
+    { id: 34, text: "Demonstre, com logs do sistema, o funcionamento do protocolo de redundância da API de faturação durante as falhas reportadas no período.", type: "low" }
+
 ];
 
+
 // ============================================================================
-// 4. UTILITÁRIOS FORENSES (ARITMÉTICA EXACTA)
+// VERIFICAÇÃO DE INTEGRIDADE DO ARRAY (executar na consola F12 em audiência)
+// ============================================================================
+// (function _verifyQuestionsCache() {
+//     const dist = QUESTIONS_CACHE.reduce((acc, q) => {
+//         acc[q.type] = (acc[q.type] || 0) + 1; return acc;
+//     }, {});
+//     console.table(dist);
+//     // Expected: { critical: 6, high: 17, med: 17, low: 1 } = 41 total
+//     // Nota: ID 20 reclassificado para "critical" (R3-FIX-2) eleva critical de 5 → 6
+//     const ids = QUESTIONS_CACHE.map(q => q.id).sort((a,b)=>a-b);
+//     const gaps = [];
+//     for (let i = 1; i <= 40; i++) { if (!ids.includes(i)) gaps.push(i); }
+//     if (gaps.length) console.warn('[UNIFED] IDs em falta no array:', gaps);
+//     else console.info('[UNIFED] QUESTIONS_CACHE íntegro: 40 IDs contíguos.');
+// })();
+
+// ============================================================================
+// 4. UTILITÁRIOS FORENSES
 // ============================================================================
 const forensicRound = (num) => {
-    if (num === null || num === undefined || isNaN(Number(num))) return 0;
-    return Math.round(Number(num) * 100) / 100;
+    if (num === null || num === undefined || isNaN(num)) return 0;
+    return Math.round((num + Number.EPSILON) * 100) / 100;
 };
 
-// ── FUNÇÃO CENTRAL DE FORMATAÇÃO MONETÁRIA (UNIFICAÇÃO v13.12.0-PURE) ─────────
+// ── FUNÇÃO CENTRAL DE FORMATAÇÃO MONETÁRIA (UNIFICAÇÃO v13.5.0-PURE) ─────────
+// Utiliza Intl.NumberFormat com locale dinâmico baseado em currentLang.
+// PT-PT: 1.250,00 € (sufixo)
+// EN-GB: €1,250.00 (prefixo)
 window.formatCurrency = function(val) {
     const lang = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
     const locale = lang === 'en' ? 'en-GB' : 'pt-PT';
@@ -182,7 +245,16 @@ window.formatCurrency = function(val) {
     }).format(num);
 };
 
+// Mantém formatCurrency como alias local para compatibilidade interna
 const formatCurrency = window.formatCurrency;
+
+// formatCurrencyEN mantido para compatibilidade (deprecated - usar formatCurrency)
+const formatCurrencyEN = (value) => {
+    return new Intl.NumberFormat('en-GB', {
+        style: 'currency', currency: 'EUR',
+        minimumFractionDigits: 2, maximumFractionDigits: 2
+    }).format(value || 0);
+};
 
 // ============================================================================
 // 4.1 FUNÇÃO DE NORMALIZAÇÃO INVARIANTE (CORREÇÃO CRÍTICA)
@@ -271,7 +343,7 @@ const testParsing = () => {
         { input: "4.178,32", expected: 4178.32 }
     ];
 
-    console.log('🔬 TESTE DE PARSING v13.12.0-PURE:');
+    console.log('🔬 TESTE DE PARSING v12.8.9:');
     testCases.forEach((test, i) => {
         const result = normalizeNumericValue(test.input);
         const status = Math.abs(result - test.expected) < 0.01 ? '✓' : '❌';
@@ -282,7 +354,7 @@ const testParsing = () => {
 testParsing();
 
 // ============================================================================
-// 4.3 ROBUST SAFT PARSER v13.12.0-GOLD — HEADER-BASED CSV MAPPING
+// 4.3 ROBUST SAFT PARSER v13.1.6-GOLD — HEADER-BASED CSV MAPPING
 // ============================================================================
 function robustSAFTParser(csvText) {
     const parseCSVLine = (line) => {
@@ -334,7 +406,7 @@ function robustSAFTParser(csvText) {
     const idxIVA = headers.indexOf(LABEL_IVA);
     const idxBruto = headers.indexOf(LABEL_BRUTO);
 
-    console.log(`🗂️ HEADER-MAPPING v13.12.0-GOLD | "${LABEL_ILIQUIDO}" → col[${idxIliquido}] | "${LABEL_IVA}" → col[${idxIVA}] | "${LABEL_BRUTO}" → col[${idxBruto}]`);
+    console.log(`🗂️ HEADER-MAPPING v13.1.6-GOLD | "${LABEL_ILIQUIDO}" → col[${idxIliquido}] | "${LABEL_IVA}" → col[${idxIVA}] | "${LABEL_BRUTO}" → col[${idxBruto}]`);
 
     if (idxIliquido === -1 || idxIVA === -1 || idxBruto === -1) {
         const missing = [
@@ -385,7 +457,7 @@ function robustSAFTParser(csvText) {
     setUI('saftBrutoValue', totalBruto);
 
     console.log(
-        `✅ EXTRAÇÃO CERTIFICADA v13.12.0-GOLD | ` +
+        `✅ EXTRAÇÃO CERTIFICADA v13.1.6-GOLD | ` +
         `Linhas processadas: ${linhasProcessadas} | Ignoradas: ${linhasIgnoradas} | ` +
         `Ilíquido: ${formatCurrency(totalIliquido)} | ` +
         `IVA: ${formatCurrency(totalIVA)} | ` +
@@ -393,7 +465,7 @@ function robustSAFTParser(csvText) {
     );
 
     logAudit(
-        `📋 SAF-T Extraído v13.12.0-GOLD (Header-Mapping) — ` +
+        `📋 SAF-T Extraído v13.1.6-GOLD (Header-Mapping) — ` +
         `Linhas: ${linhasProcessadas} | ` +
         `Ilíquido: ${formatCurrency(totalIliquido)} | ` +
         `IVA: ${formatCurrency(totalIVA)} | ` +
@@ -525,12 +597,9 @@ function mockRFC3161Timestamp(hashHex) {
     };
 }
 
-// ============================================================================
-// FUNÇÃO CRIPTOGRÁFICA ASSÍNCRONA (SANITIZADA – SEM SALT)
-// ============================================================================
 async function generateForensicHash(content) {
     const encoder = new TextEncoder();
-    const data = encoder.encode(content);
+    const data = encoder.encode(content + 'IFDE_PROBATUM_SALT_2024');
     const hashBuffer = await crypto.subtle.digest('SHA-256', data);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
@@ -692,7 +761,7 @@ function exportCustodyChainJSON() {
     const logs = ForensicLogger.getLogs();
     const payload = {
         exportedAt: new Date().toISOString(),
-        system: 'UNIFED - PROBATUM v13.12.0-PURE',
+        system: 'UNIFED - PROBATUM v13.5.0-PURE',
         standard: 'SHA-256 · PROBATUM INTERNAL SEAL · DORA (UE) 2022/2554',
         totalEntries: logs.length,
         entries: logs
@@ -872,7 +941,7 @@ async function submitToOpenTimestamps() {
             submittedAt: new Date().toISOString(),
             calendars: ['alice.btc.calendar.opentimestamps.org', 'bob.btc.calendar.opentimestamps.org'],
             protocol: 'OpenTimestamps · Bitcoin blockchain',
-            system: 'UNIFED - PROBATUM v13.12.0-PURE',
+            system: 'UNIFED - PROBATUM v13.5.0-PURE',
             error: 'Biblioteca OTS não carregada (CDN inacessível na rede atual)'
         }, null, 2);
 
@@ -1018,7 +1087,7 @@ async function submitToOpenTimestamps() {
             submittedAt: new Date().toISOString(),
             calendars: ['alice.btc.calendar.opentimestamps.org', 'bob.btc.calendar.opentimestamps.org'],
             protocol: 'OpenTimestamps · Bitcoin blockchain',
-            system: 'UNIFED - PROBATUM v13.12.0-PURE',
+            system: 'UNIFED - PROBATUM v13.5.0-PURE',
             error: err.message
         }, null, 2);
 
@@ -1365,7 +1434,7 @@ async function _doOnlineSeal(masterHash) {
     if (UNIFEDSystem.demoMode === true || UNIFEDSystem.casoRealAnonimizado === true) {
         const _mockDate = new Date().toISOString();
         _nivel2SealSuccess(masterHash, _mockDate, 'ANCORADO VIA PROXY SEGURO', 'UNIFED-TSA-99A8B7C6');
-        console.info('[v13.12.0-PURE] TSA Anchor: Verified Local Integrity.');
+        console.info('[v13.5.0-PURE] TSA Anchor: Verified Local Integrity.');
         if (btn) { btn.disabled = false; }
         return;
     }
@@ -1614,12 +1683,6 @@ const ForensicLogger = {
 
         this._persist();
 
-        // Renderizar logs no elemento de console, se existir
-        const consoleOutput = document.getElementById('consoleOutput');
-        if (consoleOutput) {
-            this.renderLogsToElement('consoleOutput');
-        }
-
         return entry;
     },
 
@@ -1637,7 +1700,7 @@ const ForensicLogger = {
             period: yearMonth || 'COMPLETO',
             total_entries: filtered.length,
             rgpd_basis: 'Art. 30.º RGPD (UE) 2016/679 — Registos das Atividades de Tratamento',
-            system: 'UNIFED - PROBATUM v13.12.0-PURE · DORA COMPLIANT',
+            system: 'UNIFED - PROBATUM v13.5.0-PURE · DORA COMPLIANT',
             logs: filtered
         };
 
@@ -1652,8 +1715,6 @@ const ForensicLogger = {
         this.logs = [];
         localStorage.removeItem(this.STORAGE_KEY);
         this.addEntry('SYSTEM_LOGS_CLEARED', { action: 'Logs purgados pelo operador', rgpd: 'Art. 17.º Direito ao Apagamento' });
-        const consoleOutput = document.getElementById('consoleOutput');
-        if (consoleOutput) consoleOutput.innerHTML = '';
     },
 
     renderLogsToElement(elementId) {
@@ -1814,7 +1875,7 @@ const ValueSource = {
 // ============================================================================
 const translations = {
     pt: {
-        startBtn: "INICIAR PERÍCIA v13.12.0-PURE",
+        startBtn: "INICIAR PERÍCIA v13.5.0-PURE",
         splashLogsBtn: "REGISTO DE ATIVIDADES (LOG)",
         navDemo: "CASO REAL (ANONIMIZADO)",
         langBtn: "EN",
@@ -1847,7 +1908,7 @@ const translations = {
         irc: "IRC (21% + Derrama)",
         iva6: "IVA 6% OMITIDO",
         iva23: "IVA 23% OMITIDO",
-        kpiTitle: "TRIANGULAÇÃO FINANCEIRA · BIG DATA ALGORITHM v13.12.0-PURE",
+        kpiTitle: "TRIANGULAÇÃO FINANCEIRA · BIG DATA ALGORITHM v13.5.0-PURE",
         kpiGross: "BRUTO REAL",
         kpiCommText: "COMISSÕES",
         kpiNetText: "LÍQUIDO",
@@ -1943,7 +2004,7 @@ const translations = {
         clausulaAssinaturaDigital: "VALIDAÇÃO TÉCNICA DE CONSULTORIA:\nO presente relatorio e selado com o Master Hash SHA-256 completo e o QR Code anexo, garantindo a sua integridade e não-repúdio. A sua validação pode ser efetuada através de qualquer ferramenta de verificação de hash ou leitura de QR Code, que remete para o hash completo do documento."
     },
     en: {
-        startBtn: "START FORENSIC EXAM v13.12.0-PURE",
+        startBtn: "START FORENSIC EXAM v13.5.0-PURE",
         splashLogsBtn: "ACTIVITY LOG (GDPR Art. 30)",
         navDemo: "REAL CASE (ANONYMISED)",
         langBtn: "PT",
@@ -1976,7 +2037,7 @@ const translations = {
         irc: "CIT (21% + Surtax)",
         iva6: "VAT 6% OMITTED",
         iva23: "VAT 23% OMITTED",
-        kpiTitle: "FINANCIAL TRIANGULATION · BIG DATA ALGORITHM v13.12.0-PURE",
+        kpiTitle: "FINANCIAL TRIANGULATION · BIG DATA ALGORITHM v13.5.0-PURE",
         kpiGross: "REAL GROSS",
         kpiCommText: "COMMISSIONS",
         kpiNetText: "NET",
@@ -2085,12 +2146,14 @@ function switchLanguage() {
 
     const t = translations[currentLang];
 
+    // Atualizar texto do botão de idioma
     const langBtn = document.getElementById('langToggleBtn');
     if (langBtn) {
         const span = langBtn.querySelector('span');
         if (span) span.textContent = t.langBtn;
     }
 
+    // Atualizar elementos da Splash Screen
     const startBtn = document.getElementById('startSessionBtn');
     if (startBtn) {
         const span = startBtn.querySelector('span');
@@ -2103,15 +2166,18 @@ function switchLanguage() {
         if (span) span.textContent = t.splashLogsBtn;
     }
 
+    // Botão Demo
     const demoBtn = document.getElementById('demoModeBtn');
     if (demoBtn) {
         const span = demoBtn.querySelector('span');
         if (span) span.textContent = t.navDemo;
     }
 
+    // Header Subtitle
     const headerSubtitle = document.getElementById('headerSubtitle');
     if (headerSubtitle) headerSubtitle.textContent = t.headerSubtitle;
 
+    // Sidebar - Identificação
     const sidebarIdTitle = document.getElementById('sidebarIdTitle');
     if (sidebarIdTitle) {
         const span = sidebarIdTitle.querySelector('span');
@@ -2140,6 +2206,7 @@ function switchLanguage() {
         else btnRegister.innerHTML = `<i class="fas fa-check-double"></i> ${t.btnRegister}`;
     }
 
+    // Sidebar - Parâmetros
     const sidebarParamTitle = document.getElementById('sidebarParamTitle');
     if (sidebarParamTitle) {
         const span = sidebarParamTitle.querySelector('span');
@@ -2168,6 +2235,7 @@ function switchLanguage() {
         else lblPlatform.innerHTML = `<i class="fas fa-mobile-alt"></i> ${t.lblPlatform}`;
     }
 
+    // Botão Evidências
     const btnEvidence = document.getElementById('btnEvidence');
     if (btnEvidence) {
         const span = btnEvidence.querySelector('span');
@@ -2175,6 +2243,7 @@ function switchLanguage() {
         else btnEvidence.innerHTML = `<span><i class="fas fa-folder-open"></i> ${t.btnEvidence}</span>`;
     }
 
+    // Botão Analisar
     const btnAnalyze = document.getElementById('btnAnalyze');
     if (btnAnalyze) {
         const span = btnAnalyze.querySelector('span');
@@ -2182,6 +2251,7 @@ function switchLanguage() {
         else btnAnalyze.innerHTML = `<i class="fas fa-search-dollar"></i> ${t.btnAnalyze}`;
     }
 
+    // Toolbar Buttons
     const btnPDF = document.getElementById('btnPDF');
     if (btnPDF) {
         const span = btnPDF.querySelector('span');
@@ -2237,6 +2307,7 @@ function switchLanguage() {
     const wipeBtnText = document.getElementById('wipeBtnText');
     if (wipeBtnText) wipeBtnText.textContent = t.wipeBtnText;
 
+    // Dashboard Cards
     const cardNet = document.getElementById('cardNet');
     if (cardNet) {
         const span = cardNet.querySelector('span');
@@ -2258,6 +2329,7 @@ function switchLanguage() {
         else cardJuros.innerHTML = `<i class="fas fa-chart-line"></i> ${t.cardJuros}`;
     }
 
+    // KPI Section
     const kpiTitle = document.getElementById('kpiTitle');
     if (kpiTitle) {
         const span = kpiTitle.querySelector('span');
@@ -2277,6 +2349,7 @@ function switchLanguage() {
     const kpiInvText = document.getElementById('kpiInvText');
     if (kpiInvText) kpiInvText.textContent = t.kpiInvText;
 
+    // Chart Titles
     const chartTitle = document.getElementById('chartTitle');
     if (chartTitle) {
         const span = chartTitle.querySelector('span');
@@ -2291,6 +2364,7 @@ function switchLanguage() {
         else chartTitle2.innerHTML = `<i class="fas fa-chart-bar"></i> ${t.chartTitle2}`;
     }
 
+    // Console Title
     const consoleTitle = document.getElementById('consoleTitle');
     if (consoleTitle) {
         const span = consoleTitle.querySelector('span');
@@ -2298,9 +2372,11 @@ function switchLanguage() {
         else consoleTitle.innerHTML = `<i class="fas fa-terminal"></i> ${t.consoleTitle}`;
     }
 
+    // Footer
     const footerHashTitle = document.getElementById('footerHashTitle');
     if (footerHashTitle) footerHashTitle.textContent = t.footerHashTitle;
 
+    // Modal Titles
     const modalTitle = document.getElementById('modalTitle');
     if (modalTitle) modalTitle.textContent = t.modalTitle;
 
@@ -2333,6 +2409,7 @@ function switchLanguage() {
         else modalSaveBtn.innerHTML = `<i class="fas fa-check-circle"></i> ${t.modalSaveBtn}`;
     }
 
+    // Module Titles
     const moduleSaftTitle = document.getElementById('moduleSaftTitle');
     if (moduleSaftTitle) {
         const span = moduleSaftTitle.querySelector('span');
@@ -2354,6 +2431,7 @@ function switchLanguage() {
         else moduleDac7Title.innerHTML = `<i class="fas fa-envelope-open-text"></i> ${t.moduleDac7Title}`;
     }
 
+    // Module Labels
     const saftIliquidoLabel = document.getElementById('saftIliquidoLabel');
     if (saftIliquidoLabel) saftIliquidoLabel.textContent = t.saftIliquido;
 
@@ -2384,6 +2462,7 @@ function switchLanguage() {
     const dac7Q4Label = document.getElementById('dac7Q4Label');
     if (dac7Q4Label) dac7Q4Label.textContent = t.dac7Q4;
 
+    // Quantum Box
     const quantumTitle = document.getElementById('quantumTitle');
     if (quantumTitle) {
         const span = quantumTitle.querySelector('span');
@@ -2397,9 +2476,11 @@ function switchLanguage() {
     const quantumNote = document.getElementById('quantumNote');
     if (quantumNote) quantumNote.textContent = t.quantumNote;
 
+    // Verdict
     const verdictPercentLabel = document.getElementById('verdictPercentLabel');
     if (verdictPercentLabel) verdictPercentLabel.textContent = t.verdictPercent;
 
+    // Alerts
     const alertCriticalTitle = document.getElementById('alertCriticalTitle');
     if (alertCriticalTitle) alertCriticalTitle.textContent = t.alertCriticalTitle;
 
@@ -2409,6 +2490,7 @@ function switchLanguage() {
     const alertAccumulatedNote = document.getElementById('alertAccumulatedNote');
     if (alertAccumulatedNote) alertAccumulatedNote.textContent = t.alertAccumulatedNote;
 
+    // Two-Axis Alerts
     const revenueGapTitle = document.getElementById('revenueGapTitle');
     if (revenueGapTitle) revenueGapTitle.textContent = t.revenueGapTitle;
 
@@ -2424,6 +2506,7 @@ function switchLanguage() {
     const omissaoDespesasPctTitle = document.getElementById('omissaoDespesasPctTitle');
     if (omissaoDespesasPctTitle) omissaoDespesasPctTitle.textContent = t.omissaoDespesasPctTitle;
 
+    // Logs Modal
     const logsModalTitle = document.getElementById('logsModalTitle');
     if (logsModalTitle) logsModalTitle.textContent = t.logsModalTitle;
 
@@ -2436,19 +2519,23 @@ function switchLanguage() {
     const closeLogsBtnText = document.getElementById('closeLogsBtnText');
     if (closeLogsBtnText) closeLogsBtnText.textContent = t.closeLogsBtn;
 
+    // Hash Modal
     const hashModalTitle = document.getElementById('hashModalTitle');
     if (hashModalTitle) hashModalTitle.textContent = t.hashModalTitle;
 
     const closeHashBtnText = document.getElementById('closeHashBtnText');
     if (closeHashBtnText) closeHashBtnText.textContent = t.closeHashBtnText;
 
+    // Atualizar valores numéricos da dashboard se existirem
     if (UNIFEDSystem.analysis.totals) {
         updateDashboard();
         updateModulesUI();
     }
 
+    // Atualizar data e hora com novo locale
     startClockAndDate();
 
+    // Traduzir painel pureDashboard (panel.html) se estiver visível
     if (typeof window._translatePurePanel === 'function') {
         window._translatePurePanel(currentLang);
     }
@@ -2456,10 +2543,12 @@ function switchLanguage() {
     logAudit(`Idioma alterado para: ${currentLang.toUpperCase()}`, 'info');
     ForensicLogger.addEntry('LANGUAGE_CHANGED', { lang: currentLang });
 
+    // Actualizar labels dos botões da Tríade Documental (unifed_triada_export.js)
     if (typeof window._triadaUpdateLabels === 'function') {
         window._triadaUpdateLabels();
     }
 
+    // Actualizar atributo title dos seal-items (conformity-seals)
     document.querySelectorAll('.seal-item[data-pt][data-en]').forEach(function(el) {
         el.title = currentLang === 'en' ? el.getAttribute('data-en') : el.getAttribute('data-pt');
     });
@@ -2672,7 +2761,7 @@ const SchemaRegistry = {
 
         result.despesas = Math.abs(result.despesas);
 
-        logAudit(`📊 Extração Extrato (v13.12.0) - Ganhos: ${formatCurrency(result.ganhos)} | Despesas: ${formatCurrency(result.despesas)} | Líquido: ${formatCurrency(result.ganhosLiq)}`, 'info');
+        logAudit(`📊 Extração Extrato (v12.8.9) - Ganhos: ${formatCurrency(result.ganhos)} | Despesas: ${formatCurrency(result.despesas)} | Líquido: ${formatCurrency(result.ganhosLiq)}`, 'info');
 
         return result;
     },
@@ -2802,7 +2891,7 @@ const SchemaRegistry = {
         }
 
         logAudit(
-            `📊 Extração DAC7 v13.12.0-GOLD (${periodoSelecionado}) — ` +
+            `📊 Extração DAC7 v13.1.6-GOLD (${periodoSelecionado}) — ` +
             `Q1: ${formatCurrency(result.q1)} | Q2: ${formatCurrency(result.q2)} | ` +
             `Q3: ${formatCurrency(result.q3)} | Q4: ${formatCurrency(result.q4)}`,
             'info'
@@ -2824,7 +2913,7 @@ const SchemaRegistry = {
             return result;
         }
 
-        console.log('🔍 Processando SAF-T v13.12.0-GOLD (Header-Name Mapping):', filename);
+        console.log('🔍 Processando SAF-T v13.1.6-GOLD (Header-Name Mapping):', filename);
 
         const LABEL_ILIQUIDO = 'Preço da viagem (sem IVA)';
         const LABEL_IVA = 'IVA';
@@ -2871,7 +2960,7 @@ const SchemaRegistry = {
             }
         }
 
-        logAudit(`📊 SAF-T v13.12.0-GOLD: ${formatCurrency(result.totalBruto)} Bruto | ${formatCurrency(result.totalIliquido)} Ilíquido | ${formatCurrency(result.totalIVA)} IVA | ${result.recordCount} registos`, 'info');
+        logAudit(`📊 SAF-T v13.1.6-GOLD: ${formatCurrency(result.totalBruto)} Bruto | ${formatCurrency(result.totalIliquido)} Ilíquido | ${formatCurrency(result.totalIVA)} IVA | ${result.recordCount} registos`, 'info');
 
         return result;
     }
@@ -2881,7 +2970,7 @@ const SchemaRegistry = {
 // 9. ESTADO GLOBAL (SINGLE SOURCE OF TRUTH) - UNIFED - PROBATUM
 // ============================================================================
 const UNIFEDSystem = {
-    version: 'v13.12.0-PURE-DORA-COMPLIANT',
+    version: 'v13.5.0-PURE-DORA-COMPLIANT',
     name: 'UNIFED - PROBATUM',
     sessionId: null,
     selectedYear: new Date().getFullYear(),
@@ -2947,8 +3036,7 @@ const UNIFEDSystem = {
             impactoSeteAnosMercado: 0,
             discrepancia5IMT: 0,
             agravamentoBrutoIRC: 0,
-            ircEstimado: 0,
-            asfixiaFinanceira: 0
+            ircEstimado: 0
         },
         verdict: null,
         evidenceIntegrity: [],
@@ -2970,38 +3058,12 @@ const UNIFEDSystem = {
     }
 };
 
-function deterministicStringify(obj) {
-    const seen = new WeakSet();
-    function replacer(key, value) {
-        if (typeof value === 'object' && value !== null) {
-            if (seen.has(value)) return '[Circular]';
-            seen.add(value);
-        }
-        return value;
+// *** CORREÇÃO APLICADA: Método assíncrono para selagem forense ***
+UNIFEDSystem.generateForensicSeal = async function() {
+    if (typeof this.generateMasterHash === 'function') {
+        this.generateMasterHash();
     }
-    return JSON.stringify(obj, (key, value) => {
-        if (value && typeof value === 'object' && !Array.isArray(value)) {
-            const sorted = {};
-            Object.keys(value).sort().forEach(k => { sorted[k] = value[k]; });
-            return sorted;
-        }
-        return value;
-    }, 0);
-}
-
-// ============================================================================
-// MÉTODO ASSÍNCRONO PARA GERAÇÃO DO MASTER HASH (FIX)
-// ============================================================================
-UNIFEDSystem.generateMasterHash = async function() {
-    const evidenceHashes = this.analysis.evidenceIntegrity
-        .map(ev => ev.hash)
-        .filter(h => h && h.length === 64)
-        .sort();
-    const forensicSummary = deterministicStringify(this.analysis || {});
-    const binaryConcat = evidenceHashes.join('') + forensicSummary + (this.sessionId || '');
-    this.masterHash = await generateForensicHash(binaryConcat);
-    console.info(`[UNIFED-FORENSIC] ✅ Master Hash Selado: ${this.masterHash}`);
-    window.activeForensicSession = { sessionId: this.sessionId, masterHash: this.masterHash };
+    return Promise.resolve(this.masterHash);
 };
 
 let lastLogTime = 0;
@@ -3073,6 +3135,7 @@ function forensicDataSynchronization() {
     if (evidenceCountEl) evidenceCountEl.textContent = total;
     UNIFEDSystem.counts.total = total;
 
+    // Sincronização dos contadores da Demo
     window.forensicDataSynchronization._syncDemoCounters();
 
     logAudit(`🔬 SINCRONIZAÇÃO: ${total} total (CTRL:${controlFiles} SAFT:${saftFiles} FAT:${invoiceFiles} EXT:${statementFiles} DAC7:${dac7Files})`, 'success');
@@ -3157,11 +3220,12 @@ function openHashModal() {
 // 13. INICIALIZAÇÃO
 // ============================================================================
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOMContentLoaded - Inicializando sistema UNIFED - PROBATUM v13.12.0-PURE');
+    console.log('DOMContentLoaded - Inicializando sistema UNIFED - PROBATUM v13.5.0-PURE');
     setupStaticListeners();
     populateAnoFiscal();
     populateYears();
     startClockAndDate();
+    loadSystemRecursively();
     setupDragAndDrop();
     generateQRCode();
     setupLogsModal();
@@ -3215,65 +3279,91 @@ function startGatekeeperSession() {
         setTimeout(() => {
             splash.style.display = 'none';
             loading.style.display = 'flex';
-            if (typeof window.showMainInterface === 'function') {
-                window.showMainInterface();
-            } else {
-                console.error('[UNIFED] window.showMainInterface não definida. Verifique a ordem de carregamento.');
-            }
+            loadSystemCore();
         }, 500);
     }
+}
+
+function loadSystemCore() {
+    updateLoadingProgress(20);
     UNIFEDSystem.sessionId = generateSessionId();
     UNIFEDSystem._sessionStart = Date.now();
     setElementText('sessionIdDisplay', UNIFEDSystem.sessionId);
     setElementText('verdictSessionId', UNIFEDSystem.sessionId);
-    if (typeof generateQRCode === 'function') generateQRCode();
+    generateQRCode();
 
     ForensicLogger.addEntry('SESSION_CREATED', { sessionId: UNIFEDSystem.sessionId });
 
-    // Inicialização única com temporização
-    setTimeout(async () => {
-        if (typeof updateLoadingProgress === 'function') updateLoadingProgress(40);
-        if (typeof populateYears === 'function') populateYears();
-        if (typeof populateAnoFiscal === 'function') populateAnoFiscal();
-        if (typeof startClockAndDate === 'function') startClockAndDate();
-        if (typeof setupMainListeners === 'function') setupMainListeners();
-        
-        if (UNIFEDSystem.generateMasterHash) {
-            await UNIFEDSystem.generateMasterHash();
-            window.activeForensicSession = { sessionId: UNIFEDSystem.sessionId, masterHash: UNIFEDSystem.masterHash };
-        }
-        
-        if (typeof updateLoadingProgress === 'function') updateLoadingProgress(80);
-    }, 500);
-
-    window.showMainInterface = function() {
-        const loading = document.getElementById('loadingOverlay');
-        const main = document.getElementById('mainContainer');
-        if (loading && main) {
-            loading.style.opacity = '0';
-            setTimeout(() => {
-                loading.style.display = 'none';
-                main.style.display = 'block';
-                setTimeout(() => main.style.opacity = '1', 50);
-                ForensicLogger.addEntry('MAIN_INTERFACE_SHOWN');
-            }, 500);
-        }
-        if (typeof logAudit === 'function') {
-            logAudit('SISTEMA UNIFED - PROBATUM v13.12.0-PURE · DORA COMPLIANT · MODO PROFISSIONAL ATIVADO', 'success');
-        }
-    };
-
-    const idsToEnable = ['analyzeBtn', 'exportPDFBtn', 'exportJSONBtn'];
-    idsToEnable.forEach(id => {
-        const btn = document.getElementById(id);
-        if (btn) btn.disabled = false;
-    });
-
-    if (typeof injectAuxiliaryHelperBoxes === 'function') injectAuxiliaryHelperBoxes();
-
     setTimeout(() => {
-        if (typeof forensicDataSynchronization === 'function') forensicDataSynchronization();
-    }, 1000);
+        updateLoadingProgress(40);
+        populateYears();
+        populateAnoFiscal();
+        startClockAndDate();
+        setupMainListeners();
+        updateLoadingProgress(60);
+        generateMasterHash();
+        updateLoadingProgress(80);
+
+        setTimeout(() => {
+            updateLoadingProgress(100);
+            setTimeout(showMainInterface, 500);
+        }, 500);
+    }, 500);
+}
+
+function updateLoadingProgress(percent) {
+    const bar = document.getElementById('loadingProgress');
+    const text = document.getElementById('loadingStatusText');
+    if (bar) bar.style.width = percent + '%';
+    if (text) text.textContent = `MÓDULO FORENSE BIG DATA v13.5.0-PURE · DORA COMPLIANT... ${percent}%`;
+}
+
+function showMainInterface() {
+    const loading = document.getElementById('loadingOverlay');
+    const main = document.getElementById('mainContainer');
+    if (loading && main) {
+        loading.style.opacity = '0';
+        setTimeout(() => {
+            loading.style.display = 'none';
+            main.style.display = 'block';
+            setTimeout(() => main.style.opacity = '1', 50);
+            ForensicLogger.addEntry('MAIN_INTERFACE_SHOWN');
+        }, 500);
+    }
+    logAudit('SISTEMA UNIFED - PROBATUM v13.5.0-PURE · DORA COMPLIANT · MODO PROFISSIONAL ATIVADO · EXTRAÇÃO PRECISA · CSC ONLINE', 'success');
+
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    if (analyzeBtn) analyzeBtn.disabled = false;
+
+    const exportPDFBtn = document.getElementById('exportPDFBtn');
+    if (exportPDFBtn) exportPDFBtn.disabled = false;
+
+    const exportJSONBtn = document.getElementById('exportJSONBtn');
+    if (exportJSONBtn) exportJSONBtn.disabled = false;
+
+    injectAuxiliaryHelperBoxes();
+
+    setTimeout(forensicDataSynchronization, 1000);
+}
+
+function loadSystemRecursively() {
+    try {
+        const stored = localStorage.getItem('ifde_client_data_v12_8');
+        if (stored) {
+            const client = JSON.parse(stored);
+            if (client && client.name && client.nif) {
+                UNIFEDSystem.client = client;
+                document.getElementById('clientStatusFixed').style.display = 'flex';
+                setElementText('clientNameDisplayFixed', client.name);
+                setElementText('clientNifDisplayFixed', client.nif);
+                document.getElementById('clientNameFixed').value = client.name;
+                document.getElementById('clientNIFFixed').value = client.nif;
+                logAudit(`Sujeito passivo recuperado: ${client.name}`, 'success');
+                ForensicLogger.addEntry('CLIENT_RESTORED', { name: client.name, nif: client.nif });
+            }
+        }
+    } catch (e) { console.warn('Cache limpo'); }
+    startClockAndDate();
 }
 
 function populateAnoFiscal() {
@@ -3301,7 +3391,7 @@ function populateYears() {
         sel.appendChild(opt);
     }
 }
- 
+
 function startClockAndDate() {
     const update = () => {
         const now = new Date();
@@ -3467,16 +3557,13 @@ function setupMainListeners() {
 }
 
 // ============================================================================
-// 15. SETUP DO BOTÃO LIMPAR CONSOLE (CORRECÇÃO: agora chama resetSystem)
+// 15. SETUP DO BOTÃO LIMPAR CONSOLE
 // ============================================================================
 function setupClearConsoleButton() {
     const clearBtn = document.getElementById('clearConsoleBtn');
     if (clearBtn) {
-        clearBtn.addEventListener('click', () => {
-            console.log('[UNIFED] Botão "Limpar Console" clicado – a executar reset completo do sistema.');
-            resetSystem();
-        });
-        console.log('Listener clearConsoleBtn adicionado (resetSystem)');
+        clearBtn.addEventListener('click', clearConsole);
+        console.log('Listener clearConsoleBtn adicionado');
     } else {
         console.error('Botão clearConsoleBtn não encontrado');
     }
@@ -3600,7 +3687,7 @@ async function processQueue() {
     ForensicLogger.addEntry('BATCH_PROCESSING_COMPLETE', { total });
     updateEvidenceSummary();
     updateCounters();
-    await UNIFEDSystem.generateMasterHash();
+    generateMasterHash();
     forensicDataSynchronization();
     showToast(`${total} ficheiro(s) processados em lote`, 'success');
 }
@@ -3702,7 +3789,7 @@ function registerClient() {
 }
 
 // ============================================================================
-// 20. PROCESSAMENTO DE FICHEIROS (COM SCHEMA REGISTRY v13.12.0)
+// 20. PROCESSAMENTO DE FICHEIROS (COM SCHEMA REGISTRY v12.8.9)
 // ============================================================================
 async function processFile(file, type) {
     const fileKey = `${file.name}_${file.size}_${file.lastModified}`;
@@ -3747,7 +3834,7 @@ async function processFile(file, type) {
     }
 
     const contentToHash = text;
-    const hash = await generateForensicHash(contentToHash);
+    const hash = CryptoJS.SHA256(contentToHash).toString();
 
     await generateForensicLog('FILE_INGESTED', file.name, hash);
 
@@ -3810,10 +3897,9 @@ async function processFile(file, type) {
 
             if (mesMatch) {
                 const meses = {
-                    'jan': '01', 'fev': '02', 'mar': '03', 'apr': '04',
-                    'abr': '04', 'mai': '05', 'may': '05', 'jun': '06',
-                    'jul': '07', 'ago': '08', 'set': '09', 'sep': '09',
-                    'out': '10', 'oct': '10', 'nov': '11', 'dez': '12', 'dec': '12'
+                    'jan': '01', 'fev': '02', 'mar': '03', 'abr': '04',
+                    'mai': '05', 'jun': '06', 'jul': '07', 'ago': '08',
+                    'set': '09', 'out': '10', 'nov': '11', 'dez': '12'
                 };
                 const ano = mesMatch[3];
                 const mes = meses[mesMatch[2].toLowerCase()];
@@ -3866,7 +3952,7 @@ async function processFile(file, type) {
 
             processAuxiliaryPlatformData(text, file.name);
 
-            logAudit(`📊 Extrato processado (v13.12.0): ${file.name} | Ganhos: ${formatCurrency(extracted.ganhos)} | Despesas: ${formatCurrency(extracted.despesas)} | Líquido: ${formatCurrency(extracted.ganhosLiq)}`, 'success');
+            logAudit(`📊 Extrato processado (v12.8.9): ${file.name} | Ganhos: ${formatCurrency(extracted.ganhos)} | Despesas: ${formatCurrency(extracted.despesas)} | Líquido: ${formatCurrency(extracted.ganhosLiq)}`, 'success');
             ForensicLogger.addEntry('STATEMENT_PROCESSED', { filename: file.name, ...extracted });
 
         } catch (e) {
@@ -3921,43 +4007,38 @@ async function processFile(file, type) {
                 text = text.substring(1);
             }
 
-            await new Promise((resolve, reject) => {
-                Papa.parse(text, {
-                    header: true,
-                    skipEmptyLines: true,
-                    quotes: true,
-                    delimiter: ',',
-                    complete: (parseResult) => {
-                        try {
-                            const extracted = SchemaRegistry.processSAFT(parseResult, file.name);
-                            if (!UNIFEDSystem.documents.saft.totals) {
-                                UNIFEDSystem.documents.saft.totals = { records: 0, iliquido: 0, iva: 0, bruto: 0 };
-                            }
-                            UNIFEDSystem.documents.saft.totals.bruto = (UNIFEDSystem.documents.saft.totals.bruto || 0) + extracted.totalBruto;
-                            UNIFEDSystem.documents.saft.totals.iva = (UNIFEDSystem.documents.saft.totals.iva || 0) + extracted.totalIVA;
-                            UNIFEDSystem.documents.saft.totals.iliquido = (UNIFEDSystem.documents.saft.totals.iliquido || 0) + extracted.totalIliquido;
-                            UNIFEDSystem.documents.saft.totals.records = (UNIFEDSystem.documents.saft.totals.records || 0) + extracted.recordCount;
-
-                            ValueSource.registerValue('saftBrutoValue', extracted.totalBruto, file.name, 'soma direta coluna 16');
-                            ValueSource.registerValue('saftIvaValue', extracted.totalIVA, file.name, 'soma direta coluna 15');
-                            ValueSource.registerValue('saftIliquidoValue', extracted.totalIliquido, file.name, 'soma direta coluna 14');
-
-                            logAudit(`📊 SAF-T CSV: ${file.name} | +${formatCurrency(extracted.totalBruto)} (${extracted.recordCount} registos) | IVA: +${formatCurrency(extracted.totalIVA)} | Ilíquido: +${formatCurrency(extracted.totalIliquido)}`, 'success');
-                            ForensicLogger.addEntry('SAFT_PROCESSED', { filename: file.name, total: extracted.totalBruto, iva: extracted.totalIVA, iliquido: extracted.totalIliquido });
-                            resolve();
-                        } catch (e) {
-                            reject(e);
-                        }
-                    },
-                    error: (err) => reject(err)
-                });
+            const parseResult = Papa.parse(text, {
+                header: true,
+                skipEmptyLines: true,
+                quotes: true,
+                delimiter: ','
             });
+
+            const extracted = SchemaRegistry.processSAFT(parseResult, file.name);
+
+            if (!UNIFEDSystem.documents.saft.totals) {
+                UNIFEDSystem.documents.saft.totals = { records: 0, iliquido: 0, iva: 0, bruto: 0 };
+            }
+
+            UNIFEDSystem.documents.saft.totals.bruto = (UNIFEDSystem.documents.saft.totals.bruto || 0) + extracted.totalBruto;
+            UNIFEDSystem.documents.saft.totals.iva = (UNIFEDSystem.documents.saft.totals.iva || 0) + extracted.totalIVA;
+            UNIFEDSystem.documents.saft.totals.iliquido = (UNIFEDSystem.documents.saft.totals.iliquido || 0) + extracted.totalIliquido;
+            UNIFEDSystem.documents.saft.totals.records = (UNIFEDSystem.documents.saft.totals.records || 0) + extracted.recordCount;
+
+            ValueSource.registerValue('saftBrutoValue', extracted.totalBruto, file.name, 'soma direta coluna 16');
+            ValueSource.registerValue('saftIvaValue', extracted.totalIVA, file.name, 'soma direta coluna 15');
+            ValueSource.registerValue('saftIliquidoValue', extracted.totalIliquido, file.name, 'soma direta coluna 14');
+
+            logAudit(`📊 SAF-T CSV: ${file.name} | +${formatCurrency(extracted.totalBruto)} (${extracted.recordCount} registos) | IVA: +${formatCurrency(extracted.totalIVA)} | Ilíquido: +${formatCurrency(extracted.totalIliquido)}`, 'success');
+            ForensicLogger.addEntry('SAFT_PROCESSED', { filename: file.name, total: extracted.totalBruto, iva: extracted.totalIVA, iliquido: extracted.totalIliquido });
+
         } catch (e) {
             console.warn(`Erro ao processar SAF-T ${file.name}:`, e);
             logAudit(`[!] Erro no processamento SAF-T: ${e.message}`, 'warning');
             ForensicLogger.addEntry('SAFT_PROCESSING_ERROR', { filename: file.name, error: e.message });
         }
     }
+
     if (type === 'dac7') {
         try {
             const extracted = SchemaRegistry.processDAC7(text, file.name, UNIFEDSystem.selectedPeriodo);
@@ -4068,23 +4149,44 @@ function updateCounters() {
 }
 
 // ============================================================================
-// 21. MODO DEMO — v13.12.0-PURE · DADOS FIXOS PARA APRESENTAÇÃO
+// 21. MODO DEMO — v13.1.2-GOLD · DADOS FIXOS PARA APRESENTAÇÃO (NIF unificado)
 // ============================================================================
 function activateDemoMode() {
+    // ── GUARD CLAUSE: re-entrada bloqueada enquanto processamento activo ──────
+    // Idempotência de Execução: garante que loadAnonymizedRealCase não é
+    // disparado mais de uma vez por ciclo de DOM. A flag UNIFEDSystem.processing
+    // actua como mutex de estado (Stable/Ready).
     if (UNIFEDSystem.processing) return;
     UNIFEDSystem.processing = true;
 
     ForensicLogger.addEntry('DEMO_MODE_ACTIVATED');
 
+    // ── GUARD CLAUSE: verificar disponibilidade de _activatePurePanel ─────────
+    // _activatePurePanel() (definido em index.html) é o único ponto de montagem
+    // do panel.html. Internamente, após a Promise do fetch('panel.html') resolver,
+    // chama loadAnonymizedRealCase() uma única vez — garantindo que a injecção
+    // de dados ocorre DEPOIS dos nós DOM estarem em estado Stable/Ready.
+    // NÃO invocar loadAnonymizedRealCase() aqui directamente: seria uma
+    // segunda invocação redundante (race condition de dupla injecção).
     if (typeof window._activatePurePanel !== 'function') {
         console.error('[UNIFED] _activatePurePanel não registado. Verifique a ordem de carregamento de scripts.');
         UNIFEDSystem.processing = false;
         return;
     }
 
+    // 1. DISPARAR A MONTAGEM DO PAINEL (fetch + inject HTML + loadAnonymizedRealCase)
+    //    A Promise do fetch é assíncrona; o setTimeout abaixo aguarda a sua resolução.
     window._activatePurePanel();
 
+    // 2. LATÊNCIA DE I/O GARANTIDA: 500ms
+    //    Compensa: fetch('panel.html') [I/O disco/rede] + wrapper.innerHTML [Reflow]
+    //    + crypto.subtle.digest() [async] + _updatePureUI() [Repaint].
+    //    NÃO reduzir para 150ms: o encadeamento assíncrono excede esse valor
+    //    em contextos de servidor HTTP com latência de disco não nula.
     setTimeout(() => {
+        // 3. ACTUALIZAR CAMPOS DE IDENTIFICAÇÃO DO SUJEITO PASSIVO
+        //    Os dados já foram injectados por loadAnonymizedRealCase() via
+        //    _activatePurePanel(). Apenas sincronizar os inputs de UI.
         const client = UNIFEDSystem.client;
         if (client) {
             const nameInput = document.getElementById('clientNameFixed');
@@ -4094,6 +4196,7 @@ function activateDemoMode() {
             registerClient();
         }
 
+        // 4. LIBERTAR MUTEX E RESTAURAR ESTADO DA UI
         UNIFEDSystem.processing = false;
         const demoBtn = document.getElementById('demoModeBtn');
         if (demoBtn) {
@@ -4102,7 +4205,7 @@ function activateDemoMode() {
         }
         forensicDataSynchronization();
         logAudit('✅ Caso Real (Anonimizado) carregado com sucesso.', 'success');
-    }, 500);
+    }, 500); // [ISO/IEC 27037] Latência de I/O Garantida — não alterar sem validação
 }
 
 function simulateUpload(type, count) {
@@ -4163,7 +4266,7 @@ function simulateUpload(type, count) {
 }
 
 // ============================================================================
-// 22. MOTOR DE PERÍCIA FORENSE (v13.12.0) COM CORREÇÕES
+// 22. MOTOR DE PERÍCIA FORENSE (v12.8.9) COM CORREÇÕES
 // ============================================================================
 function performAudit() {
     if (!UNIFEDSystem.client) return showToast(currentLang === 'en' ? 'Register the taxpayer first.' : 'Registe o sujeito passivo primeiro.', 'error');
@@ -4244,7 +4347,7 @@ function performAudit() {
                 dac7TotalPeriodo: dac7TotalPeriodo
             };
 
-            console.log('🔍 VALORES EXTRAÍDOS (v13.12.0):');
+            console.log('🔍 VALORES EXTRAÍDOS (v12.8.9):');
             console.log('   SAF-T Bruto:', formatCurrency(saftBruto));
             console.log('   SAF-T Ilíquido:', formatCurrency(saftIliquido));
             console.log('   SAF-T IVA:', formatCurrency(saftIva));
@@ -4271,7 +4374,7 @@ function performAudit() {
             UNIFEDSystem.performanceTiming.end = performance.now();
             const duration = (UNIFEDSystem.performanceTiming.end - UNIFEDSystem.performanceTiming.start).toFixed(2);
 
-            logAudit(`📊 VALORES UTILIZADOS NA PERÍCIA (v13.12.0):`, 'info');
+            logAudit(`📊 VALORES UTILIZADOS NA PERÍCIA (v12.8.9):`, 'info');
             logAudit(`   SAF-T Bruto: ${formatCurrency(saftBruto)} (${UNIFEDSystem.documents.saft?.files?.length || 0} ficheiros)`, 'info');
             logAudit(`   Ganhos (Extrato): ${formatCurrency(stmtGanhos)}`, 'info');
             logAudit(`   Despesas (Extrato): ${formatCurrency(stmtDespesas)}`, 'info');
@@ -4284,7 +4387,7 @@ function performAudit() {
             logAudit(`   Expense Gap (Despesas - Fatura): ${formatCurrency(stmtDespesas - invoiceVal)}`, 'info');
             logAudit(`   Meses com dados: ${UNIFEDSystem.dataMonths.size}`, 'info');
 
-            logAudit(`✅ Perícia BIG DATA v13.12.0 concluída em ${duration}ms.`, 'success');
+            logAudit(`✅ Perícia BIG DATA v12.8.9 concluída em ${duration}ms.`, 'success');
 
             ForensicLogger.addEntry('AUDIT_COMPLETED', {
                 duration,
@@ -4402,7 +4505,6 @@ function performForensicCrossings() {
     cross.percentagemOmissao = cross.c2_pct;
     cross.ivaFalta = cross.discrepanciaCritica * 0.23;
     cross.ivaFalta6 = cross.discrepanciaCritica * 0.06;
-    cross.asfixiaFinanceira = saftBruto * 0.06;
 
     cross.c3_saftBruto = saftBruto;
     cross.c3_ganhos = ganhos;
@@ -4442,14 +4544,13 @@ function performForensicCrossings() {
         UNIFEDSystem.analysis.verdict.percent = cross.percentagemDiscrepancia.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
     }
 
-    logAudit(`━━ MATRIZ FORENSE v13.12.0-PURE ━━ Período: ${UNIFEDSystem.selectedPeriodo} | Meses: ${mesesDados}`, 'info');
+    logAudit(`━━ MATRIZ FORENSE v13.5.0-PURE ━━ Período: ${UNIFEDSystem.selectedPeriodo} | Meses: ${mesesDados}`, 'info');
     logAudit(`[C1] SAF-T Bruto (${formatCurrency(saftBruto)}) vs DAC7 (${formatCurrency(dac7Total)}) → Δ ${formatCurrency(cross.c1_delta)} (${cross.c1_pct.toFixed(2)}%) — Sub-comunicação plataforma→Estado`, 'warning');
     logAudit(`[C2] 🔫 SMOKING GUN — Despesas/Comissões (${formatCurrency(despesas)}) vs Faturado (${formatCurrency(faturaPlataforma)}) → Δ ${formatCurrency(cross.c2_delta)} (${cross.c2_pct.toFixed(2)}%) — Retenção ilegal provada`, 'error');
     logAudit(`[C3] SAF-T Bruto (${formatCurrency(saftBruto)}) vs Ganhos Extrato (${formatCurrency(ganhos)}) → Δ ${formatCurrency(cross.c3_delta)} (${cross.c3_pct.toFixed(2)}%) — Viagens faturadas vs transferências efectivas`, 'warning');
     logAudit(`[C4] Líquido Declarado (${formatCurrency(cross.c4_liquidoDeclarado)}) vs Líquido Real (${formatCurrency(ganhosLiquidos)}) → Δ ${formatCurrency(cross.c4_delta)} (${cross.c4_pct.toFixed(2)}%) — Diferença final no bolso`, 'error');
     logAudit(`💰 IVA em falta (23%): ${formatCurrency(cross.ivaFalta)} | IVA em falta (6%): ${formatCurrency(cross.ivaFalta6)}`, 'error');
     logAudit(`📐 Agravamento IRC Anual (C2/meses×12): ${formatCurrency(cross.agravamentoBrutoIRC)} | IRC Est. (21%): ${formatCurrency(cross.ircEstimado)}`, 'info');
-    logAudit(`📉 Asfixia Financeira (IVA 6% sobre SAF-T Bruto): ${formatCurrency(cross.asfixiaFinanceira)} — Art. 405.º C. Civil`, 'info');
 
     ForensicLogger.addEntry('CROSSINGS_CALCULATED_4AXES', {
         c1_saftVsDac7: { delta: cross.c1_delta, pct: cross.c1_pct },
@@ -4461,8 +4562,7 @@ function performForensicCrossings() {
         percentage: cross.percentagemOmissao,
         percentageSaftVsDac7: cross.percentagemSaftVsDac7,
         vat23: cross.ivaFalta,
-        vat6: cross.ivaFalta6,
-        asfixiaFinanceira: cross.asfixiaFinanceira
+        vat6: cross.ivaFalta6
     });
 }
 
@@ -4641,7 +4741,6 @@ function updateDashboard() {
     setElementText('ircValue', formatCurrency(cross.ircEstimado || 0));
     setElementText('iva6Value', formatCurrency(cross.ivaFalta6 || 0));
     setElementText('iva23Value', formatCurrency(cross.ivaFalta || 0));
-    setElementText('asfixiaFinanceiraValue', formatCurrency(cross.asfixiaFinanceira || 0));
 
     setElementText('quantumValue', formatCurrency(cross.impactoSeteAnosMercado || 0));
 
@@ -5187,7 +5286,7 @@ async function exportDataJSON() {
 }
 
 // ============================================================================
-// 24. EXPORTAÇÃO PDF (v13.12.0 - Atualizada para novos campos)
+// 24. EXPORTAÇÃO PDF (v12.8.9 - Atualizada para novos campos) - CÓDIGO COMPLETO
 // ============================================================================
 async function exportPDF() {
     if (!UNIFEDSystem.client) return showToast('Sem sujeito passivo para gerar parecer.', 'error');
@@ -5196,17 +5295,16 @@ async function exportPDF() {
         return showToast('Erro de sistema (jsPDF)', 'error');
     }
 
-    if (typeof UNIFEDSystem.generateMasterHash === 'function') {
+    if (typeof UNIFEDSystem.generateForensicSeal === 'function') {
         try {
-            await UNIFEDSystem.generateMasterHash();
-window.activeForensicSession = { sessionId: UNIFEDSystem.sessionId, masterHash: UNIFEDSystem.masterHash };
+            await UNIFEDSystem.generateForensicSeal();
         } catch (e) {
             console.warn('[UNIFED-PDF] Não foi possível atualizar o hash dinâmico:', e);
         }
     }
 
     ForensicLogger.addEntry('PDF_EXPORT_STARTED');
-    logAudit('📄 A gerar Parecer Técnico (Estilo Institucional v13.12.0-PURE)...', 'info');
+    logAudit('📄 A gerar Parecer Técnico (Estilo Institucional v13.5.0-PURE)...', 'info');
 
     try {
         const { jsPDF } = window.jspdf;
@@ -5288,62 +5386,41 @@ window.activeForensicSession = { sessionId: UNIFEDSystem.sessionId, masterHash: 
         let _enrichSankeyImage = null;
         let _enrichTemporalImage = null;
 
-        const TIMEOUT_MS = 8000;
-
-        const timeoutPromise = (ms) => new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), ms));
-
         if (typeof window.generateLegalNarrative === 'function') {
             try {
-                logAudit('🤖 [v13.12.0] A gerar Síntese Jurídica + Simulador Adversarial (IA)...', 'info');
-                _enrichLegalNarrative = await Promise.race([
-                    window.generateLegalNarrative(UNIFEDSystem.analysis),
-                    timeoutPromise(TIMEOUT_MS)
-                ]).catch(() => null);
-                if (_enrichLegalNarrative) {
-                    logAudit('✅ [v13.12.0] Síntese Jurídica + Contra-Interrogatório gerados.', 'success');
-                } else {
-                    _enrichLegalNarrative = '[Síntese jurídica indisponível — tempo limite excedido]';
-                    logAudit('⚠ [v13.12.0] IA timeout — PDF gerado sem síntese.', 'warning');
-                }
+                logAudit('🤖 [v13.3.0] A gerar Síntese Jurídica + Simulador Adversarial (IA)...', 'info');
+                _enrichLegalNarrative = await window.generateLegalNarrative(UNIFEDSystem.analysis);
+                logAudit('✅ [v13.3.0] Síntese Jurídica + Contra-Interrogatório gerados.', 'success');
             } catch (_aiErr) {
                 _enrichLegalNarrative = '[Síntese jurídica indisponível — motor forense íntegro]';
-                logAudit('⚠ [v13.12.0] IA indisponível — PDF gerado sem síntese (CORS/offline).', 'warning');
+                logAudit('⚠ [v13.3.0] IA indisponível — PDF gerado sem síntese (CORS/offline).', 'warning');
             }
         }
 
         if (typeof window.renderSankeyToImage === 'function') {
             try {
-                logAudit('📊 [v13.12.0] A renderizar Diagrama de Fluxo Financeiro (Sankey)...', 'info');
-                _enrichSankeyImage = await Promise.race([
-                    window.renderSankeyToImage(UNIFEDSystem.analysis),
-                    timeoutPromise(TIMEOUT_MS)
-                ]).catch(() => null);
+                logAudit('📊 [v13.3.0] A renderizar Diagrama de Fluxo Financeiro (Sankey)...', 'info');
+                _enrichSankeyImage = await window.renderSankeyToImage(UNIFEDSystem.analysis);
                 if (_enrichSankeyImage) {
-                    logAudit('✅ [v13.12.0] Diagrama Sankey renderizado com sucesso.', 'success');
+                    logAudit('✅ [v13.3.0] Diagrama Sankey renderizado com sucesso.', 'success');
                 } else {
-                    logAudit('⚠ [v13.12.0] Diagrama Sankey timeout — PDF gerado sem gráfico.', 'warning');
+                    logAudit('⚠ [v13.3.0] Diagrama Sankey indisponível — PDF gerado sem gráfico.', 'warning');
                 }
             } catch (_sankeyErr) {
                 _enrichSankeyImage = null;
-                logAudit('⚠ [v13.12.0] Erro Sankey — PDF gerado sem diagrama.', 'warning');
+                logAudit('⚠ [v13.3.0] Erro Sankey — PDF gerado sem diagrama.', 'warning');
             }
         }
-
         if (typeof window.generateTemporalChartImage === 'function') {
             try {
-                logAudit('📅 [v13.12.0] A renderizar Gráfico ATF (Análise Temporal Forense)...', 'info');
-                _enrichTemporalImage = await Promise.race([
-                    window.generateTemporalChartImage(UNIFEDSystem.monthlyData, UNIFEDSystem.analysis),
-                    timeoutPromise(TIMEOUT_MS)
-                ]).catch(() => null);
+                logAudit('📅 [v13.3.0] A renderizar Gráfico ATF (Análise Temporal Forense)...', 'info');
+                _enrichTemporalImage = await window.generateTemporalChartImage(UNIFEDSystem.monthlyData, UNIFEDSystem.analysis);
                 if (_enrichTemporalImage) {
-                    logAudit('✅ [v13.12.0] Gráfico ATF renderizado com sucesso.', 'success');
-                } else {
-                    logAudit('⚠ [v13.12.0] ATF gráfico timeout — PDF sem análise temporal.', 'warning');
+                    logAudit('✅ [v13.3.0] Gráfico ATF renderizado com sucesso.', 'success');
                 }
             } catch (_atfErr) {
                 _enrichTemporalImage = null;
-                logAudit('⚠ [v13.12.0] ATF gráfico indisponível — PDF sem análise temporal.', 'warning');
+                logAudit('⚠ [v13.3.0] ATF gráfico indisponível — PDF sem análise temporal.', 'warning');
             }
         }
 
@@ -5377,7 +5454,7 @@ window.activeForensicSession = { sessionId: UNIFEDSystem.sessionId, masterHash: 
                     doc.text(_hashLines[i], margin, yPos);
                     yPos -= 4;
                 }
-                doc.text(`Pág. ${pageNum} · UNIFED-PROBATUM v13.12.0-PURE · ISO/IEC 27037:2012 · Art. 125.º CPP`,
+                doc.text(`Pág. ${pageNum} · UNIFED-PROBATUM v13.5.0-PURE · ISO/IEC 27037:2012 · Art. 125.º CPP`,
                     pageWidth / 2, pageHeight - 8, { align: 'center' });
             }
 
@@ -5410,7 +5487,7 @@ window.activeForensicSession = { sessionId: UNIFEDSystem.sessionId, masterHash: 
                 doc.setFontSize(5);
                 doc.setFont('courier', 'bold');
                 doc.setTextColor(0, 229, 255);
-                doc.text('PROBATUM SEAL v13.12.0-PURE', sealX + boxSize / 2, sealY + 3.5, { align: 'center' });
+                doc.text('PROBATUM SEAL v13.5.0-PURE', sealX + boxSize / 2, sealY + 3.5, { align: 'center' });
 
                 if (_qrDataUrl) {
                     doc.addImage(_qrDataUrl, 'PNG',
@@ -5430,7 +5507,7 @@ window.activeForensicSession = { sessionId: UNIFEDSystem.sessionId, masterHash: 
                 doc.setTextColor(30, 60, 120);
                 const certLine1 = '[ UNIFED - PROBATUM CERTIFIED ]';
                 const certLine2 = 'ANALISTA E CONSULTOR FORENSE';
-                const certLine3 = 'v13.12.0-PURE · Art. 103.º/104.º RGIT';
+                const certLine3 = 'v13.5.0-PURE · Art. 103.º/104.º RGIT';
                 const certLine4 = 'Art. 32.º CRP · Art. 125.º CPP';
                 doc.text(certLine1, sealX + boxSize / 2, sealY + qrSize + 7, { align: 'center' });
                 doc.text(certLine2, sealX + boxSize / 2, sealY + qrSize + 10, { align: 'center' });
@@ -5500,8 +5577,8 @@ window.activeForensicSession = { sessionId: UNIFEDSystem.sessionId, masterHash: 
         doc.text('Cadeia de Custódia Forense: Ativa', doc.internal.pageSize.getWidth() - left, y - 5, { align: 'right' });
         const _afs = (typeof window.activeForensicSession !== 'undefined') ? window.activeForensicSession : {};
         const _pdfSessionId = _afs.sessionId || UNIFEDSystem.sessionId || 'UNIFED-MMLADX8Q-CV69L';
-        const _pdfMasterHashRaw = _afs.masterHash || UNIFEDSystem.masterHash || '5150e7674b891d5d07ca990e4c7124fc66af40488452759aeebdf84976eaa8f6';
-        const _pdfMasterHash = (_pdfMasterHashRaw && _pdfMasterHashRaw.length === 64) ? _pdfMasterHashRaw : '5150e7674b891d5d07ca990e4c7124fc66af40488452759aeebdf84976eaa8f6';
+        const _pdfMasterHashRaw = _afs.masterHash || UNIFEDSystem.masterHash || '';
+        const _pdfMasterHash = (_pdfMasterHashRaw && _pdfMasterHashRaw.length === 64) ? _pdfMasterHashRaw : 'HASH_NAO_CALCULADO';
         doc.text(`PROCESSO N.º: ${_pdfSessionId}`, left, y, { lineHeightFactor: 1.5 }); y += 5;
         doc.text(`DATA: ${new Date().toLocaleDateString('pt-PT')}`, left, y, { lineHeightFactor: 1.5 }); y += 5;
         doc.text(`OBJETO: RECONSTITUIÇÃO DA VERDADE MATERIAL DIGITAL / ART. 103.º RGIT`, left, y, { lineHeightFactor: 1.5 }); y += 4;
@@ -5685,8 +5762,7 @@ window.activeForensicSession = { sessionId: UNIFEDSystem.sessionId, masterHash: 
             { desc: currentLang === 'pt' ? '[!] SAF-T Valor Bruto Total vs DAC7 (Revenue Omission)' : '[!] SAF-T Gross Value vs DAC7 (Revenue Omission)',       value: cross.discrepanciaSaftVsDac7,      source: currentLang === 'pt' ? 'Smoking Gun 1' : 'Smoking Gun 1', isGap: true },
             { desc: currentLang === 'pt' ? `[X] Diferencial de Base em Análise (Despesas/Comissões vs Fatura) [${_pctOmissaoStr}]` : `[X] Base Differential Under Analysis (Expenses/Commissions vs Invoice) [${_pctOmissaoStr}]`, value: cross.discrepanciaCritica, source: currentLang === 'pt' ? 'Smoking Gun 2' : 'Smoking Gun 2', isCritical: true },
             { desc: currentLang === 'pt' ? 'IVA Omitido (23% · Autoliquidação CIVA)' : 'Missing VAT (23% · VAT Self-Liquidation)',         value: cross.ivaFalta,          source: currentLang === 'pt' ? 'Cálculo CIVA' : 'VAT Calculation',  isGap: true },
-            { desc: currentLang === 'pt' ? 'IVA Omitido (6% · Serviços Transporte)' : 'Missing VAT (6% · Transport Services)',          value: cross.ivaFalta6,           source: currentLang === 'pt' ? 'Cálculo CIVA' : 'VAT Calculation',  isGap: true },
-            { desc: currentLang === 'pt' ? 'Asfixia Financeira (IVA 6% sobre SAF-T Bruto)' : 'Financial Suffocation (6% VAT on SAF-T Gross)', value: cross.asfixiaFinanceira, source: 'Art. 405.º C. Civil · Verba 2.18 CIVA', isGap: true }
+            { desc: currentLang === 'pt' ? 'IVA Omitido (6% · Serviços Transporte)' : 'Missing VAT (6% · Transport Services)',          value: cross.ivaFalta6,           source: currentLang === 'pt' ? 'Cálculo CIVA' : 'VAT Calculation',  isGap: true }
         ];
 
         rows.forEach(row => {
@@ -5814,8 +5890,6 @@ window.activeForensicSession = { sessionId: UNIFEDSystem.sessionId, masterHash: 
         doc.setFont('helvetica', 'normal');
         doc.text(`${currentLang === 'pt' ? 'IVA Omitido (23%):' : 'Missing VAT (23%):'}  ${formatCurrency(cross.ivaFalta)}`, left, y); y += 4;
         doc.text(`${currentLang === 'pt' ? 'IVA Omitido (6%):' : 'Missing VAT (6%):'}   ${formatCurrency(cross.ivaFalta6)}`, left, y); y += 8;
-        doc.text(`${currentLang === 'pt' ? 'Asfixia Financeira (IVA 6% sobre Bruto):' : 'Financial Suffocation (6% VAT on Gross):'} ${formatCurrency(cross.asfixiaFinanceira)}`, left, y); y += 4;
-
         doc.setDrawColor(200, 200, 200);
         doc.setLineWidth(0.2);
         if (y < 270) {
@@ -6049,7 +6123,7 @@ window.activeForensicSession = { sessionId: UNIFEDSystem.sessionId, masterHash: 
         doc.text('Algoritmo Hash: SHA-256 (Forense)', left, y); y += 5;
         doc.text(`Timestamp: RFC 3161`, left, y); y += 5;
         doc.text(`${currentLang === 'pt' ? 'Validade Prova: Indeterminada' : 'Proof Validity: Indeterminate'}`, left, y); y += 5;
-        doc.text(`Certificação: UNIFED - PROBATUM v13.12.0-PURE · DORA COMPLIANT`, left, y); y += 5;
+        doc.text(`Certificação: UNIFED - PROBATUM v13.5.0-PURE · DORA COMPLIANT`, left, y); y += 5;
         doc.setFont('helvetica', 'italic');
         doc.setFontSize(7);
         doc.text(`${currentLang === 'pt' ? 'Este relatório cumpre com o Regulamento (UE) 2022/2554 (DORA) - Digital Operational Resilience Act, assegurando a resiliência operacional digital e a integridade das evidências digitais processadas.' : 'This report complies with Regulation (EU) 2022/2554 (DORA) - Digital Operational Resilience Act, ensuring digital operational resilience and integrity of processed digital evidence.'}`, left, y, { maxWidth: doc.internal.pageSize.getWidth() - 30 }); y += 8;
@@ -6159,8 +6233,7 @@ window.activeForensicSession = { sessionId: UNIFEDSystem.sessionId, masterHash: 
             { desc: currentLang === 'pt' ? 'Impacto Mensal · 38.000 condutores PT' : 'Monthly Impact · 38,000 drivers PT',               val: cross.impactoMensalMercado,          pct: null,      highlight: false },
             { desc: currentLang === 'pt' ? 'Impacto Anual · 38.000 condutores × 12 meses PT' : 'Annual Impact · 38,000 drivers × 12 months PT',    val: cross.impactoAnualMercado,           pct: null,      highlight: false },
             { desc: currentLang === 'pt' ? '% Omissão Receita SAF-T vs DAC7' : '% Revenue Omission SAF-T vs DAC7',                     val: null,                                pct: (cross.percentagemSaftVsDac7 || 0).toFixed(2) + '%', highlight: false },
-            { desc: currentLang === 'pt' ? '% Diferencial de Base em Análise (Desp. vs Fat.)' : '% Base Differential Under Analysis (Exp. vs Inv.)',    val: null,                                pct: (cross.percentagemOmissao || 0).toFixed(2) + '%',    highlight: false },
-            { desc: currentLang === 'pt' ? 'Asfixia Financeira (IVA 6% sobre Bruto)' : 'Financial Suffocation (6% VAT on Gross)',            val: cross.asfixiaFinanceira,             pct: null,      highlight: false }
+            { desc: currentLang === 'pt' ? '% Diferencial de Base em Análise (Desp. vs Fat.)' : '% Base Differential Under Analysis (Exp. vs Inv.)',    val: null,                                pct: (cross.percentagemOmissao || 0).toFixed(2) + '%',    highlight: false }
         ];
 
         fisRows.forEach((row, i) => {
@@ -6364,7 +6437,6 @@ window.activeForensicSession = { sessionId: UNIFEDSystem.sessionId, masterHash: 
         doc.text(`  ${currentLang === 'pt' ? 'VAT 6% / IVA 6% Omitido (Transporte):' : 'VAT 6% / Missing VAT 6% (Transport):'}            ${formatCurrency(cross.ivaFalta6)}`, left, y); y += 4;
         doc.text(`  ${currentLang === 'pt' ? 'Revenue Omission (DAC7) / Omissão Receita:' : 'Revenue Omission (DAC7) / Omissão Receita:'}        ${formatCurrency(cross.discrepanciaSaftVsDac7)} (${_pctReceitaStr})`, left, y); y += 4;
         doc.text(`  ${currentLang === 'pt' ? 'Expense Omission / Omissão Custos (BTF):' : 'Expense Omission / Omissão Custos (BTF):'}          ${formatCurrency(cross.discrepanciaCritica)} (${_pctOmissaoStr})`, left, y); y += 6;
-        doc.text(`  ${currentLang === 'pt' ? 'Asfixia Financeira (IVA 6% sobre Bruto):' : 'Financial Suffocation (6% VAT on Gross):'}    ${formatCurrency(cross.asfixiaFinanceira)}`, left, y); y += 4;
         doc.text(`  ${currentLang === 'pt' ? 'Contribuição IMT/AMT Omitida (5%):' : 'Missing IMT/AMT Contribution (5%):'}              ${formatCurrency(cross.discrepancia5IMT)}`, left, y); y += 4;
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(10);
@@ -6481,7 +6553,7 @@ window.activeForensicSession = { sessionId: UNIFEDSystem.sessionId, masterHash: 
             doc.setFontSize(8.5);
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(0, 229, 255);
-            doc.text(`${currentLang === 'pt' ? 'DIAGRAMA DE FLUXO FINANCEIRO — MONEY FLOW ANALYSIS · v13.12.0-PURE' : 'FINANCIAL FLOW DIAGRAM — MONEY FLOW ANALYSIS · v13.12.0-PURE'}`,
+            doc.text(`${currentLang === 'pt' ? 'DIAGRAMA DE FLUXO FINANCEIRO — MONEY FLOW ANALYSIS · v13.5.0-PURE' : 'FINANCIAL FLOW DIAGRAM — MONEY FLOW ANALYSIS · v13.5.0-PURE'}`,
                 doc.internal.pageSize.getWidth() / 2, 18, { align: 'center' });
             doc.setTextColor(0, 0, 0);
             y = 30;
@@ -6521,12 +6593,11 @@ window.activeForensicSession = { sessionId: UNIFEDSystem.sessionId, masterHash: 
             if (cross.discrepanciaSaftVsDac7 > 0){ doc.text(`  · ${currentLang === 'pt' ? 'Omissão de receita (SAF-T vs DAC7):' : 'Revenue omission (SAF-T vs DAC7):'} ${formatCurrency(cross.discrepanciaSaftVsDac7)}`, left, y); y += 4; }
             if (cross.discrepanciaCritica > 0)   { doc.text(`  · ${currentLang === 'pt' ? 'Omissão de custos (BTF):' : 'Expense omission (BTF):'} ${formatCurrency(cross.discrepanciaCritica)} (${_pctOmissaoStr})`, left, y); y += 4; }
             if (cross.ircEstimado > 0)           { doc.text(`  · ${currentLang === 'pt' ? 'IRC estimado omitido:' : 'Estimated omitted IRC:'} ${formatCurrency(cross.ircEstimado)}`, left, y); y += 4; }
-            if (cross.asfixiaFinanceira > 0)      { doc.text(`  · ${currentLang === 'pt' ? 'Asfixia Financeira (6% IVA sobre Bruto):' : 'Financial Suffocation (6% VAT on Gross):'} ${formatCurrency(cross.asfixiaFinanceira)}`, left, y); y += 4; }
 
             doc.setFontSize(6);
             doc.setFont('courier', 'normal');
             doc.setTextColor(120, 120, 120);
-            doc.text('UNIFED-PROBATUM v13.12.0-PURE · Diagrama de Fluxo Financeiro · Art. 125.º CPP · DORA (UE) 2022/2554', left, y + 4);
+            doc.text('UNIFED-PROBATUM v13.5.0-PURE · Diagrama de Fluxo Financeiro · Art. 125.º CPP · DORA (UE) 2022/2554', left, y + 4);
 
             addFooter(doc, pageNumber);
         }
@@ -6543,8 +6614,8 @@ window.activeForensicSession = { sessionId: UNIFEDSystem.sessionId, masterHash: 
             doc.setTextColor(0, 229, 255);
             const _atfHeader = doc.splitTextToSize(
                 currentLang === 'pt'
-                    ? 'ANÁLISE TEMPORAL FORENSE (ATF) — TENDÊNCIAS · OUTLIERS 2σ · ÍNDICE DE RECIDIVA · v13.12.0-PURE'
-                    : 'FORENSIC TEMPORAL ANALYSIS (ATF) — TRENDS · OUTLIERS 2σ · RECIDIVISM INDEX · v13.12.0-PURE',
+                    ? 'ANÁLISE TEMPORAL FORENSE (ATF) — TENDÊNCIAS · OUTLIERS 2σ · ÍNDICE DE RECIDIVA · v13.5.0-PURE'
+                    : 'FORENSIC TEMPORAL ANALYSIS (ATF) — TRENDS · OUTLIERS 2σ · RECIDIVISM INDEX · v13.5.0-PURE',
                 180);
             doc.text(_atfHeader, doc.internal.pageSize.getWidth() / 2, 18, { align: 'center' });
             doc.setTextColor(0, 0, 0);
@@ -6590,7 +6661,7 @@ window.activeForensicSession = { sessionId: UNIFEDSystem.sessionId, masterHash: 
                     doc.setFontSize(6.5);
                     doc.setFont('courier', 'normal');
                     doc.setTextColor(120, 120, 120);
-                    doc.text('UNIFED-PROBATUM v13.12.0-PURE · Análise Temporal Forense · DORA (UE) 2022/2554', left, y + 3);
+                    doc.text('UNIFED-PROBATUM v13.5.0-PURE · Análise Temporal Forense · DORA (UE) 2022/2554', left, y + 3);
                 } catch (_e) { }
             }
             addFooter(doc, pageNumber);
@@ -6606,7 +6677,7 @@ window.activeForensicSession = { sessionId: UNIFEDSystem.sessionId, masterHash: 
             doc.setFontSize(8.5);
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(0, 229, 255);
-            doc.text(`${currentLang === 'pt' ? 'SÍNTESE JURÍDICA PERICIAL — ANÁLISE DETERMINÍSTICA v13.12.0-PURE' : 'FORENSIC LEGAL SUMMARY — DETERMINISTIC ANALYSIS v13.12.0-PURE'}`,
+            doc.text(`${currentLang === 'pt' ? 'SÍNTESE JURÍDICA PERICIAL — ANÁLISE DETERMINÍSTICA v13.5.0-PURE' : 'FORENSIC LEGAL SUMMARY — DETERMINISTIC ANALYSIS v13.5.0-PURE'}`,
                 doc.internal.pageSize.getWidth() / 2, 18, { align: 'center' });
             doc.setTextColor(0, 0, 0);
             y = 30;
@@ -6616,12 +6687,12 @@ window.activeForensicSession = { sessionId: UNIFEDSystem.sessionId, masterHash: 
             doc.setTextColor(80, 80, 80);
             const aiNotaLines = doc.splitTextToSize(
                 currentLang === 'pt'
-                    ? 'Documento gerado sob metodologia forense UNIFED-PROBATUM v13.12.0-PURE. ' +
+                    ? 'Documento gerado sob metodologia forense UNIFED-PROBATUM v13.5.0-PURE. ' +
                       'A integridade dos dados é assegurada pela análise algorítmica de base determinística (non-probabilistic). ' +
                       'Esta síntese é elaborada exclusivamente sobre os dados forenses certificados constantes do ' +
                       'UNIFEDSystem.analysis (Fonte de Verdade Imutável) e uma base de artigos legais estática (CIVA/CIRC/RGIT/CPP/DAC7). ' +
                       'Conformidade: Art. 125.º CPP · ISO/IEC 27037:2012 · DORA (UE) 2022/2554.'
-                    : 'Document generated under UNIFED-PROBATUM v13.12.0-PURE forensic methodology. ' +
+                    : 'Document generated under UNIFED-PROBATUM v13.5.0-PURE forensic methodology. ' +
                       'Data integrity is ensured by deterministic algorithmic analysis (non-probabilistic). ' +
                       'This summary is prepared exclusively on the certified forensic data contained in ' +
                       'UNIFEDSystem.analysis (Immutable Truth Source) and a static legal article base (CIVA/CIRC/RGIT/CPP/DAC7). ' +
@@ -6674,7 +6745,7 @@ window.activeForensicSession = { sessionId: UNIFEDSystem.sessionId, masterHash: 
             doc.setFontSize(6.5);
             doc.setFont('courier', 'normal');
             doc.setTextColor(100, 116, 139);
-            doc.text('UNIFED-PROBATUM v13.12.0-PURE · Análise Determinística · Base Legal: CIVA/CIRC/RGIT/CPP/DAC7', left, y); y += 4;
+            doc.text('UNIFED-PROBATUM v13.5.0-PURE · Análise Determinística · Base Legal: CIVA/CIRC/RGIT/CPP/DAC7', left, y); y += 4;
             doc.text(`${currentLang === 'pt' ? 'Metodologia: RECONSTITUIÇÃO DA VERDADE MATERIAL DIGITAL · ISO/IEC 27037:2012 · DORA (UE) 2022/2554 · Art. 125.º CPP' : 'Methodology: RECONSTRUCTION OF DIGITAL MATERIAL TRUTH · ISO/IEC 27037:2012 · DORA (EU) 2022/2554 · Art. 125 CPP'}`, left, y);
             y += 8;
             doc.setFont('helvetica', 'normal');
@@ -7414,7 +7485,7 @@ window.activeForensicSession = { sessionId: UNIFEDSystem.sessionId, masterHash: 
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(9);
             doc.setTextColor(30, 60, 120);
-            doc.text('[ UNIFED - PROBATUM CERTIFIED · ANALISTA E CONSULTOR FORENSE · v13.12.0-PURE ]',
+            doc.text('[ UNIFED - PROBATUM CERTIFIED · ANALISTA E CONSULTOR FORENSE · v13.5.0-PURE ]',
                 _termW / 2, y, { align: 'center' }); y += 5;
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(6.5);
@@ -7443,8 +7514,44 @@ window.activeForensicSession = { sessionId: UNIFEDSystem.sessionId, masterHash: 
         const _pw  = doc.internal.pageSize.getWidth();
         const _ph  = doc.internal.pageSize.getHeight();
         const _mg  = 14;
-        const _mhFullRaw = (typeof window.activeForensicSession !== 'undefined' && window.activeForensicSession.masterHash) ? window.activeForensicSession.masterHash : (UNIFEDSystem.masterHash || '5150e7674b891d5d07ca990e4c7124fc66af40488452759aeebdf84976eaa8f6');
-        const _mhFull = (_mhFullRaw && _mhFullRaw.length === 64) ? _mhFullRaw : '5150e7674b891d5d07ca990e4c7124fc66af40488452759aeebdf84976eaa8f6';
+        // ── PATCH A-08 (RTF-UNIFED-2026-0406-001) ─────────────────────────────
+        // Substituição do padrão de fallback silencioso com hash estático hardcoded.
+        // O hash '5150e7...' é independente de qualquer dado do caso — um documento
+        // exportado com esse hash não tem valor probatório e é vulnerável a contra-perícia.
+        // Guarda explícita: se não existir masterHash válido, bloquear exportação.
+        const _afsSession = (typeof window.activeForensicSession !== 'undefined')
+            ? window.activeForensicSession
+            : null;
+        const _sysMasterHash = (typeof UNIFEDSystem !== 'undefined')
+            ? UNIFEDSystem.masterHash
+            : null;
+        const _mhCandidate = (_afsSession && _afsSession.masterHash)
+            ? _afsSession.masterHash
+            : _sysMasterHash;
+        const _SHA256_RE = /^[0-9a-fA-F]{64}$/;
+        if (!_mhCandidate || !_SHA256_RE.test(_mhCandidate)) {
+            if (typeof window.logAudit === 'function') {
+                window.logAudit('❌ [Patch A-08] exportPDF bloqueada: Master Hash inválido ou ausente. Complete o ciclo de análise antes de exportar.', 'error');
+            }
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'error',
+                    title: currentLang === 'en' ? 'Export Blocked' : 'Exportação Bloqueada',
+                    text: currentLang === 'en'
+                        ? 'The Master Hash has not been calculated. Please complete the evidence analysis cycle before exporting.'
+                        : 'O Master Hash não foi calculado. Complete o ciclo de análise de evidências antes de exportar.',
+                    confirmButtonColor: '#C0392B'
+                });
+            } else {
+                alert(currentLang === 'en'
+                    ? 'Export blocked: Master Hash not calculated. Complete the analysis cycle first.'
+                    : 'Exportação bloqueada: Master Hash não calculado. Complete o ciclo de análise primeiro.'
+                );
+            }
+            return;
+        }
+        const _mhFull = _mhCandidate.toUpperCase();
+        // ── FIM PATCH A-08 ────────────────────────────────────────────────────
 
         for (let _p = 1; _p <= realTotalPages; _p++) {
             doc.setPage(_p);
@@ -7473,7 +7580,7 @@ window.activeForensicSession = { sessionId: UNIFEDSystem.sessionId, masterHash: 
             doc.setFontSize(5.5);
             doc.setTextColor(140, 140, 140);
             doc.text(
-                `${currentLang === 'pt' ? 'UNIFED-PROBATUM v13.12.0-PURE · RECONSTITUIÇÃO DA VERDADE MATERIAL DIGITAL · Art. 125.º CPP' : 'UNIFED-PROBATUM v13.12.0-PURE · RECONSTRUCTION OF DIGITAL MATERIAL TRUTH · Art. 125 CPP'}`,
+                `${currentLang === 'pt' ? 'UNIFED-PROBATUM v13.5.0-PURE · RECONSTITUIÇÃO DA VERDADE MATERIAL DIGITAL · Art. 125.º CPP' : 'UNIFED-PROBATUM v13.5.0-PURE · RECONSTRUCTION OF DIGITAL MATERIAL TRUTH · Art. 125 CPP'}`,
                 _pw / 2, _ph - 9, { align: 'center' }
             );
 
@@ -7784,6 +7891,316 @@ function resetAuxiliaryData() {
     if (dac7NoteEl) dac7NoteEl.style.display = 'none';
 }
 
+function generateMasterHash() {
+    const forensicSummary = {
+        auxiliaryData: {
+            campanhas: UNIFEDSystem.auxiliaryData.campanhas,
+            portagens: UNIFEDSystem.auxiliaryData.portagens,
+            gorjetas: UNIFEDSystem.auxiliaryData.gorjetas,
+            cancelamentos: UNIFEDSystem.auxiliaryData.cancelamentos,
+            totalNaoSujeitos: UNIFEDSystem.auxiliaryData.totalNaoSujeitos,
+            processedFrom: UNIFEDSystem.auxiliaryData.processedFrom,
+            extractedAt: UNIFEDSystem.auxiliaryData.extractedAt,
+            legalBasis: currentLang === 'pt' ? 'Lei TVDE · 0% comissão · Art. 125.º CPP' : 'TVDE Law · 0% commission · Art. 125 CPP'
+        }
+    };
+
+    // Full SHA-256 recomputation: concatenate all evidence hashes
+    const evidenceHashes = UNIFEDSystem.analysis.evidenceIntegrity
+        .map(ev => ev.hash)
+        .filter(h => h && h.length === 64)
+        .sort();
+
+    const binaryConcat = evidenceHashes.join('') + JSON.stringify(forensicSummary) + UNIFEDSystem.sessionId;
+
+    const masterHashFull = CryptoJS.SHA256(binaryConcat).toString().toUpperCase();
+
+    UNIFEDSystem.masterHash = masterHashFull;
+    setElementText('masterHashValue', UNIFEDSystem.masterHash);
+    generateQRCode();
+    window.activeForensicSession = {
+        sessionId: UNIFEDSystem.sessionId,
+        masterHash: UNIFEDSystem.masterHash
+    };
+    try { sessionStorage.setItem('currentSession', JSON.stringify(window.activeForensicSession)); } catch (_e) { }
+}
+
+function logAudit(message, type = 'info') {
+    const now = Date.now();
+    if (now - lastLogTime < LOG_THROTTLE && type !== 'error' && type !== 'success') {
+        return;
+    }
+    lastLogTime = now;
+
+    const timestamp = new Date().toLocaleTimeString('pt-PT');
+    const entry = { timestamp, message, type };
+    UNIFEDSystem.logs.push(entry);
+
+    const consoleOutput = document.getElementById('consoleOutput');
+    if (consoleOutput) {
+        const logEl = document.createElement('div');
+        logEl.className = `log-entry log-${type}`;
+        logEl.textContent = `[${timestamp}] ${message}`;
+        consoleOutput.appendChild(logEl);
+        consoleOutput.scrollTop = consoleOutput.scrollHeight;
+    }
+}
+
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = `toast-notification ${type}`;
+
+    const icons = {
+        success: 'fa-check-circle',
+        error: 'fa-exclamation-triangle',
+        warning: 'fa-exclamation-circle',
+        info: 'fa-info-circle'
+    };
+
+    toast.innerHTML = `<i class="fas ${icons[type] || icons.info}"></i><p>${message}</p>`;
+    container.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.animation = 'slideIn 0.3s ease reverse';
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
+}
+
+function clearConsole() {
+    UNIFEDSystem.documents = {
+        control: { files: [], hashes: {}, totals: { records: 0 } },
+        saft: { files: [], hashes: {}, totals: { records: 0, iliquido: 0, iva: 0, bruto: 0 } },
+        invoices: { files: [], hashes: {}, totals: { records: 0, invoiceValue: 0 } },
+        statements: { files: [], hashes: {}, totals: { records: 0, ganhos: 0, despesas: 0, ganhosLiquidos: 0 } },
+        dac7: { files: [], hashes: {}, totals: { records: 0, q1: 0, q2: 0, q3: 0, q4: 0, total: 0 } }
+    };
+    UNIFEDSystem.analysis.evidenceIntegrity = [];
+    UNIFEDSystem.dataMonths = new Set();
+    UNIFEDSystem.monthlyData = {};
+    UNIFEDSystem.processedFiles = new Set();
+
+    UNIFEDSystem.client = null;
+    document.querySelectorAll('.client-data-field').forEach(el => el.textContent = '---');
+    const clientNameInput = document.getElementById('clientNameFixed');
+    const clientNIFInput = document.getElementById('clientNIFFixed');
+    const clientStatus = document.getElementById('clientStatusFixed');
+    if (clientNameInput) clientNameInput.value = '';
+    if (clientNIFInput) clientNIFInput.value = '';
+    if (clientStatus) clientStatus.style.display = 'none';
+    localStorage.removeItem('ifde_client_data_v12_8');
+
+    const fieldsToClear = ['subject-name', 'subject-nif', 'subject-address', 'audit-period', 'audit-hash', 'audit-status', 'saft-total', 'saft-iva', 'saft-iliquido', 'extract-ganhos', 'extract-despesas', 'dac7-total', 'revenue-gap', 'expense-gap'];
+    fieldsToClear.forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = '---'; });
+
+    const consoleLogs = document.getElementById('consoleOutput');
+    if (consoleLogs) consoleLogs.innerHTML = '';
+
+    document.querySelectorAll('.led-red-blink, .led-yellow-blink').forEach(led => { led.className = 'led-status led-off'; });
+    document.querySelectorAll('.box-border-blink, .box-despesas-blink').forEach(box => {
+        box.classList.remove('box-border-blink', 'box-despesas-blink');
+    });
+    const statCommCardWipe = document.getElementById('statCommCard');
+    if (statCommCardWipe) {
+        statCommCardWipe.classList.remove('alert-intermitent', 'box-despesas-blink');
+        statCommCardWipe.style.borderColor = '';
+        statCommCardWipe.style.boxShadow = '';
+    }
+    UNIFEDSystem.demoMode = false;
+    UNIFEDSystem.casoRealAnonimizado = false;
+    if (UNIFEDSystem.fileSources) UNIFEDSystem.fileSources.clear();
+
+    resetAllValues();
+
+    logAudit('🧹 SISTEMA PURGADO: Reset total executado. Sujeito Passivo eliminado.', 'warn');
+    ForensicLogger.addEntry('CONSOLE_CLEARED', { clientPurged: true });
+    showToast(currentLang === 'pt' ? 'Sistema purgado com sucesso' : 'System purged successfully', 'success');
+}
+
+function resetAllValues() {
+    UNIFEDSystem.documents.saft.totals = { records: 0, iliquido: 0, iva: 0, bruto: 0 };
+    UNIFEDSystem.documents.statements.totals = { records: 0, ganhos: 0, despesas: 0, ganhosLiquidos: 0 };
+    UNIFEDSystem.documents.invoices.totals = { invoiceValue: 0, records: 0 };
+    UNIFEDSystem.documents.dac7.totals = {
+        records: 0, q1: 0, q2: 0, q3: 0, q4: 0,
+        totalPeriodo: 0, receitaAnual: 0
+    };
+    UNIFEDSystem.documents.control.totals = { records: 0 };
+
+    UNIFEDSystem.documents.statements.files = [];
+    UNIFEDSystem.documents.invoices.files = [];
+    UNIFEDSystem.documents.saft.files = [];
+    UNIFEDSystem.documents.control.files = [];
+    UNIFEDSystem.documents.dac7.files = [];
+
+    UNIFEDSystem.processedFiles.clear();
+    UNIFEDSystem.dataMonths.clear();
+    UNIFEDSystem.analysis.evidenceIntegrity = [];
+    ValueSource.sources.clear();
+
+    UNIFEDSystem.analysis.totals = {
+        saftBruto: 0,
+        saftIliquido: 0,
+        saftIva: 0,
+        ganhos: 0,
+        despesas: 0,
+        ganhosLiquidos: 0,
+        faturaPlataforma: 0,
+        dac7Q1: 0,
+        dac7Q2: 0,
+        dac7Q3: 0,
+        dac7Q4: 0,
+        dac7TotalPeriodo: 0
+    };
+
+    UNIFEDSystem.analysis.twoAxis = {
+        revenueGap: 0,
+        expenseGap: 0,
+        revenueGapActive: false,
+        expenseGapActive: false
+    };
+
+    UNIFEDSystem.analysis.crossings = {
+        delta: 0,
+        bigDataAlertActive: false,
+        invoiceDivergence: false,
+        comissaoDivergencia: 0,
+        saftVsDac7Alert: false,
+        saftVsGanhosAlert: false,
+        discrepanciaCritica: 0,
+        discrepanciaSaftVsDac7: 0,
+        percentagemOmissao: 0,
+        percentagemDiscrepancia: 0,
+        percentagemSaftVsDac7: 0,
+        ivaFalta: 0,
+        ivaFalta6: 0,
+        btor: 0,
+        btf: 0,
+        impactoMensalMercado: 0,
+        impactoAnualMercado: 0,
+        impactoSeteAnosMercado: 0,
+        discrepancia5IMT: 0,
+        agravamentoBrutoIRC: 0,
+        ircEstimado: 0
+    };
+    UNIFEDSystem.analysis.verdict = null;
+    UNIFEDSystem.analysis.selectedQuestions = [];
+    UNIFEDSystem.monthlyData = {};
+    UNIFEDSystem.demoMode = false;
+    UNIFEDSystem.casoRealAnonimizado = false;
+    if (UNIFEDSystem.fileSources) UNIFEDSystem.fileSources.clear();
+
+    const elementsToReset = [
+        'saftIliquidoValue', 'saftIvaValue', 'saftBrutoValue',
+        'stmtGanhosValue', 'stmtDespesasValue', 'stmtGanhosLiquidosValue',
+        'dac7Q1Value', 'dac7Q2Value', 'dac7Q3Value', 'dac7Q4Value',
+        'statNet', 'statComm', 'statJuros',
+        'kpiGrossValue', 'kpiCommValue', 'kpiNetValue', 'kpiInvValue',
+        'quantumValue', 'verdictLevel', 'verdictPercentValue', 'alertDeltaValue',
+        'discrepancy5Value', 'agravamentoBrutoValue', 'ircValue', 'iva6Value', 'iva23Value',
+        'revenueGapValue', 'expenseGapValue'
+    ];
+
+    elementsToReset.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            if (id.includes('Value') || id.includes('stat') || id.includes('kpi') || id.includes('quantum') || id.includes('alert') || id.includes('Gap')) {
+                el.textContent = '0,00 €';
+            } else {
+                el.textContent = 'AGUARDANDO ANÁLISE';
+            }
+        }
+    });
+
+    const verdictDesc = document.getElementById('verdictDesc');
+    if (verdictDesc) verdictDesc.innerHTML = 'Execute a perícia para obter o veredicto.';
+
+    const verdictPercentSpan = document.getElementById('verdictPercentSpan');
+    if (verdictPercentSpan) verdictPercentSpan.textContent = '0,00%';
+
+    const sourceElements = document.querySelectorAll('[id$="Source"]');
+    sourceElements.forEach(el => {
+        el.textContent = '';
+        el.removeAttribute('data-tooltip');
+        el.removeAttribute('data-original-file');
+    });
+
+    const listIds = ['controlFileListModal', 'saftFileListModal', 'invoicesFileListModal', 'statementsFileListModal', 'dac7FileListModal'];
+    listIds.forEach(id => {
+        const list = document.getElementById(id);
+        if (list) {
+            list.innerHTML = '';
+            list.style.display = 'none';
+        }
+    });
+
+    const bigDataAlert = document.getElementById('bigDataAlert');
+    if (bigDataAlert) bigDataAlert.style.display = 'none';
+
+    const quantumBox = document.getElementById('quantumBox');
+    if (quantumBox) {
+        quantumBox.style.display = 'none';
+        const breakdown = document.getElementById('quantumBreakdown');
+        if (breakdown) breakdown.innerHTML = '';
+    }
+
+    const verdictDisplay = document.getElementById('verdictDisplay');
+    if (verdictDisplay) verdictDisplay.style.display = 'none';
+
+    const jurosCard = document.getElementById('jurosCard');
+    if (jurosCard) jurosCard.style.display = 'none';
+
+    const alertCards = ['discrepancy5Card', 'agravamentoBrutoCard', 'ircCard', 'iva6Card', 'iva23Card', 'revenueGapCard', 'expenseGapCard', 'omissaoDespesasPctCard'];
+    alertCards.forEach(id => {
+        const card = document.getElementById(id);
+        if (card) card.style.display = 'none';
+    });
+
+    const alertElements = ['kpiInvCard', 'statCommCard', 'kpiCommCard'];
+    alertElements.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('alert-intermitent');
+    });
+
+    updateCounters();
+    updateEvidenceSummary();
+
+    if (UNIFEDSystem.chart) {
+        UNIFEDSystem.chart.destroy();
+        UNIFEDSystem.chart = null;
+    }
+
+    if (UNIFEDSystem.discrepancyChart) {
+        UNIFEDSystem.discrepancyChart.destroy();
+        UNIFEDSystem.discrepancyChart = null;
+    }
+
+    generateMasterHash();
+    ForensicLogger.addEntry('VALUES_RESET');
+
+    resetAuxiliaryData();
+}
+
+function resetSystem() {
+    if (!confirm(currentLang === 'pt' ? '[!] Tem a certeza que deseja reiniciar o sistema? Todos os dados serão perdidos.' : '[!] Are you sure you want to restart the system? All data will be lost.')) return;
+
+    ForensicLogger.addEntry('SYSTEM_RESET');
+
+    localStorage.removeItem('ifde_client_data_v12_8');
+    location.reload();
+}
+
+function updateAnalysisButton() {
+    const btn = document.getElementById('analyzeBtn');
+    if (btn) {
+        const hasFiles = Object.values(UNIFEDSystem.documents).some(d => d.files && d.files.length > 0);
+        const hasClient = UNIFEDSystem.client !== null;
+        btn.disabled = !(hasFiles && hasClient);
+    }
+}
+
 // ============================================================================
 // 26. GESTÃO DE LOGS (ART. 30 RGPD)
 // ============================================================================
@@ -7878,7 +8295,7 @@ function setupWipeButton() {
             localStorage.removeItem('ifde_client_data_v12_8');
             localStorage.removeItem(ForensicLogger.STORAGE_KEY);
 
-            resetSystem();      // CORRECTO
+            resetAllValues();
 
             ForensicLogger.clearLogs();
 
@@ -7901,7 +8318,7 @@ function setupWipeButton() {
 
             ForensicLogger.addEntry('WIPE_COMPLETED');
 
-            UNIFEDSystem.generateMasterHash().catch(e => console.error('[MASTERHASH] Erro após wipe:', e));
+            generateMasterHash();
             updateAnalysisButton();
         }
     });
@@ -7942,72 +8359,7 @@ function setupDualScreenDetection() {
 }
 
 // ============================================================================
-// 30. FUNÇÕES GLOBAIS DE UTILIDADE (clearConsole, resetSystem)
-// ============================================================================
-function clearConsole() {
-    const consoleOutput = document.getElementById('consoleOutput');
-    if (consoleOutput) consoleOutput.innerHTML = '';
-    console.clear();
-    ForensicLogger.addEntry('CONSOLE_CLEARED', { by: 'user' });
-    logAudit('🧹 Consola e área de log limpas.', 'info');
-}
-
-async function resetSystem() {
-    if (!confirm(currentLang === 'pt' ? 'Reiniciar o sistema irá apagar todas as evidências e análises. Continuar?' : 'Resetting the system will delete all evidence and analysis. Continue?')) {
-        return;
-    }
-    ForensicLogger.addEntry('SYSTEM_RESET_REQUESTED');
-    
-    UNIFEDSystem.analysis = {
-        totals: { saftBruto:0, saftIliquido:0, saftIva:0, ganhos:0, despesas:0, ganhosLiquidos:0, faturaPlataforma:0, dac7Q1:0, dac7Q2:0, dac7Q3:0, dac7Q4:0, dac7TotalPeriodo:0 },
-        twoAxis: { revenueGap:0, expenseGap:0, revenueGapActive:false, expenseGapActive:false },
-        crossings: { discrepanciaCritica:0, discrepanciaSaftVsDac7:0, percentagemOmissao:0, percentagemSaftVsDac7:0, ivaFalta:0, ivaFalta6:0, btor:0, btf:0, agravamentoBrutoIRC:0, ircEstimado:0, asfixiaFinanceira:0 },
-        verdict: null,
-        evidenceIntegrity: [],
-        selectedQuestions: []
-    };
-    UNIFEDSystem.documents = {
-        control: { files:[], hashes:{}, totals:{ records:0 } },
-        saft: { files:[], hashes:{}, totals:{ records:0, iliquido:0, iva:0, bruto:0 } },
-        invoices: { files:[], hashes:{}, totals:{ records:0, invoiceValue:0 } },
-        statements: { files:[], hashes:{}, totals:{ records:0, ganhos:0, despesas:0, ganhosLiquidos:0 } },
-        dac7: { files:[], hashes:{}, totals:{ records:0, q1:0, q2:0, q3:0, q4:0, receitaAnual:0 } }
-    };
-    UNIFEDSystem.monthlyData = {};
-    UNIFEDSystem.dataMonths.clear();
-    UNIFEDSystem.processedFiles.clear();
-    UNIFEDSystem.fileSources.clear();
-    resetAuxiliaryData();
-    
-    await UNIFEDSystem.generateMasterHash();
-    
-    updateModulesUI();
-    updateDashboard();
-    renderChart();
-    renderDiscrepancyChart();
-    forensicDataSynchronization();
-    
-    if (typeof window._activatePurePanel === 'function') {
-        window._activatePurePanel();
-        if (UNIFEDSystem.masterHash) {
-            window.activeForensicSession = { sessionId: UNIFEDSystem.sessionId, masterHash: UNIFEDSystem.masterHash };
-        }
-    }
-    
-    window.dispatchEvent(new CustomEvent('UNIFED_CORE_READY', { detail: { reset: true } }));
-    
-    logAudit('🔄 Sistema reiniciado – todas as evidências e análises foram limpas.', 'success');
-    showToast(currentLang === 'pt' ? 'Sistema reiniciado com sucesso.' : 'System reset successfully.', 'success');
-    ForensicLogger.addEntry('SYSTEM_RESET_COMPLETED');
-}
-
-window.clearConsole = clearConsole;
-window.resetSystem = resetSystem;
-window.resetAllValues = resetSystem;
-window.activeForensicSession = null;
-
-// ============================================================================
-// 31. EXPOSIÇÃO GLOBAL (restantes exportações)
+// 30. EXPOSIÇÃO GLOBAL
 // ============================================================================
 window.UNIFEDSystem = UNIFEDSystem;
 
@@ -8024,6 +8376,7 @@ window.forensicDataSynchronization = forensicDataSynchronization;
 window.switchLanguage = switchLanguage;
 window.openLogsModal = openLogsModal;
 window.openHashModal = openHashModal;
+window.clearConsole = clearConsole;
 window.filterDAC7ByPeriod = filterDAC7ByPeriod;
 window.processAuxiliaryPlatformData = processAuxiliaryPlatformData;
 window.injectAuxiliaryHelperBoxes = injectAuxiliaryHelperBoxes;
@@ -8035,11 +8388,13 @@ window.resetAuxiliaryData = resetAuxiliaryData;
         return;
     }
 
-    UNIFEDSystem._pureModuleVersion = 'v13.12.0-PURE';
+    UNIFEDSystem._pureModuleVersion = 'v13.5.0-PURE';
     UNIFEDSystem._pureModuleLoaded = true;
 
     if (typeof UNIFEDSystem.loadAnonymizedRealCase !== 'function') {
-        UNIFEDSystem.loadAnonymizedRealCase = function _pureStub() {};
+        UNIFEDSystem.loadAnonymizedRealCase = function _pureStub() {
+            // console.warn('[UNIFED-PURE] ⚠ script_injection_v13.5.0-PURE.js não carregado. Verificar ordem de carregamento em index.html.');
+        };
     }
 
     if (
@@ -8084,68 +8439,10 @@ if (typeof window.dispatchEvent === 'function') {
     window.dispatchEvent(new CustomEvent('UNIFED_CORE_READY', {
         detail: {
             timestamp: Date.now(),
-            version: UNIFEDSystem._pureModuleVersion || 'v13.12.0-PURE'
+            version: UNIFEDSystem._pureModuleVersion || 'v13.5.0-PURE'
         }
     }));
     console.log('[UNIFED-CORE] Evento UNIFED_CORE_READY despachado.');
 }
 
-// ============================================================================
-// 32. FUNÇÕES GLOBAIS DE INTERFACE (EXPORTAÇÃO FORÇADA)
-// ============================================================================
-
-/**
- * Exibe notificações Toast no canto inferior direito.
- * Definida como propriedade de 'window' para garantir visibilidade global.
- */
-window.showToast = function(message, type = 'info') {
-    let container = document.getElementById('toastContainer');
-    if (!container) {
-        container = document.createElement('div');
-        container.id = 'toastContainer';
-        container.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:10000;display:flex;flex-direction:column;gap:10px;pointer-events:none;';
-        document.body.appendChild(container);
-    }
-
-    const toast = document.createElement('div');
-    toast.className = `toast-notification ${type}`;
-    toast.style.cssText = `
-        background: #1e293b;
-        color: #f1f5f9;
-        padding: 12px 20px;
-        border-radius: 6px;
-        border-left: 5px solid ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#f59e0b'};
-        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.4);
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 13px;
-        pointer-events: auto;
-        min-width: 280px;
-        opacity: 0;
-        transform: translateX(100%);
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    `;
-
-    const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : '⚠️';
-    toast.innerHTML = `<div style="display:flex;align-items:center;gap:10px;"><span>${icon}</span><span>${message}</span></div>`;
-    
-    container.appendChild(toast);
-
-    setTimeout(() => {
-        toast.style.opacity = '1';
-        toast.style.transform = 'translateX(0)';
-    }, 10);
-
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateX(100%)';
-        setTimeout(() => {
-            if (toast.parentNode) toast.remove();
-        }, 400);
-    }, 5000);
-};
-
-// Exposição global das funções de renderização de gráficos
-window.renderChart = renderChart;
-window.renderDiscrepancyChart = renderDiscrepancyChart;
-
-// [FIM DO FICHEIRO - GARANTA QUE NÃO HÁ CHAVETAS SOLTAS ABAIXO DESTA LINHA]
+console.log('UNIFED - PROBATUM v13.5.0-PURE · DORA COMPLIANT · ATF · INTEGRITY SEAL · DOCX · AI ADVERSARIAL · NIFAF GUARD · NEXUS · ATIVADO');

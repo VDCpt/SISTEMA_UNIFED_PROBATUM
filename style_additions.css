@@ -1,39 +1,46 @@
 /* ============================================================================
-   UNIFED - PROBATUM · v13.12.1-PURE · ESTILOS DO PAINEL DE CASO REAL
+   UNIFED - PROBATUM · v13.11.5-PURE · ESTILOS DO PAINEL DE CASO REAL
    ============================================================================
    Escopo      : Seletor raiz #pureDashboard — sem conflito com estilos base.
+   Variáveis   : Consume as CSS custom properties existentes em style.css base.
+                 Fallbacks definidos para standalone rendering.
    Conformidade: WCAG 2.1 AA · Palette forense (dark + alert accents).
    ============================================================================ */
 
-/* ── Variáveis globais PURE ────────────────────────────────────────────────── */
+/* ── Variáveis globais PURE (partilhadas com style.css base) ────────────────── */
+/* NOTA: Duplicadas aqui para standalone rendering; style.css tem precedência
+   quando ambos os ficheiros são carregados em conjunto (cascade normal). */
 :root {
-    --pure-accent:  #00E5FF;
-    --pure-warn:    #EF4444;
-    --pure-version: "v13.12.1-PURE";
+    --pure-accent:  #00E5FF; /* Cyan Forense */
+    --pure-warn:    #EF4444; /* Alerta Fiscal */
+    --pure-version: "v13.11.3-PURE";
+    /* CORR-v13.11.3: Bloqueio cromático máximo — impede "sangramento" de fundo branco */
     background-color: #0f172a !important;
 }
 
-/* ── Enforcement Dark Mode ───────────────────────────────────────────────── */
+/* ── CORR-v13.11.3: Enforcement Dark Mode — html/body ───────────────────────── */
 html, body {
     background-color: #0f172a !important;
     color: #f8fafc !important;
 }
 
-/* ── Wrapper do painel PURE ───────────────────────────────────────────────── */
+/* ── Wrapper do painel PURE — transição de entrada ──────────────────────────── */
+/* ATENÇÃO: style.css define opacity:0 com transição para fade-in controlado por JS.
+   Este selector actua em modo standalone (sem style.css carregado). */
 #pureDashboardWrapper {
     opacity: 1;
     transition: all 0.4s ease-in-out;
 }
 
-/* ── Grid de painéis ──────────────────────────────────────────────────────── */
+/* ── Grid de painéis (pure-card-grid) ───────────────────────────────────────── */
 .pure-card-grid {
     display: flex;
     flex-direction: column;
-    gap: 0;
+    gap: 0; /* espaçamento já gerido pelo margin-bottom de .pure-card */
     width: 100%;
 }
 
-/* ── Variáveis locais com fallback ───────────────────────────────────────── */
+/* ── Variáveis locais com fallback ─────────────────────────────────────────── */
 #pureDashboard {
   --pure-bg-card:      var(--bg-secondary,     rgba(13, 27, 42, 0.85));
   --pure-bg-alert:     var(--bg-tertiary,      rgba(30, 41, 59, 0.7));
@@ -49,7 +56,7 @@ html, body {
   --pure-font-mono:    var(--font-mono, 'Courier New', 'JetBrains Mono', monospace);
 }
 
-/* ── Secção raiz ──────────────────────────────────────────────────────────── */
+/* ── Secção raiz ───────────────────────────────────────────────────────────── */
 .pure-section {
   max-width: 100%;
   margin: 32px auto;
@@ -57,13 +64,13 @@ html, body {
   font-family: var(--pure-font-mono);
 }
 
-/* ── Header da secção ────────────────────────────────────────────────────── */
+/* ── Header da secção ─────────────────────────────────────────────────────── */
 .pure-section-header {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  text-align: center !important;
-  width: 100% !important;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
   border-bottom: 1px solid var(--pure-border);
   padding-bottom: 14px;
   margin-bottom: 20px;
@@ -108,7 +115,7 @@ html, body {
 .pure-hash    { color: var(--pure-accent); font-size: 0.65rem; letter-spacing: 0.04em; }
 .pure-hash-lg { color: var(--pure-accent); font-size: 0.8rem;  letter-spacing: 0.04em; }
 
-/* ── Cards ───────────────────────────────────────────────────────────────── */
+/* ── Cards ────────────────────────────────────────────────────────────────── */
 .pure-card {
   background: var(--pure-bg-card);
   border: 1px solid var(--pure-border);
@@ -180,7 +187,7 @@ html, body {
   opacity: 0.7;
 }
 
-/* ── Smoking Guns ────────────────────────────────────────────────────────── */
+/* ── Smoking Guns ─────────────────────────────────────────────────────────── */
 .pure-smoking-guns {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -246,7 +253,7 @@ html, body {
   opacity: 0.6;
 }
 
-/* ── Linha fiscal ────────────────────────────────────────────────────────── */
+/* ── Linha fiscal ─────────────────────────────────────────────────────────── */
 .pure-fiscal-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -283,7 +290,7 @@ html, body {
   opacity: 0.6;
 }
 
-/* ── ATF Grid ────────────────────────────────────────────────────────────── */
+/* ── ATF Grid ─────────────────────────────────────────────────────────────── */
 .pure-atf-grid {
   display: grid;
   grid-template-columns: 1fr repeat(3, auto);
@@ -403,7 +410,7 @@ html, body {
   box-shadow: 0 0 16px rgba(0,229,255,0.2);
 }
 
-/* ── Zona Cinzenta ───────────────────────────────────────────────────────── */
+/* ── Zona Cinzenta ────────────────────────────────────────────────────────── */
 .pure-zc-intro {
   font-size: 0.75rem;
   color: rgba(255,255,255,0.65);
@@ -451,7 +458,7 @@ html, body {
 
 .pure-zc-question strong { color: rgba(0,229,255,0.8); }
 
-/* ── Veredicto ───────────────────────────────────────────────────────────── */
+/* ── Veredicto ────────────────────────────────────────────────────────────── */
 .pure-verdict-row {
   display: flex;
   align-items: center;
@@ -495,7 +502,7 @@ html, body {
   opacity: 0.7;
 }
 
-/* ── Responsividade ──────────────────────────────────────────────────────── */
+/* ── Responsividade ───────────────────────────────────────────────────────── */
 @media (max-width: 600px) {
   .pure-3col               { grid-template-columns: 1fr; }
   .pure-smoking-guns        { grid-template-columns: 1fr; }
@@ -505,7 +512,7 @@ html, body {
   .pure-verdict-value       { font-size: 1.2rem; }
 }
 
-/* ── Estado de carregamento ──────────────────────────────────────────────── */
+/* ── Estado de carregamento ───────────────────────────────────────────────── */
 .pure-loading-placeholder::after {
   content: '...';
   animation: pure-dots 1.2s infinite;
@@ -519,16 +526,33 @@ html, body {
 }
 
 /* ============================================================================
-   ADIÇÕES v13.10.1-PURE
+   FIM: style.css additions · v13.11.3-PURE · UNIFED-PROBATUM
+   Escopo: #pureDashboard · Sem colisões com CSS base.
    ============================================================================ */
+
+/* ============================================================================
+   ADIÇÕES v13.10.1-PURE · 2026-04-02
+   CORR-4: Triangulação — texto invisível (branco herdado sobre fundo claro)
+   CORR-5: #pureDashboard — reset de herança de cor do documento principal
+   ============================================================================ */
+
+/* ── CORR-5: Garantir herança de cor correcta dentro de #pureDashboard ──────── */
+/* O documento principal define color:rgba(255,255,255,0.9) (branco) via :root.  */
+/* O #pureDashboard herda essa cor, que é correcta sobre os seus fundos escuros. */
+/* A regra abaixo garante que nenhum elemento filho recebe color:transparent ou  */
+/* uma cor de versão anterior ("ghost style") sem ser explicitamente sobreposto. */
 #pureDashboard *:not([style*="color"]) {
     color: inherit;
 }
 
+/* ── CORR-B v13.11.5: dark mode + largura completa na Matriz de Triangulação ─ */
+/* Substitui as regras anteriores (fallback claro) por dark mode forçado,       */
+/* alinhado ao tema forense do painel. max-width:none elimina a restrição       */
+/* de 1200px que quebrava o layout em viewports intermédios.                    */
 #triangulationMatrixContainer {
     width: 100% !important;
     max-width: none !important;
-    background: #1e293b !important;
+    background: #1e293b !important;  /* Slate 800 — dark forense */
     border-color: rgba(0, 229, 255, 0.25) !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
@@ -538,7 +562,7 @@ html, body {
 #triangulationMatrixContainer h3,
 #triangulationMatrixContainer strong,
 #triangulationMatrixContainer div {
-    color: #f8fafc !important;
+    color: #f8fafc !important;       /* Slate 50 — contraste máximo sobre #1e293b */
 }
 
 #triangulationMatrixContainer table {
@@ -559,16 +583,30 @@ html, body {
     padding: 8px 10px;
 }
 
+/* Delta crítico — vermelho pericial sobre dark */
 #triangulationMatrixContainer .delta-critical,
 #triangulationMatrixContainer td[style*="b71c1c"] {
     background: rgba(239, 68, 68, 0.15) !important;
-    color: #fca5a5 !important;
+    color: #fca5a5 !important;        /* vermelho claro legível sobre dark */
     font-weight: 700 !important;
 }
 
 /* ============================================================================
-   ADIÇÕES v13.11.0-PURE
+   FIM ADIÇÕES v13.10.1-PURE
    ============================================================================ */
+
+/* ============================================================================
+   ADIÇÕES v13.11.0-PURE · 2026-04-02
+   CORR-8: Eliminação de Flash de Conteúdo (render-blocking seguro)
+   CORR-10: Novas classes pure-metric-card / pure-metric-value (panel.html)
+   ============================================================================ */
+
+/* ── CORR-8: Anti-flash — wrapper arranca oculto; JS injecta .pure-visible ──── */
+/* ATENÇÃO: o wrapper deve ter id="pureDashboardWrapper" a envolver o #pureDashboard. */
+/* A classe .pure-visible é adicionada por _syncPureDashboard() no final do ciclo  */
+/* de sincronização, garantindo que o DOM só é visível após todos os valores serem  */
+/* injectados. Elimina o flash de conteúdo "€ 0,00 → valor real" observado em      */
+/* browsers com render pipeline rápido (Chromium 124+).                             */
 #pureDashboardWrapper {
     visibility: hidden;
     opacity: 0;
@@ -581,6 +619,8 @@ html, body {
     transition: opacity 0.5s ease-in-out;
 }
 
+/* ── CORR-10: Novo bloco de métrica — pure-metric-card (panel.html) ─────────── */
+/* Usado no bloco "Diferencial de Fluxo Financeiro Auditado" (PAINEL II ext.)    */
 .pure-metric-card {
     background: var(--pure-bg-card, rgba(13, 27, 42, 0.85));
     border: 1px solid var(--pure-border, rgba(0, 229, 255, 0.18));
@@ -611,13 +651,26 @@ html, body {
     letter-spacing: 0.03em;
 }
 
+/* ── Responsividade para pure-metric-card ───────────────────────────────────── */
 @media (max-width: 600px) {
     .pure-metric-value { font-size: 1.15rem; }
 }
 
 /* ============================================================================
-   ADIÇÕES v13.11.2-PURE
+   FIM ADIÇÕES v13.11.0-PURE
    ============================================================================ */
+
+/* ============================================================================
+   ADIÇÕES v13.11.2-PURE · 2026-04-02
+   CORR-15: .pure-metric-card.warning (Asfixia Financeira — Art. 405.º C. Civil)
+   CORR-15: .pure-legal-notice (rodapé jurídico no card)
+   CORR-15: #pure-iva-devido (transição suave ao preencher o valor calculado)
+   ============================================================================ */
+
+/* ── .pure-metric-card.warning — alerta amarelo (penalização dupla IVA) ─────── */
+/* Distinto de .alert (vermelho) para hierarquia visual pericial:                 */
+/*   · .alert   → infracção declarativa (Art. 103.º RGIT)                        */
+/*   · .warning → risco financeiro contratual (Art. 405.º C. Civil)              */
 .pure-metric-card.warning {
     border-color: rgba(250, 204, 21, 0.45);
     background: rgba(250, 204, 21, 0.04);
@@ -628,6 +681,7 @@ html, body {
     color: #FACC15;
 }
 
+/* ── .pure-legal-notice — rodapé jurídico dentro do card ────────────────────── */
 .pure-legal-notice {
     font-size: 0.62rem;
     color: var(--pure-text-muted, rgba(255, 255, 255, 0.5));
@@ -640,6 +694,8 @@ html, body {
     line-height: 1.5;
 }
 
+/* ── .pure-metric-sublabel — sub-rótulo jurídico dentro do card (v13.11.3) ────── */
+/* Usado nos Cards do GRID PERICIAL v13.11.2 (panel.html linha ~266, ~277, ~288). */
 .pure-metric-sublabel {
     font-size: 0.6rem;
     color: var(--pure-text-muted, rgba(255, 255, 255, 0.5));
@@ -648,18 +704,27 @@ html, body {
     opacity: 0.75;
 }
 
+/* ── #pure-iva-devido — transição suave ao injectar valor calculado ─────────── */
 #pure-iva-devido {
     transition: color 0.4s ease, opacity 0.4s ease;
 }
 
+/* ── Responsividade para pure-3col no contexto das novas metric-cards ────────── */
 @media (max-width: 600px) {
     .pure-metric-card { padding: 12px 14px; }
     .pure-legal-notice { font-size: 0.58rem; }
 }
 
 /* ============================================================================
-   ADIÇÕES v13.11.5-PURE
+   FIM ADIÇÕES v13.11.2-PURE
    ============================================================================ */
+
+/* ============================================================================
+   ADIÇÕES v13.11.5-PURE · 2026-04-03
+   CORR-B: Triangulação dark mode + largura 100% (elimina fundo branco e overflow)
+   ============================================================================ */
+
+/* pure-subject-* — identificação do sujeito passivo no cabeçalho do painel */
 #pureDashboard .pure-subject-value,
 #pureDashboard [id^="pure-subject-"] {
     color: var(--pure-accent, #00E5FF);
@@ -668,6 +733,7 @@ html, body {
     font-weight: 600;
 }
 
+/* pure-dac7-box[display:none] — supressão limpa sem reflow visível */
 .pure-dac7-box[style*="display: none"],
 .pure-dac7-box[style*="display:none"] {
     height: 0;
@@ -678,52 +744,5 @@ html, body {
 }
 
 /* ============================================================================
-   CORRECÇÃO II (IDENTIFICAÇÃO DO SUJEITO PASSIVO) - REFACTOR v13.12.1
+   FIM ADIÇÕES v13.11.5-PURE
    ============================================================================ */
-.pure-subject-header {
-    display: flex !important;
-    flex-wrap: nowrap !important;
-    gap: 1.5rem !important;
-    align-items: stretch !important;
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-}
-.pure-data-block {
-    flex: 1 1 0 !important;
-    min-width: 0 !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: flex-start !important;
-}
-.pure-data-block .pure-subject-value {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
-    display: inline-block;
-}
-
-/* --- BREAKPOINT ÚNICO PARA EVITAR LAYOUT SHIFT (CLS) --- */
-@media (max-width: 768px) {
-    .pure-subject-header {
-        flex-wrap: wrap !important;
-    }
-    .pure-data-block {
-        flex: 1 1 100% !important;
-        min-width: auto !important;
-    }
-}
-
-/* ============================================================================
-   GARANTIA DE VISIBILIDADE DOS GRÁFICOS – v13.12.1-PURE
-   ============================================================================ */
-.chart-section {
-    display: block !important;
-    min-height: 350px !important;
-    overflow: visible !important;
-}
-
-canvas#mainChart, canvas#discrepancyChart {
-    width: 100% !important;
-    height: 300px !important;
-}

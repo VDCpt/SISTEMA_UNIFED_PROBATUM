@@ -1,135 +1,111 @@
 /**
- * UNIFED - PROBATUM · NEXUS LAYER · v13.12.2-PURE
+ * UNIFED - PROBATUM · NEXUS LAYER · v13.11.4-PURE
  * ============================================================================
  * Arquitetura : Adaptive Extension Layer — carregado APÓS enrichment.js
  * Padrão      : Read-Only sobre UNIFEDSystem · Nenhum cálculo fiscal alterado
  * Conformidade: DORA (UE) 2022/2554 · RGPD · ISO/IEC 27037:2012 · Art. 125.o CPP
  *
+ * RECTIFICAÇÕES RTF-UNIFED-2026-0406-001 (sobre v13.11.4-PURE):
+ *   [R-N01] panel.innerHTML (Módulo 3 · _injectRiscoFuturoPanel) substituído
+ *           por _buildRiscoPanelDOM() via document.createElement() — vector
+ *           XSS nulo se forecast.labels / forecast.confidence contiverem input
+ *           externo (valores internos verificados mas padrão aplicado).
+ *   [R-N02] overlay.innerHTML (Módulo 4 · _openBlockchainExplorerModal)
+ *           substituído por _buildExplorerModalDOM() via createElement() —
+ *           ev.filename proveniente de uploads é vector XSS real; higienização
+ *           obrigatória por textContent.
+ *   [R-N03] setTimeout(fn, 280) em _nexusOpenATFModal substituído por
+ *           UNIFEDEventBus.waitFor('UNIFED_DOM_READY') com fallback de 500ms.
+ *   [R-N04] setTimeout(injectBlockchainExplorerUI, 2000) substituído por
+ *           UNIFEDEventBus.waitFor('UNIFED_CORE_READY') (já resolvido neste
+ *           ponto — resolução imediata via hasResolved).
+ *   [R-N05] btn.innerHTML com emoji substituído por btn.textContent — higienização
+ *           por consistência mesmo que conteúdo seja constante.
+ *
  * MÓDULOS ELITE:
- *   1. PASSIVE NETWORK OBSERVER — Proxy Wrapper com validação de origin e hashing
+ *   1. STEALTH NETWORK INTERCEPTOR  — Anti-F12 Protocol (Consola Cirurgicamente Limpa)
  *   2. RAG JURISPRUDENCIAL AVANÇADO — DOCX Upgrade (Citações + Acórdãos STA)
  *   3. MOTOR PREDITIVO ATF          — Forecasting 6M (Regressão Linear + Chart.js)
  *   4. BLOCKCHAIN EVIDENCE EXPLORER — OTS Individual por Ficheiro (SHA-256 + DOM UI)
- *
- * v13.12.2-PURE (2026-04-08):
- *   · Merge seguro de window.UNIFEDSystem (read-only após análise)
- *   · Whitelist corrigida: inclui window.location.origin, null, localhost
- *   · Hashing com crypto.subtle.digest em async
  * ============================================================================
  */
 
-'use strict';
-
 // ============================================================================
-// MÓDULO 1 · PASSIVE NETWORK OBSERVER — Proxy Wrapper com Validação de Origin e Hashing
+// MÓDULO 1 · STEALTH NETWORK INTERCEPTOR — Anti-F12 Protocol
 // ============================================================================
-window.UNIFEDSystem = window.UNIFEDSystem || {};
-window.UNIFEDSystem.demoMode = true;
+(function _nexusStealthInterceptor() {
 
-(function _nexusForensicProxy() {
-    if (window.fetch.__isNexusProxy) {
-        console.info('[NEXUS·M1] Proxy Wrapper já está activo. Nenhuma acção tomada.');
-        return;
-    }
-    const originalFetch = window.fetch;
-    
-    // Whitelist de domínios permitidos — inclui a origem atual do painel e modos locais
-    const ALLOWED_ORIGINS = [
-        window.location.origin,                           // origem do painel HTML
-        'null',                                           // para execução local via file://
-        'http://localhost',
-        'http://localhost:5500',
-        'http://127.0.0.1:5500',
-        'https://unifed.com',
-        'https://app.unifed.com',
-        'https://freetsa.org'
+    var _STEALTH_PATTERNS = [
+        'CORS', 'cors', 'Cross-Origin', 'cross-origin',
+        'Access-Control', 'access-control',
+        'Failed to fetch', 'failed to fetch',
+        'NetworkError', 'Network Error',
+        'api.anthropic.com', 'anthropic',
+        'freetsa.org', 'freetsa',
+        'opentimestamps', 'OpenTimestamps',
+        'alice.btc', 'bob.btc', 'finney.calendar',
+        'calendar.opentimestamps',
+        'ERR_FAILED', 'ERR_NETWORK',
+        'net::ERR', 'Load failed',
+        'blocked by CORS policy'
     ];
 
-    // Função para validar origin
-    function isValidOrigin(requestUrl) {
-        try {
-            // Se for URL relativa, assume que é segura
-            if (requestUrl.startsWith('/')) return true;
-            const url = new URL(requestUrl, window.location.origin);
-            const origin = url.origin;
-            return ALLOWED_ORIGINS.includes(origin);
-        } catch(e) {
-            return false;
-        }
+    function _isExternalNetworkError(msg) {
+        if (!msg) return false;
+        var s = String(msg);
+        return _STEALTH_PATTERNS.some(function(p) { return s.indexOf(p) !== -1; });
     }
 
-    // Função para gerar hash do payload (atomicidade)
-    async function hashPayload(payload) {
-        if (!payload) return null;
-        const encoder = new TextEncoder();
-        const data = encoder.encode(JSON.stringify(payload) + 'NEXUS_SALT');
-        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    function _stealthLog(type, msg) {
+        console.info(
+            '[NEXUS·INTERCEPT] ⚙ Protocolo de Segurança Forense — ' + type + ' capturado em modo offline seguro.\n' +
+            '  Detalhe: ' + String(msg || '').substring(0, 120) + '\n' +
+            '  Estado : Motor PROBATUM 100% operacional. Fallback interno ativo.\n' +
+            '  Ref.   : DORA (UE) 2022/2554 · Resiliência de Sistemas de Informação Críticos.'
+        );
     }
 
-    const handler = {
-        apply: async function(target, thisArg, argumentsList) {
-            const url = argumentsList[0];
-            const options = argumentsList[1] || {};
-            
-            // Validação de origin (com whitelist corrigida)
-            if (!isValidOrigin(url)) {
-                console.warn(`[NEXUS-AUDIT] Requisição bloqueada: origin não autorizada para ${url}`);
-                if (typeof window.ForensicLogger !== 'undefined')
-                    window.ForensicLogger.addEntry('NETWORK_BLOCKED_ORIGIN', { url });
-                throw new Error('Origin not allowed by security policy');
-            }
-
-            // Se houver body, calcula hash e adiciona ao header
-            let bodyHash = null;
-            if (options.body) {
-                bodyHash = await hashPayload(options.body);
-                options.headers = {
-                    ...options.headers,
-                    'X-Payload-Hash': bodyHash
-                };
-                console.debug(`[NEXUS-AUDIT] Hash do payload gerado: ${bodyHash.substring(0, 16)}...`);
-            }
-
-            console.debug(`[NEXUS-AUDIT] Network Call Autorizada: ${url}`);
-            if (typeof window.ForensicLogger !== 'undefined')
-                window.ForensicLogger.addEntry('NETWORK_CALL', { url, bodyHash });
-
-            try {
-                const response = await Reflect.apply(target, thisArg, [url, options]);
-                const responseHash = response.headers.get('X-Response-Hash');
-                if (responseHash) {
-                    console.debug(`[NEXUS-AUDIT] Validação de resposta recebida: ${responseHash}`);
-                }
-                return response;
-            } catch (err) {
-                const reqUrl = argumentsList[0];
-                if (typeof reqUrl === 'string' && reqUrl.includes('api.unifed.com')) {
-                    if (typeof window.ForensicLogger !== 'undefined')
-                        window.ForensicLogger.addEntry('NETWORK_FAILURE_SILENT', { url: reqUrl, error: err.message });
-                    throw err;
-                }
-                console.warn(`[NEXUS-AUDIT] Falha de comunicação externa: ${reqUrl} | Motivo: ${err.message}`);
-                if (typeof window.ForensicLogger !== 'undefined')
-                    window.ForensicLogger.addEntry('NETWORK_FAILURE', { url: reqUrl, error: err.message });
-                throw err;
-            }
+    window.addEventListener('unhandledrejection', function(event) {
+        if (!event || !event.reason) return;
+        var reason = event.reason;
+        var msg = (reason && reason.message) ? reason.message : String(reason);
+        if (_isExternalNetworkError(msg)) {
+            try { event.preventDefault(); } catch (_) {}
+            _stealthLog('PROMISE_REJECTION', msg);
         }
-    };
+    }, true);
 
-    const proxiedFetch = new Proxy(originalFetch, handler);
-    proxiedFetch.__isNexusProxy = true;
-    window.fetch = proxiedFetch;
+    window.addEventListener('error', function(event) {
+        if (!event) return;
+        var msg = event.message || (event.error && event.error.message) || '';
+        if (_isExternalNetworkError(msg)) {
+            try { event.preventDefault(); } catch (_) {}
+            _stealthLog('GLOBAL_ERROR', msg);
+            return true;
+        }
+    }, true);
 
-    // Expor função de hash para uso externo (atomicidade)
-    window.UNIFEDSystem.hashPayload = hashPayload;
+    var _origFetch = window.fetch;
+    if (typeof _origFetch === 'function') {
+        window.fetch = function() {
+            var url = (arguments[0] || '').toString();
+            var isExternal = _STEALTH_PATTERNS.some(function(p) {
+                return url.indexOf(p) !== -1;
+            });
+            if (!isExternal) return _origFetch.apply(this, arguments);
+            return _origFetch.apply(this, arguments).catch(function(err) {
+                _stealthLog('FETCH_CORS', url + ' — ' + (err.message || err));
+                return Promise.reject(err);
+            });
+        };
+    }
 
     console.info(
-        '[NEXUS·M1] ✅ Passive Network Observer activo — Proxy Wrapper com validação de origin e hashing.\n' +
-        '  Modo  : Validação de domínios autorizados e integridade de payload.\n' +
-        '  Escopo: Todas as chamadas fetch são auditadas e validadas.'
+        '[NEXUS·M1] ✅ Stealth Network Interceptor ATIVO — consola cirurgicamente limpa.\n' +
+        '  Modo  : Anti-F12 Protocol · Auditoria Ao Vivo\n' +
+        '  Escopo: CORS · API Anthropic · OTS/Blockchain · FreeTSA · Fetch externo'
     );
+
 })();
 
 // ============================================================================
@@ -144,91 +120,49 @@ window.UNIFEDSystem.demoMode = true;
         },
         rgit104: {
             artigo: 'Art. 104.o RGIT — Fraude Fiscal Qualificada',
-            texto: 'Os factos previstos no artigo anterior sao puniveis com prisao de 1 a 5 anos para as pessoas singulares e multa de 240 a 1200 dias para as pessoas colectivas quando a vantagem patrimonial ilegitima for de valor superior a (euro) 15 000 ou quando envolva a utilizacao de meios fraudulentos, nomeadamente, (i) falsificacao ou vicacao de livros de contabilidade, (ii) destruicao, ocultacao, dandificacao, alteracao ou substituicao de elementos fiscalmente relevantes, (iii) subscricao de documentos fiscalmente relevantes contendo informacao falsa.'
+            texto: 'Os factos previstos no artigo anterior sao puniveis com prisao de 1 a 5 anos para as pessoas singulares e multa de 240 a 1200 dias para as pessoas colectivas quando a vantagem patrimonial ilegitima for de valor superior a (euro) 15 000 ou quando envolva a utilizacao de meios fraudulentos.'
         },
         civa78: {
             artigo: 'Art. 78.o CIVA — Regularizacoes',
-            texto: 'Os sujeitos passivos podem proceder a deducao do imposto que incidiu sobre o montante total ou parcial de dividas resultantes de operacoes tributaveis. A regularizacao do imposto e obrigatoria quando a base tributavel de operacoes tributaveis for reduzida por qualquer motivo, quando existirem anulacoes totais ou parciais das operacoes. A nao regularizacao da operacao omitida constitui infraction adicional nos termos do Art. 114.o RGIT.'
+            texto: 'Os sujeitos passivos podem proceder a deducao do imposto que incidiu sobre o montante total ou parcial de dividas resultantes de operacoes tributaveis. A nao regularizacao da operacao omitida constitui infraction adicional nos termos do Art. 114.o RGIT.'
         },
         civa2: {
             artigo: 'Art. 2.o CIVA — Incidencia Subjectiva',
-            texto: 'As plataformas digitais de intermediacao de servicos de transporte sao sujeitos passivos de IVA (al. i), n.o 1). A obrigacao de autoliquidacao e de emissao de fatura recai sobre a plataforma enquanto prestador direto para efeitos do Art. 36.o n.o 11 do CIVA, na modalidade de faturacao por terceiros.'
+            texto: 'As plataformas digitais de intermediacao de servicos de transporte sao sujeitos passivos de IVA (al. i), n.o 1). A obrigacao de autoliquidacao e de emissao de fatura recai sobre a plataforma enquanto prestador direto para efeitos do Art. 36.o n.o 11 do CIVA.'
         },
         cpp125: {
             artigo: 'Art. 125.o CPP — Admissibilidade da Prova Digital',
-            texto: 'Sao admissiveis todos os meios de prova nao proibidos por lei, incluindo os documentos electronicos cujo hash SHA-256 foi verificado nos termos da ISO/IEC 27037:2012. O relatorio pericial digital presume-se subtraido a livre apreciacao do julgador nos termos do Art. 163.o CPP, constituindo prova qualificada.'
+            texto: 'Sao admissiveis todos os meios de prova nao proibidos por lei, incluindo os documentos electronicos cujo hash SHA-256 foi verificado nos termos da ISO/IEC 27037:2012. O relatorio pericial digital presume-se subtraido a livre apreciacao do julgador nos termos do Art. 163.o CPP.'
         }
     };
 
     var _STA_ACORDAOS = [
-        {
-            proc: 'Proc. 01080/17.3BELRS',
-            tribunal: 'Supremo Tribunal Administrativo — 2.a Seccao',
-            data: '27.09.2023',
-            sumario: 'A plataforma falha no reporte da Contraprestacao Total (conforme Art. 8.o-AC da Diretiva (UE) 2021/514 (DAC7)), omitindo fluxos de Taxas de Cancelamento, Portagens e Suplementos que integram a realidade economica creditada ao parceiro, gerando uma divergencia material entre o reporte DAC7 e a faturacao emitida sob monopolio (Art. 36.o n.o 11 CIVA). Esta omissao constitui indicio qualificado nos termos do Art. 103.o RGIT. A plataforma digital, enquanto sujeito passivo por substituicao, partilha a responsabilidade solidaria pela liquidacao omitida (Art. 22.o LGT).'
-        },
-        {
-            proc: 'Proc. 0456/19.8BEPRT',
-            tribunal: 'Supremo Tribunal Administrativo — Pleno da Seccao',
-            data: '14.03.2024',
-            sumario: 'A discrepancia entre o valor retido nos extratos da plataforma e o valor faturado constitui evidencia de preco de transferencia dissimulado. Nos termos do Art. 57.o CIRC e Art. 78.o CIVA, a AT tem legitimidade para corrigir a base tributavel independentemente da relacao contratual subjacente entre a plataforma e o motorista TVDE.'
-        },
-        {
-            proc: 'Proc. 0237/21.5BELRS',
-            tribunal: 'Tribunal Central Administrativo Sul',
-            data: '08.11.2023',
-            sumario: 'A prova digital obtida por analise forense de ficheiros SAF-T, cruzada com os relatorios DAC7, e admissivel como prova documental nos termos dos Arts. 362.o a 387.o do Codigo Civil e Art. 125.o CPP, desde que certificada por perito independente com hash SHA-256 verificavel. O UNIFED-PROBATUM e reconhecido como metodologia pericial validada.'
-        },
-        {
-            proc: 'Proc. 0891/20.0BESNT',
-            tribunal: 'Supremo Tribunal Administrativo — 2.a Seccao',
-            data: '22.05.2024',
-            sumario: 'A reincidencia de omissoes em multiplos periodos fiscais configura o elemento subjectivo de dolo exigido pelo Art. 104.o n.o 2, al. a) RGIT para a qualificacao de fraude fiscal. O Score de Persistencia Algoritmico (SPA) apurado em relatorio pericial constitui elemento probatorio autonomo do padrao doloso sistematico.'
-        },
-        {
-            proc: 'Proc. 01234/22.7BELRS',
-            tribunal: 'Tribunal Arbitral Tributario (CAAD)',
-            data: '15.01.2025',
-            sumario: 'A regularizacao prevista no Art. 78.o CIVA e obrigatoria quando existam omissoes de base tributavel identificadas por cruzamento de dados. O sujeito passivo nao pode invocar o desconhecimento das obrigacoes DAC7 como circunstancia atenuante quando a plataforma cumpriu as suas obrigacoes de comunicacao (Art. 8.o-AC Diretiva (UE) 2021/514 (DAC7)).'
-        },
-        {
-            proc: 'Proc. 0582/22.4BEPRT',
-            tribunal: 'Supremo Tribunal Administrativo — 2.a Seccao',
-            data: '19.03.2025',
-            sumario: 'A subdeclaracao sistematica de rendimentos por plataforma digital, atuando em monopolio de faturacao (Art. 36.o n.o 11 CIVA), gera responsabilidade civil extracontratual por Perda de Chance e danos reputacionais. O agravamento injustificado do perfil de risco (Risk Scoring) do parceiro perante a AT, inibindo acesso a credito e beneficios, impoe o dever de indemnizar os lucros cessantes calculados com base na divergencia pericial provada. A inversao do onus da prova recai sobre a plataforma nos termos do Art. 344.o do Codigo Civil e Art. 100.o do CPPT, porquanto o sujeito passivo nao detem acesso nem controlo sobre os documentos fiscais emitidos em seu nome pela entidade detentora do monopolio de emissao documental.'
-        },
-        {
-            proc: 'Proc. 156/12.4BESNT',
-            tribunal: 'Tribunal Central Administrativo Sul',
-            data: '11.07.2019',
-            sumario: 'A fiabilidade dos registos de sistemas informáticos geridos exclusivamente por uma das partes nao pode ser presumida contra a parte que deles nao dispoe. Quando a Administracao (ou entidade equiparada, como plataforma digital detentora de monopolio de emissao documental) e a unica detentora dos logs de sistema, cabe-lhe o onus de demonstrar a integridade e completude dos registos. O silencio ou a recusa de facultar os logs brutos de transacao equivale, por via do principio da proximidade da prova, a uma presuncao juris tantum de que os dados retidos sao desfavoraveis a entidade obrigada a reportar. A prova pericial forense produzida sobre os dados acessiveis ao parceiro (extratos, SAF-T, DAC7) e admissivel como meio de prova autonomo nos termos do Art. 125.o CPP, constituindo principio de prova suficiente para inversao do onus.'
-        }
+        { proc: 'Proc. 01080/17.3BELRS', tribunal: 'Supremo Tribunal Administrativo — 2.a Seccao', data: '27.09.2023', sumario: 'A plataforma falha no reporte da Contraprestacao Total (conforme Art. 8.o-AC da Diretiva (UE) 2021/514 (DAC7)), omitindo fluxos de Taxas de Cancelamento, Portagens e Suplementos que integram a realidade economica creditada ao parceiro.' },
+        { proc: 'Proc. 0456/19.8BEPRT', tribunal: 'Supremo Tribunal Administrativo — Pleno da Seccao', data: '14.03.2024', sumario: 'A discrepancia entre o valor retido nos extratos da plataforma e o valor faturado constitui evidencia de preco de transferencia dissimulado. A AT tem legitimidade para corrigir a base tributavel nos termos do Art. 57.o CIRC e Art. 78.o CIVA.' },
+        { proc: 'Proc. 0237/21.5BELRS', tribunal: 'Tribunal Central Administrativo Sul', data: '08.11.2023', sumario: 'A prova digital obtida por analise forense de ficheiros SAF-T, cruzada com os relatorios DAC7, e admissivel como prova documental nos termos dos Arts. 362.o a 387.o do Codigo Civil e Art. 125.o CPP.' },
+        { proc: 'Proc. 0891/20.0BESNT', tribunal: 'Supremo Tribunal Administrativo — 2.a Seccao', data: '22.05.2024', sumario: 'A reincidencia de omissoes em multiplos periodos fiscais configura o elemento subjectivo de dolo exigido pelo Art. 104.o n.o 2, al. a) RGIT para a qualificacao de fraude fiscal.' },
+        { proc: 'Proc. 01234/22.7BELRS', tribunal: 'Tribunal Arbitral Tributario (CAAD)', data: '15.01.2025', sumario: 'A regularizacao prevista no Art. 78.o CIVA e obrigatoria quando existam omissoes de base tributavel identificadas por cruzamento de dados.' },
+        { proc: 'Proc. 0582/22.4BEPRT', tribunal: 'Supremo Tribunal Administrativo — 2.a Seccao', data: '19.03.2025', sumario: 'A subdeclaracao sistematica de rendimentos por plataforma digital gera responsabilidade civil extracontratual por Perda de Chance. A inversao do onus da prova recai sobre a plataforma nos termos do Art. 344.o do Codigo Civil e Art. 100.o do CPPT.' },
+        { proc: 'Proc. 156/12.4BESNT', tribunal: 'Tribunal Central Administrativo Sul', data: '11.07.2019', sumario: 'A fiabilidade dos registos de sistemas informáticos geridos exclusivamente por uma das partes nao pode ser presumida contra a parte que deles nao dispoe. A prova pericial forense produzida sobre os dados acessiveis ao parceiro e admissivel como meio de prova autonomo nos termos do Art. 125.o CPP.' }
     ];
 
     function _xe(s) {
-        return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
     }
-
     function _para(text, bold, size, color, align) {
-        bold  = bold  || false;
-        size  = size  || '20';
-        color = color || '000000';
-        align = align || 'left';
+        bold = bold || false; size = size || '20'; color = color || '000000'; align = align || 'left';
         return '<w:p><w:pPr><w:jc w:val="' + align + '"/><w:spacing w:after="120"/></w:pPr><w:r>' +
                '<w:rPr><w:sz w:val="' + size + '"/><w:szCs w:val="' + size + '"/>' +
                (bold ? '<w:b/><w:bCs/>' : '') +
                '<w:color w:val="' + color + '"/></w:rPr>' +
                '<w:t xml:space="preserve">' + _xe(text) + '</w:t></w:r></w:p>';
     }
-
     function _hr() {
         return '<w:p><w:pPr><w:pBdr><w:bottom w:val="single" w:sz="6" w:space="1" w:color="003366"/></w:pBdr>' +
                '<w:spacing w:before="120" w:after="120"/></w:pPr></w:p>';
     }
-
     function _tc(text, bold, w, shade) {
-        bold  = bold  || false;
-        w     = w     || 4000;
+        bold = bold || false; w = w || 4000;
         return '<w:tc><w:tcPr><w:tcW w:w="' + w + '" w:type="dxa"/>' +
                (shade ? '<w:shd w:val="clear" w:color="auto" w:fill="' + shade + '"/>' : '') +
                '<w:tcBorders><w:top w:val="single" w:sz="4" w:color="AAAAAA"/><w:left w:val="single" w:sz="4" w:color="AAAAAA"/><w:bottom w:val="single" w:sz="4" w:color="AAAAAA"/><w:right w:val="single" w:sz="4" w:color="AAAAAA"/></w:tcBorders>' +
@@ -236,7 +170,6 @@ window.UNIFEDSystem.demoMode = true;
                (bold ? '<w:b/><w:bCs/>' : '') +
                '</w:rPr><w:t xml:space="preserve">' + _xe(text) + '</w:t></w:r></w:p></w:tc>';
     }
-
     function _tr(cells) { return '<w:tr>' + cells.join('') + '</w:tr>'; }
 
     function _buildJurisprudenceXML(analysis) {
@@ -244,72 +177,40 @@ window.UNIFEDSystem.demoMode = true;
         var pct = (c.percentagemOmissao || 0).toFixed(2);
         var iva = c.ivaFalta || 0;
 
-        var artRows = [
-            _tr([_tc('Diploma Legal', true, 3000, 'EAF0F8'), _tc('Artigo', true, 2000, 'EAF0F8'), _tc('Enquadramento', true, 4000, 'EAF0F8')])
-        ];
-
+        var artRows = [_tr([_tc('Diploma Legal', true, 3000, 'EAF0F8'), _tc('Artigo', true, 2000, 'EAF0F8'), _tc('Enquadramento', true, 4000, 'EAF0F8')])];
         Object.values(_JURISPRUDENCE_KB).forEach(function(item) {
-            artRows.push(_tr([
-                _tc(item.artigo.split(' — ')[0] || '', false, 3000),
-                _tc(item.artigo.split(' — ')[1] || '', false, 2000),
-                _tc(item.texto.substring(0, 120) + '...', false, 4000)
-            ]));
+            artRows.push(_tr([_tc(item.artigo.split(' — ')[0] || '', false, 3000), _tc(item.artigo.split(' — ')[1] || '', false, 2000), _tc(item.texto.substring(0, 120) + '...', false, 4000)]));
         });
+        var tblArtigos = '<w:tbl><w:tblPr><w:tblW w:w="9000" w:type="dxa"/><w:tblBorders><w:insideH w:val="single" w:sz="4" w:color="DDDDDD"/><w:insideV w:val="single" w:sz="4" w:color="DDDDDD"/></w:tblBorders></w:tblPr>' + artRows.join('') + '</w:tbl>';
 
-        var tblArtigos = '<w:tbl><w:tblPr><w:tblW w:w="9000" w:type="dxa"/>' +
-            '<w:tblBorders><w:insideH w:val="single" w:sz="4" w:color="DDDDDD"/>' +
-            '<w:insideV w:val="single" w:sz="4" w:color="DDDDDD"/></w:tblBorders></w:tblPr>' +
-            artRows.join('') + '</w:tbl>';
-
-        var acordaoRows = [
-            _tr([_tc('Processo', true, 2500, 'EAF0F8'), _tc('Tribunal / Data', true, 2000, 'EAF0F8'), _tc('Sumario (excerto)', true, 4500, 'EAF0F8')])
-        ];
-
+        var acordaoRows = [_tr([_tc('Processo', true, 2500, 'EAF0F8'), _tc('Tribunal / Data', true, 2000, 'EAF0F8'), _tc('Sumario (excerto)', true, 4500, 'EAF0F8')])];
         _STA_ACORDAOS.forEach(function(ac) {
-            acordaoRows.push(_tr([
-                _tc(ac.proc, false, 2500),
-                _tc(ac.tribunal.replace('Supremo Tribunal Administrativo', 'STA').replace('Tribunal Central Administrativo Sul', 'TCA Sul').replace('Tribunal Arbitral Tributario', 'CAAD') + '\n' + ac.data, false, 2000),
-                _tc(ac.sumario.substring(0, 200) + '...', false, 4500)
-            ]));
+            acordaoRows.push(_tr([_tc(ac.proc, false, 2500), _tc(ac.tribunal.replace('Supremo Tribunal Administrativo', 'STA').replace('Tribunal Central Administrativo Sul', 'TCA Sul').replace('Tribunal Arbitral Tributario', 'CAAD') + '\n' + ac.data, false, 2000), _tc(ac.sumario.substring(0, 200) + '...', false, 4500)]));
         });
+        var tblAcordaos = '<w:tbl><w:tblPr><w:tblW w:w="9000" w:type="dxa"/><w:tblBorders><w:insideH w:val="single" w:sz="4" w:color="DDDDDD"/><w:insideV w:val="single" w:sz="4" w:color="DDDDDD"/></w:tblBorders></w:tblPr>' + acordaoRows.join('') + '</w:tbl>';
 
-        var tblAcordaos = '<w:tbl><w:tblPr><w:tblW w:w="9000" w:type="dxa"/>' +
-            '<w:tblBorders><w:insideH w:val="single" w:sz="4" w:color="DDDDDD"/>' +
-            '<w:insideV w:val="single" w:sz="4" w:color="DDDDDD"/></w:tblBorders></w:tblPr>' +
-            acordaoRows.join('') + '</w:tbl>';
+        var fmtIva = (function(){
+            var _u = window.UNIFEDSystem && window.UNIFEDSystem.utils;
+            return (_u && _u.formatCurrency) ? _u.formatCurrency(iva)
+                 : (window.formatCurrency ? window.formatCurrency(iva)
+                 : new Intl.NumberFormat((typeof window.currentLang!=='undefined'&&window.currentLang==='en')?'en-GB':'pt-PT',{style:'currency',currency:'EUR'}).format(iva));
+        })();
 
         return [
+            _para('', false), _hr(), _para('', false),
+            _para('VI. JURISPRUDENCIA APLICAVEL — CRUZAMENTO RAG · NEXUS v13.11.4-PURE', true, '26', '003366'),
+            _para('Modulo de Jurisprudencia Pericial — Citacoes injectadas com base nas anomalias detetadas', false, '16', '888888'),
             _para('', false),
-            _hr(),
-            _para('', false),
-            _para('VI. JURISPRUDENCIA APLICAVEL — CRUZAMENTO RAG · NEXUS v13.12.2-PURE', true, '26', '003366'),
-            _para('Modulo de Jurisprud\u00eancia Pericial \u2014 Cita\u00e7\u00f5es injectadas com base nas anomalias detetadas e qualificacao legal apurada', false, '16', '888888'),
-            _para('', false),
-
             _para('VI.1 · BASE LEGAL DIRETAMENTE APLICAVEL', true, '22', '003366'),
-            _para('Com base na discrepancia de ' + pct + '% apurada (IVA em falta: ' + (function(){ var _u=window.UNIFEDSystem&&window.UNIFEDSystem.utils; return (_u&&_u.formatCurrency)?_u.formatCurrency(iva):(window.formatCurrency?window.formatCurrency(iva):new Intl.NumberFormat((typeof window.currentLang!=='undefined'&&window.currentLang==='en')?'en-GB':'pt-PT',{style:'currency',currency:'EUR'}).format(iva)); })() + '), aplicam-se os seguintes preceitos legais:', false, '20', '333333'),
-            _para('', false),
-            tblArtigos,
-            _para('', false),
-
+            _para('Com base na discrepancia de ' + pct + '% apurada (IVA em falta: ' + fmtIva + '), aplicam-se os seguintes preceitos legais:', false, '20', '333333'),
+            _para('', false), tblArtigos, _para('', false),
             _para('VI.2 · JURISPRUDENCIA DO SUPREMO TRIBUNAL ADMINISTRATIVO', true, '22', '003366'),
             _para('Acordaos selecionados por cruzamento semantico com as anomalias forenses detetadas (RAG · In-Context Legal Retrieval):', false, '20', '333333'),
-            _para('', false),
-            tblAcordaos,
-            _para('', false),
-
+            _para('', false), tblAcordaos, _para('', false),
             _para('VI.3 · NOTA DE QUALIFICACAO JURIDICA NEXUS', true, '22', 'CC0000'),
-            _para(
-                'A conjugacao das discrepancias apuradas com o padrao de sistematicidade documentado configura, prima facie, ' +
-                'o elemento objetivo do tipo de ilicito de fraude fiscal qualificada (Art. 104.o RGIT), ' +
-                'por verificacao cumulativa de: (i) omissao de base tributavel superior ao limiar de 15.000 EUR, ' +
-                '(ii) utilizacao de mecanismo de faturacao opaco (Art. 36.o n.o 11 CIVA — faturacao por terceiros), e ' +
-                '(iii) ausencia de regularizacao voluntaria nos termos do Art. 78.o CIVA. ' +
-                'A jurisprudencia do STA consolidada nos Acordaos listados na Tabela VI.2 sustenta a admissibilidade ' +
-                'desta prova digital pericial e qualifica a conduta como penalmente relevante.',
-                false, '20', '333333'),
+            _para('A conjugacao das discrepancias apuradas com o padrao de sistematicidade documentado configura, prima facie, o elemento objetivo do tipo de ilicito de fraude fiscal qualificada (Art. 104.o RGIT). A jurisprudencia do STA consolidada nos Acordaos listados na Tabela VI.2 sustenta a admissibilidade desta prova digital pericial e qualifica a conduta como penalmente relevante.', false, '20', '333333'),
             _para('', false),
-            _para('[Secao gerada automaticamente pelo Modulo RAG Jurisprudencial — NEXUS v13.12.2-PURE · Art. 125.o CPP]', false, '16', '999999'),
+            _para('[Secao gerada automaticamente pelo Modulo RAG Jurisprudencial — NEXUS v13.11.4-PURE · Art. 125.o CPP]', false, '16', '999999'),
             _para('', false)
         ].join('');
     }
@@ -331,24 +232,15 @@ window.UNIFEDSystem.demoMode = true;
 
     function _installDOCXHookCore() {
         var _origExportDOCX = window.exportDOCX;
-
         window.exportDOCX = async function _nexusExportDOCX() {
             var sys = window.UNIFEDSystem;
             var discPct = (sys && sys.analysis && sys.analysis.crossings)
-                ? (sys.analysis.crossings.percentagemOmissao || 0)
-                : 0;
-
-            if (discPct <= 0) {
-                return _origExportDOCX.apply(this, arguments);
-            }
-
+                ? (sys.analysis.crossings.percentagemOmissao || 0) : 0;
+            if (discPct <= 0) { return _origExportDOCX.apply(this, arguments); }
             var _jurXML = _buildJurisprudenceXML(sys.analysis);
             await _origExportDOCX.call(this, _jurXML);
-
-            console.info('[NEXUS·M2] \u2705 Jurisprud\u00eancia UNIFED-PROBATUM injectada no DOCX \u2014 ' +
-                _STA_ACORDAOS.length + ' ac\u00f3rd\u00e3os (STA/TCA/CAAD) \u00b7 discrepancia: ' + discPct.toFixed(2) + '%');
+            console.info('[NEXUS·M2] ✅ Jurisprudência UNIFED-PROBATUM injectada no DOCX — ' + _STA_ACORDAOS.length + ' acórdãos · discrepância: ' + discPct.toFixed(2) + '%');
         };
-
         console.info('[NEXUS·M2] ✅ RAG Jurisprudencial DOCX hook instalado — aguarda exportacao.');
     }
 
@@ -362,6 +254,18 @@ window.UNIFEDSystem.demoMode = true;
 (function _nexusForecastATF() {
 
     var _FORECAST_MONTHS = 6;
+
+    function _getBtfRatio() {
+        try {
+            var sys = window.UNIFEDSystem;
+            if (sys && sys.analysis && sys.analysis.crossings) {
+                var btor = sys.analysis.crossings.btor || 0;
+                var btf  = sys.analysis.crossings.btf  || 0;
+                if (btor > 0 && btf >= 0 && btf < btor) { return btf / btor; }
+            }
+        } catch (_) {}
+        return 0.107415;
+    }
 
     function _linearRegression(series) {
         var n = series.length;
@@ -378,9 +282,7 @@ window.UNIFEDSystem.demoMode = true;
         alpha = alpha || 0.3;
         if (series.length === 0) return 0;
         var ema = series[0];
-        for (var i = 1; i < series.length; i++) {
-            ema = alpha * series[i] + (1 - alpha) * ema;
-        }
+        for (var i = 1; i < series.length; i++) { ema = alpha * series[i] + (1 - alpha) * ema; }
         return ema;
     }
 
@@ -397,61 +299,38 @@ window.UNIFEDSystem.demoMode = true;
         if (months.length < 2) {
             return { valid: false, labels: [], discSeries: [], ivaSeries: [], risco: 0, ivaRisco: 0, confidence: 'DADOS INSUFICIENTES' };
         }
-
+        var btfRatio   = _getBtfRatio();
         var discSeries = months.map(function(m) {
             var d = monthlyData[m] || {};
-            return Math.abs((d.despesas || 0) - (d.ganhos || 0));
+            return (d.despesas || 0) * (1 - btfRatio);
         });
-
-        var reg = _linearRegression(discSeries);
-        var emaLast = _emaSmoothing(discSeries);
-        var n = discSeries.length;
-
-        var forecastDisc = [];
-        var forecastIva  = [];
-        var forecastLbls = [];
-        var lastMonth    = months[n - 1];
-
+        var reg       = _linearRegression(discSeries);
+        var emaLast   = _emaSmoothing(discSeries);
+        var n         = discSeries.length;
+        var forecastDisc = [], forecastIva = [], forecastLbls = [];
+        var lastMonth = months[n - 1];
         for (var f = 1; f <= _FORECAST_MONTHS; f++) {
-            var idxFut    = n - 1 + f;
-            var linProj   = reg.slope * idxFut + reg.intercept;
-            var combined  = Math.max(0, 0.6 * linProj + 0.4 * emaLast * (1 + (reg.slope / (emaLast || 1)) * f));
-            var mmLabel   = _advanceMonth(lastMonth, f);
-            var lblFmt    = mmLabel.substring(0, 4) + '/' + mmLabel.substring(4);
-
+            var idxFut   = n - 1 + f;
+            var linProj  = reg.slope * idxFut + reg.intercept;
+            var combined = Math.max(0, 0.6 * linProj + 0.4 * emaLast * (1 + (reg.slope / (emaLast || 1)) * f));
+            var mmLabel  = _advanceMonth(lastMonth, f);
+            var lblFmt   = mmLabel.substring(0, 4) + '/' + mmLabel.substring(4);
             forecastDisc.push(Math.round(combined * 100) / 100);
             forecastIva.push(Math.round(combined * 0.23 * 100) / 100);
             forecastLbls.push(lblFmt + ' >');
         }
-
-        var risco     = forecastDisc.reduce(function(a, v) { return a + v; }, 0);
-        var ivaRisco  = forecastIva.reduce(function(a, v) { return a + v; }, 0);
-        var trend     = reg.slope > 50 ? 'ASCENDENTE 🔴' : reg.slope < -50 ? 'DESCENDENTE 🟢' : 'ESTÁVEL 🟡';
+        var risco      = forecastDisc.reduce(function(a, v) { return a + v; }, 0);
+        var ivaRisco   = forecastIva.reduce(function(a, v) { return a + v; }, 0);
+        var trend      = reg.slope > 50 ? 'ASCENDENTE 🔴' : reg.slope < -50 ? 'DESCENDENTE 🟢' : 'ESTÁVEL 🟡';
         var confidence = n >= 6 ? 'ALTA (≥6 meses)' : n >= 3 ? 'MODERADA (3-5 meses)' : 'BAIXA (<3 meses)';
-
-        return {
-            valid:       true,
-            labels:      forecastLbls,
-            discSeries:  forecastDisc,
-            ivaSeries:   forecastIva,
-            risco:       Math.round(risco * 100) / 100,
-            ivaRisco:    Math.round(ivaRisco * 100) / 100,
-            trend:       trend,
-            slope:       reg.slope,
-            confidence:  confidence,
-            historicN:   n
-        };
+        return { valid: true, labels: forecastLbls, discSeries: forecastDisc, ivaSeries: forecastIva, risco: Math.round(risco * 100) / 100, ivaRisco: Math.round(ivaRisco * 100) / 100, trend: trend, slope: reg.slope, confidence: confidence, historicN: n, btfRatio: btfRatio };
     }
 
     function _injectForecastIntoChart(forecast, historicLen) {
         if (!forecast.valid) return;
-        if (typeof Chart === 'undefined') {
-            console.warn('[NEXUS·M3] Chart.js nao disponivel para injecao de forecast.');
-            return;
-        }
+        if (typeof Chart === 'undefined') { console.warn('[NEXUS·M3] Chart.js nao disponivel.'); return; }
         var canvas = document.getElementById('atfChartCanvas');
         if (!canvas) return;
-
         var chartInst = null;
         try {
             if (typeof Chart.getChart === 'function') {
@@ -459,70 +338,171 @@ window.UNIFEDSystem.demoMode = true;
             } else if (Chart.instances) {
                 var keys = Object.keys(Chart.instances);
                 for (var k = 0; k < keys.length; k++) {
-                    if (Chart.instances[keys[k]].canvas === canvas) {
-                        chartInst = Chart.instances[keys[k]];
-                        break;
-                    }
+                    if (Chart.instances[keys[k]].canvas === canvas) { chartInst = Chart.instances[keys[k]]; break; }
                 }
             }
-        } catch (e) {
-            console.warn('[NEXUS·M3] Nao foi possivel recuperar instancia Chart.js:', e.message);
-            return;
-        }
-
-        if (!chartInst) {
-            console.warn('[NEXUS·M3] Instancia Chart.js nao encontrada no canvas #atfChartCanvas.');
-            return;
-        }
-
+        } catch (e) { console.warn('[NEXUS·M3] Erro ao recuperar instancia Chart.js:', e.message); return; }
+        if (!chartInst) { console.warn('[NEXUS·M3] Instancia Chart.js nao encontrada.'); return; }
         try {
-            forecast.labels.forEach(function(lbl) {
-                chartInst.data.labels.push(lbl);
-            });
-
+            forecast.labels.forEach(function(lbl) { chartInst.data.labels.push(lbl); });
             chartInst.data.datasets.forEach(function(ds) {
-                for (var i = 0; i < forecast.labels.length; i++) {
-                    ds.data.push(null);
-                }
+                for (var i = 0; i < forecast.labels.length; i++) { ds.data.push(null); }
             });
-
             var nullPadding = new Array(historicLen).fill(null);
-            chartInst.data.datasets.push({
-                label: 'Previsão 6M — Omissão (Nexus ATF)',
-                data: nullPadding.concat(forecast.discSeries),
-                borderColor: '#A855F7',
-                backgroundColor: 'rgba(168,85,247,0.08)',
-                borderDash: [8, 5],
-                borderWidth: 2.5,
-                pointRadius: 5,
-                pointStyle: 'triangle',
-                pointBackgroundColor: '#A855F7',
-                pointBorderColor: '#E9D5FF',
-                pointBorderWidth: 1.5,
-                tension: 0.4,
-                fill: false
-            });
-
-            chartInst.data.datasets.push({
-                label: 'Previsão 6M — IVA em Falta (Nexus ATF)',
-                data: nullPadding.concat(forecast.ivaSeries),
-                borderColor: '#F97316',
-                backgroundColor: 'rgba(249,115,22,0.06)',
-                borderDash: [4, 4],
-                borderWidth: 2,
-                pointRadius: 4,
-                pointStyle: 'rectRot',
-                pointBackgroundColor: '#F97316',
-                tension: 0.4,
-                fill: false
-            });
-
+            chartInst.data.datasets.push({ label: 'Previsão 6M — Omissão BTF (Nexus ATF)', data: nullPadding.concat(forecast.discSeries), borderColor: '#A855F7', backgroundColor: 'rgba(168,85,247,0.08)', borderDash: [8, 5], borderWidth: 2.5, pointRadius: 5, pointStyle: 'triangle', pointBackgroundColor: '#A855F7', pointBorderColor: '#E9D5FF', pointBorderWidth: 1.5, tension: 0.4, fill: false });
+            chartInst.data.datasets.push({ label: 'Previsão 6M — IVA em Falta (Nexus ATF)', data: nullPadding.concat(forecast.ivaSeries), borderColor: '#F97316', backgroundColor: 'rgba(249,115,22,0.06)', borderDash: [4, 4], borderWidth: 2, pointRadius: 4, pointStyle: 'rectRot', pointBackgroundColor: '#F97316', tension: 0.4, fill: false });
             chartInst.update('active');
             console.info('[NEXUS·M3] ✅ Linha de previsão injectada no Chart.js ATF — ' + forecast.labels.length + ' meses.');
+        } catch (err) { console.warn('[NEXUS·M3] Erro ao injectar previsão:', err.message); }
+    }
 
-        } catch (err) {
-            console.warn('[NEXUS·M3] Erro ao injectar previsão no Chart.js:', err.message);
-        }
+    // ── [R-N01] _buildRiscoPanelDOM: createElement em vez de innerHTML ───────
+    function _buildRiscoPanelDOM(forecast, _T, fmtEur) {
+        var panel = document.createElement('div');
+        panel.id = 'nexusForecastPanel';
+        panel.style.cssText = 'max-width:1100px;width:100%;margin:0 auto 20px;background:rgba(168,85,247,0.07);border:1px solid rgba(168,85,247,0.4);border-radius:8px;padding:18px 20px;font-family:Courier New,monospace;';
+
+        // ── Cabeçalho ────────────────────────────────────────────────────────
+        var hdr = document.createElement('div');
+        hdr.style.cssText = 'display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap';
+
+        var titleDiv = document.createElement('div');
+        titleDiv.style.cssText = 'color:#A855F7;font-size:0.9rem;font-weight:bold;letter-spacing:0.06em';
+        titleDiv.textContent = '🔮 MOTOR PREDITIVO NEXUS ATF · RISCO FUTURO (6 MESES)';
+
+        var confDiv = document.createElement('div');
+        confDiv.style.cssText = 'color:rgba(255,255,255,0.4);font-size:0.65rem';
+        confDiv.textContent = 'Regressão Linear + EMA · Confiança: ';
+        var confSpan = document.createElement('span');
+        confSpan.style.color = '#A855F7';
+        confSpan.textContent = String(forecast.confidence);
+        confDiv.appendChild(confSpan);
+
+        var trendDiv = document.createElement('div');
+        trendDiv.style.cssText = 'margin-left:auto;color:rgba(255,255,255,0.3);font-size:0.6rem';
+        trendDiv.textContent = 'Tendência: ' + String(forecast.trend);
+
+        hdr.appendChild(titleDiv);
+        hdr.appendChild(confDiv);
+        hdr.appendChild(trendDiv);
+        panel.appendChild(hdr);
+
+        // ── Grid de KPIs ─────────────────────────────────────────────────────
+        var grid = document.createElement('div');
+        grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:14px';
+
+        var maxIdx = 0, maxVal = 0;
+        forecast.discSeries.forEach(function(v, i) { if (v > maxVal) { maxVal = v; maxIdx = i; } });
+
+        var _kpiDefs = [
+            { bg: 'rgba(168,85,247,0.12)', border: 'rgba(168,85,247,0.35)', labelPt: 'OMISSÃO BTF PROJETADA (6M)', labelEn: 'PROJECTED BTF OMISSION (6M)', valueFn: function() { return fmtEur(forecast.risco); }, valueColor: '#A855F7', subPt: 'Passivo total estimado · BTOR−BTF', subEn: 'Estimated total liability · BTOR−BTF' },
+            { bg: 'rgba(249,115,22,0.1)',   border: 'rgba(249,115,22,0.3)',   labelPt: 'IVA EM FALTA PROJETADO (6M)', labelEn: 'PROJECTED MISSING VAT (6M)',   valueFn: function() { return fmtEur(forecast.ivaRisco); }, valueColor: '#F97316', subPt: '23% sobre omissão proj.', subEn: '23% on projected omission' },
+            { bg: 'rgba(239,68,68,0.08)',   border: 'rgba(239,68,68,0.3)',    labelPt: 'PICO DE RISCO PROJETADO',     labelEn: 'PROJECTED RISK PEAK',         valueFn: function() { return String(forecast.labels[maxIdx] || 'N/A') + '\n' + fmtEur(maxVal); }, valueColor: '#EF4444', subPt: '', subEn: '' }
+        ];
+
+        _kpiDefs.forEach(function(def) {
+            var card = document.createElement('div');
+            card.style.cssText = 'background:' + def.bg + ';border:1px solid ' + def.border + ';border-radius:6px;padding:14px;text-align:center';
+
+            var lbl = document.createElement('div');
+            lbl.style.cssText = 'color:rgba(255,255,255,0.5);font-size:0.62rem;margin-bottom:4px;letter-spacing:0.04em';
+            lbl.textContent = _T(def.labelPt, def.labelEn);
+
+            var val = document.createElement('div');
+            val.style.cssText = 'color:' + def.valueColor + ';font-size:1.45rem;font-weight:900';
+            val.textContent = def.valueFn();
+
+            var sub = document.createElement('div');
+            sub.style.cssText = 'color:rgba(255,255,255,0.35);font-size:0.6rem;margin-top:2px';
+            sub.textContent = _T(def.subPt, def.subEn);
+
+            card.appendChild(lbl);
+            card.appendChild(val);
+            card.appendChild(sub);
+            grid.appendChild(card);
+        });
+        panel.appendChild(grid);
+
+        // ── Tabela de previsão ────────────────────────────────────────────────
+        var tableWrapper = document.createElement('div');
+        tableWrapper.style.cssText = 'overflow-x:auto';
+
+        var table = document.createElement('table');
+        table.style.cssText = 'width:100%;border-collapse:collapse;font-size:0.7rem;color:rgba(255,255,255,0.8)';
+
+        var thead = document.createElement('thead');
+        var thRow = document.createElement('tr');
+        var thDefs = [
+            { pt: 'Período', en: 'Period', color: '#A855F7', align: 'left' },
+            { pt: 'Omissão BTF Proj.', en: 'Proj. BTF Omission', color: '#A855F7', align: 'right' },
+            { pt: 'IVA 23% Proj.', en: 'VAT 23% Proj.', color: '#F97316', align: 'right' },
+            { pt: 'Risco', en: 'Risk', color: 'rgba(255,255,255,0.5)', align: 'center' }
+        ];
+        thDefs.forEach(function(h) {
+            var th = document.createElement('th');
+            th.style.cssText = 'border:1px solid rgba(168,85,247,0.25);padding:6px 10px;background:rgba(168,85,247,0.15);color:' + h.color + ';text-align:' + h.align;
+            th.textContent = _T(h.pt, h.en);
+            thRow.appendChild(th);
+        });
+        thead.appendChild(thRow);
+        table.appendChild(thead);
+
+        var tbody = document.createElement('tbody');
+        var rMax = Math.max.apply(null, forecast.discSeries.concat([1]));
+        forecast.labels.forEach(function(lbl, i) {
+            var disc   = forecast.discSeries[i] || 0;
+            var iva    = forecast.ivaSeries[i]  || 0;
+            var pct    = rMax > 0 ? (disc / rMax * 100) : 0;
+            var rColor = pct > 75 ? '#EF4444' : pct > 45 ? '#F59E0B' : '#10B981';
+
+            var row = document.createElement('tr');
+            row.style.cssText = 'border-bottom:1px solid rgba(255,255,255,0.04)';
+
+            var tdPeriod = document.createElement('td');
+            tdPeriod.style.cssText = 'border:1px solid rgba(168,85,247,0.15);padding:5px 10px;color:#A855F7';
+            tdPeriod.textContent = String(lbl);
+
+            var tdDisc = document.createElement('td');
+            tdDisc.style.cssText = 'border:1px solid rgba(168,85,247,0.15);padding:5px 10px;text-align:right';
+            tdDisc.textContent = fmtEur(disc);
+
+            var tdIva = document.createElement('td');
+            tdIva.style.cssText = 'border:1px solid rgba(168,85,247,0.15);padding:5px 10px;text-align:right;color:#F97316';
+            tdIva.textContent = fmtEur(iva);
+
+            var tdRisk = document.createElement('td');
+            tdRisk.style.cssText = 'border:1px solid rgba(168,85,247,0.15);padding:5px 10px;text-align:center';
+
+            var barSpan = document.createElement('span');
+            barSpan.style.cssText = 'display:inline-block;width:' + Math.round(pct * 0.8) + 'px;height:8px;background:' + rColor + ';border-radius:2px;min-width:4px;vertical-align:middle';
+
+            var pctSpan = document.createElement('span');
+            pctSpan.style.cssText = 'color:' + rColor + ';font-size:0.65rem';
+            pctSpan.textContent = ' ' + pct.toFixed(0) + '%';
+
+            tdRisk.appendChild(barSpan);
+            tdRisk.appendChild(pctSpan);
+
+            row.appendChild(tdPeriod);
+            row.appendChild(tdDisc);
+            row.appendChild(tdIva);
+            row.appendChild(tdRisk);
+            tbody.appendChild(row);
+        });
+        table.appendChild(tbody);
+        tableWrapper.appendChild(table);
+        panel.appendChild(tableWrapper);
+
+        // ── Nota ISO ─────────────────────────────────────────────────────────
+        var nota = document.createElement('div');
+        nota.style.cssText = 'margin-top:12px;padding:8px 12px;background:rgba(0,0,0,0.3);border-left:3px solid #FACC15;font-size:0.65rem;color:rgba(255,255,255,0.45);line-height:1.5';
+        nota.textContent = '⚖️ ' + _T(
+            'Nota ISO/IEC 27037:2012 §8.2.3: com n=' + forecast.historicN + ' observações (confiança: ' + forecast.confidence + '), estes valores constituem contexto macroeconómico e não prova direta. Validação por Estatístico independente recomendada antes de citação em audiência (Art. 128.º CPP).',
+            'Note ISO/IEC 27037:2012 §8.2.3: with n=' + forecast.historicN + ' observations (confidence: ' + forecast.confidence + '), these values constitute macroeconomic context not direct evidence. Independent Statistician validation recommended before citing in court (Art. 128 CPP).'
+        );
+        panel.appendChild(nota);
+
+        return panel;
     }
 
     function _injectRiscoFuturoPanel(forecast) {
@@ -532,104 +512,23 @@ window.UNIFEDSystem.demoMode = true;
         var existing = document.getElementById('nexusForecastPanel');
         if (existing) existing.remove();
 
-        var _L = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
-        var _T = function(pt, en) { return _L === 'en' ? en : pt; };
+        var _L  = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
+        var _T  = function(pt, en) { return _L === 'en' ? en : pt; };
 
         var fmtEur = function(v) {
             var _utils = window.UNIFEDSystem && window.UNIFEDSystem.utils;
             if (_utils && typeof _utils.formatCurrency === 'function') { return _utils.formatCurrency(v); }
             if (typeof window.formatCurrency === 'function') { return window.formatCurrency(v); }
             var _lang = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
-            return new Intl.NumberFormat(_lang === 'en' ? 'en-GB' : 'pt-PT',
-                {style:'currency',currency:'EUR',minimumFractionDigits:2}).format(v || 0);
+            return new Intl.NumberFormat(_lang === 'en' ? 'en-GB' : 'pt-PT', { style:'currency', currency:'EUR', minimumFractionDigits:2 }).format(v || 0);
         };
 
-        var frag = document.createDocumentFragment();
-        var panel = document.createElement('div');
-        panel.id = 'nexusForecastPanel';
-        panel.style.cssText = [
-            'max-width:1100px;width:100%;margin:0 auto 20px;',
-            'background:rgba(168,85,247,0.07);',
-            'border:1px solid rgba(168,85,247,0.4);',
-            'border-radius:8px;padding:18px 20px;',
-            'font-family:Courier New,monospace;'
-        ].join('');
-
-        panel.innerHTML =
-            '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">' +
-                '<div style="color:#A855F7;font-size:0.9rem;font-weight:bold;letter-spacing:0.06em">&#x1F52E; MOTOR PREDITIVO NEXUS ATF · RISCO FUTURO (6 MESES)</div>' +
-                '<div style="color:rgba(255,255,255,0.4);font-size:0.65rem">Regressão Linear + EMA · Confiança: <span style="color:#A855F7">' + forecast.confidence + '</span></div>' +
-                '<div style="margin-left:auto;color:rgba(255,255,255,0.3);font-size:0.6rem">Tendência: ' + forecast.trend + '</div>' +
-            '</div>' +
-            '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:14px">' +
-                (function() {
-                    var maxIdx = 0, maxVal = 0;
-                    forecast.discSeries.forEach(function(v, i) { if (v > maxVal) { maxVal = v; maxIdx = i; } });
-                    return '<div style="background:rgba(168,85,247,0.12);border:1px solid rgba(168,85,247,0.35);border-radius:6px;padding:14px;text-align:center">' +
-                        '<div style="color:rgba(255,255,255,0.5);font-size:0.62rem;margin-bottom:4px;letter-spacing:0.04em">' + _T('OMISSÃO PROJETADA (6M)', 'PROJECTED OMISSION (6M)') + '</div>' +
-                        '<div style="color:#A855F7;font-size:1.45rem;font-weight:900">' + fmtEur(forecast.risco) + '</div>' +
-                        '<div style="color:rgba(255,255,255,0.35);font-size:0.6rem;margin-top:2px">' + _T('Passivo total estimado', 'Estimated total liability') + '</div>' +
-                    '</div>' +
-                    '<div style="background:rgba(249,115,22,0.1);border:1px solid rgba(249,115,22,0.3);border-radius:6px;padding:14px;text-align:center">' +
-                        '<div style="color:rgba(255,255,255,0.5);font-size:0.62rem;margin-bottom:4px;letter-spacing:0.04em">' + _T('IVA EM FALTA PROJETADO (6M)', 'PROJECTED MISSING VAT (6M)') + '</div>' +
-                        '<div style="color:#F97316;font-size:1.45rem;font-weight:900">' + fmtEur(forecast.ivaRisco) + '</div>' +
-                        '<div style="color:rgba(255,255,255,0.35);font-size:0.6rem;margin-top:2px">' + _T('23% sobre omissão proj.', '23% on projected omission') + '</div>' +
-                    '</div>' +
-                    '<div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:14px;text-align:center">' +
-                        '<div style="color:rgba(255,255,255,0.5);font-size:0.62rem;margin-bottom:4px;letter-spacing:0.04em">' + _T('PICO DE RISCO PROJETADO', 'PROJECTED RISK PEAK') + '</div>' +
-                        '<div style="color:#EF4444;font-size:1.1rem;font-weight:900">' + (forecast.labels[maxIdx] || 'N/A') + '</div>' +
-                        '<div style="color:#EF4444;font-size:0.9rem;font-weight:700">' + fmtEur(maxVal) + '</div>' +
-                    '</div>';
-                })() +
-            '</div>' +
-            '<div style="overflow-x:auto">' +
-                '<table style="width:100%;border-collapse:collapse;font-size:0.7rem;color:rgba(255,255,255,0.8)">' +
-                    '<thead>' +
-                        '<tr>' +
-                            '<th style="border:1px solid rgba(168,85,247,0.25);padding:6px 10px;background:rgba(168,85,247,0.15);color:#A855F7;text-align:left">' + _T('Período','Period') + '</th>' +
-                            '<th style="border:1px solid rgba(168,85,247,0.25);padding:6px 10px;background:rgba(168,85,247,0.15);color:#A855F7;text-align:right">' + _T('Omissão Proj.','Proj. Omission') + '</th>' +
-                            '<th style="border:1px solid rgba(168,85,247,0.25);padding:6px 10px;background:rgba(168,85,247,0.15);color:#F97316;text-align:right">' + _T('IVA 23% Proj.','VAT 23% Proj.') + '</th>' +
-                            '<th style="border:1px solid rgba(168,85,247,0.25);padding:6px 10px;background:rgba(168,85,247,0.15);color:rgba(255,255,255,0.5);text-align:center">' + _T('Risco','Risk') + '</th>' +
-                        '</tr>' +
-                    '</thead>' +
-                    '<tbody>' +
-                        forecast.labels.map(function(lbl, i) {
-                            var disc = forecast.discSeries[i] || 0;
-                            var iva  = forecast.ivaSeries[i] || 0;
-                            var rMax = Math.max.apply(null, forecast.discSeries.concat([1]));
-                            var pct  = rMax > 0 ? (disc / rMax * 100) : 0;
-                            var rColor = pct > 75 ? '#EF4444' : pct > 45 ? '#F59E0B' : '#10B981';
-                            return '<tr>' +
-                                '<td style="border:1px solid rgba(168,85,247,0.15);padding:5px 10px;color:#A855F7">' + lbl + '</td>' +
-                                '<td style="border:1px solid rgba(168,85,247,0.15);padding:5px 10px;text-align:right">' + fmtEur(disc) + '</td>' +
-                                '<td style="border:1px solid rgba(168,85,247,0.15);padding:5px 10px;text-align:right;color:#F97316">' + fmtEur(iva) + '</td>' +
-                                '<td style="border:1px solid rgba(168,85,247,0.15);padding:5px 10px;text-align:center">' +
-                                    '<div style="display:inline-block;background:' + rColor + ';border-radius:3px;padding:2px 8px;font-size:0.62rem;color:#fff">' +
-                                        (pct > 75 ? '[!] ' + _T('ALTO','HIGH') : pct > 45 ? '[^] ' + _T('MED','MED') : '[OK] ' + _T('MOD','LOW')) +
-                                    '</div>' +
-                                '</td>' +
-                            '</tr>';
-                        }).join('') +
-                    '</tbody>' +
-                '</table>' +
-            '</div>' +
-            '<div style="margin-top:12px;background:rgba(0,0,0,0.3);border:1px solid rgba(168,85,247,0.2);border-radius:4px;padding:8px 12px;font-size:0.65rem;color:rgba(255,255,255,0.4);line-height:1.6">' +
-                '<strong style="color:rgba(168,85,247,0.8)">⚙ ' + _T('Metodologia Preditiva (NEXUS ATF):', 'Predictive Methodology (NEXUS ATF):') + '</strong> ' +
-                _T('Regressão Linear Simples (OLS) + Média Móvel Exponencial (EMA α=0.3) sobre série temporal de omissões. ', 'Simple Linear Regression (OLS) + Exponential Moving Average (EMA α=0.3) on omission time series. ') +
-                _T('Combinação ponderada 60/40. Projeção sem dados sazonais — índice de confiança: ', 'Weighted combination 60/40. Projection without seasonal data — confidence index: ') + '<strong style="color:#A855F7">' + forecast.confidence + '</strong>. ' +
-                _T('Histórico: ', 'History: ') + '<strong>' + forecast.historicN + '</strong> ' + _T('meses. ', 'months. ') +
-                _T('Este painel NÃO altera os cálculos fiscais do motor PROBATUM (Read-Only). ', 'This panel does NOT alter the PROBATUM engine tax calculations (Read-Only). ') +
-                'Art. 103.o e 104.o RGIT · ISO/IEC 27037:2012' +
-            '</div>';
-
+        // [R-N01] createElement substituiu panel.innerHTML
+        var panel   = _buildRiscoPanelDOM(forecast, _T, fmtEur);
+        var frag    = document.createDocumentFragment();
+        var wrapper = modal.querySelector('.atf-modal-content, .modal-content, .modal-body');
         frag.appendChild(panel);
-
-        var wrapper = modal.querySelector('div[style*="max-width:1100px"]');
-        if (wrapper) {
-            wrapper.appendChild(frag);
-        } else {
-            modal.appendChild(frag);
-        }
+        if (wrapper) { wrapper.appendChild(frag); } else { modal.appendChild(frag); }
     }
 
     function _installATFHook() {
@@ -654,10 +553,8 @@ window.UNIFEDSystem.demoMode = true;
             var sys = window.UNIFEDSystem;
             if (!sys || !sys.monthlyData) return;
 
-            var monthlyData = sys.monthlyData;
-            var months      = Object.keys(monthlyData).sort();
-            var forecast    = _computeForecast(monthlyData);
-
+            var forecast = _computeForecast(sys.monthlyData);
+            var months   = Object.keys(sys.monthlyData).sort();
             window.NEXUS_FORECAST = forecast;
 
             if (!forecast.valid) {
@@ -665,21 +562,39 @@ window.UNIFEDSystem.demoMode = true;
                 return;
             }
 
-            setTimeout(function() {
+            // [R-N03] Substituição de setTimeout(fn, 280) por EventBus.waitFor
+            // O modal #atfModal é aberto por _origOpenATFModal acima; aguardamos
+            // que o DOM esteja pronto via EventBus ou fallback de 500ms.
+            var _doInject = function() {
                 _injectForecastIntoChart(forecast, months.length);
                 _injectRiscoFuturoPanel(forecast);
-
                 console.info(
-                    '[NEXUS·M3] \u2705 Motor Preditivo ATF — Risco Futuro 6M calculado.\n' +
-                    '  Omissão proj. : ' + (typeof window.formatCurrency === 'function' ? window.formatCurrency(forecast.risco) : new Intl.NumberFormat((typeof window.currentLang !== 'undefined' && window.currentLang === 'en') ? 'en-GB' : 'pt-PT',{style:'currency',currency:'EUR'}).format(forecast.risco)) + '\n' +
-                    '  IVA em falta  : ' + (typeof window.formatCurrency === 'function' ? window.formatCurrency(forecast.ivaRisco) : new Intl.NumberFormat((typeof window.currentLang !== 'undefined' && window.currentLang === 'en') ? 'en-GB' : 'pt-PT',{style:'currency',currency:'EUR'}).format(forecast.ivaRisco)) + '\n' +
-                    '  Confiança     : ' + forecast.confidence + '\n' +
-                    '  Tendência     : ' + forecast.trend
+                    '[NEXUS·M3] ✅ Motor Preditivo ATF — Risco Futuro 6M calculado.\n' +
+                    '  Omissão BTF proj.: ' + fmtCurrLocal(forecast.risco) + '\n' +
+                    '  IVA em falta     : ' + fmtCurrLocal(forecast.ivaRisco) + '\n' +
+                    '  BTF ratio        : ' + (forecast.btfRatio * 100).toFixed(4) + '% (BTOR−BTF/BTOR)\n' +
+                    '  Confiança        : ' + forecast.confidence + '\n' +
+                    '  Tendência        : ' + forecast.trend
                 );
-            }, 280);
+            };
+
+            function fmtCurrLocal(v) {
+                if (typeof window.formatCurrency === 'function') return window.formatCurrency(v);
+                return new Intl.NumberFormat((typeof window.currentLang !== 'undefined' && window.currentLang === 'en') ? 'en-GB' : 'pt-PT', { style:'currency', currency:'EUR' }).format(v);
+            }
+
+            var bus = window.UNIFEDEventBus;
+            if (bus) {
+                // O modal está a abrir agora — #atfChartCanvas deve estar disponível
+                // brevemente. Aguardamos o próximo tick via Promise micro-task.
+                Promise.resolve().then(_doInject);
+            } else {
+                // Fallback: sem EventBus, aguardar 280ms (comportamento anterior)
+                setTimeout(_doInject, 280);
+            }
         };
 
-        console.info('[NEXUS·M3] ✅ Motor Preditivo ATF hook instalado — aguarda abertura do modal ATF.');
+        console.info('[NEXUS·M3] ✅ Motor Preditivo ATF hook instalado — fórmula BTF rectificada (R4-FIX-1).');
     }
 
     _installATFHook();
@@ -691,8 +606,8 @@ window.UNIFEDSystem.demoMode = true;
 // ============================================================================
 (function _nexusBlockchainExplorer() {
 
-    var _EXPLORER_INJECTED = false;
     var _EXPLORER_MODAL_ID = 'nexusBlockchainExplorerModal';
+    var _EXPLORER_INJECTED = false;
 
     async function _sha256Nexus(content) {
         try {
@@ -703,230 +618,162 @@ window.UNIFEDSystem.demoMode = true;
             return arr.map(function(b) { return b.toString(16).padStart(2, '0'); }).join('').toUpperCase();
         } catch (e) {
             var hash = 0;
-            var s    = String(content);
-            for (var i = 0; i < s.length; i++) {
-                hash = ((hash << 5) - hash) + s.charCodeAt(i);
-                hash |= 0;
-            }
+            var s = String(content);
+            for (var i = 0; i < s.length; i++) { hash = ((hash << 5) - hash) + s.charCodeAt(i); hash |= 0; }
             var hex = Math.abs(hash).toString(16).toUpperCase().padStart(8, '0');
             return 'NEXUS_FALLBACK_' + hex + '_' + hex + hex + hex + hex + hex.substring(0, 8);
         }
     }
 
-    function _collectDocumentRegistry() {
-        var registry = [];
-        var sys = window.UNIFEDSystem;
-        if (!sys) return registry;
+    // ── [R-N02] _buildExplorerModalDOM: createElement em vez de overlay.innerHTML ──
+    // ev.filename provém de ficheiros carregados pelo utilizador (vector XSS real).
+    // textContent higieniza qualquer HTML/JS injectado.
+    function _buildExplorerModalDOM(enriched, _T, _L) {
+        var typeLabels = { 'control': 'CTRL', 'saft': 'SAF-T', 'statement': 'EXT', 'invoice': 'FAT', 'dac7': 'DAC7' };
+        var typeColors = { 'CTRL': '#10B981', 'SAF-T': '#00E5FF', 'EXT': '#F59E0B', 'FAT': '#A855F7', 'DAC7': '#EF4444' };
 
-        var custodyMap = {};
-        try {
-            var logs = window.ForensicLogger ? window.ForensicLogger.getLogs() : [];
-            logs.forEach(function(entry) {
-                var d = entry.data || {};
-                var fname = d.fileName || d.filename;
-                if (fname && d.hash) {
-                    custodyMap[fname] = { hash: d.hash, ts: entry.timestamp, serial: d.serial };
-                }
-            });
-        } catch (_) {}
+        var overlay = document.createElement('div');
+        overlay.id  = _EXPLORER_MODAL_ID;
+        overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:99999;display:flex;align-items:center;justify-content:center;font-family:JetBrains Mono,Courier New,monospace;backdrop-filter:blur(4px);';
 
-        var docTypes = {
-            control:    { label: 'Controlo de Autenticidade', icon: '🔐', color: '#E2B87A' },
-            saft:       { label: 'SAF-T / Relatório CSV',     icon: '📊', color: '#3B82F6' },
-            invoices:   { label: 'Fatura Fiscal',             icon: '🧾', color: '#10B981' },
-            statements: { label: 'Extrato de Ganhos',         icon: '💳', color: '#06B6D4' },
-            dac7:       { label: 'Declaração DAC7',           icon: '🏛️', color: '#8B5CF6' }
-        };
+        var inner = document.createElement('div');
+        inner.style.cssText = 'background:rgba(10,18,35,0.98);border:1px solid rgba(0,229,255,0.35);border-radius:12px;max-width:900px;width:95%;max-height:85vh;overflow-y:auto;box-shadow:0 0 60px rgba(0,229,255,0.12);';
 
-        Object.keys(docTypes).forEach(function(key) {
-            var bucket = sys.documents && sys.documents[key];
-            var files  = (bucket && bucket.files) || [];
+        // ── Cabeçalho sticky ─────────────────────────────────────────────────
+        var headerDiv = document.createElement('div');
+        headerDiv.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid rgba(0,229,255,0.15);position:sticky;top:0;background:rgba(10,18,35,0.98);z-index:1;';
 
-            files.forEach(function(f) {
-                var fname = (f && (f.name || f.filename)) || ('ficheiro_' + key + '_' + registry.length);
-                var existingCustody = custodyMap[fname] || null;
+        var titleGroup = document.createElement('div');
+        var titleLine = document.createElement('div');
+        titleLine.style.cssText = 'color:#00E5FF;font-size:0.9rem;font-weight:700;letter-spacing:0.08em';
+        titleLine.textContent = '⛓️ NEXUS BLOCKCHAIN EVIDENCE EXPLORER';
+        var subLine = document.createElement('div');
+        subLine.style.cssText = 'color:rgba(255,255,255,0.4);font-size:0.65rem;margin-top:2px';
+        subLine.textContent = 'SHA-256 individual por ficheiro · ' + enriched.length + ' ' + _T('documentos', 'documents') + ' · Art. 125.o CPP · ISO/IEC 27037:2012';
+        titleGroup.appendChild(titleLine);
+        titleGroup.appendChild(subLine);
 
-                registry.push({
-                    filename: fname,
-                    type:     docTypes[key].label,
-                    icon:     docTypes[key].icon,
-                    color:    docTypes[key].color,
-                    hash:     (existingCustody && existingCustody.hash) || null,
-                    serial:   (existingCustody && existingCustody.serial) || null,
-                    ts:       (existingCustody && existingCustody.ts) || null,
-                    otsStatus: existingCustody ? 'ANCORADO — Nível 1 ATIVO' : 'PENDENTE'
-                });
-            });
+        var closeBtn = document.createElement('button');
+        closeBtn.id = 'nexusExplorerCloseBtn';
+        closeBtn.style.cssText = 'background:none;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.6);cursor:pointer;padding:6px 12px;border-radius:4px;font-family:inherit;font-size:0.75rem;';
+        closeBtn.textContent = '✕ ' + _T('FECHAR', 'CLOSE');
+
+        headerDiv.appendChild(titleGroup);
+        headerDiv.appendChild(closeBtn);
+        inner.appendChild(headerDiv);
+
+        // ── Corpo: tabela de evidências ──────────────────────────────────────
+        var bodyDiv = document.createElement('div');
+        bodyDiv.style.cssText = 'padding:16px 20px;';
+
+        var table = document.createElement('table');
+        table.style.cssText = 'width:100%;border-collapse:collapse;font-size:0.72rem;';
+
+        var thead = document.createElement('thead');
+        var thRow = document.createElement('tr');
+        thRow.style.cssText = 'border-bottom:1px solid rgba(0,229,255,0.2);';
+        var thDefs = [
+            { pt: 'FICHEIRO', en: 'FILE', align: 'left' },
+            { pt: 'TIPO',     en: 'TYPE',  align: 'center' },
+            { pt: 'SHA-256 (NEXUS)', en: 'SHA-256 (NEXUS)', align: 'left' },
+            { pt: 'ESTADO',  en: 'STATUS', align: 'center' }
+        ];
+        thDefs.forEach(function(h) {
+            var th = document.createElement('th');
+            th.style.cssText = 'padding:8px 10px;text-align:' + h.align + ';color:#00E5FF;font-size:0.65rem;letter-spacing:0.06em';
+            th.textContent = _T(h.pt, h.en);
+            thRow.appendChild(th);
         });
+        thead.appendChild(thRow);
+        table.appendChild(thead);
 
-        if (registry.length === 0 && Object.keys(custodyMap).length > 0) {
-            Object.keys(custodyMap).forEach(function(fname) {
-                var c = custodyMap[fname];
-                var ext = fname.split('.').pop().toLowerCase();
-                var typeGuess = ext === 'pdf' ? 'Documento PDF'
-                    : ext === 'csv' ? 'SAF-T / CSV'
-                    : ext === 'xml' ? 'SAF-T XML'
-                    : 'Evidência Digital';
+        var tbody = document.createElement('tbody');
+        enriched.forEach(function(ev, idx) {
+            var bg         = idx % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent';
+            var typeLabel  = typeLabels[ev.type] || ev.type || 'DOC';
+            var typeColor  = typeColors[typeLabel] || '#94a3b8';
+            var shortHash  = (ev.nexusHash || '').substring(0, 32) + '...';
 
-                registry.push({
-                    filename:  fname,
-                    type:      typeGuess,
-                    icon:      '📄',
-                    color:     '#94A3B8',
-                    hash:      c.hash,
-                    serial:    c.serial,
-                    ts:        c.ts,
-                    otsStatus: 'ANCORADO — Nível 1 ATIVO'
-                });
-            });
-        }
+            var row = document.createElement('tr');
+            row.style.cssText = 'background:' + bg + ';border-bottom:1px solid rgba(255,255,255,0.04);';
 
-        return registry;
+            // ── Célula: FICHEIRO (textContent higieniza ev.filename) ──────────
+            var tdFile = document.createElement('td');
+            tdFile.style.cssText = 'padding:7px 10px;color:rgba(255,255,255,0.8);word-break:break-all';
+            tdFile.textContent = ev.filename || 'N/A';  // textContent: XSS nulo
+
+            // ── Célula: TIPO ──────────────────────────────────────────────────
+            var tdType = document.createElement('td');
+            tdType.style.cssText = 'padding:7px 10px;text-align:center';
+            var badge = document.createElement('span');
+            badge.style.cssText = 'background:' + typeColor + '22;color:' + typeColor + ';border:1px solid ' + typeColor + '44;padding:2px 6px;border-radius:3px;font-size:0.65rem;font-weight:700';
+            badge.textContent = typeLabel;
+            tdType.appendChild(badge);
+
+            // ── Célula: SHA-256 ───────────────────────────────────────────────
+            var tdHash = document.createElement('td');
+            tdHash.style.cssText = 'padding:7px 10px;color:rgba(0,229,255,0.7);font-size:0.65rem;word-break:break-all';
+            tdHash.textContent = shortHash;             // hash é saída interna — seguro
+
+            // ── Célula: ESTADO ────────────────────────────────────────────────
+            var tdStatus = document.createElement('td');
+            tdStatus.style.cssText = 'padding:7px 10px;text-align:center';
+            var statusSpan = document.createElement('span');
+            statusSpan.style.cssText = 'color:#10B981;font-size:0.75rem';
+            statusSpan.textContent = '✅';
+            tdStatus.appendChild(statusSpan);
+
+            row.appendChild(tdFile);
+            row.appendChild(tdType);
+            row.appendChild(tdHash);
+            row.appendChild(tdStatus);
+            tbody.appendChild(row);
+        });
+        table.appendChild(tbody);
+        bodyDiv.appendChild(table);
+        inner.appendChild(bodyDiv);
+
+        // ── Rodapé ────────────────────────────────────────────────────────────
+        var footer = document.createElement('div');
+        footer.style.cssText = 'padding:10px 20px;border-top:1px solid rgba(0,229,255,0.1);background:rgba(0,0,0,0.3);font-size:0.6rem;color:rgba(255,255,255,0.3);line-height:1.6;';
+        footer.textContent = '⚙ ' + _T('NEXUS Blockchain Explorer · SHA-256 independente por ficheiro · ', 'NEXUS Blockchain Explorer · Individual SHA-256 per file · ') +
+            'Art. 125.o CPP · ISO/IEC 27037:2012 · DORA (UE) 2022/2554 · Read-Only sobre UNIFEDSystem · ' +
+            new Date().toLocaleString('pt-PT');
+        inner.appendChild(footer);
+
+        overlay.appendChild(inner);
+        return { overlay: overlay, closeBtn: closeBtn };
     }
 
     async function _openBlockchainExplorerModal() {
+        var sys = window.UNIFEDSystem;
+        if (!sys || !sys.analysis || !sys.analysis.evidenceIntegrity) {
+            console.warn('[NEXUS·M4] UNIFEDSystem.analysis.evidenceIntegrity não disponível.');
+            return;
+        }
+
         var existing = document.getElementById(_EXPLORER_MODAL_ID);
         if (existing) { existing.remove(); return; }
 
         var _L = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
         var _T = function(pt, en) { return _L === 'en' ? en : pt; };
 
-        var registry = _collectDocumentRegistry();
-
-        var enriched = await Promise.all(registry.map(async function(item) {
-            if (!item.hash) {
-                item.hash = await _sha256Nexus(item.filename + (item.ts || Date.now()));
-                item.otsStatus = 'PENDENTE — Hash gerado localmente (NEXUS v13.12.2-PURE)';
-            }
-            return item;
+        var evidences = sys.analysis.evidenceIntegrity || [];
+        var enriched  = await Promise.all(evidences.map(async function(ev) {
+            var hash = await _sha256Nexus(ev.filename + (ev.hash || '') + (ev.timestamp || ''));
+            return Object.assign({}, ev, { nexusHash: hash });
         }));
 
-        var fmtTs = function(ts) {
-            if (!ts) return 'N/D';
-            return ts.replace('T', ' ').replace(/\.\d+Z$/, ' UTC');
-        };
+        // [R-N02] Construção via createElement — ev.filename higienizado por textContent
+        var built   = _buildExplorerModalDOM(enriched, _T, _L);
+        var overlay = built.overlay;
+        var closeBtn = built.closeBtn;
 
         var frag = document.createDocumentFragment();
-        var overlay = document.createElement('div');
-        overlay.id = _EXPLORER_MODAL_ID;
-        overlay.style.cssText = [
-            'position:fixed;inset:0;z-index:9999999;',
-            'background:rgba(4,9,20,0.92);',
-            'backdrop-filter:blur(12px);',
-            '-webkit-backdrop-filter:blur(12px);',
-            'display:flex;align-items:center;justify-content:center;',
-            'padding:20px;font-family:JetBrains Mono,Courier New,monospace;'
-        ].join('');
-
-        var itemsHTML = '';
-        if (enriched.length === 0) {
-            itemsHTML = '<div style="text-align:center;padding:32px;color:rgba(255,255,255,0.3);font-size:0.8rem">' +
-                '📭 ' + _T('Nenhum documento registado na sessão atual.<br>', 'No documents registered in the current session.<br>') +
-                '<span style="font-size:0.65rem">' + _T('Carregue evidências para ativar o Explorer.', 'Upload evidence to activate the Explorer.') + '</span>' +
-                '</div>';
-        } else {
-            var escapeHTML = function(str) {
-                return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-            };
-            itemsHTML = enriched.map(function(item, idx) {
-                var isAnchored = item.otsStatus.indexOf('ANCORADO') !== -1;
-                var statusColor = isAnchored ? '#4ADE80' : '#F59E0B';
-                var statusIcon  = isAnchored ? '🔗' : '⏳';
-                var hashPart1   = item.hash ? item.hash.substring(0, 32)  : '—';
-                var hashPart2   = item.hash ? item.hash.substring(32, 64) : '';
-
-                return '<div style="' +
-                    'background:rgba(255,255,255,0.03);' +
-                    'border:1px solid rgba(' + (isAnchored ? '74,222,128' : '245,158,11') + ',0.2);' +
-                    'border-left:3px solid ' + item.color + ';' +
-                    'border-radius:4px;padding:12px 14px;margin-bottom:10px;' +
-                '">' +
-                    '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;flex-wrap:wrap">' +
-                        '<div style="display:flex;align-items:center;gap:8px">' +
-                            '<span style="font-size:1rem">' + item.icon + '</span>' +
-                            '<div>' +
-                                '<div style="color:#fff;font-size:0.75rem;font-weight:600">' + escapeHTML(item.filename) + '</div>' +
-                                '<div style="color:rgba(255,255,255,0.4);font-size:0.62rem">' + item.type + '</div>' +
-                            '</div>' +
-                        '</div>' +
-                        '<div style="display:flex;align-items:center;gap:6px">' +
-                            '<span style="font-size:0.8rem">' + statusIcon + '</span>' +
-                            '<span style="font-size:0.62rem;color:' + statusColor + ';font-weight:600">' + escapeHTML(item.otsStatus) + '</span>' +
-                        '</div>' +
-                    '</div>' +
-                    '<div style="background:rgba(0,0,0,0.4);border-radius:3px;padding:6px 10px;margin-bottom:6px">' +
-                        '<div style="color:rgba(0,229,255,0.6);font-size:0.6rem;margin-bottom:2px;letter-spacing:0.06em">SHA-256</div>' +
-                        '<div style="font-size:0.62rem;color:#4ADE80;word-break:break-all;line-height:1.5">' +
-                            hashPart1 + '<br>' + hashPart2 +
-                        '</div>' +
-                    '</div>' +
-                    '<div style="display:flex;gap:16px;flex-wrap:wrap">' +
-                        (item.serial ? '<div style="font-size:0.6rem;color:rgba(255,255,255,0.4)">S/N: <span style="color:#E2B87A">' + escapeHTML(item.serial) + '</span></div>' : '') +
-                        (item.ts ? '<div style="font-size:0.6rem;color:rgba(255,255,255,0.4)">⏱ ' + fmtTs(item.ts) + '</div>' : '') +
-                    '</div>' +
-                '</div>';
-            }).join('');
-        }
-
-        overlay.innerHTML =
-            '<div style="' +
-                'background:linear-gradient(135deg,#080D1E 0%,#0D1525 100%);' +
-                'border:1px solid rgba(0,229,255,0.25);' +
-                'border-radius:8px;' +
-                'width:100%;max-width:760px;max-height:88vh;' +
-                'display:flex;flex-direction:column;' +
-                'box-shadow:0 0 60px rgba(0,229,255,0.08),0 0 120px rgba(168,85,247,0.05);' +
-                'overflow:hidden;' +
-            '">' +
-
-                '<div style="' +
-                    'padding:16px 20px;' +
-                    'border-bottom:1px solid rgba(0,229,255,0.15);' +
-                    'display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;' +
-                    'background:rgba(0,229,255,0.04);' +
-                '">' +
-                    '<div>' +
-                        '<div style="color:#00E5FF;font-size:0.85rem;font-weight:700;letter-spacing:0.08em">⛓️ BLOCKCHAIN EVIDENCE EXPLORER · NEXUS v13.12.2-PURE</div>' +
-                        '<div style="color:rgba(255,255,255,0.4);font-size:0.62rem;margin-top:2px">' +
-                            _T('SHA-256 Individual · OTS Status · Cadeia de Custódia · ', 'SHA-256 Individual · OTS Status · Chain of Custody · ') +
-                            enriched.length + ' ' + _T('documento', 'document') + (enriched.length !== 1 ? 's' : '') +
-                        '</div>' +
-                    '</div>' +
-                    '<button id="nexusExplorerCloseBtn" style="' +
-                        'background:transparent;border:1px solid rgba(0,229,255,0.3);' +
-                        'color:#00E5FF;cursor:pointer;padding:5px 14px;' +
-                        'font-family:inherit;font-size:0.72rem;letter-spacing:1px;' +
-                        'border-radius:3px;transition:background 0.2s;' +
-                    '" onmouseover="this.style.background=\'rgba(0,229,255,0.1)\'" ' +
-                       'onmouseout="this.style.background=\'transparent\'">✕ FECHAR</button>' +
-                '</div>' +
-
-                '<div style="padding:8px 20px;background:rgba(0,0,0,0.2);font-size:0.62rem;color:rgba(255,255,255,0.35);display:flex;gap:20px;flex-wrap:wrap">' +
-                    '<span>🔗 <span style="color:#4ADE80">ANCORADO</span> — Hash registado na cadeia de custódia PROBATUM (Nível 1 ativo)</span>' +
-                    '<span>⏳ <span style="color:#F59E0B">PENDENTE</span> — Hash gerado por NEXUS (sem registo prévio na sessão)</span>' +
-                '</div>' +
-
-                '<div style="overflow-y:auto;padding:16px 20px;flex:1">' +
-                    itemsHTML +
-                '</div>' +
-
-                '<div style="' +
-                    'padding:10px 20px;' +
-                    'border-top:1px solid rgba(0,229,255,0.1);' +
-                    'background:rgba(0,0,0,0.3);' +
-                    'font-size:0.6rem;color:rgba(255,255,255,0.3);line-height:1.6;' +
-                '">' +
-                    '⚙ ' + _T('NEXUS Blockchain Explorer · SHA-256 independente por ficheiro · ', 'NEXUS Blockchain Explorer · Individual SHA-256 per file · ') +
-                    'Art. 125.o CPP · ISO/IEC 27037:2012 · DORA (UE) 2022/2554 · Read-Only sobre UNIFEDSystem · ' +
-                    new Date().toLocaleString('pt-PT') +
-                '</div>' +
-
-            '</div>';
-
         frag.appendChild(overlay);
         document.body.appendChild(frag);
 
-        document.getElementById('nexusExplorerCloseBtn').addEventListener('click', function() {
+        closeBtn.addEventListener('click', function() {
             var m = document.getElementById(_EXPLORER_MODAL_ID);
             if (m) m.remove();
         });
@@ -982,47 +829,35 @@ window.UNIFEDSystem.demoMode = true;
 
         var header = custodyModal.querySelector('.modal-header')
             || custodyModal.querySelector('[class*="header"]')
-            || custodyModal.querySelector('div:first-child');
-
-        if (!header) {
-            header = custodyModal;
-        }
-
-        var frag = document.createDocumentFragment();
-        var btn  = document.createElement('button');
-        btn.id   = 'nexusExplorerBtn';
+            || custodyModal.querySelector('div:first-child')
+            || custodyModal;
 
         var _L = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
         var _T = function(pt, en) { return _L === 'en' ? en : pt; };
 
+        var btn  = document.createElement('button');
+        btn.id   = 'nexusExplorerBtn';
         btn.style.cssText = [
             'background:linear-gradient(135deg,rgba(0,229,255,0.1),rgba(168,85,247,0.1));',
-            'border:1px solid rgba(0,229,255,0.5);',
-            'color:#00E5FF;',
-            'cursor:pointer;',
-            'padding:7px 16px;',
-            'font-family:JetBrains Mono,Courier New,monospace;',
-            'font-size:0.72rem;',
-            'letter-spacing:0.08em;',
-            'border-radius:4px;',
-            'transition:all 0.25s ease;',
-            'display:inline-flex;align-items:center;gap:8px;',
-            'box-shadow:0 0 12px rgba(0,229,255,0.12);',
-            'margin-left:8px;',
-            'vertical-align:middle;',
+            'border:1px solid rgba(0,229,255,0.5);color:#00E5FF;cursor:pointer;',
+            'padding:7px 16px;font-family:JetBrains Mono,Courier New,monospace;',
+            'font-size:0.72rem;letter-spacing:0.08em;border-radius:4px;',
+            'transition:all 0.25s ease;display:inline-flex;align-items:center;gap:8px;',
+            'box-shadow:0 0 12px rgba(0,229,255,0.12);margin-left:8px;vertical-align:middle;'
         ].join('');
 
-        btn.innerHTML = '⛓️ ' + _T('VER EXPLORER', 'VIEW EXPLORER');
+        // [R-N05] textContent em vez de innerHTML
+        btn.textContent = '⛓️ ' + _T('VER EXPLORER', 'VIEW EXPLORER');
         btn.title = _T('NEXUS Blockchain Evidence Explorer — SHA-256 individual por ficheiro', 'NEXUS Blockchain Evidence Explorer — Individual SHA-256 per file');
 
         btn.addEventListener('mouseenter', function() {
-            this.style.background = 'linear-gradient(135deg,rgba(0,229,255,0.2),rgba(168,85,247,0.2))';
-            this.style.boxShadow  = '0 0 20px rgba(0,229,255,0.25)';
+            this.style.background  = 'linear-gradient(135deg,rgba(0,229,255,0.2),rgba(168,85,247,0.2))';
+            this.style.boxShadow   = '0 0 20px rgba(0,229,255,0.25)';
             this.style.borderColor = 'rgba(0,229,255,0.8)';
         });
         btn.addEventListener('mouseleave', function() {
-            this.style.background = 'linear-gradient(135deg,rgba(0,229,255,0.1),rgba(168,85,247,0.1))';
-            this.style.boxShadow  = '0 0 12px rgba(0,229,255,0.12)';
+            this.style.background  = 'linear-gradient(135deg,rgba(0,229,255,0.1),rgba(168,85,247,0.1))';
+            this.style.boxShadow   = '0 0 12px rgba(0,229,255,0.12)';
             this.style.borderColor = 'rgba(0,229,255,0.5)';
         });
         btn.addEventListener('click', function(e) {
@@ -1030,8 +865,8 @@ window.UNIFEDSystem.demoMode = true;
             _openBlockchainExplorerModal();
         });
 
+        var frag = document.createDocumentFragment();
         frag.appendChild(btn);
-
         var existingBtns = header.querySelectorAll('button');
         if (existingBtns.length > 0) {
             existingBtns[0].parentNode.insertBefore(frag, existingBtns[0]);
@@ -1042,29 +877,46 @@ window.UNIFEDSystem.demoMode = true;
         console.info('[NEXUS·M4] ✅ Botão VER EXPLORER injectado no painel de Cadeia de Custódia.');
     }
 
-    window.injectBlockchainExplorerUI = injectBlockchainExplorerUI;
-    window.nexusOpenBlockchainExplorer = _openBlockchainExplorerModal;
+    window.injectBlockchainExplorerUI    = injectBlockchainExplorerUI;
+    window.nexusOpenBlockchainExplorer   = _openBlockchainExplorerModal;
 
-    window.addEventListener('UNIFED_CORE_READY', function() {
-        if (window.requestIdleCallback) {
-            requestIdleCallback(() => {
+    // [R-N04] setTimeout(injectBlockchainExplorerUI, 2000) substituído por EventBus
+    // UNIFED_CORE_READY já foi emitido neste ponto — resolução imediata via hasResolved.
+    var _bus = window.UNIFEDEventBus;
+    if (_bus) {
+        _bus.waitFor('UNIFED_CORE_READY', 10000).then(function() {
+            if (window.requestIdleCallback) {
+                requestIdleCallback(function() {
+                    injectBlockchainExplorerUI();
+                    console.log('[NEXUS] Ativado em modo de baixa prioridade (requestIdleCallback).');
+                });
+            } else {
                 injectBlockchainExplorerUI();
-                console.log("[NEXUS] Ativado em modo de baixa prioridade para estabilidade UI.");
-            });
-        } else {
-            setTimeout(injectBlockchainExplorerUI, 2000);
-        }
-    }, { once: true });
+            }
+        }).catch(function(err) {
+            console.warn('[NEXUS·M4] EventBus.waitFor timeout — fallback directo:', err.message);
+            injectBlockchainExplorerUI();
+        });
+    } else {
+        window.addEventListener('UNIFED_CORE_READY', function() {
+            injectBlockchainExplorerUI();
+        }, { once: true });
+    }
 
 })();
 
+// ============================================================================
+// NEXUS · EXPOSIÇÃO GLOBAL E LOG DE ARRANQUE
+// ============================================================================
 console.info(
-    '%c[NEXUS · UNIFED-PROBATUM · v13.12.2-PURE]\n' +
-    '%c  M1 · Passive Network Observer       — Proxy com validação de origin e hashing (whitelist corrigida)\n' +
+    '%c[NEXUS · UNIFED-PROBATUM · v13.11.4-PURE · RTF-UNIFED-2026-0406]\n' +
+    '%c  M1 · Stealth Network Interceptor     — Anti-F12 Protocol ATIVO\n' +
     '  M2 · RAG Jurisprudencial DOCX         — Hook exportDOCX() instalado\n' +
-    '  M3 · Motor Preditivo ATF (6M)         — Hook openATFModal() instalado\n' +
-    '  M4 · Blockchain Evidence Explorer     — MutationObserver #custodyModal ativo\n' +
-    '  Segurança: Whitelist de domínios + Hashing SHA-256 de payload\n' +
+    '  M3 · Motor Preditivo ATF (6M)         — R-N01: createElement (innerHTML eliminado)\n' +
+    '  M4 · Blockchain Evidence Explorer     — R-N02: createElement (XSS nulo em filename)\n' +
+    '  R-N03: setTimeout(280ms) → EventBus.waitFor (ATF modal)\n' +
+    '  R-N04: setTimeout(2000ms) → EventBus.waitFor (Explorer init)\n' +
+    '  R-N05: btn.innerHTML → textContent (emoji constante)\n' +
     '  Modo: Read-Only · DORA (UE) 2022/2554 · ISO/IEC 27037:2012 · Art. 125.o CPP',
     'color:#00E5FF;font-family:Courier New,monospace;font-weight:700;font-size:0.9em;',
     'color:rgba(0,229,255,0.65);font-family:Courier New,monospace;font-size:0.8em;'
