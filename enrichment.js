@@ -37,7 +37,7 @@ if (typeof window.logAudit !== 'function') {
         }).format(_raw);
     };
 
-  /**
+ /**
      * Sincronização Cirúrgica de Dados (DOM Bridge)
      * Mapeia o objecto UNIFEDSystem.analysis para os IDs do panel.html
      */
@@ -70,7 +70,6 @@ if (typeof window.logAudit !== 'function') {
         }
         window.logAudit('Sincronização visual concluída com sucesso.', 'info');
     }; // Apenas uma chaveta e ponto e vírgula aqui.
-
     window.formatCurrency = _utils.formatCurrency;
     window.logAudit('[UNIFED-ENRICHMENT] ✅ Utils carregado.', 'info');
 })();
