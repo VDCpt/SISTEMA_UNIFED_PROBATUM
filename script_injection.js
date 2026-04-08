@@ -23,8 +23,6 @@
         else console.log(prefix + msg);
     };
     const logAudit = window.logAudit;
-(function() {
-    'use strict';
     
     // Requisito 2: Garantir que abre a zeros
     function initializeZeroState() {
@@ -44,7 +42,6 @@
     };
 
     window.addEventListener('DOMContentLoaded', initializeZeroState);
-})();
 
     // 1. DATASET MESTRE (OBJETO IMUTÁVEL) — VALORES REAIS ORIGINAIS + MACRO + COUNTS
     const _PDF_CASE = Object.freeze({

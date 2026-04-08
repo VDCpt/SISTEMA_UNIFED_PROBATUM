@@ -1125,8 +1125,9 @@ function generateBurdenOfProofSection(discrepancyValue) {
         'na retenção da discrepância apurada de ' + _fmtVal + '.\n' +
         '---------------------------------------------------------------------------'
     );
-// --- FECHO CRÍTICO DE SINTAXE ---
-    window.exportDOCX = exportDOCX;
-    window.openATFModal = openATFModal;
-    console.log('[UNIFED-ENRICHMENT] ✅ Sintaxe rectificada. Funções globais exportadas.');
-})(); // Garanta que este fecho existe para encerrar o bloco iniciado no topo.
+}
+
+// Exportações finais (sem IIFE extra)
+window.exportDOCX = exportDOCX;
+window.openATFModal = openATFModal;
+console.log('[UNIFED-ENRICHMENT] ✅ Sintaxe rectificada. Funções globais exportadas.');
