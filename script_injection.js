@@ -60,33 +60,22 @@
             wrapper.style.visibility = 'visible';
         }
         
-        // Injeção de dados do _PDF_CASE aqui (simulado)
+      // Injeção de dados via Bridge (Retificado)
         if (window.UNIFEDSystem && typeof window.UNIFEDSystem.processAnalysis === 'function') {
             await window.UNIFEDSystem.processAnalysis();
         } else {
-        // Reconstituição de dados via Bridge
-if (typeof window.UNIFEDSystem.utils.syncVisualDOM === 'function') {
-    window.UNIFEDSystem.utils.syncVisualDOM();
-} else {
-    console.warn('[UNIFED] syncVisualDOM não encontrado em enrichment.js');
-}
-        
+            // Reconstituição de dados via Bridge se o motor principal estiver em bypass
+            if (window.UNIFEDSystem.utils && typeof window.UNIFEDSystem.utils.syncVisualDOM === 'function') {
+                window.UNIFEDSystem.utils.syncVisualDOM();
+            } else {
+                console.warn('[UNIFED] syncVisualDOM não encontrado em enrichment.js');
+            }
+        } // Fecho do ELSE
+
         // Mostrar contadores após carga
         document.querySelectorAll('.pure-badge-alert').forEach(b => b.style.display = 'inline-block');
         logAudit('Evidências do caso real carregadas com sucesso.', 'success');
-    };
-
-    window.addEventListener('DOMContentLoaded', initializeZeroState);
-
-    // 1. DATASET MESTRE (OBJETO IMUTÁVEL) — VALORES REAIS ORIGINAIS + MACRO + COUNTS
-    const _PDF_CASE = Object.freeze({
-        sessionId:  "UNIFED-MNGFN3C0-X57MO",
-        masterHash: "a3f8c9e2d5b6a7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1",
-        client: { 
-            name: "Real Demo - Unipessoal, Lda", 
-            nif: "999999990", 
-            platform: "Plataforma A" 
-        },
+    }; // Fecho da função loadAnonymizedRealCase
         counts: {
             ctrl: 12,
             saft: 4,
