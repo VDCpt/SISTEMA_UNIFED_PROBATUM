@@ -37,40 +37,39 @@ if (typeof window.logAudit !== 'function') {
         }).format(_raw);
     };
 
-    /**
+  /**
      * Sincronização Cirúrgica de Dados (DOM Bridge)
      * Mapeia o objecto UNIFEDSystem.analysis para os IDs do panel.html
      */
-   _utils.syncVisualDOM = function() {
-    const data = {
-        ganhosExtrato: 10157.73,
-        despesasComissoes: 2447.89,
-        ganhosLiquidos: 7709.84,
-        saftBruto: 8227.97,
-        reportadoDAC7: 7755.16
-    };
+    _utils.syncVisualDOM = function() {
+        const data = {
+            ganhosExtrato: 10157.73,
+            despesasComissoes: 2447.89,
+            ganhosLiquidos: 7709.84,
+            saftBruto: 8227.97,
+            reportadoDAC7: 7755.16
+        };
 
-    const mapping = {
-        'pure-saft-val': data.saftBruto,
-        'pure-saft-total-iva': 493.68,
-        'pure-ganhos-extrato-val': data.ganhosExtrato,
-        'pure-despesas-extrato-val': data.despesasComissoes,
-        'pure-liquido-extrato-val': data.ganhosLiquidos,
-        'pure-dac7-q4-val': data.reportadoDAC7,
-        'pure-ganhos-reconstruidos': data.ganhosLiquidos,
-        'pure-despesas-detetadas': data.despesasComissoes
-    };
+        const mapping = {
+            'pure-saft-val': data.saftBruto,
+            'pure-saft-total-iva': 493.68,
+            'pure-ganhos-extrato-val': data.ganhosExtrato,
+            'pure-despesas-extrato-val': data.despesasComissoes,
+            'pure-liquido-extrato-val': data.ganhosLiquidos,
+            'pure-dac7-q4-val': data.reportadoDAC7,
+            'pure-ganhos-reconstruidos': data.ganhosLiquidos,
+            'pure-despesas-detetadas': data.despesasComissoes
+        };
 
-    for (const [id, val] of Object.entries(mapping)) {
-        const el = document.getElementById(id);
-        if (el) {
-            el.innerText = typeof val === 'number' ? 
-                val.toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' }) : val;
+        for (const [id, val] of Object.entries(mapping)) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.innerText = typeof val === 'number' ? 
+                    val.toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' }) : val;
+            }
         }
-    }
-};
         window.logAudit('Sincronização visual concluída com sucesso.', 'info');
-    };
+    }; // Apenas uma chaveta e ponto e vírgula aqui.
 
     window.formatCurrency = _utils.formatCurrency;
     window.logAudit('[UNIFED-ENRICHMENT] ✅ Utils carregado.', 'info');
