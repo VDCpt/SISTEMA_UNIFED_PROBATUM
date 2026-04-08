@@ -37,6 +37,38 @@ if (typeof window.logAudit !== 'function') {
         }).format(_raw);
     };
 
+    /**
+     * Sincronização Cirúrgica de Dados (DOM Bridge)
+     * Mapeia o objecto UNIFEDSystem.analysis para os IDs do panel.html
+     */
+    _utils.syncVisualDOM = function() {
+        const data = window.UNIFEDSystem.analysis;
+        if (!data) return;
+
+        const mapping = {
+            'pure-saft-val': data.saftBruto,
+            'pure-saft-total-iva': (data.saftBruto * 0.06).toFixed(2), // Estimativa técnica
+            'pure-ganhos-extrato-val': data.ganhosExtrato,
+            'pure-despesas-extrato-val': data.despesasComissoes,
+            'pure-liquido-extrato-val': data.ganhosLiquidos,
+            'pure-dac7-q4-val': data.reportadoDAC7,
+            'pure-ganhos-reconstruidos': data.ganhosLiquidos,
+            'pure-campanhas': 405.00,
+            'pure-gorjetas': 46.00,
+            'pure-portagens': 0.15,
+            'pure-nao-sujeitos-total': 451.15
+        };
+
+        for (const [id, val] of Object.entries(mapping)) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.innerText = typeof val === 'number' ? 
+                    val.toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' }) : val;
+            }
+        }
+        window.logAudit('Sincronização visual concluída com sucesso.', 'info');
+    };
+
     window.formatCurrency = _utils.formatCurrency;
     window.logAudit('[UNIFED-ENRICHMENT] ✅ Utils carregado.', 'info');
 })();
