@@ -13,7 +13,7 @@
  *
  * v13.12.2-PURE (2026-04-08):
  *   · Merge seguro de window.UNIFEDSystem (read-only após análise)
- *   · Whitelist corrigida: inclui window.location.origin
+ *   · Whitelist corrigida: inclui window.location.origin, null, localhost
  *   · Hashing com crypto.subtle.digest em async
  * ============================================================================
  */
@@ -33,13 +33,16 @@ window.UNIFEDSystem.demoMode = true;
     }
     const originalFetch = window.fetch;
     
-    // Whitelist de domínios permitidos — inclui a origem atual do painel
+    // Whitelist de domínios permitidos — inclui a origem atual do painel e modos locais
     const ALLOWED_ORIGINS = [
         window.location.origin,                           // origem do painel HTML
+        'null',                                           // para execução local via file://
+        'http://localhost',
+        'http://localhost:5500',
+        'http://127.0.0.1:5500',
         'https://unifed.com',
         'https://app.unifed.com',
-        'https://freetsa.org',
-        'http://localhost:3000'
+        'https://freetsa.org'
     ];
 
     // Função para validar origin

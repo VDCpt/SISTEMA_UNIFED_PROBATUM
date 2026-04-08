@@ -7,8 +7,9 @@
  * RETIFICAÇÕES v13.12.2-PURE (2026-04-08):
  * - Zero-State Policy: contadores iniciados a zero e badges ocultos.
  * - Apenas loadAnonymizedRealCase() popula evidências.
- * - QR Code gerado apenas após wrapper visível (opacity:1).
+ * - QR Code gerado apenas após wrapper visível (opacity:1 ou display:block).
  * - Centralização do logger (global window.logAudit).
+ * - Correcção do namespace: método exposto em UNIFEDSystem.
  * ============================================================================
  */
 
@@ -46,13 +47,24 @@
         logAudit('Zero-State inicializado. Contadores resetados e badges ocultos.', 'info');
     }
 
-    // Apenas esta função (acionada pelo botão "CASO REAL ANONIMIZADO") popula evidências
-    window.loadAnonymizedRealCase = async function() {
+    // Função principal de carga – exposta no namespace UNIFEDSystem (para compatibilidade com index.html)
+    window.UNIFEDSystem = window.UNIFEDSystem || {};
+    window.UNIFEDSystem.loadAnonymizedRealCase = async function() {
         logAudit('Carregando Caso Real Anonimizado... Populando evidências.', 'info');
+        
+        // Forçar visibilidade do wrapper para contornar qualquer bloqueio de opacidade
+        const wrapper = document.getElementById('pureDashboardWrapper');
+        if (wrapper) {
+            wrapper.style.display = 'block';
+            wrapper.style.opacity = '1';
+            wrapper.style.visibility = 'visible';
+        }
         
         // Injeção de dados do _PDF_CASE aqui (simulado)
         if (window.UNIFEDSystem && typeof window.UNIFEDSystem.processAnalysis === 'function') {
             await window.UNIFEDSystem.processAnalysis();
+        } else {
+            await initializeFullWithEvidence(); // caminho alternativo
         }
         
         // Mostrar contadores após carga
@@ -1054,10 +1066,9 @@
         const container = document.getElementById('qrcodeContainer');
         if (!container) return;
         
-        // Aguarda o wrapper #pureDashboardWrapper ficar visível (opacity:1)
         const checkVisibility = setInterval(() => {
             const wrapper = document.getElementById('pureDashboardWrapper');
-            if (wrapper && window.getComputedStyle(wrapper).opacity === '1') {
+            if (wrapper && (wrapper.style.display === 'block' || getComputedStyle(wrapper).opacity === '1')) {
                 clearInterval(checkVisibility);
                 container.innerHTML = '';
                 const hashFull = window.UNIFEDSystem?.masterHash || 'HASH_INDISPONIVEL';
@@ -1077,7 +1088,6 @@
                 logAudit('QR Code gerado após confirmação de visibilidade do wrapper.', 'info');
             }
         }, 100);
-        // Timeout de segurança após 5 segundos
         setTimeout(() => clearInterval(checkVisibility), 5000);
     }
     window.generateQRCode = generateQRCode;

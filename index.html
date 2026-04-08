@@ -885,30 +885,32 @@
     <script src="nexus.js"></script>
     <link rel="stylesheet" href="style_additions.css">
     <script src="script_injection.js"></script>
-    <script>
-        // ── Activação do Painel v13.12.0-PURE ───────────────────────────────────
-        window._activatePurePanel = function() {
-            fetch('panel.html')
-                .then(function(r) { return r.text(); })
-                .then(function(html) {
-                    var wrapper = document.getElementById('pureDashboardWrapper');
-                    if (wrapper) {
-                        wrapper.innerHTML = html;
-                        wrapper.style.display = 'block';
-                        if (typeof UNIFEDSystem !== 'undefined' && typeof UNIFEDSystem.loadAnonymizedRealCase === 'function') {
-                            UNIFEDSystem.loadAnonymizedRealCase();
-                        }
-                        if (typeof window._translatePurePanel === 'function') {
-                            window._translatePurePanel(window.currentLang || 'pt');
-                        }
+<script>
+    // ── Activação do Painel v13.12.0-PURE (corrigido) ───────────────────────────────────
+    window._activatePurePanel = function() {
+        fetch('panel.html')
+            .then(function(r) { return r.text(); })
+            .then(function(html) {
+                var wrapper = document.getElementById('pureDashboardWrapper');
+                if (wrapper) {
+                    wrapper.innerHTML = html;
+                    wrapper.style.display = 'block';
+                    wrapper.style.opacity = '1';
+                    wrapper.style.visibility = 'visible';
+                    if (typeof UNIFEDSystem !== 'undefined' && typeof UNIFEDSystem.loadAnonymizedRealCase === 'function') {
+                        UNIFEDSystem.loadAnonymizedRealCase();
                     }
-                    console.info('[UNIFED-PURE] ✅ Painel v13.12.0-PURE activado.');
-                })
-                .catch(function() {
-                    console.info('[UNIFED-PURE] [i] panel.html não encontrado — modo standalone.');
-                });
-        };
-    </script>
+                    if (typeof window._translatePurePanel === 'function') {
+                        window._translatePurePanel(window.currentLang || 'pt');
+                    }
+                }
+                console.info('[UNIFED-PURE] ✅ Painel v13.12.0-PURE activado.');
+            })
+            .catch(function() {
+                console.info('[UNIFED-PURE] [i] panel.html não encontrado — modo standalone.');
+            });
+    };
+</script>
     <script src="unifed_triada_export.js"></script>
 
 </body>
