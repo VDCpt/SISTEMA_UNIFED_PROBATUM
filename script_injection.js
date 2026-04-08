@@ -1,29 +1,30 @@
 /**
- * UNIFED - PROBATUM · CASO REAL ANONIMIZADO v13.12.0-PURE (COMPLETO)
+ * UNIFED - PROBATUM · CASO REAL ANONIMIZADO v13.12.1-PURE (COMPLETO)
  * ============================================================================
  * Missão: Injeção Forense e Reconstituição da Verdade Material
  * Conformidade: DORA (UE) 2022/2554 · Art. 125.º CPP · ISO/IEC 27037:2012
  * ============================================================================
- * RETIFICAÇÕES v13.12.0-PURE (2026-04-07):
- * - Garantia de que os contadores começam a zero.
- * - Injeção das boxes auxiliares antes da atualização dos valores.
- * - Renderização forçada dos gráficos após carregamento dos dados.
- * - Nota de reconciliação DAC7 agora exibe valores corretos.
+ * RETIFICAÇÕES v13.12.1-PURE (2026-04-08):
+ * - Centralização do logger (global window.logAudit).
+ * - QR Code gerado apenas após wrapper visível (opacity:1).
+ * - Contadores iniciados a zero.
  * ============================================================================
  */
 
 (function() {
     'use strict';
 
-    window.logAudit = window.logAudit || function(msg, level = 'info') {
-        const prefix = '[UNIFED] ';
-        if (level === 'error') console.error(prefix + msg);
-        else if (level === 'warn') console.warn(prefix + msg);
-        else if (level === 'success') console.info(prefix + msg);
-        else console.log(prefix + msg);
-    };
+    // Logger centralizado – usa o definido globalmente (script.js)
+    if (typeof window.logAudit !== 'function') {
+        window.logAudit = function(msg, level) {
+            const prefix = '[UNIFED] ';
+            if (level === 'error') console.error(prefix + msg);
+            else if (level === 'warn') console.warn(prefix + msg);
+            else console.log(prefix + msg);
+        };
+    }
     const logAudit = window.logAudit;
-    
+
     // Requisito 2: Garantir que abre a zeros
     function initializeZeroState() {
         const ids = ['pure-saft-qty', 'pure-ctrl-qty', 'pure-fat-qty', 'pure-ext-qty', 'pure-dac7-qty'];
@@ -31,12 +32,12 @@
             const el = document.getElementById(id);
             if (el) el.textContent = '0';
         });
-        window.logAudit('Sistema pronto. Contadores inicializados a zero.', 'info');
+        logAudit('Sistema pronto. Contadores inicializados a zero.', 'info');
     }
 
     // Só preenche ao clicar no botão
     window.loadAnonymizedRealCase = function() {
-        window.logAudit('A carregar Caso Real Anonimizado...', 'info');
+        logAudit('A carregar Caso Real Anonimizado...', 'info');
         // Injeção de dados do _PDF_CASE aqui...
         syncMetricsWithRealData(_PDF_CASE);
     };
@@ -82,7 +83,7 @@
             confianca: "99.2%",
             periodo: "Q4 2024",
             anomalias: 4,
-            version: "v13.12.0-PURE",
+            version: "v13.12.1-PURE",
             score: 40,
             trend: "DESCENDENTE",
             outliers: 0
@@ -1030,24 +1031,36 @@
         console.log('[UNIFED] Listener associado ao botão "CASO REAL ANONIMIZADO".');
     }
 
+    // Geração de QR Code com verificação de visibilidade do wrapper
     function generateQRCode() {
         const container = document.getElementById('qrcodeContainer');
         if (!container) return;
-        container.innerHTML = '';
-        const hashFull = window.UNIFEDSystem?.masterHash || 'HASH_INDISPONIVEL';
-        const sessionShort = window.UNIFEDSystem?.sessionId ? window.UNIFEDSystem.sessionId.substring(0, 16) : 'N/A';
-        const qrData = `UNIFED|${sessionShort}|${hashFull}`;
-        if (typeof QRCode !== 'undefined') {
-            new QRCode(container, {
-                text: qrData,
-                width: 75,
-                height: 75,
-                colorDark: "#000000",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.L
-            });
-        }
-        container.setAttribute('data-tooltip', 'Clique para verificar a cadeia de custódia completa');
+        
+        // Aguarda o wrapper #pureDashboardWrapper ficar visível (opacity:1)
+        const checkVisibility = setInterval(() => {
+            const wrapper = document.getElementById('pureDashboardWrapper');
+            if (wrapper && window.getComputedStyle(wrapper).opacity === '1') {
+                clearInterval(checkVisibility);
+                container.innerHTML = '';
+                const hashFull = window.UNIFEDSystem?.masterHash || 'HASH_INDISPONIVEL';
+                const sessionShort = window.UNIFEDSystem?.sessionId ? window.UNIFEDSystem.sessionId.substring(0, 16) : 'N/A';
+                const qrData = `UNIFED|${sessionShort}|${hashFull}`;
+                if (typeof QRCode !== 'undefined') {
+                    new QRCode(container, {
+                        text: qrData,
+                        width: 75,
+                        height: 75,
+                        colorDark: "#000000",
+                        colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.L
+                    });
+                }
+                container.setAttribute('data-tooltip', 'Clique para verificar a cadeia de custódia completa');
+                logAudit('QR Code gerado após confirmação de visibilidade do wrapper.', 'info');
+            }
+        }, 100);
+        // Timeout de segurança após 5 segundos
+        setTimeout(() => clearInterval(checkVisibility), 5000);
     }
     window.generateQRCode = generateQRCode;
 

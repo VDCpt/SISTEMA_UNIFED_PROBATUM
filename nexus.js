@@ -1,12 +1,12 @@
 /**
- * UNIFED - PROBATUM · NEXUS LAYER · v13.12.0-PURE
+ * UNIFED - PROBATUM · NEXUS LAYER · v13.12.1-PURE
  * ============================================================================
  * Arquitetura : Adaptive Extension Layer — carregado APÓS enrichment.js
  * Padrão      : Read-Only sobre UNIFEDSystem · Nenhum cálculo fiscal alterado
  * Conformidade: DORA (UE) 2022/2554 · RGPD · ISO/IEC 27037:2012 · Art. 125.o CPP
  *
  * MÓDULOS ELITE:
- *   1. PASSIVE NETWORK OBSERVER — Proxy Wrapper Transparente (ISO/IEC 27037)
+ *   1. PASSIVE NETWORK OBSERVER — Proxy Wrapper com validação de origin e hashing
  *   2. RAG JURISPRUDENCIAL AVANÇADO — DOCX Upgrade (Citações + Acórdãos STA)
  *   3. MOTOR PREDITIVO ATF          — Forecasting 6M (Regressão Linear + Chart.js)
  *   4. BLOCKCHAIN EVIDENCE EXPLORER — OTS Individual por Ficheiro (SHA-256 + DOM UI)
@@ -16,10 +16,10 @@
 'use strict';
 
 // ============================================================================
-// MÓDULO 1 · PASSIVE NETWORK OBSERVER — Proxy Wrapper Transparente
+// MÓDULO 1 · PASSIVE NETWORK OBSERVER — Proxy Wrapper com Validação de Origin e Hashing
 // ============================================================================
 window.UNIFEDSystem = window.UNIFEDSystem || {};
-window.UNIFEDSystem.demoMode = true;   // força modo demo
+window.UNIFEDSystem.demoMode = true;
 
 (function _nexusForensicProxy() {
     if (window.fetch.__isNexusProxy) {
@@ -27,39 +27,93 @@ window.UNIFEDSystem.demoMode = true;   // força modo demo
         return;
     }
     const originalFetch = window.fetch;
+    
+    // Whitelist de domínios permitidos (exemplo)
+    const ALLOWED_ORIGINS = [
+        'https://unifed.com',
+        'https://app.unifed.com',
+        'http://localhost:3000'
+    ];
 
-   const handler = {
-    apply: function(target, thisArg, argumentsList) {
-        const url = argumentsList[0];
-        if (typeof url === 'string') {
-            console.debug(`[NEXUS-AUDIT] Network Call: ${url}`);
-            ForensicLogger?.addEntry('NETWORK_CALL', { url });
+    // Função para validar origin
+    function isValidOrigin(requestUrl) {
+        try {
+            const url = new URL(requestUrl);
+            const origin = url.origin;
+            return ALLOWED_ORIGINS.includes(origin);
+        } catch(e) {
+            return false;
         }
+    }
 
-        return Reflect.apply(target, thisArg, argumentsList)
-            .catch(err => {
+    // Função para gerar hash do payload
+    async function hashPayload(payload) {
+        if (!payload) return null;
+        const encoder = new TextEncoder();
+        const data = encoder.encode(JSON.stringify(payload) + 'NEXUS_SALT');
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    const handler = {
+        apply: async function(target, thisArg, argumentsList) {
+            const url = argumentsList[0];
+            const options = argumentsList[1] || {};
+            
+            // Validação de origin
+            if (!isValidOrigin(url)) {
+                console.warn(`[NEXUS-AUDIT] Requisição bloqueada: origin não autorizada para ${url}`);
+                if (typeof window.ForensicLogger !== 'undefined')
+                    window.ForensicLogger.addEntry('NETWORK_BLOCKED_ORIGIN', { url });
+                throw new Error('Origin not allowed by security policy');
+            }
+
+            // Se houver body, calcula hash e adiciona ao header
+            let bodyHash = null;
+            if (options.body) {
+                bodyHash = await hashPayload(options.body);
+                options.headers = {
+                    ...options.headers,
+                    'X-Payload-Hash': bodyHash
+                };
+                console.debug(`[NEXUS-AUDIT] Hash do payload gerado: ${bodyHash.substring(0, 16)}...`);
+            }
+
+            console.debug(`[NEXUS-AUDIT] Network Call Autorizada: ${url}`);
+            if (typeof window.ForensicLogger !== 'undefined')
+                window.ForensicLogger.addEntry('NETWORK_CALL', { url, bodyHash });
+
+            try {
+                const response = await Reflect.apply(target, thisArg, [url, options]);
+                const responseHash = response.headers.get('X-Response-Hash');
+                if (responseHash) {
+                    console.debug(`[NEXUS-AUDIT] Validação de resposta recebida: ${responseHash}`);
+                }
+                return response;
+            } catch (err) {
                 const reqUrl = argumentsList[0];
-                // Silenciar erros para api.unifed.com (não mostrar na consola)
                 if (typeof reqUrl === 'string' && reqUrl.includes('api.unifed.com')) {
-                    // Apenas regista internamente, sem console.warn
-                    ForensicLogger?.addEntry('NETWORK_FAILURE_SILENT', { url: reqUrl, error: err.message });
+                    if (typeof window.ForensicLogger !== 'undefined')
+                        window.ForensicLogger.addEntry('NETWORK_FAILURE_SILENT', { url: reqUrl, error: err.message });
                     throw err;
                 }
                 console.warn(`[NEXUS-AUDIT] Falha de comunicação externa: ${reqUrl} | Motivo: ${err.message}`);
-                ForensicLogger?.addEntry('NETWORK_FAILURE', { url: reqUrl, error: err.message });
+                if (typeof window.ForensicLogger !== 'undefined')
+                    window.ForensicLogger.addEntry('NETWORK_FAILURE', { url: reqUrl, error: err.message });
                 throw err;
-            });
-    }
-};
+            }
+        }
+    };
 
     const proxiedFetch = new Proxy(originalFetch, handler);
     proxiedFetch.__isNexusProxy = true;
     window.fetch = proxiedFetch;
 
     console.info(
-        '[NEXUS·M1] ✅ Passive Network Observer activo — Proxy Wrapper Transparente (ISO/IEC 27037:2012).\n' +
-        '  Modo  : Apenas observação e registo. Nenhum erro é suprimido.\n' +
-        '  Escopo: Todas as chamadas fetch são auditadas, mas o comportamento nativo mantém-se.'
+        '[NEXUS·M1] ✅ Passive Network Observer activo — Proxy Wrapper com validação de origin e hashing.\n' +
+        '  Modo  : Validação de domínios autorizados e integridade de payload.\n' +
+        '  Escopo: Todas as chamadas fetch são auditadas e validadas.'
     );
 })();
 
@@ -213,7 +267,7 @@ window.UNIFEDSystem.demoMode = true;   // força modo demo
             _para('', false),
             _hr(),
             _para('', false),
-            _para('VI. JURISPRUDENCIA APLICAVEL — CRUZAMENTO RAG · NEXUS v13.12.0-PURE', true, '26', '003366'),
+            _para('VI. JURISPRUDENCIA APLICAVEL — CRUZAMENTO RAG · NEXUS v13.12.1-PURE', true, '26', '003366'),
             _para('Modulo de Jurisprud\u00eancia Pericial \u2014 Cita\u00e7\u00f5es injectadas com base nas anomalias detetadas e qualificacao legal apurada', false, '16', '888888'),
             _para('', false),
 
@@ -240,7 +294,7 @@ window.UNIFEDSystem.demoMode = true;   // força modo demo
                 'desta prova digital pericial e qualifica a conduta como penalmente relevante.',
                 false, '20', '333333'),
             _para('', false),
-            _para('[Secao gerada automaticamente pelo Modulo RAG Jurisprudencial — NEXUS v13.12.0-PURE · Art. 125.o CPP]', false, '16', '999999'),
+            _para('[Secao gerada automaticamente pelo Modulo RAG Jurisprudencial — NEXUS v13.12.1-PURE · Art. 125.o CPP]', false, '16', '999999'),
             _para('', false)
         ].join('');
     }
@@ -727,7 +781,7 @@ window.UNIFEDSystem.demoMode = true;   // força modo demo
         var enriched = await Promise.all(registry.map(async function(item) {
             if (!item.hash) {
                 item.hash = await _sha256Nexus(item.filename + (item.ts || Date.now()));
-                item.otsStatus = 'PENDENTE — Hash gerado localmente (NEXUS v13.12.0-PURE)';
+                item.otsStatus = 'PENDENTE — Hash gerado localmente (NEXUS v13.12.1-PURE)';
             }
             return item;
         }));
@@ -817,7 +871,7 @@ window.UNIFEDSystem.demoMode = true;   // força modo demo
                     'background:rgba(0,229,255,0.04);' +
                 '">' +
                     '<div>' +
-                        '<div style="color:#00E5FF;font-size:0.85rem;font-weight:700;letter-spacing:0.08em">⛓️ BLOCKCHAIN EVIDENCE EXPLORER · NEXUS v13.12.0-PURE</div>' +
+                        '<div style="color:#00E5FF;font-size:0.85rem;font-weight:700;letter-spacing:0.08em">⛓️ BLOCKCHAIN EVIDENCE EXPLORER · NEXUS v13.12.1-PURE</div>' +
                         '<div style="color:rgba(255,255,255,0.4);font-size:0.62rem;margin-top:2px">' +
                             _T('SHA-256 Individual · OTS Status · Cadeia de Custódia · ', 'SHA-256 Individual · OTS Status · Chain of Custody · ') +
                             enriched.length + ' ' + _T('documento', 'document') + (enriched.length !== 1 ? 's' : '') +
@@ -990,11 +1044,12 @@ window.UNIFEDSystem.demoMode = true;   // força modo demo
 })();
 
 console.info(
-    '%c[NEXUS · UNIFED-PROBATUM · v13.12.0-PURE]\n' +
-    '%c  M1 · Passive Network Observer       — Proxy Wrapper Transparente ATIVO (ISO/IEC 27037:2012)\n' +
+    '%c[NEXUS · UNIFED-PROBATUM · v13.12.1-PURE]\n' +
+    '%c  M1 · Passive Network Observer       — Proxy com validação de origin e hashing\n' +
     '  M2 · RAG Jurisprudencial DOCX         — Hook exportDOCX() instalado\n' +
     '  M3 · Motor Preditivo ATF (6M)         — Hook openATFModal() instalado\n' +
     '  M4 · Blockchain Evidence Explorer     — MutationObserver #custodyModal ativo\n' +
+    '  Segurança: Whitelist de domínios + Hashing SHA-256 de payload\n' +
     '  Modo: Read-Only · DORA (UE) 2022/2554 · ISO/IEC 27037:2012 · Art. 125.o CPP',
     'color:#00E5FF;font-family:Courier New,monospace;font-weight:700;font-size:0.9em;',
     'color:rgba(0,229,255,0.65);font-family:Courier New,monospace;font-size:0.8em;'

@@ -1,5 +1,5 @@
 /* ============================================================================
-   UNIFED - PROBATUM · v13.12.0-PURE · ESTILOS DO PAINEL DE CASO REAL
+   UNIFED - PROBATUM · v13.12.1-PURE · ESTILOS DO PAINEL DE CASO REAL
    ============================================================================
    Escopo      : Seletor raiz #pureDashboard — sem conflito com estilos base.
    Conformidade: WCAG 2.1 AA · Palette forense (dark + alert accents).
@@ -9,7 +9,7 @@
 :root {
     --pure-accent:  #00E5FF;
     --pure-warn:    #EF4444;
-    --pure-version: "v13.12.0-PURE";
+    --pure-version: "v13.12.1-PURE";
     background-color: #0f172a !important;
 }
 
@@ -678,7 +678,7 @@ html, body {
 }
 
 /* ============================================================================
-   CORRECÇÃO II (IDENTIFICAÇÃO DO SUJEITO PASSIVO)
+   CORRECÇÃO II (IDENTIFICAÇÃO DO SUJEITO PASSIVO) - REFACTOR v13.12.1
    ============================================================================ */
 .pure-subject-header {
     display: flex !important;
@@ -703,7 +703,8 @@ html, body {
     display: inline-block;
 }
 
-@media (max-width: 640px) {
+/* --- BREAKPOINT ÚNICO PARA EVITAR LAYOUT SHIFT (CLS) --- */
+@media (max-width: 768px) {
     .pure-subject-header {
         flex-wrap: wrap !important;
     }
@@ -714,7 +715,7 @@ html, body {
 }
 
 /* ============================================================================
-   GARANTIA DE VISIBILIDADE DOS GRÁFICOS – v13.12.0-PURE
+   GARANTIA DE VISIBILIDADE DOS GRÁFICOS – v13.12.1-PURE
    ============================================================================ */
 .chart-section {
     display: block !important;
