@@ -64,8 +64,12 @@
         if (window.UNIFEDSystem && typeof window.UNIFEDSystem.processAnalysis === 'function') {
             await window.UNIFEDSystem.processAnalysis();
         } else {
-            await initializeFullWithEvidence(); // caminho alternativo
-        }
+        // Reconstituição de dados via Bridge
+if (typeof window.UNIFEDSystem.utils.syncVisualDOM === 'function') {
+    window.UNIFEDSystem.utils.syncVisualDOM();
+} else {
+    console.warn('[UNIFED] syncVisualDOM não encontrado em enrichment.js');
+}
         
         // Mostrar contadores após carga
         document.querySelectorAll('.pure-badge-alert').forEach(b => b.style.display = 'inline-block');
