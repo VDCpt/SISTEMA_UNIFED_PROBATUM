@@ -14,13 +14,9 @@
 
 'use strict';
 
-// Logger centralizado – assume window.logAudit definido globalmente
 if (typeof window.logAudit !== 'function') {
-    window.logAudit = function(msg, level) {
-        const prefix = '[UNIFED] ';
-        if (level === 'error') console.error(prefix + msg);
-        else if (level === 'warn') console.warn(prefix + msg);
-        else console.log(prefix + msg);
+    window.logAudit = function(msg, level = 'info') {
+        console.log(`[UNIFED] ${msg}`);
     };
 }
 
@@ -29,17 +25,8 @@ if (typeof window.logAudit !== 'function') {
     if (typeof window.UNIFEDSystem.utils === 'undefined') { window.UNIFEDSystem.utils = {}; }
     var _utils = window.UNIFEDSystem.utils;
 
-    _utils.formatCurrency = function(val) {
-        var _raw = (val === null || val === undefined || isNaN(Number(val))) ? 0 : Number(val);
-        var _lang = window.currentLang || 'pt';
-        return new Intl.NumberFormat(_lang === 'en' ? 'en-GB' : 'pt-PT', {
-            style: 'currency', currency: 'EUR'
-        }).format(_raw);
-    };
-
- /**
+    /**
      * Sincronização Cirúrgica de Dados (DOM Bridge)
-     * Mapeia o objecto UNIFEDSystem.analysis para os IDs do panel.html
      */
     _utils.syncVisualDOM = function() {
         const data = {
@@ -69,7 +56,8 @@ if (typeof window.logAudit !== 'function') {
             }
         }
         window.logAudit('Sincronização visual concluída com sucesso.', 'info');
-    }; // Apenas uma chaveta e ponto e vírgula aqui.
+    };
+})(); // Fecho correto do IIFE
     window.formatCurrency = _utils.formatCurrency;
     window.logAudit('[UNIFED-ENRICHMENT] ✅ Utils carregado.', 'info');
 })();
