@@ -886,30 +886,35 @@
     <link rel="stylesheet" href="style_additions.css">
     <script src="script_injection.js"></script>
 <script>
-    // ── Activação do Painel v13.12.0-PURE (corrigido) ───────────────────────────────────
-    window._activatePurePanel = function() {
-        fetch('panel.html')
-            .then(function(r) { return r.text(); })
-            .then(function(html) {
-                var wrapper = document.getElementById('pureDashboardWrapper');
-                if (wrapper) {
-                    wrapper.innerHTML = html;
-                    wrapper.style.display = 'block';
-                    wrapper.style.opacity = '1';
-                    wrapper.style.visibility = 'visible';
+   // ── Activação do Painel v13.12.0-PURE (Retificado) ──────────────────────────────
+window._activatePurePanel = function() {
+    fetch('panel.html')
+        .then(function(r) { return r.text(); })
+        .then(function(html) {
+            var wrapper = document.getElementById('pureDashboardWrapper');
+            if (wrapper) {
+                wrapper.innerHTML = html;
+                wrapper.style.display = 'block';
+                wrapper.style.opacity = '1';
+                wrapper.style.visibility = 'visible';
+
+                // Garantir que os dados são populados APÓS a injeção do HTML
+                setTimeout(function() {
                     if (typeof UNIFEDSystem !== 'undefined' && typeof UNIFEDSystem.loadAnonymizedRealCase === 'function') {
                         UNIFEDSystem.loadAnonymizedRealCase();
+                        // Disparar sincronização visual manual se o observer falhar
+                        if (typeof UNIFEDSystem.utils.syncVisualDOM === 'function') {
+                            UNIFEDSystem.utils.syncVisualDOM();
+                        }
                     }
-                    if (typeof window._translatePurePanel === 'function') {
-                        window._translatePurePanel(window.currentLang || 'pt');
-                    }
-                }
-                console.info('[UNIFED-PURE] ✅ Painel v13.12.0-PURE activado.');
-            })
-            .catch(function() {
-                console.info('[UNIFED-PURE] [i] panel.html não encontrado — modo standalone.');
-            });
-    };
+                }, 50); 
+            }
+            console.info('[UNIFED-PURE] ✅ Painel e Sincronização activados.');
+        })
+        .catch(function(err) {
+            console.error('[UNIFED-PURE] Falha na activação:', err);
+        });
+};
 </script>
     <script src="unifed_triada_export.js"></script>
 
