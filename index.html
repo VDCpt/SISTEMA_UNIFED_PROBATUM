@@ -96,15 +96,6 @@
 </head>
 <body>
 
-    <!-- [PATCH R-I04] LOADER DE INICIALIZAÇÃO FORENSE
-         Exibido durante o carregamento dos módulos JS.
-         Ocultado via EventBus após 'UNIFED_CORE_READY' + panel.html injetado.
-         Styled via style_additions.css § A10. -->
-    <div id="forensic-loader" aria-hidden="true" aria-label="Inicializando PROBATUM">
-        <div class="loader-spinner"></div>
-        <p class="loader-text">INITIALIZING PROBATUM CORE...</p>
-    </div>
-
     <!-- SPLASH SCREEN PANORÂMICO - VERSÃO HORIZONTAL 16:9 / ULTRAWIDE -->
     <div id="splashScreen" class="splash-screen">
         <div class="laser-h"></div>
@@ -890,6 +881,19 @@
     </div>
 
     <!-- SCRIPTS (UNIFED PROBATUM v13.11.16-PURE - SEM DUPLICAÇÕES) -->
+    <!-- PATCH A-08 (RTF-UNIFED-2026-0406-001): unifed_event_bus.js inserido como
+         PRIMEIRO script, antes de script.js. Garante que window.UNIFEDEventBus está
+         disponível quando script.js emite UNIFED_CORE_READY via dispatchEvent().
+         Ordem de carregamento final:
+           0. unifed_event_bus.js    (Barramento de Eventos — PRIMEIRO)
+           1. script.js              (Motor principal)
+           2. enrichment.js          (Output Enrichment Layer — Read-Only)
+           3. nexus.js               (NEXUS Adaptive Extension Layer)
+           4. script_injection.js    (Dados do Caso Real Anonimizado)
+           5. unifed_export_service.js  (Serviço de Exportação Singleton)
+           6. unifed_export_register.js (Registo de Renderers)
+           7. unifed_triada_export.js   (Exportação Tríada Documental)
+         Conformidade: DORA (UE) 2022/2554 · ISO/IEC 27037:2012 · Art. 125.º CPP -->
     <script>
         window.pdfjsLib = window['pdfjs-dist/build/pdf'];
         if (window.pdfjsLib) {
@@ -897,30 +901,9 @@
         }
     </script>
     <!-- SCP: Fallback document.write removido — substituído pelo OTS Dynamic Loader no <head> -->
-    <!-- ══════════════════════════════════════════════════════════════════════════════════
-         UNIFED PROBATUM v13.11.16-PURE — Ordem de carregamento (PATCH CRÍTICO):
-         0. unifed_event_bus.js      ← PRIMEIRO: barramento pub/sub (requisito de todos)
-         1. unifed_export_service.js ← Singleton de exportação atómica (selagem SHA-256)
-         2. script.js                ← Motor principal (emite UNIFED_CORE_READY)
-         3. enrichment.js            ← Output Enrichment Layer · Read-Only
-         4. nexus.js                 ← NEXUS Adaptive Extension Layer
-         5. script_injection.js      ← Dados do Caso Real Anonimizado
-         6. unifed_triada_export.js  ← Exportação Tríada (regista renderer 'custody')
-         7. unifed_export_register.js← Captura exportPDF/exportDOCX → ExportService
-         NOTA: style_additions.css movido para o <head> (Patch A-07).
-         Conformidade: DORA (UE) 2022/2554 · ISO/IEC 27037:2012 · Art. 125.º CPP
-         ══════════════════════════════════════════════════════════════════════════════ -->
-
-    <!-- [PATCH CRÍTICO R-I01] unifed_event_bus.js DEVE ser o 1.º script carregado.
-         Sem este ficheiro, todos os módulos que chamam window.UNIFEDEventBus
-         falharão silenciosamente (TypeError: Cannot read properties of undefined). -->
+    <!-- 0. BARRAMENTO DE EVENTOS — Deve ser o PRIMEIRO script carregado -->
     <script src="unifed_event_bus.js"></script>
-
-    <!-- [PATCH CRÍTICO R-I02] unifed_export_service.js carregado antes de script.js
-         para que o Singleton esteja disponível quando exportPDF/exportDOCX são
-         definidos pelos módulos seguintes. -->
-    <script src="unifed_export_service.js"></script>
-
+    <!-- 1. MOTOR PRINCIPAL -->
     <script src="script.js"></script>
     <!-- UNIFED PROBATUM v13.11.16-PURE — Output Enrichment Layer -->
     <!-- Carregado APÓS script.js. Padrão: Read-Only · Asynchronous Post-Computation  -->
@@ -971,9 +954,6 @@
         // ── Activação do painel PURE v13.11.16-PURE (Patch A-02) ─────────────────
         // Activação exclusiva via window._activatePurePanel() chamado em activateDemoMode().
         // O fetch do panel.html é local — sem dependências externas.
-        // [PATCH R-I05]: Emite UNIFED_DOM_READY via UNIFEDEventBus após injeção do painel.
-        //   Sem este emit, nexus.js e unifed_triada_export.js nunca injetam extensões de UI.
-        // [PATCH R-I06]: Oculta o forensic-loader após injeção bem-sucedida do painel.
         window._activatePurePanel = function() {
             fetch('panel.html')
                 .then(function(r) { return r.text(); })
@@ -1000,94 +980,20 @@
                         if (typeof window._translatePurePanel === 'function') {
                             window._translatePurePanel(window.currentLang || 'pt');
                         }
-
-                        // [PATCH R-I05] Emitir UNIFED_DOM_READY — desbloqueia nexus.js,
-                        // unifed_triada_export.js e enrichment.js que aguardam este evento.
-                        if (window.UNIFEDEventBus && !window.UNIFEDEventBus.hasResolved('UNIFED_DOM_READY')) {
-                            window.UNIFEDEventBus.emit('UNIFED_DOM_READY', { timestamp: Date.now() });
-                            console.info('[UNIFED-PURE] ✅ UNIFED_DOM_READY emitido via EventBus.');
-                        }
-
-                        // [PATCH R-I06] Ocultar o forensic-loader após painel visível.
-                        var loader = document.getElementById('forensic-loader');
-                        if (loader) {
-                            loader.style.opacity = '0';
-                            setTimeout(function() { loader.style.display = 'none'; }, 500);
-                        }
                     }
-                    console.info('[UNIFED-PURE] ✅ Painel v13.11.16-PURE activado (Patch A-02 + R-I05 + R-I06 aplicados).');
+                    console.info('[UNIFED-PURE] ✅ Painel v13.11.16-PURE activado (Patch A-02 + A-08 aplicados).');
                 })
                 .catch(function() {
                     console.info('[UNIFED-PURE] [i] panel.html não encontrado — modo standalone.');
-                    var loader = document.getElementById('forensic-loader');
-                    if (loader) { loader.style.display = 'none'; }
                 });
         };
-
-        // ── [PATCH R-I07] BRIDGE EventBus ↔ switchLanguage (script.js) ────────
-        // switchLanguage() em script.js não emite 'languageChanged' no UNIFEDEventBus.
-        // Esta bridge interceta o evento DEPOIS de switchLanguage() ter executado,
-        // garantindo que enrichment.js e script_injection.js recebem o evento.
-        // Implementação: monkey-patch seguro após UNIFED_CORE_READY.
-        // Fase 2 moverá esta lógica para dentro de script.js directamente.
-        (function _installLangBridge() {
-            function _patchSwitchLanguage() {
-                var _orig = window.switchLanguage;
-                if (typeof _orig !== 'function') { return false; }
-                window.switchLanguage = function _switchLanguageBridged() {
-                    _orig.apply(this, arguments);
-                    // Emitir via EventBus após tradução concluída
-                    if (window.UNIFEDEventBus) {
-                        window.UNIFEDEventBus.emit('languageChanged', {
-                            language: (typeof currentLang !== 'undefined') ? currentLang : (window.currentLang || 'pt')
-                        });
-                    }
-                };
-                console.info('[UNIFED-PURE] ✅ [R-I07] Bridge EventBus↔switchLanguage instalada.');
-                return true;
-            }
-
-            if (window.UNIFEDEventBus) {
-                window.UNIFEDEventBus.waitFor('UNIFED_CORE_READY', 15000)
-                    .then(function() { _patchSwitchLanguage(); })
-                    .catch(function() { _patchSwitchLanguage(); });
-            } else {
-                window.addEventListener('UNIFED_CORE_READY', function() {
-                    _patchSwitchLanguage();
-                }, { once: true });
-            }
-        })();
-
-        // ── [PATCH R-I08] INICIALIZAÇÃO DO FORENSIC-LOADER ───────────────────
-        // Garante que o loader é ocultado mesmo se _activatePurePanel nunca for
-        // chamado (e.g. modo sem panel.html em desenvolvimento).
-        (function _forensicLoaderGuard() {
-            var _MAX_WAIT = 12000; // 12 s — tempo máximo antes de ocultar forçado
-            var _timer = setTimeout(function() {
-                var loader = document.getElementById('forensic-loader');
-                if (loader && loader.style.display !== 'none') {
-                    loader.style.opacity = '0';
-                    setTimeout(function() { loader.style.display = 'none'; }, 500);
-                    console.warn('[UNIFED-PURE] ⚠ [R-I08] Forensic-loader ocultado por guarda de timeout (12s).');
-                }
-            }, _MAX_WAIT);
-
-            // Cancelar guarda se o painel for activado normalmente
-            if (window.UNIFEDEventBus) {
-                window.UNIFEDEventBus.waitFor('UNIFED_DOM_READY', _MAX_WAIT)
-                    .then(function() { clearTimeout(_timer); })
-                    .catch(function() { /* guarda de timeout actua */ });
-            }
-        })();
     </script>
-    <!-- TRÍADE DOCUMENTAL - MÓDULO DE EXPORTAÇÃO -->
-    <script src="unifed_triada_export.js"></script>
-
-    <!-- [PATCH CRÍTICO R-I03] unifed_export_register.js carregado ÚLTIMO:
-         captura window.exportPDF (script.js) e window.exportDOCX (enrichment.js,
-         possivelmente wrappado pelo nexus.js RAG) e regista-os no ExportService.
-         Garante selagem atómica SHA-256 em todas as exportações. -->
+    <!-- 5. SERVIÇO DE EXPORTAÇÃO SINGLETON (deve carregar ANTES do register e triada) -->
+    <script src="unifed_export_service.js"></script>
+    <!-- 6. REGISTO DE RENDERERS (vincula PDF e DOCX ao Serviço Atómico) -->
     <script src="unifed_export_register.js"></script>
+    <!-- 7. TRÍADE DOCUMENTAL - MÓDULO DE EXPORTAÇÃO -->
+    <script src="unifed_triada_export.js"></script>
 
 </body>
 </html>

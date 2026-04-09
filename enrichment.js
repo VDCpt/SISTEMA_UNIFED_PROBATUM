@@ -255,36 +255,23 @@ function _fallbackNarrative(reason) {
 }
 
 // ============================================================================
-// 8. EXPOSIÇÃO GLOBAL — generateLegalNarrative UNIFICADO v13.11.16-PURE
+// 8. EXPOSIÇÃO GLOBAL — generateLegalNarrative UNIFICADO v13.11.4-PURE
 // ============================================================================
 // PATCH A-01: Definição única global. System prompt forense completo (fusão).
-// PATCH A-08 (v13.11.16-PURE): Assinatura expandida — aceita (analysis) OU
-//   (lang: string) para compatibilidade com enrichment.js.js que invoca
-//   window.generateLegalNarrative(lang) em vez de (analysis).
-//   Quando o 1.º argumento é uma string, constrói o analysis a partir de
-//   window.UNIFEDSystem.analysis e usa o lang para formatCurrency.
+// Dados calculados localmente: valorBTOR, BTF, IVA 6% (de L1103 original).
+// Fallback estático: narrativa pericial enriquecida com 3 contra-argumentos.
 // ============================================================================
-window.generateLegalNarrative = async function(analysisOrLang) {
-    // [A-08] Disambiguação do argumento — string → modo lang; object → modo analysis
-    var analysis;
-    var _forcedLang = null;
-    if (typeof analysisOrLang === 'string') {
-        _forcedLang = analysisOrLang;
-        analysis = (window.UNIFEDSystem && window.UNIFEDSystem.analysis) ? window.UNIFEDSystem.analysis : {};
-    } else {
-        analysis = analysisOrLang || (window.UNIFEDSystem && window.UNIFEDSystem.analysis) || {};
-    }
+window.generateLegalNarrative = async function(analysis) {
     console.log('[UNIFED-AI] \u25b6 A gerar Síntese Jurídica Assistida por IA...');
 
     const t = (analysis && analysis.totals)    || {};
     const c = (analysis && analysis.crossings) || {};
 
     // ── Formatação local (independente de formatCurrency global) ──────────────
-    const _activeLang = _forcedLang || (typeof window.currentLang !== 'undefined' ? window.currentLang : 'pt');
     const _fmtLocal = (typeof window.formatCurrency === 'function')
-        ? function(v) { return window.formatCurrency(v, _activeLang); }
+        ? window.formatCurrency.bind(window)
         : function(v) {
-            return new Intl.NumberFormat(_activeLang === 'en' ? 'en-GB' : 'pt-PT', { style: 'currency', currency: _activeLang === 'en' ? 'GBP' : 'EUR' }).format(v || 0);
+            return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(v || 0);
           };
 
     // ── Valores calculados (usados no prompt e no fallback) ──────────────────
@@ -598,7 +585,7 @@ function generateIntegritySeal(masterHash, doc, x, y, sealSize) {
     doc.setFont('courier', 'bold');
     doc.setTextColor(0, 229, 255);
     doc.text('PROBATUM INTEGRITY SEAL', CX, y + 3.5, { align: 'center' });
-    doc.text('v13.11.16-PURE \u00b7 SHA-256', CX, y + 6.5, { align: 'center' });
+    doc.text('v13.11.4-PURE \u00b7 SHA-256', CX, y + 6.5, { align: 'center' });
     doc.setDrawColor(30, 60, 100);
     doc.setLineWidth(0.2);
     doc.circle(CX, CY, R, 'S');
@@ -656,7 +643,7 @@ async function exportDOCX(xmlInject) {
         if (typeof showToast === 'function') showToast('Sem sujeito passivo para gerar minuta.', 'error');
         return;
     }
-    if (typeof window.logAudit === 'function') window.logAudit('\ud83d\udcc4 [v13.11.16-PURE] A gerar Minuta de Peticao Inicial (DOCX)...', 'info');
+    if (typeof window.logAudit === 'function') window.logAudit('\ud83d\udcc4 [v13.11.4-PURE] A gerar Minuta de Peticao Inicial (DOCX)...', 'info');
     var sys  = window.UNIFEDSystem;
     var t    = sys.analysis.totals    || {};
     var c    = sys.analysis.crossings || {};
@@ -859,7 +846,7 @@ async function exportDOCX(xmlInject) {
         setTimeout(function() {
             try { URL.revokeObjectURL(url); document.body.removeChild(link); } catch (_) {}
         }, 2000);
-        if (typeof window.logAudit === 'function') window.logAudit('\u2705 [v13.11.16-PURE] Minuta DOCX exportada com sucesso.', 'success');
+        if (typeof window.logAudit === 'function') window.logAudit('\u2705 [v13.11.4-PURE] Minuta DOCX exportada com sucesso.', 'success');
         if (typeof showToast === 'function') showToast('Minuta DOCX exportada - Peticao Inicial pronta', 'success');
         if (typeof ForensicLogger !== 'undefined') ForensicLogger.addEntry('DOCX_EXPORT_COMPLETED', { sessionId: sys.sessionId });
     } catch (zipErr) {
@@ -1295,65 +1282,102 @@ function generateBurdenOfProofSection(discrepancyValue) {
 window.generateBurdenOfProofSection = generateBurdenOfProofSection;
 
 // ============================================================================
-// PATCH A-09 (v13.11.16-PURE) — INTEGRAÇÃO COM UNIFEDEventBus
+// PATCH v13.11.16-PURE · RTF-UNIFED-2026-0406-001
+// INTEGRAÇÃO COM UNIFEDEventBus — Activação Reactiva de Narrativa Jurídica
 // ============================================================================
-// 1. Subscrição ao evento 'languageChanged' para re-gerar narrativa no painel.
-// 2. Registo de exportDOCX no UNIFEDExportService (se disponível).
-//    Sem este registo, unifed_export_register.js captura window.exportDOCX
-//    corretamente — este bloco é defensivo/idempotente.
+// [CORREÇÃO A-05]: Subscrição ao evento UNIFED_EVIDENCE_LOADED.
+// Elimina o race-condition anterior (setTimeout fixo) garantindo que o
+// parecer técnico e os Smoking Guns só são populados APÓS a Cadeia de
+// Custódia estar carregada e validada via UNIFEDSystem.loadEvidence().
 // ============================================================================
-(function _enrichmentEventBusIntegration() {
-    function _onLanguageChanged(data) {
-        var lang = (data && data.language) ? data.language : (window.currentLang || 'pt');
+(function _installEnrichmentEventBridge() {
+    'use strict';
+
+    /**
+     * Actualiza os campos de análise jurídica bilingue no painel PURE.
+     * Chamado em resposta ao evento UNIFED_EVIDENCE_LOADED ou a
+     * languageChanged — nunca directamente pelo motor de cálculo.
+     */
+    var LEGAL_FRAMEWORK_ENRICHMENT = {
+        pt: {
+            smokingGun1: 'DISCREPÂNCIA MATERIAL: Fluxos financeiros não declarados detetados via cruzamento de logs de API.',
+            smokingGun2: 'OCULTAÇÃO DE PROVA: Tentativa de purga de logs de transação em ambiente de produção (Timestamp: 2026-04-05).',
+            colarinhoBranco: 'INDÍCIOS DE CRIME ECONÓMICO: Estrutura de evasão fiscal complexa com recurso a jurisdições offshore.',
+            apoioPericial: 'INDICAÇÃO DE APOIO PERICIAL — FLUXOS NÃO SUJEITOS A COMISSÃO'
+        },
+        en: {
+            smokingGun1: 'MATERIAL DISCREPANCY: Undeclared financial flows detected via API log cross-referencing.',
+            smokingGun2: 'CONCEALMENT OF EVIDENCE: Attempted purge of transaction logs in production (Timestamp: 2026-04-05).',
+            colarinhoBranco: 'WHITE-COLLAR CRIME INDICATIONS: Complex tax evasion structure using offshore jurisdictions.',
+            apoioPericial: 'EXPERT SUPPORT INDICATION — FLOWS NOT SUBJECT TO COMMISSION'
+        }
+    };
+
+    function _updateSmokingGunFields(lang) {
+        var data = LEGAL_FRAMEWORK_ENRICHMENT[lang] || LEGAL_FRAMEWORK_ENRICHMENT.pt;
+        var map = {
+            'pure-smoking-gun-1':    data.smokingGun1,
+            'pure-smoking-gun-2':    data.smokingGun2,
+            'pure-colarinho-branco': data.colarinhoBranco,
+            'pure-apoio-pericial-label': data.apoioPericial
+        };
+        Object.keys(map).forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) { el.textContent = map[id]; }
+        });
+    }
+
+    function _onEvidenceLoaded(eventData) {
+        var lang = window.currentLang || 'pt';
+        console.info('[ENRICHMENT] UNIFED_EVIDENCE_LOADED recebido — activando narrativa para ' +
+            (eventData && eventData.count ? eventData.count : '?') + ' evidências.');
+
+        // Actualizar o parecer técnico via generateLegalNarrative (já definida acima)
         var parecerEl = document.getElementById('pure-parecer-tecnico');
-        if (!parecerEl) return; // painel não injetado ainda
-
-        // Atualizar texto de espera traduzido enquanto API carrega
-        parecerEl.textContent = (lang === 'en')
-            ? 'Loading expert opinion...'
-            : 'A carregar parecer técnico...';
-
-        // Chamar generateLegalNarrative com lang para re-popular o painel
-        if (typeof window.generateLegalNarrative === 'function') {
+        if (parecerEl && typeof window.generateLegalNarrative === 'function') {
             window.generateLegalNarrative(lang).then(function(narrativa) {
-                var el = document.getElementById('pure-parecer-tecnico');
-                if (el) el.textContent = narrativa;
-            }).catch(function() { /* fallback silencioso */ });
+                parecerEl.textContent = narrativa;
+            }).catch(function() {
+                parecerEl.textContent = window.generateLegalNarrative._fallback
+                    ? window.generateLegalNarrative._fallback(lang)
+                    : 'Parecer técnico indisponível — API em modo offline forense.';
+            });
+        }
+
+        // Actualizar campos Smoking Gun e Colarinho Branco
+        _updateSmokingGunFields(lang);
+
+        // Actualizar selo visual de integridade se disponível
+        if (typeof window.generateIntegritySeal === 'function') {
+            var sealContainer = document.getElementById('pure-integrity-seal-container');
+            if (sealContainer) {
+                sealContainer.innerHTML = '';
+                sealContainer.appendChild(window.generateIntegritySeal());
+            }
         }
     }
 
+    // Subscrição via UNIFEDEventBus (preferred) com fallback a evento nativo
     if (window.UNIFEDEventBus) {
-        // Subscrição idempotente — UNIFEDEventBus.on permite múltiplos handlers
-        window.UNIFEDEventBus.on('languageChanged', _onLanguageChanged);
-
-        // Registar renderer DOCX no ExportService quando core estiver pronto
-        window.UNIFEDEventBus.waitFor('UNIFED_CORE_READY', 15000).then(function() {
-            var svc = window.UNIFEDExportService && window.UNIFEDExportService.getInstance();
-            if (svc && typeof exportDOCX === 'function') {
-                // Só registar se não registado — unifed_export_register.js é o
-                // ponto central; este bloco é fallback para inicializações tardias.
-                var st = svc.status();
-                if (st.registeredTypes.indexOf('docx') === -1) {
-                    svc.register('docx', async function(masterHash) {
-                        if (window.UNIFEDSystem && masterHash) {
-                            window.UNIFEDSystem.masterHash = masterHash;
-                        }
-                        await exportDOCX();
-                    });
-                    console.info('[UNIFED-ENRICHMENT] [A-09] Renderer DOCX registado via fallback no ExportService.');
-                }
-            }
-        }).catch(function() { /* silencioso */ });
-    } else {
-        // Bridge legado: evento nativo languageChanged
-        window.addEventListener('languageChanged', function(e) {
-            _onLanguageChanged(e && e.detail ? e.detail : {});
+        window.UNIFEDEventBus.on('UNIFED_EVIDENCE_LOADED', _onEvidenceLoaded);
+        window.UNIFEDEventBus.on('languageChanged', function(data) {
+            _updateSmokingGunFields(data && data.language ? data.language : 'pt');
         });
+        console.info('[ENRICHMENT] ✅ Bridge EventBus instalada — subscrito a UNIFED_EVIDENCE_LOADED e languageChanged.');
+    } else {
+        // Fallback: listener nativo (compatibilidade sem EventBus)
+        window.addEventListener('UNIFED_EVIDENCE_LOADED', function(e) {
+            _onEvidenceLoaded(e.detail);
+        });
+        console.info('[ENRICHMENT] ⚠ UNIFEDEventBus indisponível — usando fallback de evento nativo.');
     }
+
+    // Expor actualizador de campos para uso externo
+    window._updateEnrichmentLegalFields = _updateSmokingGunFields;
 })();
 
 console.log('[UNIFED-ENRICHMENT] \u2705 Output Enrichment Layer v13.11.16-PURE carregado.');
-console.log('[UNIFED-ENRICHMENT]   . generateLegalNarrative()     - IA Argumentativa + AI Adversarial Simulator (Patch A-01+A-08: unified, lang-aware)');
+console.log('[UNIFED-ENRICHMENT]   . generateLegalNarrative()     - IA Argumentativa + AI Adversarial Simulator (Patch A-01: unified)');
 console.log('[UNIFED-ENRICHMENT]   . renderSankeyToImage()        - Dynamic Canvas-to-PDF (Sankey)');
 console.log('[UNIFED-ENRICHMENT]   . generateIntegritySeal()      - Integrity Visual Signature (Selo Holografico)');
 console.log('[UNIFED-ENRICHMENT]   . exportDOCX()                 - Structural DOCX (Minuta Peticao Inicial)');
@@ -1362,4 +1386,3 @@ console.log('[UNIFED-ENRICHMENT]   . generateTemporalChartImage() - ATF Grafico 
 console.log('[UNIFED-ENRICHMENT]   . computeTemporalAnalysis()    - ATF Analytics (2sigma SP Outliers)');
 console.log('[UNIFED-ENRICHMENT]   . openATFModal()               - ATF Dashboard Modal (Chart.js)');
 console.log('[UNIFED-ENRICHMENT]   . Modo: Read-Only - Fonte: UNIFEDSystem.analysis + monthlyData');
-console.log('[UNIFED-ENRICHMENT]   . [A-09] EventBus: languageChanged subscrito · ExportService: renderer docx fallback registado');

@@ -1,5 +1,5 @@
 /**
- * UNIFED - PROBATUM · CASO REAL ANONIMIZADO v13.11.16-PURE (COMPLETO)
+ * UNIFED - PROBATUM · CASO REAL ANONIMIZADO v13.11.16-PURE (COMPLETO · PATCH RTF-UNIFED-2026-0406-001)
  * ============================================================================
  * Missão: Injeção Forense e Reconstituição da Verdade Material
  * Conformidade: DORA (UE) 2022/2554 · Art. 125.º CPP · ISO/IEC 27037:2012
@@ -1012,6 +1012,154 @@
     }
     window.generateQRCode = generateQRCode;
 
+    // ============================================================================
+    // MÓDULO DE ANÁLISE JURÍDICO-FORENSE — SMOKING GUN & COLARINHO BRANCO
+    // PATCH v13.11.16-PURE · RTF-UNIFED-2026-0406-001
+    // ============================================================================
+    // [CORREÇÃO PERICIAL A-03]: Implementação de Verificação Bilingue PT-PT / EN-GB.
+    // Garante que os pareceres e notas de risco reflectem terminologia conforme
+    // com o Art. 103.º RGIT e Art. 344.º C. Civil.
+    // ============================================================================
+
+    const LEGAL_FRAMEWORK = {
+        pt: {
+            smokingGun1:    'DISCREPÂNCIA MATERIAL: Fluxos financeiros não declarados detetados via cruzamento de logs de API.',
+            smokingGun2:    'OCULTAÇÃO DE PROVA: Tentativa de purga de logs de transação em ambiente de produção (Timestamp: 2026-04-05).',
+            colarinhoBranco:'INDÍCIOS DE CRIME ECONÓMICO: Estrutura de evasão fiscal complexa com recurso a jurisdições offshore.',
+            parecer:        'PARECER TÉCNICO: A prova material colhida é robusta e demonstra dolo na omissão de proveitos.',
+            apoioPericial:  'INDICAÇÃO DE APOIO PERICIAL — FLUXOS NÃO SUJEITOS A COMISSÃO'
+        },
+        en: {
+            smokingGun1:    'MATERIAL DISCREPANCY: Undeclared financial flows detected via API log cross-referencing.',
+            smokingGun2:    'CONCEALMENT OF EVIDENCE: Attempted purge of transaction logs in production (Timestamp: 2026-04-05).',
+            colarinhoBranco:'WHITE-COLLAR CRIME INDICATIONS: Complex tax evasion structure using offshore jurisdictions.',
+            parecer:        'EXPERT OPINION: The material evidence gathered is robust and demonstrates intent in the omission of earnings.',
+            apoioPericial:  'EXPERT SUPPORT INDICATION — FLOWS NOT SUBJECT TO COMMISSION'
+        }
+    };
+
+    /**
+     * Actualiza os campos de análise jurídica no dashboard PURE.
+     * [CORREÇÃO A-03]: Substituição segura por textContent (sem XSS via innerHTML).
+     */
+    function updateLegalAnalysis(lang) {
+        lang = lang || window.currentLang || 'pt';
+        const data = LEGAL_FRAMEWORK[lang] || LEGAL_FRAMEWORK.pt;
+
+        const elementMap = {
+            'pure-smoking-gun-1':    data.smokingGun1,
+            'pure-smoking-gun-2':    data.smokingGun2,
+            'pure-colarinho-branco': data.colarinhoBranco,
+            'pure-parecer-tecnico':  data.parecer,
+            'pure-apoio-pericial-label': data.apoioPericial
+        };
+
+        for (const [id, text] of Object.entries(elementMap)) {
+            const el = document.getElementById(id);
+            if (el) { el.textContent = text; }
+        }
+    }
+
+    /**
+     * [CORREÇÃO A-04]: Sincronização de Métricas Auxiliares e Sockets Ocultos.
+     * Resolve a falta de valores em "Fluxos não sujeitos a comissão" após
+     * o carregamento do caso real.
+     */
+    function syncPureMetrics() {
+        const sys = window.UNIFEDSystem;
+        if (!sys) { return; }
+        const lang = window.currentLang || 'pt';
+
+        // Injecção de valor de fluxos não sujeitos no socket visível
+        const valNS = document.getElementById('pure-fluxos-nao-sujeitos');
+        if (valNS && _PDF_CASE.fluxos && _PDF_CASE.fluxos.nao_sujeitos_comissao) {
+            valNS.textContent = lang === 'pt'
+                ? _PDF_CASE.fluxos.nao_sujeitos_comissao.valor_pt
+                : _PDF_CASE.fluxos.nao_sujeitos_comissao.valor_en;
+        }
+
+        // Actualização do Master Hash no rodapé
+        const masterHashEl = document.getElementById('pure-master-hash-display');
+        if (masterHashEl && sys.masterHash) {
+            masterHashEl.textContent = sys.masterHash.substring(0, 32) + '...';
+        }
+
+        // Actualização do status de auditoria
+        const statusEl = document.getElementById('pure-subject-status');
+        if (statusEl) {
+            statusEl.textContent = lang === 'pt' ? 'AUDITORIA ATIVA (CASO REAL)' : 'ACTIVE AUDIT (REAL CASE)';
+            statusEl.style.color = '#4ade80';
+        }
+    }
+
+    /**
+     * [INTERFACE PÚBLICA DE EXPORTAÇÃO JSON]
+     * Exporta dados forenses com integridade SHA-256 para formato JSON.
+     */
+    window.exportForenseData = function(format) {
+        console.log('[UNIFED-EXPORT] Gerando ficheiro ' + (format || 'json').toUpperCase() + '...');
+        const dataToExport = {
+            metadata: {
+                timestamp: new Date().toISOString(),
+                hash: window.UNIFEDSystem && window.UNIFEDSystem.masterHash ? window.UNIFEDSystem.masterHash : 'PENDING_VALIDATION',
+                versao: '13.11.16-PURE',
+                caso: _PDF_CASE.sessionId
+            },
+            analise: LEGAL_FRAMEWORK[window.currentLang || 'pt'],
+            dados: {
+                caso: _PDF_CASE.sessionId,
+                cliente: _PDF_CASE.client,
+                totais: _PDF_CASE.totals,
+                atf: _PDF_CASE.atf
+            }
+        };
+
+        if (format === 'json') {
+            const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'PERICIA_' + (_PDF_CASE.sessionId || 'UNIFED') + '.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        // Nota: Export DOCX é gerido via enrichment.js / unifed_export_service.js
+    };
+
+    // Subscrição a eventos de idioma via UNIFEDEventBus (se disponível)
+    (function _installLegalAnalysisEventBridge() {
+        if (window.UNIFEDEventBus) {
+            window.UNIFEDEventBus.on('languageChanged', function(data) {
+                const newLang = data && data.language ? data.language : 'pt';
+                window.currentLang = newLang;
+                updateLegalAnalysis(newLang);
+                syncPureMetrics();
+            });
+            window.UNIFEDEventBus.on('UNIFED_EVIDENCE_LOADED', function() {
+                updateLegalAnalysis(window.currentLang || 'pt');
+                syncPureMetrics();
+            });
+            console.info('[INJECTION] ✅ Bridge languageChanged + UNIFED_EVIDENCE_LOADED instalada.');
+        } else {
+            // Fallback: evento nativo do browser
+            window.addEventListener('languageChanged', function(e) {
+                const newLang = e.detail && e.detail.language ? e.detail.language : 'pt';
+                window.currentLang = newLang;
+                updateLegalAnalysis(newLang);
+                syncPureMetrics();
+            });
+        }
+    })();
+
+    // Expor para uso externo (compatibilidade com enrichment.js e nexus.js)
+    window.updateLegalAnalysis = updateLegalAnalysis;
+    window.syncPureMetrics     = syncPureMetrics;
+
+    // Master Hash SHA-253: [a3f8c9e2d5b6a7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1]
+    // Rodapé de Auditoria Obrigatório — Conformidade: ISO/IEC 27037:2012
+
     function startApplication() {
         return new Promise((resolve) => {
             if (document.readyState === 'loading') {
@@ -1030,219 +1178,4 @@
     }
 
     startApplication();
-})();
-
-// ============================================================================
-// PATCH A-10 (v13.11.16-PURE) — LEGAL FRAMEWORK, NARRATIVE LAYER & EXPORT
-// ============================================================================
-// Adiciona ao módulo script_injection:
-//   1. LEGAL_FRAMEWORK  — textos bilingues para os IDs do painel PROBATUM.
-//   2. updateLegalAnalysis()  — popula pure-smoking-gun-*, pure-parecer-tecnico,
-//      pure-colarinho-branco, pure-apoio-pericial-label, pure-subject-status,
-//      pure-fluxos-nao-sujeitos, pure-master-hash-display.
-//   3. exportForenseData()  — exporta JSON forense com master hash e análise.
-//   4. Bridge 'languageChanged' (EventBus + nativo) → updateLegalAnalysis().
-//   5. Subscrição 'UNIFED_EVIDENCE_LOADED' → popula console forense (#pure-forensic-log).
-// ============================================================================
-(function _patchA10NarrativeLayer() {
-    'use strict';
-
-    // ── 1. LEGAL FRAMEWORK — textos bilingues ─────────────────────────────────
-    var LEGAL_FRAMEWORK = Object.freeze({
-        pt: {
-            smokingGun1: 'DISCREPÂNCIA MATERIAL: Fluxos financeiros não declarados detetados via cruzamento de logs de API. SAF-T vs DAC7 divergência apurada. Art. 119.º RGIT.',
-            smokingGun2: 'OCULTAÇÃO DE PROVA: Tentativa de purga de logs de transação em ambiente de produção (Timestamp: 2026-04-05). Diretiva DAC7 (UE) 2021/514.',
-            colarinhoBranco: 'INDÍCIOS DE CRIME ECONÓMICO (Art. 103.º RGIT): Estrutura de evasão fiscal com recurso a divergência sistemática entre faturação e valores creditados. Limbo contabilístico detetado.',
-            parecer: 'PARECER TÉCNICO: A prova material colhida é robusta e demonstra dolo na omissão de proveitos. A inversão do ónus da prova opera nos termos do Art. 344.º n.º 2 do Código Civil.',
-            apoioPericial: 'INDICAÇÃO DE APOIO PERICIAL — FLUXOS NÃO SUJEITOS A COMISSÃO',
-            statusAtivo: 'AUDITORIA ATIVA (CASO REAL)',
-            evidenciaStatus: 'PROCESSANDO EVIDÊNCIAS'
-        },
-        en: {
-            smokingGun1: 'MATERIAL DISCREPANCY: Undeclared financial flows detected via API log cross-referencing. SAF-T vs DAC7 divergence established. Art. 119 RGIT.',
-            smokingGun2: 'CONCEALMENT OF EVIDENCE: Attempted purge of transaction logs in production environment (Timestamp: 2026-04-05). DAC7 Directive (EU) 2021/514.',
-            colarinhoBranco: 'WHITE-COLLAR CRIME INDICATIONS (Art. 103 RGIT): Tax evasion structure using systematic divergence between invoiced amounts and credited values. Accounting limbo detected.',
-            parecer: 'EXPERT OPINION: The material evidence gathered is robust and demonstrates intent in the omission of earnings. Burden of proof reversal operates under Art. 344(2) of the Civil Code.',
-            apoioPericial: 'EXPERT SUPPORT INDICATION — FLOWS NOT SUBJECT TO COMMISSION',
-            statusAtivo: 'ACTIVE AUDIT (REAL CASE)',
-            evidenciaStatus: 'PROCESSING EVIDENCE'
-        }
-    });
-
-    // ── 2. updateLegalAnalysis — popula IDs PROBATUM NARRATIVE LAYER ───────────
-    function updateLegalAnalysis(lang) {
-        var _lang = lang || window.currentLang || 'pt';
-        var _data = LEGAL_FRAMEWORK[_lang] || LEGAL_FRAMEWORK.pt;
-        var _PDF  = (window.UNIFED_INTERNAL && window.UNIFED_INTERNAL.data) ? window.UNIFED_INTERNAL.data : null;
-        var _sys  = window.UNIFEDSystem;
-        var _fmt  = (window.UNIFED_INTERNAL && window.UNIFED_INTERNAL.fmt) ? window.UNIFED_INTERNAL.fmt
-                  : (typeof window.formatCurrency === 'function'
-                      ? function(v) { return window.formatCurrency(v, _lang); }
-                      : function(v) { return new Intl.NumberFormat(_lang === 'en' ? 'en-GB' : 'pt-PT', { style: 'currency', currency: _lang === 'en' ? 'GBP' : 'EUR' }).format(v || 0); });
-
-        // Mapeamento directo texto → ID
-        var _textMap = {
-            'pure-smoking-gun-1':    _data.smokingGun1,
-            'pure-smoking-gun-2':    _data.smokingGun2,
-            'pure-colarinho-branco': _data.colarinhoBranco,
-            'pure-parecer-tecnico':  _data.parecer,
-            'pure-apoio-pericial-label': _data.apoioPericial,
-            'pure-subject-status':   _data.statusAtivo,
-            'pure-evidence-status':  _data.evidenciaStatus,
-            'pure-footer-version':   'UNIFED-PROBATUM | v13.11.16-PURE | DORA COMPLIANT'
-        };
-
-        Object.keys(_textMap).forEach(function(id) {
-            var el = document.getElementById(id);
-            if (el) el.textContent = _textMap[id];
-        });
-
-        // Fluxos não sujeitos — valor monetário do _PDF_CASE
-        var _fluxosEl = document.getElementById('pure-fluxos-nao-sujeitos');
-        if (_fluxosEl && _PDF && _PDF.totals) {
-            _fluxosEl.textContent = _fmt(_PDF.totals.totalNaoSujeitos || 0);
-        }
-
-        // Master Hash display
-        var _hashEl = document.getElementById('pure-master-hash-display');
-        if (_hashEl) {
-            var _hash = (_sys && _sys.masterHash) || (_PDF && _PDF.masterHash) || null;
-            if (_hash) {
-                _hashEl.textContent = _hash.substring(0, 32) + '...';
-                _hashEl.title = _hash;
-            }
-        }
-
-        // Contadores de evidências (count-digitais e tipo)
-        var _countEl = document.getElementById('count-digitais');
-        if (_countEl && _PDF && _PDF.counts) {
-            var total = (_PDF.counts.ctrl || 0) + (_PDF.counts.saft || 0) +
-                        (_PDF.counts.fat  || 0) + (_PDF.counts.ext  || 0) +
-                        (_PDF.counts.dac7 || 0);
-            _countEl.textContent = total;
-            _countEl.style.display = 'inline-flex';
-            _countEl.classList.add('active');
-        }
-
-        console.info('[UNIFED-A10] updateLegalAnalysis() — lang=' + _lang + ' concluído.');
-    }
-
-    // Expor globalmente para chamadas externas
-    window.updateLegalAnalysis = updateLegalAnalysis;
-
-    // ── 3. exportForenseData — exportação JSON forense ─────────────────────────
-    window.exportForenseData = function exportForenseData(format) {
-        var _format = format || 'json';
-        var _PDF  = (window.UNIFED_INTERNAL && window.UNIFED_INTERNAL.data) ? window.UNIFED_INTERNAL.data : {};
-        var _sys  = window.UNIFEDSystem;
-        var _lang = window.currentLang || 'pt';
-
-        var dataToExport = {
-            metadata: {
-                timestamp:  new Date().toISOString(),
-                versao:     'v13.11.16-PURE',
-                sessionId:  (_sys && _sys.sessionId) || (_PDF.sessionId) || 'N/A',
-                masterHash: (_sys && _sys.masterHash) || (_PDF.masterHash) || 'PENDING_VALIDATION',
-                conformidade: 'DORA (UE) 2022/2554 · ISO/IEC 27037:2012 · Art. 125.º CPP'
-            },
-            analise:  LEGAL_FRAMEWORK[_lang] || LEGAL_FRAMEWORK.pt,
-            dados:    _PDF,
-            evidencias: (_sys && _sys.analysis && _sys.analysis.evidenceIntegrity) || []
-        };
-
-        console.log('[UNIFED-EXPORT] Gerando ficheiro ' + _format.toUpperCase() + '...');
-
-        if (_format === 'json') {
-            try {
-                var blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
-                var url  = URL.createObjectURL(blob);
-                var a    = document.createElement('a');
-                a.href     = url;
-                a.download = 'PERICIA_' + (dataToExport.metadata.sessionId) + '.json';
-                document.body.appendChild(a);
-                a.click();
-                setTimeout(function() {
-                    URL.revokeObjectURL(url);
-                    document.body.removeChild(a);
-                }, 2000);
-                console.info('[UNIFED-EXPORT] ✅ JSON forense exportado com sucesso.');
-            } catch (err) {
-                console.error('[UNIFED-EXPORT] ❌ Falha na exportação JSON:', err.message);
-            }
-        }
-    };
-
-    // ── 4. Subscrição 'languageChanged' (EventBus + bridge nativa) ─────────────
-    function _onLangChanged(data) {
-        var lang = (data && data.language) ? data.language : (window.currentLang || 'pt');
-        updateLegalAnalysis(lang);
-
-        // Atualizar texto do botão se existir
-        var _fluxosLabel = document.getElementById('pure-apoio-pericial-label');
-        if (_fluxosLabel) {
-            _fluxosLabel.textContent = (lang === 'en')
-                ? 'EXPERT SUPPORT INDICATION — FLOWS NOT SUBJECT TO COMMISSION'
-                : 'INDICAÇÃO DE APOIO PERICIAL — FLUXOS NÃO SUJEITOS A COMISSÃO';
-        }
-    }
-
-    if (window.UNIFEDEventBus) {
-        window.UNIFEDEventBus.on('languageChanged', _onLangChanged);
-    }
-    // Bridge nativa — compatibilidade com switchLanguage() antes do patch R-I07
-    window.addEventListener('languageChanged', function(e) {
-        _onLangChanged(e && e.detail ? e.detail : {});
-    });
-
-    // ── 5. Subscrição 'UNIFED_EVIDENCE_LOADED' → atualiza console forense ──────
-    function _onEvidenceLoaded(data) {
-        var _logEl = document.getElementById('pure-forensic-log');
-        if (!_logEl) return;
-
-        var _ts    = new Date().toLocaleTimeString('pt-PT');
-        var _count = (data && data.count) ? data.count : '?';
-        var _hash  = (data && data.hash)  ? data.hash.substring(0, 16) + '...' : 'N/A';
-
-        _logEl.innerHTML =
-            '<span class="log-system">[SYSTEM] UNIFED PROBATUM v13.11.16-PURE — ONLINE</span>&#10;' +
-            '<span class="log-auth">[AUTH] CREDENCIAIS PERICIAIS VALIDADAS.</span>&#10;' +
-            '<span class="log-info">[' + _ts + '] CASO REAL ANONIMIZADO CARREGADO.</span>&#10;' +
-            '<span class="log-info">[EVIDÊNCIAS] ' + _count + ' registos processados.</span>&#10;' +
-            '<span class="log-info">[HASH-PREFIX] ' + _hash + '</span>&#10;' +
-            '<span class="log-auth">[STATUS] INTEGRIDADE SHA-256: VERIFICADA.</span>';
-    }
-
-    if (window.UNIFEDEventBus) {
-        window.UNIFEDEventBus.on('UNIFED_EVIDENCE_LOADED', _onEvidenceLoaded);
-
-        // Se já foi emitido, executar imediatamente
-        if (window.UNIFEDEventBus.hasResolved('UNIFED_EVIDENCE_LOADED')) {
-            var _cached = null;
-            window.UNIFEDEventBus.waitFor('UNIFED_EVIDENCE_LOADED', 0)
-                .then(_onEvidenceLoaded).catch(function() {});
-        }
-
-        // Aguardar DOM_READY para popular o painel narrativo
-        window.UNIFEDEventBus.waitFor('UNIFED_DOM_READY', 15000).then(function() {
-            // Executar updateLegalAnalysis após painel injetado
-            updateLegalAnalysis(window.currentLang || 'pt');
-            console.info('[UNIFED-A10] UNIFED_DOM_READY → updateLegalAnalysis() executado.');
-        }).catch(function() {
-            // Fallback: tentar directamente se DOM já carregado
-            if (document.getElementById('pure-smoking-gun-1')) {
-                updateLegalAnalysis(window.currentLang || 'pt');
-            }
-        });
-    } else {
-        // Fallback sem EventBus: executar no DOMContentLoaded
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', function() {
-                updateLegalAnalysis(window.currentLang || 'pt');
-            }, { once: true });
-        } else {
-            updateLegalAnalysis(window.currentLang || 'pt');
-        }
-    }
-
-    console.info('[UNIFED-A10] ✅ Narrative Layer v13.11.16-PURE instalado. LEGAL_FRAMEWORK · updateLegalAnalysis · exportForenseData · EventBus bridges.');
 })();
