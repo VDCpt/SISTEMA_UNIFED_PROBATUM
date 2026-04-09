@@ -894,61 +894,22 @@
         if (window.pdfjsLib) {
             window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         }
+    <script>
+        window.pdfjsLib = window['pdfjs-dist/build/pdf'];
+        if (window.pdfjsLib) {
+            window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
     </script>
-    <!-- ══════════════════════════════════════════════════════════════════════════════════
-         UNIFED PROBATUM v13.11.16-PURE — Ordem de carregamento (PATCH CRÍTICO):
-         0. unifed_event_bus.js      ← PRIMEIRO: barramento pub/sub (requisito de todos)
-         1. unifed_export_service.js ← Singleton de exportação atómica (selagem SHA-256)
-         2. script.js                ← Motor principal (emite UNIFED_CORE_READY)
-         3. enrichment.js            ← Output Enrichment Layer · Read-Only
-         4. nexus.js                 ← NEXUS Adaptive Extension Layer
-         5. script_injection.js      ← Dados do Caso Real Anonimizado (com patch de visibilidade)
-         6. unifed_triada_export.js  ← Exportação Tríada (regista renderer 'custody')
-         7. unifed_export_register.js← Captura exportPDF/exportDOCX → ExportService
-         NOTA: style_additions.css movido para o <head> (Patch A-07).
-         Conformidade: DORA (UE) 2022/2554 · ISO/IEC 27037:2012 · Art. 125.º CPP
-         ══════════════════════════════════════════════════════════════════════════════ -->
 
-    <!-- [PATCH CRÍTICO R-I01] unifed_event_bus.js DEVE ser o 1.º script carregado.
-         Sem este ficheiro, todos os módulos que chamam window.UNIFEDEventBus
-         falharão silenciosamente (TypeError: Cannot read properties of undefined). -->
     <script src="unifed_event_bus.js"></script>
-
-    <!-- [PATCH CRÍTICO R-I02] unifed_export_service.js carregado antes de script.js
-         para que o Singleton esteja disponível quando exportPDF/exportDOCX são
-         definidos pelos módulos seguintes. -->
     <script src="unifed_export_service.js"></script>
-
-    <script src="script.js"></script>
-    <!-- UNIFED PROBATUM v13.11.16-PURE — Output Enrichment Layer -->
-    <!-- Carregado APÓS script.js. Padrão: Read-Only · Asynchronous Post-Computation  -->
     <script src="enrichment.js"></script>
-    <!-- ══ UNIFED PROBATUM v13.11.16-PURE — NEXUS Adaptive Extension Layer ══════
-         Carregado APÓS enrichment.js e script.js. Consome UNIFEDSystem em Read-Only.
-         NÃO altera fórmulas fiscais nem o Dashboard. Módulos:
-           M1 · Stealth Network Interceptor (Anti-F12 Protocol)
-           M2 · RAG Jurisprudencial DOCX (Art. 103/104 RGIT · Art. 78 CIVA · STA)
-           M3 · Motor Preditivo ATF Forecasting 6M (Regressão Linear + EMA)
-           M4 · Blockchain Evidence Explorer (SHA-256 Individual · OTS UI)
-         Conformidade: DORA (UE) 2022/2554 · ISO/IEC 27037:2012 · Art. 125.º CPP
-         ══════════════════════════════════════════════════════════════════════════ -->
+    <script src="script.js"></script>
     <script src="nexus.js"></script>
-
-    <!-- ══ UNIFED - PROBATUM v13.11.16-PURE · CASO REAL ANONIMIZADO ═══════════════
-         Carregado APÓS nexus.js. Injeta os dados reais verificados (UNIFED-MMLADX8Q-CV69L)
-         no UNIFEDSystem e activa o painel #pureDashboard.
-         Conformidade: ISO/IEC 27037 · Art. 125.º CPP · DORA (UE) 2022/2554
-         Core Freeze: não altera fórmulas de script.js nem módulos enrichment/nexus.
-         ══════════════════════════════════════════════════════════════════════════ -->
     <script src="script_injection.js"></script>
-    <!-- TRÍADE DOCUMENTAL - MÓDULO DE EXPORTAÇÃO -->
     <script src="unifed_triada_export.js"></script>
-
-    <!-- [PATCH CRÍTICO R-I03] unifed_export_register.js carregado ÚLTIMO:
-         captura window.exportPDF (script.js) e window.exportDOCX (enrichment.js,
-         possivelmente wrappado pelo nexus.js RAG) e regista-os no ExportService.
-         Garante selagem atómica SHA-256 em todas as exportações. -->
     <script src="unifed_export_register.js"></script>
 
 </body>
 </html>
+  
