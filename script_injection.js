@@ -1093,28 +1093,32 @@ console.log('[UNIFED] Camada 5: OK.');
                 correctLevel: QRCode.CorrectLevel.L
             });
         }
-        container.setAttribute('data-tooltip', 'Clique para verificar a cadeia de custódia completa');
-    }
-    window.generateQRCode = generateQRCode;
+      // ... código anterior (generateQRCode)
+    container.setAttribute('data-tooltip', 'Clique para verificar a cadeia de custódia completa');
+} // Fecha generateQRCode
 
-    function startApplication() {
-        return new Promise((resolve) => {
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', () => resolve());
-            } else {
-                resolve();
-            }
-        }).then(() => {
-            initializeCoreDashboard();
-            setupRealCaseButton();
-            console.log('[UNIFED] ✅ Aplicação pronta. Clique em "CASO REAL ANONIMIZADO" para carregar as evidências.');
-        }).catch(err => {
-            console.error('[UNIFED] Erro na inicialização:', err);
-        });
-    }
+window.generateQRCode = generateQRCode;
 
-    startApplication();
-})();
+function startApplication() {
+    return new Promise((resolve) => {
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => resolve());
+        } else {
+            resolve();
+        }
+    }).then(() => {
+        initializeCoreDashboard();
+        setupRealCaseButton();
+        console.log('[UNIFED] ✅ Aplicação pronta.');
+    }).catch(err => {
+        console.error('[UNIFED] Erro na inicialização:', err);
+    });
+}
+
+// Invocação da aplicação
+startApplication();
+
+})(); // Este é o fecho da IIFE (function() { 'use strict'; ...
 
 // ============================================================================
 // PATCH A-10 (v13.11.16-PURE) — LEGAL FRAMEWORK, NARRATIVE LAYER & EXPORT
