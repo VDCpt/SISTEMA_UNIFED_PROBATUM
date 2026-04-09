@@ -154,26 +154,27 @@
     const percentC1 = (t.saftBruto > 0) ? (discrepanciaC1 / t.saftBruto) * 100 : 0;
     const ircEstimado = discrepanciaC2 * 0.21;
 
-    window.UNIFED_INTERNAL.syncMetrics = function() {
-        // [CORREÇÃO CIRÚRGICA]: Evita erro Array(42) se o DOM não estiver pronto
-        if (!document.getElementById('pureDashboard')) {
-            console.info('[UNIFED] syncMetrics abortado: painel pureDashboard ainda não injetado no DOM.');
-            return;
-        }
-/* ── RETIFICAÇÃO CIRÚRGICA: DESBLOQUEIO DO BARRAMENTO (PATCH R-I08) ── */
-if (window.UNIFEDEventBus) {
-    // 1. Emite o sinal para que o updateLegalAnalysis() saiba que pode ler o DOM
-    window.UNIFEDEventBus.emit('UNIFED_DOM_READY', { 
-        timestamp: Date.now(),
-        status: 'EMISSÃO_FORÇADA_PERÍCIA' 
-    });
-    
-    // 2. Compatibilidade com o loader do index.html
-    window.dispatchEvent(new CustomEvent('UNIFED_DOM_READY'));
-    
-    console.info('[UNIFED-FORENSIC] ✅ Sinal UNIFED_DOM_READY emitido via Patch R-I08.');
+window.UNIFED_INTERNAL.syncMetrics = function() {
+    // 1. Verificação de Segurança (Guarda)
+    if (!document.getElementById('pureDashboard')) {
+        console.info('[UNIFED] syncMetrics abortado: painel pureDashboard ainda não injetado.');
+        return;
+    }
+
+    /* ── RETIFICAÇÃO CIRÚRGICA: INSERIR AQUI ── */
+    if (window.UNIFEDEventBus) {
+        window.UNIFEDEventBus.emit('UNIFED_DOM_READY', { 
+            timestamp: Date.now(), 
+            status: 'EMISSÃO_FORÇADA_PERÍCIA' 
+        });
+        window.dispatchEvent(new CustomEvent('UNIFED_DOM_READY'));
+        console.info('[UNIFED-FORENSIC] ✅ Sinal UNIFED_DOM_READY emitido.');
+    }
+    /* ─────────────────────────────────────── */
+
+    console.log('[UNIFED] Iniciando Sincronização Forense...');
+    // ... restante código de mapeamento ...
 }
-        console.log('[UNIFED] Iniciando Sincronização Forense...');
         
         const mapping = {
             'pure-ganhos':           fmt(t.ganhos),
