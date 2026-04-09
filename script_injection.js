@@ -107,7 +107,6 @@
                 console.warn('[UNIFED] ⚙ Modo Standalone Ativo: Selagem TSA externa indisponível (promise).');
                 event.preventDefault();
             }
-            // Tratamento silencioso do erro DNS api.unifed.com
             if (event.reason && event.reason.message && event.reason.message.indexOf('api.unifed.com') !== -1) {
                 console.warn('[UNIFED] ⚙ Modo Standalone Ativo: Proxy IA indisponível (DNS). Fallback estático ativo.');
                 event.preventDefault();
@@ -137,7 +136,6 @@
         return false;
     };
 
-    // Namespace Global
     window.UNIFED_INTERNAL = window.UNIFED_INTERNAL || {};
     window.UNIFED_INTERNAL.data = _PDF_CASE;
     window.UNIFED_INTERNAL.fmt = _fmt;
@@ -152,13 +150,11 @@
     const { data, fmt, set } = window.UNIFED_INTERNAL;
 
     window.UNIFED_INTERNAL.syncMetrics = function() {
-        // 1. Verificação de Segurança (Guarda)
         if (!document.getElementById('pureDashboard')) {
             console.info('[UNIFED] syncMetrics abortado: painel pureDashboard ainda não injetado.');
             return;
         }
 
-        /* ── RETIFICAÇÃO CIRÚRGICA: INSERIR AQUI ── */
         if (window.UNIFEDEventBus) {
             window.UNIFEDEventBus.emit('UNIFED_DOM_READY', { 
                 timestamp: Date.now(), 
@@ -167,7 +163,6 @@
             window.dispatchEvent(new CustomEvent('UNIFED_DOM_READY'));
             console.info('[UNIFED-FORENSIC] ✅ Sinal UNIFED_DOM_READY emitido.');
         }
-        /* ─────────────────────────────────────── */
 
         console.log('[UNIFED] Iniciando Sincronização Forense...');
 
@@ -222,7 +217,6 @@
             'pure-iva-devido-val':     fmt(t.iva6Omitido),
             'pure-impacto-macro':      fmt(data.macro_analysis.estimated_systemic_gap),
             'pure-asfixia-val': fmt(t.asfixiaFinanceira),
-            // IDs para contagem de evidências
             'pure-ctrl-qty':           data.counts.ctrl.toString(),
             'pure-saft-qty':           data.counts.saft.toString(),
             'pure-fat-qty':            data.counts.fat.toString(),
@@ -308,7 +302,7 @@
                         <th style="text-align:left; padding:10px;">FONTE DE PROVA</th>
                         <th style="text-align:right; padding:10px;">VALOR</th>
                         <th style="text-align:right; padding:10px; color:#EF4444;">DISCREPÂNCIA</th>
-                    </table>
+                    </tr>
                 </thead>
                 <tbody>
                     <tr><td style="padding:10px;">📄 SAF-T PT (Faturação)</td><td style="padding:10px; text-align:right;">${fmt(t.saftBruto)}</td><td style="padding:10px; text-align:right;">-${fmt(deltaSaft)}</td></tr>
@@ -605,7 +599,6 @@
                 }
                 const sys = window.UNIFEDSystem;
 
-                // ── PATCH A-06 (RTF-UNIFED-2026-0406-001) ────────────────────────
                 if (data && data.sessionId) {
                     const _previousSessionId = sys.sessionId;
                     sys.sessionId = data.sessionId;
@@ -616,7 +609,6 @@
                         );
                     }
                 }
-                // ── FIM PATCH A-06 ────────────────────────────────────────────────
 
                 const t = data.totals;
                 if (!sys.documents) sys.documents = {};
