@@ -1058,27 +1058,34 @@
             }
         })();
 
-        // ── [PATCH R-I08] INICIALIZAÇÃO DO FORENSIC-LOADER ───────────────────
-        // Garante que o loader é ocultado mesmo se _activatePurePanel nunca for
-        // chamado (e.g. modo sem panel.html em desenvolvimento).
-        (function _forensicLoaderGuard() {
-            var _MAX_WAIT = 12000; // 12 s — tempo máximo antes de ocultar forçado
-            var _timer = setTimeout(function() {
-                var loader = document.getElementById('forensic-loader');
-                if (loader && loader.style.display !== 'none') {
-                    loader.style.opacity = '0';
-                    setTimeout(function() { loader.style.display = 'none'; }, 500);
-                    console.warn('[UNIFED-PURE] ⚠ [R-I08] Forensic-loader ocultado por guarda de timeout (12s).');
-                }
-            }, _MAX_WAIT);
+// ── [PATCH R-I08] INICIALIZAÇÃO DO FORENSIC-LOADER (RETIFICADO) ───────────
+(function _forensicLoaderGuard() {
+    var _MAX_WAIT = 12000;
+    var loader = document.getElementById('forensic-loader');
 
-            // Cancelar guarda se o painel for activado normalmente
-            if (window.UNIFEDEventBus) {
-                window.UNIFEDEventBus.waitFor('UNIFED_DOM_READY', _MAX_WAIT)
-                    .then(function() { clearTimeout(_timer); })
-                    .catch(function() { /* guarda de timeout actua */ });
-            }
-        })();
+    function _dismissLoader() {
+        if (loader && loader.style.display !== 'none') {
+            loader.style.opacity = '0';
+            setTimeout(function() { loader.style.display = 'none'; }, 500);
+        }
+    }
+
+    var _timer = setTimeout(function() {
+        _dismissLoader();
+        console.warn('[UNIFED-PURE] ⚠ [R-I08] Forensic-loader ocultado por guarda de timeout (12s).');
+    }, _MAX_WAIT);
+
+    // Cancelamento do bloqueio vinculado à prontidão algorítmica do Core
+    if (window.UNIFEDEventBus) {
+        window.UNIFEDEventBus.waitFor('UNIFED_CORE_READY', _MAX_WAIT)
+            .then(function() {
+                clearTimeout(_timer);
+                _dismissLoader();
+                console.info('[UNIFED-PURE] ✅ [R-I08] Forensic-loader desativado via UNIFED_CORE_READY (< 150ms).');
+            })
+            .catch(function() { /* Guarda atua como fallback */ });
+    }
+})();
     </script>
     <!-- TRÍADE DOCUMENTAL - MÓDULO DE EXPORTAÇÃO -->
     <script src="unifed_triada_export.js"></script>
