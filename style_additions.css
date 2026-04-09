@@ -1,5 +1,5 @@
 /* ============================================================================
-   UNIFED - PROBATUM · v13.11.5-PURE · ESTILOS DO PAINEL DE CASO REAL
+   UNIFED - PROBATUM · v13.11.16-PURE · ESTILOS DO PAINEL DE CASO REAL
    ============================================================================
    Escopo      : Seletor raiz #pureDashboard — sem conflito com estilos base.
    Variáveis   : Consume as CSS custom properties existentes em style.css base.
@@ -13,23 +13,29 @@
 :root {
     --pure-accent:  #00E5FF; /* Cyan Forense */
     --pure-warn:    #EF4444; /* Alerta Fiscal */
-    --pure-version: "v13.11.3-PURE";
-    /* CORR-v13.11.3: Bloqueio cromático máximo — impede "sangramento" de fundo branco */
+    --pure-version: "v13.11.16-PURE";
+    /* CORR-v13.11.16: Bloqueio cromático máximo — impede "sangramento" de fundo branco */
     background-color: #0f172a !important;
 }
 
-/* ── CORR-v13.11.3: Enforcement Dark Mode — html/body ───────────────────────── */
+/* ── CORR-v13.11.16: Enforcement Dark Mode — html/body ───────────────────────── */
 html, body {
     background-color: #0f172a !important;
     color: #f8fafc !important;
 }
 
-/* ── Wrapper do painel PURE — transição de entrada ──────────────────────────── */
-/* ATENÇÃO: style.css define opacity:0 com transição para fade-in controlado por JS.
-   Este selector actua em modo standalone (sem style.css carregado). */
+/* ── Wrapper do painel PURE — estado inicial oculto, aguarda classe .unifed-ready ── */
+/* CORREÇÃO FORENSE: substituído visibility:hidden por display:none + transição */
 #pureDashboardWrapper {
-    opacity: 1;
-    transition: all 0.4s ease-in-out;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+}
+
+#pureDashboardWrapper.unifed-ready {
+    display: block !important;   /* ou grid/flex conforme layout interno */
+    opacity: 1 !important;
+    transition: opacity 0.5s ease-in-out;
 }
 
 /* ── Grid de painéis (pure-card-grid) ───────────────────────────────────────── */
@@ -526,7 +532,7 @@ html, body {
 }
 
 /* ============================================================================
-   FIM: style.css additions · v13.11.3-PURE · UNIFED-PROBATUM
+   FIM: style.css additions · v13.11.16-PURE · UNIFED-PROBATUM
    Escopo: #pureDashboard · Sem colisões com CSS base.
    ============================================================================ */
 
@@ -601,23 +607,13 @@ html, body {
    CORR-10: Novas classes pure-metric-card / pure-metric-value (panel.html)
    ============================================================================ */
 
-/* ── CORR-8: Anti-flash — wrapper arranca oculto; JS injecta .pure-visible ──── */
+/* ── CORR-8: Anti-flash — wrapper arranca oculto; JS injecta .unifed-ready ──── */
 /* ATENÇÃO: o wrapper deve ter id="pureDashboardWrapper" a envolver o #pureDashboard. */
-/* A classe .pure-visible é adicionada por _syncPureDashboard() no final do ciclo  */
+/* A classe .unifed-ready é adicionada por _injectPurePanel() no final do ciclo  */
 /* de sincronização, garantindo que o DOM só é visível após todos os valores serem  */
 /* injectados. Elimina o flash de conteúdo "€ 0,00 → valor real" observado em      */
 /* browsers com render pipeline rápido (Chromium 124+).                             */
-#pureDashboardWrapper {
-    visibility: hidden;
-    opacity: 0;
-    transition: opacity 0.5s ease-in-out, visibility 0s linear 0s;
-}
-
-#pureDashboardWrapper.pure-visible {
-    visibility: visible !important;
-    opacity: 1 !important;
-    transition: opacity 0.5s ease-in-out;
-}
+/* (Nota: a definição original de #pureDashboardWrapper foi actualizada acima)   */
 
 /* ── CORR-10: Novo bloco de métrica — pure-metric-card (panel.html) ─────────── */
 /* Usado no bloco "Diferencial de Fluxo Financeiro Auditado" (PAINEL II ext.)    */
@@ -770,16 +766,9 @@ body,
     color: #f8fafc !important;
 }
 
-/* ── A2. ESTABILIZAÇÃO DO WRAPPER DE INJEÇÃO ─────────────────────────────── */
-#pureDashboardWrapper {
-    opacity: 0;
-    transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-#pureDashboardWrapper.pure-visible {
-    opacity: 1;
-    display: block !important;
-}
+/* ── A2. ESTABILIZAÇÃO DO WRAPPER DE INJEÇÃO (já actualizado acima) ──────── */
+/* Nota: as regras #pureDashboardWrapper e .unifed-ready foram movidas
+   para o topo do ficheiro para garantir a correcta ordem de cascata. */
 
 /* ── A3. BOTÕES DE IDIOMA PT/EN ──────────────────────────────────────────── */
 .pure-button-lang {

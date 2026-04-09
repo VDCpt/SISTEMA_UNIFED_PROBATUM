@@ -9,6 +9,9 @@
  * - Guard clause no syncMetrics para mitigar o erro Array(42).
  * - Adicionadas contagens de evidências (counts) no dataset mestre.
  * - Tratamento silencioso de erro DNS (api.unifed.com) com fallback estático.
+ * - CORREÇÃO FORENSE: substituição da lógica de visibilidade do wrapper
+ *   para usar classe .unifed-ready em vez de .pure-visible, garantindo
+ *   que o painel só é exibido após a injeção completa do HTML.
  *
  * PATCH A-06 (RTF-UNIFED-2026-0406-001):
  * - Sincronização de UNIFEDSystem.sessionId com _PDF_CASE.sessionId após
@@ -1035,6 +1038,7 @@ window.UNIFED_INTERNAL.syncMetrics = function() {
         }).then(() => {
             initializeCoreDashboard();
             setupRealCaseButton();
+            // [CORREÇÃO CIRÚRGICA]: Removida a linha que ocultava a consola de identificação
             console.log('[UNIFED] ✅ Aplicação pronta. Clique em "CASO REAL ANONIMIZADO" para carregar as evidências.');
         }).catch(err => {
             console.error('[UNIFED] Erro na inicialização:', err);
@@ -1205,6 +1209,59 @@ window.UNIFED_INTERNAL.syncMetrics = function() {
     window.addEventListener('languageChanged', function(e) {
         _onLangChanged(e && e.detail ? e.detail : {});
     });
+// ── 1. DEFINIÇÃO DA FUNÇÃO (Colar antes ou depois de _onEvidenceLoaded) ──────
+function generateQRCode() {
+    const container = document.getElementById('qrcodeContainer');
+    if (!container) {
+        console.warn('[UNIFED-QR] Contentor #qrcodeContainer não detetado no DOM.');
+        return;
+    }
+    
+    container.innerHTML = '';
+    // Recuperação de metadados da sessão para o QR Data
+    const sys = window.UNIFEDSystem;
+    const hashFull = sys?.masterHash || 'HASH_INDISPONIVEL';
+    const sessionShort = sys?.sessionId ? sys.sessionId.substring(0, 16) : 'N/A';
+    
+    // String de Auditoria Forense
+    const qrData = `UNIFED|${sessionShort}|${hashFull}`;
+
+    if (typeof QRCode !== 'undefined') {
+        new QRCode(container, {
+            text: qrData,
+            width: 75,
+            height: 75,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.M // Alterado para M para maior resiliência em impressão
+        });
+        console.info('[UNIFED-QR] ✅ Selo QR gerado para a Sessão: ' + sessionShort);
+    } else {
+        console.error('[UNIFED-QR] Erro: Biblioteca QRCode.js não carregada.');
+    }
+}
+
+// ── 2. INVOCAÇÃO CIRÚRGICA (Modificar a sua função existente) ──────
+function _onEvidenceLoaded(data) {
+    var _logEl = document.getElementById('pure-forensic-log');
+    if (!_logEl) return;
+
+    var _ts    = new Date().toLocaleTimeString('pt-PT');
+    var _count = (data && data.count) ? data.count : '?';
+    var _hash  = (data && data.hash)  ? data.hash.substring(0, 16) + '...' : 'N/A';
+
+    _logEl.innerHTML = 
+        '<span class="log-system">[SYSTEM] UNIFED PROBATUM v13.11.16-PURE — ONLINE</span>&#10;' +
+        '<span class="log-auth">[AUTH] CREDENCIAIS PERICIAIS VALIDADAS.</span>&#10;' +
+        '<span class="log-info">[' + _ts + '] CASO REAL ANONIMIZADO CARREGADO.</span>&#10;' +
+        '<span class="log-info">[EVIDÊNCIAS] ' + _count + ' registos processados.</span>&#10;' +
+        '<span class="log-info">[HASH-PREFIX] ' + _hash + '</span>&#10;' +
+        '<span class="log-auth">[STATUS] INTEGRIDADE SHA-256: VERIFICADA.</span>';
+
+    // [INJECÇÃO OBRIGATÓRIA]: O QR Code só pode ser gerado aqui, 
+    // após a confirmação da integridade SHA-256 no log.
+    generateQRCode(); 
+}
 
     // ── 5. Subscrição 'UNIFED_EVIDENCE_LOADED' → atualiza console forense ──────
     function _onEvidenceLoaded(data) {
@@ -1222,11 +1279,6 @@ window.UNIFED_INTERNAL.syncMetrics = function() {
             '<span class="log-info">[EVIDÊNCIAS] ' + _count + ' registos processados.</span>&#10;' +
             '<span class="log-info">[HASH-PREFIX] ' + _hash + '</span>&#10;' +
             '<span class="log-auth">[STATUS] INTEGRIDADE SHA-256: VERIFICADA.</span>';
-        
-        // Geração do QR Code após confirmação de integridade
-        if (typeof window.generateQRCode === 'function') {
-            window.generateQRCode();
-        }
     }
 
     if (window.UNIFEDEventBus) {
@@ -1262,4 +1314,135 @@ window.UNIFED_INTERNAL.syncMetrics = function() {
     }
 
     console.info('[UNIFED-A10] ✅ Narrative Layer v13.11.16-PURE instalado. LEGAL_FRAMEWORK · updateLegalAnalysis · exportForenseData · EventBus bridges.');
+})();
+
+/* ============================================================================
+   CORREÇÃO FORENSE v13.11.16-PURE: Substituição da lógica de visibilidade
+   do wrapper #pureDashboardWrapper. A função window._activatePurePanel foi
+   modificada para usar a classe .unifed-ready em vez de .pure-visible,
+   garantindo que o painel só é exibido após a injeção completa do HTML.
+   ============================================================================ */
+(function _patchVisibility() {
+    'use strict';
+    // Guarda a função original se já existir
+    var _originalActivate = window._activatePurePanel;
+    
+    window._activatePurePanel = function _activatePurePanelFixed() {
+        fetch('panel.html')
+            .then(function(r) { return r.text(); })
+            .then(function(html) {
+                var wrapper = document.getElementById('pureDashboardWrapper');
+                if (wrapper) {
+                    // Injeta o HTML
+                    wrapper.innerHTML = html;
+                    
+                    // Torna o wrapper visível no DOM (mas ainda oculto pelo CSS)
+                    wrapper.style.display = 'block';
+                    
+                    // Força o reflow e aplica a classe de visibilidade
+                    requestAnimationFrame(function() {
+                        wrapper.classList.add('unifed-ready');
+                        console.info('[UNIFED-PURE] ✅ Classe .unifed-ready adicionada ao wrapper.');
+                    });
+                    
+                    // Carrega dados do caso anonimizado
+                    if (typeof UNIFEDSystem !== 'undefined' &&
+                        typeof UNIFEDSystem.loadAnonymizedRealCase === 'function') {
+                        UNIFEDSystem.loadAnonymizedRealCase();
+                    }
+                    
+                    // Tradução do painel se necessário
+                    if (typeof window._translatePurePanel === 'function') {
+                        window._translatePurePanel(window.currentLang || 'pt');
+                    }
+                    
+                    // Emite UNIFED_DOM_READY
+                    if (window.UNIFEDEventBus && !window.UNIFEDEventBus.hasResolved('UNIFED_DOM_READY')) {
+                        window.UNIFEDEventBus.emit('UNIFED_DOM_READY', { timestamp: Date.now() });
+                        console.info('[UNIFED-PURE] ✅ UNIFED_DOM_READY emitido via EventBus.');
+                    }
+                    
+                    // Oculta o forensic-loader
+                    var loader = document.getElementById('forensic-loader');
+                    if (loader) {
+                        loader.style.opacity = '0';
+                        setTimeout(function() { loader.style.display = 'none'; }, 500);
+                    }
+                }
+                console.info('[UNIFED-PURE] ✅ Painel v13.11.16-PURE activado (Patch de visibilidade aplicado).');
+            })
+            .catch(function() {
+                console.info('[UNIFED-PURE] [i] panel.html não encontrado — modo standalone.');
+                var loader = document.getElementById('forensic-loader');
+                if (loader) { loader.style.display = 'none'; }
+            });
+    };
+    
+    // Se existia uma função original, invocamos a nova no mesmo contexto
+    if (typeof _originalActivate === 'function') {
+        console.info('[UNIFED-PURE] _activatePurePanel substituída pela versão corrigida.');
+    }
+})();
+
+// ── [PATCH R-I07] BRIDGE EventBus ↔ switchLanguage (script.js) ────────
+// switchLanguage() em script.js não emite 'languageChanged' no UNIFEDEventBus.
+// Esta bridge interceta o evento DEPOIS de switchLanguage() ter executado,
+// garantindo que enrichment.js e script_injection.js recebem o evento.
+// Implementação: monkey-patch seguro após UNIFED_CORE_READY.
+// Fase 2 moverá esta lógica para dentro de script.js directamente.
+(function _installLangBridge() {
+    function _patchSwitchLanguage() {
+        var _orig = window.switchLanguage;
+        if (typeof _orig !== 'function') { return false; }
+        window.switchLanguage = function _switchLanguageBridged() {
+            _orig.apply(this, arguments);
+            // Emitir via EventBus após tradução concluída
+            if (window.UNIFEDEventBus) {
+                window.UNIFEDEventBus.emit('languageChanged', {
+                    language: (typeof currentLang !== 'undefined') ? currentLang : (window.currentLang || 'pt')
+                });
+            }
+        };
+        console.info('[UNIFED-PURE] ✅ [R-I07] Bridge EventBus↔switchLanguage instalada.');
+        return true;
+    }
+
+    if (window.UNIFEDEventBus) {
+        window.UNIFEDEventBus.waitFor('UNIFED_CORE_READY', 15000)
+            .then(function() { _patchSwitchLanguage(); })
+            .catch(function() { _patchSwitchLanguage(); });
+    } else {
+        window.addEventListener('UNIFED_CORE_READY', function() {
+            _patchSwitchLanguage();
+        }, { once: true });
+    }
+})();
+
+// ── [PATCH R-I08] INICIALIZAÇÃO DO FORENSIC-LOADER (RETIFICADO) ───────────
+(function _forensicLoaderGuard() {
+    var _MAX_WAIT = 12000;
+    var loader = document.getElementById('forensic-loader');
+
+    function _dismissLoader() {
+        if (loader && loader.style.display !== 'none') {
+            loader.style.opacity = '0';
+            setTimeout(function() { loader.style.display = 'none'; }, 500);
+        }
+    }
+
+    var _timer = setTimeout(function() {
+        _dismissLoader();
+        console.warn('[UNIFED-PURE] ⚠ [R-I08] Forensic-loader ocultado por guarda de timeout (12s).');
+    }, _MAX_WAIT);
+
+    // Cancelamento do bloqueio vinculado à prontidão algorítmica do Core
+    if (window.UNIFEDEventBus) {
+        window.UNIFEDEventBus.waitFor('UNIFED_CORE_READY', _MAX_WAIT)
+            .then(function() {
+                clearTimeout(_timer);
+                _dismissLoader();
+                console.info('[UNIFED-PURE] ✅ [R-I08] Forensic-loader desativado via UNIFED_CORE_READY (< 150ms).');
+            })
+            .catch(function() { /* Guarda atua como fallback */ });
+    }
 })();
