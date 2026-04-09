@@ -854,20 +854,47 @@
         });
     }
 
-    function _updateEvidenceCountersAndShow() {
-        const sys = window.UNIFEDSystem;
-        if (!sys || !sys.documents) return;
-        const controlCount = sys.documents.control?.files?.length || 0;
-        const saftCount = sys.documents.saft?.files?.length || 0;
-        const invoiceCount = sys.documents.invoices?.files?.length || 0;
-        const statementCount = sys.documents.statements?.files?.length || 0;
-        const dac7Count = sys.documents.dac7?.files?.length || 0;
-        const total = controlCount + saftCount + invoiceCount + statementCount + dac7Count;
+  function _updateEvidenceCountersAndShow() {
+    const sys = window.UNIFEDSystem;
+    if (!sys?.documents) return;
 
-        const setText = (id, val) => {
-            const el = document.getElementById(id);
-            if (el) el.textContent = val;
-        };
+    // 1. Extração de métricas (Tratamento de nulidades robusto)
+    const ctrl      = sys.documents.control?.files?.length || 0;
+    const saft      = sys.documents.saft?.files?.length || 0;
+    const inv       = sys.documents.invoices?.files?.length || 0;
+    const stmt      = sys.documents.statements?.files?.length || 0;
+    const dac7      = sys.documents.dac7?.files?.length || 0;
+
+    // 2. Cálculo da Verdade Material
+    const totalReal = saft + inv + stmt + dac7;
+
+    // 3. Validação de Integridade (Crucial para o Relatório Pericial)
+    if (totalReal !== ctrl) {
+        console.warn(`[ALERTA FORENSE] Discrepância de Prova: Esperados ${ctrl}, detetados ${totalReal}.`);
+    }
+
+    // 4. Injeção no DOM (Interface)
+    const updateUI = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = val;
+    };
+
+    // Atualiza contadores específicos e sumários de uma só vez
+    const mapping = {
+        'saftCountCompact': saft,
+        'invoiceCountCompact': inv,
+        'statementCountCompact': stmt,
+        'dac7CountCompact': dac7,
+        'summaryTotal': totalReal,
+        'evidenceCountTotal': totalReal
+    };
+
+    Object.entries(mapping).forEach(([id, val]) => updateUI(id, val));
+
+    // Revelar secção apenas se houver dados
+    const section = document.getElementById('pureEvidenceSection');
+    if (section) section.style.display = (totalReal > 0) ? 'block' : 'none';
+}
         setText('controlCountCompact', controlCount);
         setText('saftCountCompact', saftCount);
         setText('invoiceCountCompact', invoiceCount);
