@@ -1014,126 +1014,94 @@ async function submitToOpenTimestamps() {
             await OTS.timestamp(detached);
         } else {
             throw new Error('API OTS incompatível: stamp() e timestamp() ausentes.');
-        }
-
+    // --- LINHA 1017: INÍCIO DO BLOCO DE INTERFACE ---
+    async function initializeFullWithEvidence() {
+        console.log('[UNIFED] A carregar evidências do caso real...');
+        await waitForPureDashboard();
         try {
-            await OTS.upgrade(detached);
-            upgradeStatus = 'BITCOIN_MERKLE_PROOF';
-        } catch (_upgradeErr) {
-            upgradeStatus = 'CALENDAR_ATTESTATION_PENDING_BITCOIN';
-        }
-
-        const otsBytes = detached.serializeToBytes();
-        const otsBlob = new Blob([otsBytes], { type: 'application/octet-stream' });
-        const otsUrl = URL.createObjectURL(otsBlob);
-        const a = document.createElement('a');
-        a.href = otsUrl;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(otsUrl), 5000);
-
-        if (!UNIFEDSystem.forensicMetadata) UNIFEDSystem.forensicMetadata = getForensicMetadata();
-        UNIFEDSystem.forensicMetadata.otsAnchor = {
-            status: upgradeStatus === 'BITCOIN_MERKLE_PROOF' ? 'ANCORADO_BLOCKCHAIN_CONFIRMADO' : 'ANCORADO_CALENDARIO_PENDENTE_BITCOIN',
-            protocol: 'OpenTimestamps (Bitcoin blockchain)',
-            upgradeStatus,
-            anchoredAt: new Date().toISOString(),
-            masterHash,
-            otsFile: filename,
-            calendars: calendarUrls.map(c => c.replace('https://', ''))
-        };
-
-        ForensicLogger.addEntry('OTS_ANCHOR_COMPLETED', {
-            masterHash, otsFile: filename, upgradeStatus, attestationType: upgradeStatus
-        });
-
-        const otsDate = new Date().toISOString();
-        UNIFEDSystem.analysis.evidenceIntegrity.forEach(ev => {
-            if (!ev.sealType || ev.sealType === 'NONE') {
-                ev.sealType = 'OTS';
-                ev.sealStatus = 'BLOCKCHAIN OTS (Nível 1)';
-                ev.sealDate = otsDate;
+            await simulateEvidenceUpload();
+            updateEvidenceCountersAndShow();
+            if (window.UNIFEDSystem && window.UNIFEDSystem.masterHash) {
+                const hashEl = document.getElementById('masterHashValue');
+                if (hashEl) hashEl.textContent = window.UNIFEDSystem.masterHash;
+                if (typeof generateQRCode === 'function') generateQRCode();
             }
-        });
-
-        Swal.fire({
-            title: '🛡️ ANCORAGEM BLOCKCHAIN EFETUADA',
-            text: 'O ficheiro .ots foi gerado e descarregado. Este é o selo de imutabilidade eterna da Bitcoin para este processo.',
-            icon: 'success',
-            confirmButtonColor: '#00e5ff'
-        });
-
-        _showOTSSuccessModal(filename, masterHash, false, upgradeStatus);
-
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = upgradeStatus === 'BITCOIN_MERKLE_PROOF'
-                ? '<i class="fas fa-check-circle"></i> BLOCKCHAIN: CONFIRMADO'
-                : '<i class="fas fa-check-circle"></i> BLOCKCHAIN: CERTIFICADO';
-            btn.style.borderColor = '#f59e0b';
-            btn.style.color = '#f59e0b';
-        }
-
-    } catch (err) {
-        console.info('[UNIFED-OTS] ⚙ Operação em Modo de Segurança Forense — Ancoragem OTS indisponível. Selagem de Nível 1 Ativa.');
-
-        const stubFilename = `PROCESSO_${sessionId}_BLOCKCHAIN_PENDING.ots`;
-        const stubData = JSON.stringify({
-            _type: 'OTS_PENDING_STUB',
-            note: 'Submissão OTS registada localmente. O hash SHA-256 é real e imutável. Re-submeter em ambiente com acesso à internet.',
-            masterHash,
-            submittedAt: new Date().toISOString(),
-            calendars: ['alice.btc.calendar.opentimestamps.org', 'bob.btc.calendar.opentimestamps.org'],
-            protocol: 'OpenTimestamps · Bitcoin blockchain',
-            system: 'UNIFED - PROBATUM v13.5.0-PURE',
-            error: err.message
-        }, null, 2);
-
-        const stubBlob = new Blob([stubData], { type: 'application/json' });
-        const stubUrl = URL.createObjectURL(stubBlob);
-        const aStub = document.createElement('a');
-        aStub.href = stubUrl;
-        aStub.download = stubFilename;
-        document.body.appendChild(aStub);
-        aStub.click();
-        document.body.removeChild(aStub);
-        setTimeout(() => URL.revokeObjectURL(stubUrl), 5000);
-
-        if (!UNIFEDSystem.forensicMetadata) UNIFEDSystem.forensicMetadata = getForensicMetadata();
-        UNIFEDSystem.forensicMetadata.otsAnchor = {
-            status: 'PENDING_STUB_LOCAL',
-            protocol: 'OpenTimestamps (Bitcoin) — erro de ligação',
-            anchoredAt: new Date().toISOString(),
-            masterHash,
-            otsFile: stubFilename,
-            error: err.message
-        };
-
-        ForensicLogger.addEntry('OTS_ANCHOR_ERROR', {
-            masterHash, error: err.message,
-            note: 'Hash real. Stub local gerado. Re-submeter quando disponível ligação ao calendário OTS.'
-        });
-
-        Swal.fire({
-            title: '⏳ SUBMISSÃO PENDENTE',
-            text: `O nó OTS não estava acessível (CORS/rede). O ficheiro stub foi descarregado com o hash real. Re-submeta em produção para obter a prova Bitcoin completa. Erro: ${err.message}`,
-            icon: 'warning',
-            confirmButtonColor: '#00e5ff'
-        });
-
-        _showOTSSuccessModal(stubFilename, masterHash, true, 'PENDING_STUB');
-
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-clock"></i> OTS: PENDENTE';
-            btn.style.borderColor = '#f59e0b';
-            btn.style.color = '#f59e0b';
+            showClientIdentificationBlock();
+            console.log('[UNIFED] ✅ Evidências carregadas e secção revelada.');
+        } catch (err) {
+            console.error('[UNIFED] Falha ao carregar evidências:', err);
         }
     }
-}
 
+    function setupRealCaseButton() {
+        let targetButton = document.getElementById('demoModeBtn');
+        if (!targetButton) {
+            const buttons = document.querySelectorAll('button, .btn, [role="button"]');
+            for (let btn of buttons) {
+                if (btn.textContent.trim() === 'CASO REAL ANONIMIZADO') {
+                    targetButton = btn;
+                    break;
+                }
+            }
+        }
+        if (!targetButton) {
+            console.warn('[UNIFED] Botão "CASO REAL ANONIMIZADO" não encontrado. Listener genérico activado.');
+            document.body.addEventListener('click', async function(e) {
+                const el = e.target.closest('button, .btn, [role="button"]');
+                if (el && el.textContent.includes('CASO REAL ANONIMIZADO')) {
+                    e.preventDefault();
+                    if (typeof window._activatePurePanel === 'function') {
+                        window._activatePurePanel();
+                    }
+                    await waitForPureDashboard();
+                    await new Promise(r => setTimeout(r, 100));
+                    window.UNIFED_INTERNAL.syncMetrics();
+                    initializeFullWithEvidence();
+                }
+            });
+            return;
+        }
+
+        const newBtn = targetButton.cloneNode(true);
+        targetButton.parentNode.replaceChild(newBtn, targetButton);
+        newBtn.addEventListener('click', async function(e) {
+            e.preventDefault();
+            if (typeof window._activatePurePanel === 'function') {
+                window._activatePurePanel();
+            }
+            await waitForPureDashboard();
+            await new Promise(r => setTimeout(r, 100));
+            window.UNIFED_INTERNAL.syncMetrics();
+            initializeFullWithEvidence();
+        });
+        console.log('[UNIFED] Listener associado ao botão "CASO REAL ANONIMIZADO".');
+    }
+
+    function generateQRCode() {
+        const container = document.getElementById('qrcodeContainer');
+        if (!container) return;
+        container.innerHTML = '';
+        const hashFull = window.UNIFEDSystem?.masterHash || 'HASH_INDISPONIVEL';
+        const sessionShort = window.UNIFEDSystem?.sessionId ? window.UNIFEDSystem.sessionId.substring(0, 16) : 'N/A';
+        const qrData = `UNIFED|${sessionShort}|${hashFull}`;
+        if (typeof QRCode !== 'undefined') {
+            new QRCode(container, {
+                text: qrData,
+                width: 75,
+                height: 75,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.L
+            });
+        }
+    }
+
+    // --- INICIALIZAÇÃO FINAL ---
+    setupRealCaseButton();
+    console.log('[UNIFED] Camada 5: Sistema de Auditoria Pronto.');
+
+})(); // FECHO DA IIFE (LINHA 1135)
+        
 function downloadBlob(blob, filename, mimeType) {
     const blobObj = (blob instanceof Blob) ? blob : new Blob([blob], { type: mimeType });
     const url = URL.createObjectURL(blobObj);
