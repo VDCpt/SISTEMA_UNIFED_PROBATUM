@@ -305,7 +305,7 @@ window.UNIFED_INTERNAL.syncMetrics = function() {
                         <th style="text-align:left; padding:10px;">FONTE DE PROVA</th>
                         <th style="text-align:right; padding:10px;">VALOR</th>
                         <th style="text-align:right; padding:10px; color:#EF4444;">DISCREPÂNCIA</th>
-                    </table>
+                    </tr>
                 </thead>
                 <tbody>
                     <tr><td style="padding:10px;">📄 SAF-T PT (Faturação)</td><td style="padding:10px; text-align:right;">${fmt(t.saftBruto)}</td><td style="padding:10px; text-align:right;">-${fmt(deltaSaft)}</td></tr>
@@ -830,11 +830,9 @@ window.UNIFED_INTERNAL.syncMetrics = function() {
         });
     }
 
-   // [L833] Início da Secção de Contadores e Gestão de Estado de Evidências
     function _updateEvidenceCountersAndShow() {
         const sys = window.UNIFEDSystem;
         if (!sys || !sys.documents) return;
-        
         const controlCount = sys.documents.control?.files?.length || 0;
         const saftCount = sys.documents.saft?.files?.length || 0;
         const invoiceCount = sys.documents.invoices?.files?.length || 0;
@@ -846,7 +844,6 @@ window.UNIFED_INTERNAL.syncMetrics = function() {
             const el = document.getElementById(id);
             if (el) el.textContent = val;
         };
-
         setText('controlCountCompact', controlCount);
         setText('saftCountCompact', saftCount);
         setText('invoiceCountCompact', invoiceCount);
@@ -858,13 +855,11 @@ window.UNIFED_INTERNAL.syncMetrics = function() {
         setText('summaryStatements', statementCount);
         setText('summaryDac7', dac7Count);
         setText('summaryTotal', total);
-
         const evidenceCountTotal = document.getElementById('evidenceCountTotal');
         if (evidenceCountTotal) evidenceCountTotal.textContent = total;
 
         const evidenceSection = document.getElementById('pureEvidenceSection');
         if (evidenceSection) evidenceSection.style.display = 'block';
-
         const counters = ['controlCountCompact', 'saftCountCompact', 'invoiceCountCompact', 'statementCountCompact', 'dac7CountCompact'];
         counters.forEach(id => {
             const el = document.getElementById(id);
@@ -873,7 +868,6 @@ window.UNIFED_INTERNAL.syncMetrics = function() {
         console.log('[UNIFED] Contadores de evidências atualizados e secção revelada.');
     }
 
-    // Exposição de Métodos Internos para a Camada Global
     window.UNIFED_INTERNAL.forcePlatformReadOnly = _forcePlatformReadOnly;
     window.UNIFED_INTERNAL.removeZeroDac7Kpis = _removeZeroDac7Kpis;
     window.UNIFED_INTERNAL.simulateEvidenceUpload = _simulateEvidenceUpload;
@@ -881,13 +875,11 @@ window.UNIFED_INTERNAL.syncMetrics = function() {
     console.log('[UNIFED] Camada 5: OK.');
 })();
 
-// Orquestração de UI e Inicialização do Caso Real
 (function() {
     'use strict';
     if (!window.UNIFED_INTERNAL) return;
-    
-    const { 
-        data, fmt, set, syncMetrics, renderMatrix,
+    const { data, fmt, set, syncMetrics, renderMatrix } = window.UNIFED_INTERNAL;
+    const {
         injectAuxiliaryBoxesCSS, hideDiscrepancyChart, hideNexusForecast,
         injectMacroCard, updateAuxiliaryUI, forcePlatformReadOnly,
         removeZeroDac7Kpis, simulateEvidenceUpload, updateEvidenceCountersAndShow
@@ -900,12 +892,14 @@ window.UNIFED_INTERNAL.syncMetrics = function() {
             if (sidebarHeader) {
                 sidebarHeader.id = 'clientIdentificationBlock';
                 block = sidebarHeader;
-                console.log('[UNIFED] ID clientIdentificationBlock atribuído dinamicamente.');
+                console.log('[UNIFED] ID clientIdentificationBlock atribuído dinamicamente ao .sidebar-header-fixed');
             } else {
+                console.warn('[UNIFED] Elemento .sidebar-header-fixed não encontrado. O bloco de identificação não será exibido.');
                 return;
             }
         }
         block.style.display = 'flex';
+        console.log('[UNIFED] Bloco de identificação do sujeito passivo revelado.');
     }
 
     function waitForPureDashboard() {
@@ -925,19 +919,40 @@ window.UNIFED_INTERNAL.syncMetrics = function() {
         });
     }
 
+    function initializeCoreDashboard() {
+        waitForPureDashboard().then(() => {
+            setTimeout(() => {
+                if (typeof syncMetrics === 'function') syncMetrics();
+                if (typeof renderMatrix === 'function') renderMatrix();
+                if (typeof injectMacroCard === 'function') injectMacroCard();
+                if (typeof injectAuxiliaryBoxesCSS === 'function') injectAuxiliaryBoxesCSS();
+                if (typeof hideDiscrepancyChart === 'function') hideDiscrepancyChart();
+                if (typeof hideNexusForecast === 'function') hideNexusForecast();
+                if (typeof forcePlatformReadOnly === 'function') forcePlatformReadOnly();
+                if (typeof removeZeroDac7Kpis === 'function') removeZeroDac7Kpis();
+                
+                if (document.getElementById('pureDashboard')) {
+                    if (typeof updateAuxiliaryUI === 'function') updateAuxiliaryUI();
+                } else {
+                    console.info('[UNIFED] Aguardando renderização do painel para sincronização auxiliar.');
+                }
+                
+                console.log('[UNIFED] Core dashboard inicializado com sucesso após injeção do painel.');
+            }, 100);
+        }).catch(err => console.warn('[UNIFED] Erro ao aguardar #pureDashboard', err));
+    }
+
     async function initializeFullWithEvidence() {
         console.log('[UNIFED] A carregar evidências do caso real...');
         await waitForPureDashboard();
         try {
             await simulateEvidenceUpload();
             updateEvidenceCountersAndShow();
-            
             if (window.UNIFEDSystem && window.UNIFEDSystem.masterHash) {
                 const hashEl = document.getElementById('masterHashValue');
                 if (hashEl) hashEl.textContent = window.UNIFEDSystem.masterHash;
                 if (typeof generateQRCode === 'function') generateQRCode();
             }
-            
             showClientIdentificationBlock();
             console.log('[UNIFED] ✅ Evidências carregadas e secção revelada.');
         } catch (err) {
@@ -945,30 +960,93 @@ window.UNIFED_INTERNAL.syncMetrics = function() {
         }
     }
 
-    // [L1040] Bloco de Ativação do Painel com Patch de Desbloqueio Forense
-    var _activatePurePanel = function() {
-        var container = document.getElementById('pureDashboard');
-        if (!container) return;
-        
-        container.innerHTML = _panelHTML;
-
-        /* ── RETIFICAÇÃO CIRÚRGICA: DESBLOQUEIO (PATCH R-I08) ── */
-        if (window.UNIFEDEventBus) {
-            window.UNIFEDEventBus.emit('UNIFED_DOM_READY', { 
-                timestamp: Date.now(), 
-                status: 'INJECTED_SURGICAL_OK' 
-            });
-            window.dispatchEvent(new CustomEvent('UNIFED_DOM_READY'));
-            console.info('[UNIFED] ✅ Sinal UNIFED_DOM_READY emitido para desbloqueio de zeros.');
+    function setupRealCaseButton() {
+        let targetButton = document.getElementById('demoModeBtn');
+        if (!targetButton) {
+            const buttons = document.querySelectorAll('button, .btn, [role="button"]');
+            for (let btn of buttons) {
+                if (btn.textContent.trim() === 'CASO REAL ANONIMIZADO') {
+                    targetButton = btn;
+                    break;
+                }
+            }
         }
-        /* ───────────────────────────────────────────────────── */
+        if (!targetButton) {
+            console.warn('[UNIFED] Botão "CASO REAL ANONIMIZADO" não encontrado. Listener genérico activado.');
+            document.body.addEventListener('click', async function(e) {
+                const el = e.target.closest('button, .btn, [role="button"]');
+                if (el && el.textContent.includes('CASO REAL ANONIMIZADO')) {
+                    e.preventDefault();
+                    if (typeof window._activatePurePanel === 'function') {
+                        window._activatePurePanel();
+                    }
+                    await waitForPureDashboard();
+                    await new Promise(r => setTimeout(r, 100));
+                    window.UNIFED_INTERNAL.syncMetrics();
+                    initializeFullWithEvidence();
+                }
+            });
+            return;
+        }
 
-        if (window._translatePurePanel) window._translatePurePanel();
-    };
+        const newBtn = targetButton.cloneNode(true);
+        targetButton.parentNode.replaceChild(newBtn, targetButton);
+        newBtn.addEventListener('click', async function(e) {
+            e.preventDefault();
+            if (typeof window._activatePurePanel === 'function') {
+                window._activatePurePanel();
+            }
+            await waitForPureDashboard();
+            await new Promise(r => setTimeout(r, 100));
+            window.UNIFED_INTERNAL.syncMetrics();
+            initializeFullWithEvidence();
+        });
+        console.log('[UNIFED] Listener associado ao botão "CASO REAL ANONIMIZADO".');
+    }
 
-    window._activatePurePanel = _activatePurePanel;
+    function generateQRCode() {
+        const container = document.getElementById('qrcodeContainer');
+        if (!container) return;
+        container.innerHTML = '';
+        const hashFull = window.UNIFEDSystem?.masterHash || 'HASH_INDISPONIVEL';
+        const sessionShort = window.UNIFEDSystem?.sessionId ? window.UNIFEDSystem.sessionId.substring(0, 16) : 'N/A';
+        const qrData = `UNIFED|${sessionShort}|${hashFull}`;
+        if (typeof QRCode !== 'undefined') {
+            new QRCode(container, {
+                text: qrData,
+                width: 75,
+                height: 75,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.L
+            });
+        }
+        container.setAttribute('data-tooltip', 'Clique para verificar a cadeia de custódia completa');
+    }
+    window.generateQRCode = generateQRCode;
 
-    // [L1065] Fim da secção consolidada.
+    function startApplication() {
+        return new Promise((resolve) => {
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => resolve());
+            } else {
+                resolve();
+            }
+        }).then(() => {
+            initializeCoreDashboard();
+            setupRealCaseButton();
+            console.log('[UNIFED] ✅ Aplicação pronta. Clique em "CASO REAL ANONIMIZADO" para carregar as evidências.');
+        }).catch(err => {
+            console.error('[UNIFED] Erro na inicialização:', err);
+        });
+    }
+
+    startApplication();
+})();
+
+// ============================================================================
+// PATCH A-10 (v13.11.16-PURE) — LEGAL FRAMEWORK, NARRATIVE LAYER & EXPORT
+// ============================================================================
 // Adiciona ao módulo script_injection:
 //   1. LEGAL_FRAMEWORK  — textos bilingues para os IDs do painel PROBATUM.
 //   2. updateLegalAnalysis()  — popula pure-smoking-gun-*, pure-parecer-tecnico,
@@ -1127,59 +1205,6 @@ window.UNIFED_INTERNAL.syncMetrics = function() {
     window.addEventListener('languageChanged', function(e) {
         _onLangChanged(e && e.detail ? e.detail : {});
     });
-// ── 1. DEFINIÇÃO DA FUNÇÃO (Colar antes ou depois de _onEvidenceLoaded) ──────
-function generateQRCode() {
-    const container = document.getElementById('qrcodeContainer');
-    if (!container) {
-        console.warn('[UNIFED-QR] Contentor #qrcodeContainer não detetado no DOM.');
-        return;
-    }
-    
-    container.innerHTML = '';
-    // Recuperação de metadados da sessão para o QR Data
-    const sys = window.UNIFEDSystem;
-    const hashFull = sys?.masterHash || 'HASH_INDISPONIVEL';
-    const sessionShort = sys?.sessionId ? sys.sessionId.substring(0, 16) : 'N/A';
-    
-    // String de Auditoria Forense
-    const qrData = `UNIFED|${sessionShort}|${hashFull}`;
-
-    if (typeof QRCode !== 'undefined') {
-        new QRCode(container, {
-            text: qrData,
-            width: 75,
-            height: 75,
-            colorDark: "#000000",
-            colorLight: "#ffffff",
-            correctLevel: QRCode.CorrectLevel.M // Alterado para M para maior resiliência em impressão
-        });
-        console.info('[UNIFED-QR] ✅ Selo QR gerado para a Sessão: ' + sessionShort);
-    } else {
-        console.error('[UNIFED-QR] Erro: Biblioteca QRCode.js não carregada.');
-    }
-}
-
-// ── 2. INVOCAÇÃO CIRÚRGICA (Modificar a sua função existente) ──────
-function _onEvidenceLoaded(data) {
-    var _logEl = document.getElementById('pure-forensic-log');
-    if (!_logEl) return;
-
-    var _ts    = new Date().toLocaleTimeString('pt-PT');
-    var _count = (data && data.count) ? data.count : '?';
-    var _hash  = (data && data.hash)  ? data.hash.substring(0, 16) + '...' : 'N/A';
-
-    _logEl.innerHTML = 
-        '<span class="log-system">[SYSTEM] UNIFED PROBATUM v13.11.16-PURE — ONLINE</span>&#10;' +
-        '<span class="log-auth">[AUTH] CREDENCIAIS PERICIAIS VALIDADAS.</span>&#10;' +
-        '<span class="log-info">[' + _ts + '] CASO REAL ANONIMIZADO CARREGADO.</span>&#10;' +
-        '<span class="log-info">[EVIDÊNCIAS] ' + _count + ' registos processados.</span>&#10;' +
-        '<span class="log-info">[HASH-PREFIX] ' + _hash + '</span>&#10;' +
-        '<span class="log-auth">[STATUS] INTEGRIDADE SHA-256: VERIFICADA.</span>';
-
-    // [INJECÇÃO OBRIGATÓRIA]: O QR Code só pode ser gerado aqui, 
-    // após a confirmação da integridade SHA-256 no log.
-    generateQRCode(); 
-}
 
     // ── 5. Subscrição 'UNIFED_EVIDENCE_LOADED' → atualiza console forense ──────
     function _onEvidenceLoaded(data) {
@@ -1197,6 +1222,11 @@ function _onEvidenceLoaded(data) {
             '<span class="log-info">[EVIDÊNCIAS] ' + _count + ' registos processados.</span>&#10;' +
             '<span class="log-info">[HASH-PREFIX] ' + _hash + '</span>&#10;' +
             '<span class="log-auth">[STATUS] INTEGRIDADE SHA-256: VERIFICADA.</span>';
+        
+        // Geração do QR Code após confirmação de integridade
+        if (typeof window.generateQRCode === 'function') {
+            window.generateQRCode();
+        }
     }
 
     if (window.UNIFEDEventBus) {
