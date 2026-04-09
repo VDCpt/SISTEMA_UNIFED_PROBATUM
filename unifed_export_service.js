@@ -237,31 +237,38 @@ window.UNIFEDExportService = (function _UNIFEDExportServiceIIFE() {
 // Estas linhas devem ser adicionadas ao final das definições originais.
 // O adaptador abaixo garante retrocompatibilidade durante a transição.
 (function _installCompatAdapters() {
-    var _svc = window.UNIFEDExportService.getInstance();
+    // Pequena pausa para permitir que os renderers sejam registados primeiro
+    // Caso contrário, os adaptadores podem ser instalados antes do registo,
+    // causando o aviso "window.exportPDF já é um adaptador".
+    setTimeout(function() {
+        var _svc = window.UNIFEDExportService.getInstance();
 
-    // Substituir window.exportPDF pelo adaptador de delegação
-    window.exportPDF = async function _exportPDFAdapter() {
-        try {
-            await _svc.export('pdf');
-        } catch (err) {
-            console.error('[ExportService·Adapter] exportPDF falhou:', err);
+        // Verificar se já existe um renderer para 'pdf' antes de substituir
+        var status = _svc.status();
+        if (status.registeredTypes.indexOf('pdf') === -1) {
+            // Substituir window.exportPDF pelo adaptador de delegação
+            window.exportPDF = async function _exportPDFAdapter() {
+                try {
+                    await _svc.export('pdf');
+                } catch (err) {
+                    console.error('[ExportService·Adapter] exportPDF falhou:', err);
+                }
+            };
         }
-    };
 
-    // Substituir window.exportDOCX pelo adaptador de delegação
-    window.exportDOCX = async function _exportDOCXAdapter(xmlInject) {
-        // xmlInject é passado pelo nexus.js — preservar para compatibilidade
-        // O renderer deve inspeccionar window.UNIFEDSystem directamente
-        // (o argumento xmlInject é descontinuado nesta arquitectura).
-        if (xmlInject !== undefined) {
-            console.warn('[ExportService·Adapter] Argumento xmlInject ignorado — usar UNIFEDSystem.xmlInject.');
+        if (status.registeredTypes.indexOf('docx') === -1) {
+            window.exportDOCX = async function _exportDOCXAdapter(xmlInject) {
+                if (xmlInject !== undefined) {
+                    console.warn('[ExportService·Adapter] Argumento xmlInject ignorado — usar UNIFEDSystem.xmlInject.');
+                }
+                try {
+                    await _svc.export('docx');
+                } catch (err) {
+                    console.error('[ExportService·Adapter] exportDOCX falhou:', err);
+                }
+            };
         }
-        try {
-            await _svc.export('docx');
-        } catch (err) {
-            console.error('[ExportService·Adapter] exportDOCX falhou:', err);
-        }
-    };
 
-    console.log('[ExportService] Adaptadores de compatibilidade instalados (window.exportPDF, window.exportDOCX).');
+        console.log('[ExportService] Adaptadores de compatibilidade instalados (window.exportPDF, window.exportDOCX).');
+    }, 100);
 })();
