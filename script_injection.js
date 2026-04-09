@@ -65,65 +65,82 @@
         },
         atf: {
             zScore: 2.45,
-            confianca: "99.2%",
-            periodo: "Q4 2024",
-            anomalias: 4,
-            version: "v13.11.16-PURE",
-            score: 40,
-            trend: "DESCENDENTE",
-            outliers: 0
-        },
-        macro_analysis: {
-            sector_drivers: 38000,
-            operational_years: 7,
-            avg_monthly_discrepancy: 546.24,
-            estimated_systemic_gap: 1743598080.00,
-            confidence_level: "High (based on verified algorithmic pattern)",
-            legal_implication: "Potential systemic tax erosion under Art. 119.º RGIT (Iteration)",
-            methodology: "Extrapolação Estatística de Baixa Variância · ISO/IEC 27037:2012",
-            status: "INDICATIVO_MACRO",
-            disclaimer: "Os valores de impacto sistémico constituem contexto macroeconómico e não prova direta de ilícito alheio, nos termos do Art. 128.º do CPP."
-        }
-    });
+           /**
+ * UNIFED - PROBATUM · CASO REAL ANONIMIZADO v13.11.16-PURE (RECONSTITUÍDO)
+ * ============================================================================
+ * Missão: Injeção Forense e Reconstituição da Verdade Material
+ * Patch R-I09: Correção de Escopo Atómico e Sincronização de Sockets
+ * ============================================================================
+ */
 
-    // 2. ESCUDO SILENCIOSO PARA CORS (TSA / FREETSA FALLBACK)
-    (function _installCORSSilentShield() {
-        const targetUrl = 'freetsa.org';
-        const originalFetch = window.fetch;
-        if (typeof originalFetch === 'function') {
-            window.fetch = function(input, init) {
-                const url = typeof input === 'string' ? input : (input && input.url);
-                if (url && url.indexOf(targetUrl) !== -1) {
-                    return originalFetch.apply(this, arguments).catch(function(err) {
-                        console.warn('[UNIFED] ⚙ Modo Standalone Ativo: Selagem TSA externa indisponível. Integridade assegurada por Assinatura Local SHA-256 (Nível 1).');
-                        throw err;
-                    });
-                }
-                return originalFetch.apply(this, arguments);
-            };
+(function _pureForensicInjection() {
+    'use strict';
+
+    function syncMetrics() {
+        const dashboard = document.getElementById('pureDashboard');
+        if (!dashboard) return;
+
+        // [CORREÇÃO] O mapeamento deve residir dentro da função para acesso dinâmico
+        const sys = window.UNIFEDSystem || {};
+        const data = sys.analysis || {};
+        const counts = sys.counts || { evidence: 0, logs: 0 };
+
+        const mapping = {
+            'pure-subject-name':        data.sujeitoPassivo || 'N/A',
+            'pure-subject-nif':         data.nif || '000000000',
+            'pure-total-bruto':         window.formatCurrency ? window.formatCurrency(data.totalBruto) : '€ 0,00',
+            'pure-total-comissao':      window.formatCurrency ? window.formatCurrency(data.comissaoCalculada) : '€ 0,00',
+            'pure-counts-evidence':     counts.evidence,
+            'pure-counts-logs':         counts.logs,
+            'pure-master-hash-display': sys.masterHash || 'PENDENTE',
+            'pure-session-id':          sys.sessionId || 'MMLADX8Q'
+        };
+
+        // Aplicação atómica nos sockets DOM
+        Object.keys(mapping).forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                if (el.tagName === 'INPUT') el.value = mapping[id];
+                else el.textContent = mapping[id];
+            }
+        });
+
+        console.log('[UNIFED-INJECTION] Sincronização métrica concluída.');
+    }
+
+    function _init() {
+        const wrapper = document.getElementById('pureDashboardWrapper');
+        if (wrapper) {
+            wrapper.classList.add('unifed-ready');
+            wrapper.style.display = 'block';
+            wrapper.style.opacity = '1';
         }
-        window.addEventListener('unhandledrejection', function(event) {
-            if (event.reason && event.reason.message && event.reason.message.indexOf('freetsa') !== -1) {
-                console.warn('[UNIFED] ⚙ Modo Standalone Ativo: Selagem TSA externa indisponível (promise).');
-                event.preventDefault();
-            }
-            if (event.reason && event.reason.message && event.reason.message.indexOf('api.unifed.com') !== -1) {
-                console.warn('[UNIFED] ⚙ Modo Standalone Ativo: Proxy IA indisponível (DNS). Fallback estático ativo.');
-                event.preventDefault();
-            }
-        });
-        window.addEventListener('error', function(event) {
-            if (event.message && event.message.indexOf('freetsa') !== -1) {
-                console.warn('[UNIFED] ⚙ Modo Standalone Ativo: Selagem TSA externa indisponível (erro global).');
-                event.preventDefault();
-                return true;
-            }
-            if (event.message && event.message.indexOf('api.unifed.com') !== -1) {
-                console.warn('[UNIFED] ⚙ Modo Standalone Ativo: Proxy IA indisponível (DNS). Fallback estático ativo.');
-                event.preventDefault();
-                return true;
-            }
-        });
+        syncMetrics();
+    }
+
+    if (window.UNIFEDEventBus) {
+        window.UNIFEDEventBus.waitFor('UNIFED_CORE_READY', 10000).then(_init);
+    } else {
+        window.addEventListener('load', _init);
+    }
+
+    window._syncPureMetrics = syncMetrics;
+})();
+
+(function _forensicLoaderGuard() {
+    const loader = document.getElementById('forensic-loader');
+    const dismiss = () => {
+        if (loader) {
+            loader.style.opacity = '0';
+            setTimeout(() => { loader.style.display = 'none'; }, 500);
+        }
+    };
+    if (window.UNIFEDEventBus) {
+        window.UNIFEDEventBus.waitFor('UNIFED_CORE_READY', 12000).then(dismiss).catch(dismiss);
+    } else {
+        setTimeout(dismiss, 5000);
+    }
+})();
         console.log('[UNIFED] Escudo CORS silencioso instalado para FreeTSA e api.unifed.com.');
     })();
 
