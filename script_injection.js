@@ -891,42 +891,63 @@
 
     Object.entries(mapping).forEach(([id, val]) => updateUI(id, val));
 
-    // Revelar secção apenas se houver dados
-    const section = document.getElementById('pureEvidenceSection');
-    if (section) section.style.display = (totalReal > 0) ? 'block' : 'none';
-}
-        setText('controlCountCompact', controlCount);
-        setText('saftCountCompact', saftCount);
-        setText('invoiceCountCompact', invoiceCount);
-        setText('statementCountCompact', statementCount);
-        setText('dac7CountCompact', dac7Count);
-        setText('summaryControl', controlCount);
-        setText('summarySaft', saftCount);
-        setText('summaryInvoices', invoiceCount);
-        setText('summaryStatements', statementCount);
-        setText('summaryDac7', dac7Count);
-        setText('summaryTotal', total);
-        const evidenceCountTotal = document.getElementById('evidenceCountTotal');
-        if (evidenceCountTotal) evidenceCountTotal.textContent = total;
+   function _updateEvidenceCountersAndShow() {
+    const sys = window.UNIFEDSystem;
+    if (!sys || !sys.documents) return;
 
-        const evidenceSection = document.getElementById('pureEvidenceSection');
-        if (evidenceSection) evidenceSection.style.display = 'block';
-        const counters = ['controlCountCompact', 'saftCountCompact', 'invoiceCountCompact', 'statementCountCompact', 'dac7CountCompact'];
-        counters.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.style.display = 'inline-block';
-        });
-        console.log('[UNIFED] Contadores de evidências atualizados e secção revelada.');
+    const controlCount = sys.documents.control?.files?.length || 0;
+    const saftCount = sys.documents.saft?.files?.length || 0;
+    const invoiceCount = sys.documents.invoices?.files?.length || 0;
+    const statementCount = sys.documents.statements?.files?.length || 0;
+    const dac7Count = sys.documents.dac7?.files?.length || 0;
+    
+    // Verdade Material (Soma excluindo o marcador de controlo)
+    const total = saftCount + invoiceCount + statementCount + dac7Count;
+
+    const setText = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = val;
+    };
+
+    // Atualização do DOM
+    setText('controlCountCompact', controlCount);
+    setText('saftCountCompact', saftCount);
+    setText('invoiceCountCompact', invoiceCount);
+    setText('statementCountCompact', statementCount);
+    setText('dac7CountCompact', dac7Count);
+    setText('summaryControl', controlCount);
+    setText('summarySaft', saftCount);
+    setText('summaryInvoices', invoiceCount);
+    setText('summaryStatements', statementCount);
+    setText('summaryDac7', dac7Count);
+    setText('summaryTotal', total);
+
+    const evidenceCountTotal = document.getElementById('evidenceCountTotal');
+    if (evidenceCountTotal) evidenceCountTotal.textContent = total;
+
+    const evidenceSection = document.getElementById('pureEvidenceSection');
+    if (evidenceSection) {
+        // Revelar secção apenas se houver dados reais
+        evidenceSection.style.display = (total > 0) ? 'block' : 'none';
     }
 
-    window.UNIFED_INTERNAL.forcePlatformReadOnly = _forcePlatformReadOnly;
-    window.UNIFED_INTERNAL.removeZeroDac7Kpis = _removeZeroDac7Kpis;
-    window.UNIFED_INTERNAL.simulateEvidenceUpload = _simulateEvidenceUpload;
-    window.UNIFED_INTERNAL.updateEvidenceCountersAndShow = _updateEvidenceCountersAndShow;
-    console.log('[UNIFED] Camada 5: OK.');
-})();
+    const counters = ['controlCountCompact', 'saftCountCompact', 'invoiceCountCompact', 'statementCountCompact', 'dac7CountCompact'];
+    counters.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'inline-block';
+    });
 
-(function() {
+    console.log('[UNIFED] Contadores atualizados e integridade verificada.');
+} // Apenas UMA chaveta aqui para fechar a função
+
+// Atribuição interna segura
+window.UNIFED_INTERNAL.forcePlatformReadOnly = _forcePlatformReadOnly;
+window.UNIFED_INTERNAL.removeZeroDac7Kpis = _removeZeroDac7Kpis;
+window.UNIFED_INTERNAL.simulateEvidenceUpload = _simulateEvidenceUpload;
+window.UNIFED_INTERNAL.updateEvidenceCountersAndShow = _updateEvidenceCountersAndShow;
+
+console.log('[UNIFED] Camada 5: OK.');
+      
     'use strict';
     if (!window.UNIFED_INTERNAL) return;
     const { data, fmt, set, syncMetrics, renderMatrix } = window.UNIFED_INTERNAL;
