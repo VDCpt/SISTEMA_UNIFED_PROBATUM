@@ -76,6 +76,15 @@
 (function _pureForensicInjection() {
     'use strict';
 
+    // 1. Utilitários de Formatação e Acesso
+    const _fmt = (v) => new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(v);
+    
+    const _set = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) { el.textContent = val; return true; }
+        return false;
+    };
+
     function syncMetrics() {
         const dashboard = document.getElementById('pureDashboard');
         if (!dashboard) return;
@@ -87,10 +96,10 @@
         const mapping = {
             'pure-subject-name':        data.sujeitoPassivo || 'N/A',
             'pure-subject-nif':         data.nif || '000000000',
-            'pure-total-bruto':         window.formatCurrency ? window.formatCurrency(data.totalBruto) : '€ 0,00',
-            'pure-total-comissao':      window.formatCurrency ? window.formatCurrency(data.comissaoCalculada) : '€ 0,00',
-            'pure-counts-evidence':     counts.evidence,
-            'pure-counts-logs':         counts.logs,
+            'pure-total-bruto':         _fmt(data.totalBruto || 0),
+            'pure-total-comissao':      _fmt(data.comissaoCalculada || 0),
+            'pure-counts-evidence':     counts.evidence || 0,
+            'pure-counts-logs':         counts.logs || 0,
             'pure-master-hash-display': sys.masterHash || 'PENDENTE',
             'pure-session-id':          sys.sessionId || 'MMLADX8Q'
         };
@@ -102,7 +111,6 @@
                 else el.textContent = mapping[id];
             }
         });
-
         console.log('[UNIFED-INJECTION] Sincronização métrica concluída.');
     }
 
@@ -116,13 +124,20 @@
         syncMetrics();
     }
 
+    // 2. Inicialização e Eventos
     if (window.UNIFEDEventBus) {
         window.UNIFEDEventBus.waitFor('UNIFED_CORE_READY', 10000).then(_init);
     } else {
         window.addEventListener('load', _init);
     }
 
+    // 3. Exposição Controlada para Camadas Externas (Nexus/Triada)
+    window.UNIFED_INTERNAL = window.UNIFED_INTERNAL || {};
+    window.UNIFED_INTERNAL.fmt = _fmt;
+    window.UNIFED_INTERNAL.set = _set;
     window._syncPureMetrics = syncMetrics;
+
+    console.log('[UNIFED] Injeção e Camada 1: OK.');
 })();
 
 (function _forensicLoaderGuard() {
@@ -139,25 +154,7 @@
         setTimeout(dismiss, 5000);
     }
 })();
-
-console.log('[UNIFED] Escudo CORS silencioso instalado para FreeTSA e api.unifed.com.');
-    
-    const _fmt = (v) => new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(v);
-    
-    const _set = (id, val) => {
-        const el = document.getElementById(id);
-        if (el) { el.textContent = val; return true; }
-        return false;
-    };
-
-    window.UNIFED_INTERNAL = window.UNIFED_INTERNAL || {};
-    window.UNIFED_INTERNAL.data = _PDF_CASE;
-    window.UNIFED_INTERNAL.fmt = _fmt;
-    window.UNIFED_INTERNAL.set = _set;
-
-    console.log('[UNIFED] Camada 1: OK.');
-})();
-
+            
 (function() {
     'use strict';
     if (!window.UNIFED_INTERNAL) return;
