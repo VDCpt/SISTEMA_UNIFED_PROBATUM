@@ -29,9 +29,25 @@
 (function() {
     'use strict';
 
-    // 1. DATASET MESTRE (OBJETO IMUTÁVEL) — VALORES REAIS ORIGINAIS + MACRO + COUNTS
-    const _PDF_CASE = Object.freeze({
-        sessionId:  "UNIFED-MNGFN3C0-X57MO",
+    /**
+     * FUNÇÃO DE INTEGRIDADE: DEEP FREEZE
+     * Garante que sub-objetos (client, counts, totals) não sejam alterados em memória.
+     */
+    const deepFreeze = (obj) => {
+        Object.keys(obj).forEach(prop => {
+            if (typeof obj[prop] === 'object' && obj[prop] !== null && !Object.isFrozen(obj[prop])) {
+                deepFreeze(obj[prop]);
+            }
+        });
+        return Object.freeze(obj);
+    };
+
+    /**
+     * DATASET MESTRE: UNIFED - PROBATUM
+     * Nota: O campo 'ctrl' foi corrigido para 15 para alinhar com o somatório real dos artefactos.
+     */
+    const _PDF_CASE = deepFreeze({
+        sessionId: "UNIFED-MNGFN3C0-X57MO",
         masterHash: "a3f8c9e2d5b6a7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1",
         client: { 
             name: "Real Demo - Unipessoal, Lda", 
@@ -39,39 +55,45 @@
             platform: "Plataforma A" 
         },
         counts: {
-            ctrl: 12,
+            ctrl: 15, // Corrigido: (saft:4 + fat:8 + ext:2 + dac7:1)
             saft: 4,
             fat: 8,
             ext: 2,
             dac7: 1
         },
         totals: {
-            ganhos:           10157.73,
-            ganhosLiquidos:    7709.84,
-            saftBruto:         8227.97,
-            saftIliquido:      7761.67,
-            saftIva:            466.30,
-            despesas:          2447.89,
-            faturaPlataforma:   262.94,
-            dac7TotalPeriodo:  7755.16,
-            iva6Omitido:        131.10,
-            iva23Omitido:       502.54,
-            asfixiaFinanceira:  493.68,
-            totalNaoSujeitos:   451.15,
-            gorjetas:           46.00,
-            portagens:           0.15,
-            campanhas:         405.00,
-            cancelamentos:      58.10
+            ganhos: 10157.73,
+            ganhosLiquidos: 7709.84,
+            saftBruto: 8227.97,
+            saftIliquido: 7761.67,
+            saftIva: 466.30,
+            despesas: 2447.89,
+            faturaPlataforma: 262.94,
+            dac7TotalPeriodo: 7755.16,
+            iva6Omitido: 131.10,
+            iva23Omitido: 502.54,
+            asfixiaFinanceira: 493.68,
+            totalNaoSujeitos: 451.15,
+            gorjetas: 46.00,
+            portagens: 0.15,
+            campanhas: 405.00,
+            cancelamentos: 58.10
         },
         atf: {
             zScore: 2.45,
-           /**
-/* * UNIFED - PROBATUM · CASO REAL ANONIMIZADO v13.11.16-PURE (RECONSTITUÍDO)
- * ============================================================================
- * Missão: Injeção Forense e Reconstituição da Verdade Material
- * Patch R-I09: Correção de Escopo Atómico e Sincronização de Sockets
- * ============================================================================
- */
+            status: "ANOMALIA_DETECTADA",
+            timestamp: "2026-04-09T21:56:00Z"
+        }
+    });
+
+    // Bloco de Saída Forense para Verificação
+    console.log(`[LOG] Sessão: ${_PDF_CASE.sessionId}`);
+    console.log(`[LOG] Integridade: ${_PDF_CASE.masterHash}`);
+    
+    // Exportação segura para o contexto global se necessário (opcional)
+    // window.forensicData = _PDF_CASE;
+
+})();
 
 (function _pureForensicInjection() {
     'use strict';
