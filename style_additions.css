@@ -10,140 +10,18 @@
 /* ── Variáveis globais PURE (partilhadas com style.css base) ────────────────── */
 /* NOTA: Duplicadas aqui para standalone rendering; style.css tem precedência
    quando ambos os ficheiros são carregados em conjunto (cascade normal). */
-/* ============================================================================
-   UNIFED - PROBATUM · v13.11.16-PURE · ESTILOS RETIFICADOS (FINAL)
-   ============================================================================
-   Escopo: Consolidação de UI e Eliminação de Conflitos de Herança.
-   Conformidade: DORA (UE) 2022/2554 · ISO/IEC 27037:2012
-   ============================================================================ */
-
 :root {
     --pure-accent:  #00E5FF; /* Cyan Forense */
     --pure-warn:    #EF4444; /* Alerta Fiscal */
-    --pure-bg-dark: #0f172a; /* Slate 900 */
-    --pure-bg-card: rgba(15, 23, 42, 0.9);
-    --pure-border:  rgba(0, 229, 255, 0.2);
+    --pure-version: "v13.11.16-PURE";
+    /* CORR-v13.11.16: Bloqueio cromático máximo — impede "sangramento" de fundo branco */
+    background-color: #0f172a !important;
 }
 
-/* ── FORÇAR MODO DARK (Prevenção de Sangramento de Branco) ────────────────── */
+/* ── CORR-v13.11.16: Enforcement Dark Mode — html/body ───────────────────────── */
 html, body {
-    background-color: var(--pure-bg-dark) !important;
+    background-color: #0f172a !important;
     color: #f8fafc !important;
-    margin: 0;
-    padding: 0;
-    overflow-x: hidden;
-}
-
-/* ── WRAPPER DO PAINEL (CONSOLIDADO - Eliminada Duplicação L29/L764) ────── */
-#pureDashboardWrapper {
-    position: relative;
-    width: 100%;
-    min-height: 100vh;
-    background-color: var(--pure-bg-dark) !important;
-    color: #f8fafc;
-    z-index: 100;
-    display: none; /* Controlado via JS (unifed-ready) */
-    opacity: 0;
-    transition: opacity 0.5s ease-in-out;
-}
-
-/* Estado Ativado após Injeção Bem-Sucedida */
-#pureDashboardWrapper.unifed-ready {
-    display: block !important;
-    opacity: 1 !important;
-}
-
-/* ── COMPONENTES DO DASHBOARD ───────────────────────────────────────────── */
-.pure-card {
-    background: var(--pure-bg-card);
-    border: 1px solid var(--pure-border);
-    border-radius: 8px;
-    padding: 24px;
-    margin-bottom: 20px;
-    backdrop-filter: blur(12px);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-}
-
-.pure-subject-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid var(--pure-border);
-    padding-bottom: 15px;
-    margin-bottom: 20px;
-}
-
-.pure-metric-value {
-    font-family: 'JetBrains Mono', 'Fira Code', monospace;
-    color: var(--pure-accent);
-    font-size: 1.25rem;
-    font-weight: 700;
-}
-
-/* ── CONTADOR DE EVIDÊNCIAS (SOCKET DINÂMICO) ───────────────────────────── */
-.pure-evidence-count {
-    display: none;
-    background: var(--pure-warn);
-    color: #ffffff;
-    border-radius: 50%;
-    width: 20px;
-    height: 20px;
-    font-size: 11px;
-    font-weight: 900;
-    align-items: center;
-    justify-content: center;
-    margin-left: 10px;
-    box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
-}
-
-.pure-evidence-count.active {
-    display: inline-flex;
-}
-
-/* ── BOTÕES DE EXPORTAÇÃO (TRÍADE) ──────────────────────────────────────── */
-.pure-button-export {
-    background: rgba(15, 23, 42, 0.5);
-    border: 1px solid var(--pure-border);
-    color: #f8fafc;
-    padding: 10px 18px;
-    border-radius: 6px;
-    font-size: 0.85rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-.pure-button-export:hover {
-    background: rgba(0, 229, 255, 0.1);
-    border-color: var(--pure-accent);
-    box-shadow: 0 0 20px rgba(0, 229, 255, 0.2);
-    transform: translateY(-1px);
-}
-
-/* ── UTILS FORENSES ─────────────────────────────────────────────────────── */
-.text-glow {
-    text-shadow: 0 0 8px var(--pure-accent);
-}
-
-.border-warn {
-    border-color: var(--pure-warn) !important;
-}
-
-/* ── RESPONSIVIDADE ─────────────────────────────────────────────────────── */
-@media (max-width: 1024px) {
-    .pure-card {
-        padding: 16px;
-    }
-}
-
-@media (max-width: 768px) {
-    .pure-subject-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-    }
 }
 
 /* ── Wrapper do painel PURE — estado inicial oculto, aguarda classe .unifed-ready ── */
@@ -882,11 +760,13 @@ html, body {
 
 /* Garante fundo escuro durante injeção de panel.html — sem flash branco */
 html,
-body,
-#pureDashboardWrapper {
+body {
     background-color: var(--pure-bg-dark) !important;
     color: #f8fafc !important;
 }
+/* NOTA: #pureDashboardWrapper removido deste selector (Bug 3 — RTF-UNIFED-2026-0409).
+   As regras display:none / .unifed-ready estão definidas no topo do ficheiro (linhas 29-40)
+   e não devem ser sobrescritas por propriedades de background neste bloco. */
 
 /* ── A2. ESTABILIZAÇÃO DO WRAPPER DE INJEÇÃO (já actualizado acima) ──────── */
 /* Nota: as regras #pureDashboardWrapper e .unifed-ready foram movidas

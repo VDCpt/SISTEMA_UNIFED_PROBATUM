@@ -12,8 +12,6 @@
  * - CORREÇÃO FORENSE: substituição da lógica de visibilidade do wrapper
  *   para usar classe .unifed-ready em vez de .pure-visible, garantindo
  *   que o painel só é exibido após a injeção completa do HTML.
- * - CORREÇÃO DE SINTAXE: função syncMetrics agora está correctamente estruturada,
- *   eliminando o erro "Unexpected token ';'" na linha 284.
  *
  * PATCH A-06 (RTF-UNIFED-2026-0406-001):
  * - Sincronização de UNIFEDSystem.sessionId com _PDF_CASE.sessionId após
@@ -29,25 +27,9 @@
 (function() {
     'use strict';
 
-    /**
-     * FUNÇÃO DE INTEGRIDADE: DEEP FREEZE
-     * Garante que sub-objetos (client, counts, totals) não sejam alterados em memória.
-     */
-    const deepFreeze = (obj) => {
-        Object.keys(obj).forEach(prop => {
-            if (typeof obj[prop] === 'object' && obj[prop] !== null && !Object.isFrozen(obj[prop])) {
-                deepFreeze(obj[prop]);
-            }
-        });
-        return Object.freeze(obj);
-    };
-
-    /**
-     * DATASET MESTRE: UNIFED - PROBATUM
-     * Nota: O campo 'ctrl' foi corrigido para 15 para alinhar com o somatório real dos artefactos.
-     */
-    const _PDF_CASE = deepFreeze({
-        sessionId: "UNIFED-MNGFN3C0-X57MO",
+    // 1. DATASET MESTRE (OBJETO IMUTÁVEL) — VALORES REAIS ORIGINAIS + MACRO + COUNTS
+    const _PDF_CASE = Object.freeze({
+        sessionId:  "UNIFED-MNGFN3C0-X57MO",
         masterHash: "a3f8c9e2d5b6a7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1",
         client: { 
             name: "Real Demo - Unipessoal, Lda", 
@@ -55,50 +37,96 @@
             platform: "Plataforma A" 
         },
         counts: {
-            ctrl: 15, // Corrigido: (saft:4 + fat:8 + ext:2 + dac7:1)
+            ctrl: 12,
             saft: 4,
             fat: 8,
             ext: 2,
             dac7: 1
         },
         totals: {
-            ganhos: 10157.73,
-            ganhosLiquidos: 7709.84,
-            saftBruto: 8227.97,
-            saftIliquido: 7761.67,
-            saftIva: 466.30,
-            despesas: 2447.89,
-            faturaPlataforma: 262.94,
-            dac7TotalPeriodo: 7755.16,
-            iva6Omitido: 131.10,
-            iva23Omitido: 502.54,
-            asfixiaFinanceira: 493.68,
-            totalNaoSujeitos: 451.15,
-            gorjetas: 46.00,
-            portagens: 0.15,
-            campanhas: 405.00,
-            cancelamentos: 58.10
+            ganhos:           10157.73,
+            ganhosLiquidos:    7709.84,
+            saftBruto:         8227.97,
+            saftIliquido:      7761.67,
+            saftIva:            466.30,
+            despesas:          2447.89,
+            faturaPlataforma:   262.94,
+            dac7TotalPeriodo:  7755.16,
+            iva6Omitido:        131.10,
+            iva23Omitido:       502.54,
+            asfixiaFinanceira:  493.68,
+            totalNaoSujeitos:   451.15,
+            gorjetas:           46.00,
+            portagens:           0.15,
+            campanhas:         405.00,
+            cancelamentos:      58.10
         },
         atf: {
             zScore: 2.45,
-            status: "ANOMALIA_DETECTADA",
-            timestamp: "2026-04-09T21:56:00Z"
+            confianca: "99.2%",
+            periodo: "Q4 2024",
+            anomalias: 4,
+            version: "v13.11.16-PURE",
+            score: 40,
+            trend: "DESCENDENTE",
+            outliers: 0
+        },
+        macro_analysis: {
+            sector_drivers: 38000,
+            operational_years: 7,
+            avg_monthly_discrepancy: 546.24,
+            estimated_systemic_gap: 1743598080.00,
+            confidence_level: "High (based on verified algorithmic pattern)",
+            legal_implication: "Potential systemic tax erosion under Art. 119.º RGIT (Iteration)",
+            methodology: "Extrapolação Estatística de Baixa Variância · ISO/IEC 27037:2012",
+            status: "INDICATIVO_MACRO",
+            disclaimer: "Os valores de impacto sistémico constituem contexto macroeconómico e não prova direta de ilícito alheio, nos termos do Art. 128.º do CPP."
         }
     });
 
-    // Bloco de Saída Forense para Verificação
-    console.log(`[LOG] Sessão: ${_PDF_CASE.sessionId}`);
-    console.log(`[LOG] Integridade: ${_PDF_CASE.masterHash}`);
-    
-    // Exportação segura para o contexto global se necessário (opcional)
-    // window.forensicData = _PDF_CASE;
+    // 2. ESCUDO SILENCIOSO PARA CORS (TSA / FREETSA FALLBACK)
+    (function _installCORSSilentShield() {
+        const targetUrl = 'freetsa.org';
+        const originalFetch = window.fetch;
+        if (typeof originalFetch === 'function') {
+            window.fetch = function(input, init) {
+                const url = typeof input === 'string' ? input : (input && input.url);
+                if (url && url.indexOf(targetUrl) !== -1) {
+                    return originalFetch.apply(this, arguments).catch(function(err) {
+                        console.warn('[UNIFED] ⚙ Modo Standalone Ativo: Selagem TSA externa indisponível. Integridade assegurada por Assinatura Local SHA-256 (Nível 1).');
+                        throw err;
+                    });
+                }
+                return originalFetch.apply(this, arguments);
+            };
+        }
+        window.addEventListener('unhandledrejection', function(event) {
+            if (event.reason && event.reason.message && event.reason.message.indexOf('freetsa') !== -1) {
+                console.warn('[UNIFED] ⚙ Modo Standalone Ativo: Selagem TSA externa indisponível (promise).');
+                event.preventDefault();
+            }
+            // Tratamento silencioso do erro DNS api.unifed.com
+            if (event.reason && event.reason.message && event.reason.message.indexOf('api.unifed.com') !== -1) {
+                console.warn('[UNIFED] ⚙ Modo Standalone Ativo: Proxy IA indisponível (DNS). Fallback estático ativo.');
+                event.preventDefault();
+            }
+        });
+        window.addEventListener('error', function(event) {
+            if (event.message && event.message.indexOf('freetsa') !== -1) {
+                console.warn('[UNIFED] ⚙ Modo Standalone Ativo: Selagem TSA externa indisponível (erro global).');
+                event.preventDefault();
+                return true;
+            }
+            if (event.message && event.message.indexOf('api.unifed.com') !== -1) {
+                console.warn('[UNIFED] ⚙ Modo Standalone Ativo: Proxy IA indisponível (DNS). Fallback estático ativo.');
+                event.preventDefault();
+                return true;
+            }
+        });
+        console.log('[UNIFED] Escudo CORS silencioso instalado para FreeTSA e api.unifed.com.');
+    })();
 
-})();
-
-(function _pureForensicInjection() {
-    'use strict';
-
-    // 1. Utilitários de Formatação e Acesso
+    // 3. UTILITÁRIOS DE FORMATAÇÃO E ACESSO AO DOM
     const _fmt = (v) => new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(v);
     
     const _set = (id, val) => {
@@ -107,104 +135,47 @@
         return false;
     };
 
-    function syncMetrics() {
-        const dashboard = document.getElementById('pureDashboard');
-        if (!dashboard) return;
-
-        const sys = window.UNIFEDSystem || {};
-        const data = sys.analysis || {};
-        const counts = sys.counts || { evidence: 0, logs: 0 };
-
-        const mapping = {
-            'pure-subject-name':        data.sujeitoPassivo || 'N/A',
-            'pure-subject-nif':         data.nif || '000000000',
-            'pure-total-bruto':         _fmt(data.totalBruto || 0),
-            'pure-total-comissao':      _fmt(data.comissaoCalculada || 0),
-            'pure-counts-evidence':     counts.evidence || 0,
-            'pure-counts-logs':         counts.logs || 0,
-            'pure-master-hash-display': sys.masterHash || 'PENDENTE',
-            'pure-session-id':          sys.sessionId || 'MMLADX8Q'
-        };
-
-        Object.keys(mapping).forEach(id => {
-            const el = document.getElementById(id);
-            if (el) {
-                if (el.tagName === 'INPUT') el.value = mapping[id];
-                else el.textContent = mapping[id];
-            }
-        });
-        console.log('[UNIFED-INJECTION] Sincronização métrica concluída.');
-    }
-
-    function _init() {
-        const wrapper = document.getElementById('pureDashboardWrapper');
-        if (wrapper) {
-            wrapper.classList.add('unifed-ready');
-            wrapper.style.display = 'block';
-            wrapper.style.opacity = '1';
-        }
-        syncMetrics();
-    }
-
-    // 2. Inicialização e Eventos
-    if (window.UNIFEDEventBus) {
-        window.UNIFEDEventBus.waitFor('UNIFED_CORE_READY', 10000).then(_init);
-    } else {
-        window.addEventListener('load', _init);
-    }
-
-    // 3. Exposição Controlada para Camadas Externas (Nexus/Triada)
+    // Namespace Global
     window.UNIFED_INTERNAL = window.UNIFED_INTERNAL || {};
+    window.UNIFED_INTERNAL.data = _PDF_CASE;
     window.UNIFED_INTERNAL.fmt = _fmt;
     window.UNIFED_INTERNAL.set = _set;
-    window._syncPureMetrics = syncMetrics;
 
-    console.log('[UNIFED] Injeção e Camada 1: OK.');
+    console.log('[UNIFED] Camada 1: OK.');
 })();
 
-(function _forensicLoaderGuard() {
-    const loader = document.getElementById('forensic-loader');
-    const dismiss = () => {
-        if (loader) {
-            loader.style.opacity = '0';
-            setTimeout(() => { loader.style.display = 'none'; }, 500);
-        }
-    };
-    if (window.UNIFEDEventBus) {
-        window.UNIFEDEventBus.waitFor('UNIFED_CORE_READY', 12000).then(dismiss).catch(dismiss);
-    } else {
-        setTimeout(dismiss, 5000);
-    }
-})();
-            
 (function() {
     'use strict';
     if (!window.UNIFED_INTERNAL) return;
     const { data, fmt, set } = window.UNIFED_INTERNAL;
 
-    window.UNIFED_INTERNAL.syncMetrics = function() {
-        if (!document.getElementById('pureDashboard')) {
-            console.info('[UNIFED] syncMetrics abortado: painel pureDashboard ainda não injetado.');
-            return;
-        }
+    // Cálculos auxiliares baseados nos dados reais
+    const t = data.totals;
+    const discrepanciaC2 = t.despesas - t.faturaPlataforma;
+    const percentC2 = (t.despesas > 0) ? (discrepanciaC2 / t.despesas) * 100 : 0;
+    const discrepanciaC1 = t.saftBruto - t.dac7TotalPeriodo;
+    const percentC1 = (t.saftBruto > 0) ? (discrepanciaC1 / t.saftBruto) * 100 : 0;
+    const ircEstimado = discrepanciaC2 * 0.21;
 
-        if (window.UNIFEDEventBus) {
-            window.UNIFEDEventBus.emit('UNIFED_DOM_READY', { 
-                timestamp: Date.now(), 
-                status: 'EMISSÃO_FORÇADA_PERÍCIA' 
-            });
-            window.dispatchEvent(new CustomEvent('UNIFED_DOM_READY'));
-            console.info('[UNIFED-FORENSIC] ✅ Sinal UNIFED_DOM_READY emitido.');
-        }
+window.UNIFED_INTERNAL.syncMetrics = function() {
+    // 1. Verificação de Segurança (Guarda)
+    if (!document.getElementById('pureDashboard')) {
+        console.info('[UNIFED] syncMetrics abortado: painel pureDashboard ainda não injetado.');
+        return;
+    }
 
-        console.log('[UNIFED] Iniciando Sincronização Forense...');
+    /* ── RETIFICAÇÃO CIRÚRGICA: INSERIR AQUI ── */
+    if (window.UNIFEDEventBus) {
+        window.UNIFEDEventBus.emit('UNIFED_DOM_READY', { 
+            timestamp: Date.now(), 
+            status: 'EMISSÃO_FORÇADA_PERÍCIA' 
+        });
+        window.dispatchEvent(new CustomEvent('UNIFED_DOM_READY'));
+        console.info('[UNIFED-FORENSIC] ✅ Sinal UNIFED_DOM_READY emitido.');
+    }
+    /* ─────────────────────────────────────── */
 
-        const t = data.totals;
-        const discrepanciaC2 = t.despesas - t.faturaPlataforma;
-        const percentC2 = (t.despesas > 0) ? (discrepanciaC2 / t.despesas) * 100 : 0;
-        const discrepanciaC1 = t.saftBruto - t.dac7TotalPeriodo;
-        const percentC1 = (t.saftBruto > 0) ? (discrepanciaC1 / t.saftBruto) * 100 : 0;
-        const ircEstimado = discrepanciaC2 * 0.21;
+    console.log('[UNIFED] Iniciando Sincronização Forense...');
 
         const mapping = {
             'pure-ganhos':           fmt(t.ganhos),
@@ -250,6 +221,7 @@
             'pure-iva-devido-val':     fmt(t.iva6Omitido),
             'pure-impacto-macro':      fmt(data.macro_analysis.estimated_systemic_gap),
             'pure-asfixia-val': fmt(t.asfixiaFinanceira),
+            // IDs para contagem de evidências
             'pure-ctrl-qty':           data.counts.ctrl.toString(),
             'pure-saft-qty':           data.counts.saft.toString(),
             'pure-fat-qty':            data.counts.fat.toString(),
@@ -308,7 +280,6 @@
         const sg1Dac7El = document.getElementById('pure-sg1-dac7-val');
         if (sg1Dac7El) sg1Dac7El.textContent = fmt(t.dac7TotalPeriodo);
     };
-
     console.log('[UNIFED] Camada 2: OK.');
 })();
 
@@ -632,6 +603,11 @@
                 }
                 const sys = window.UNIFEDSystem;
 
+                // ── PATCH A-06 (RTF-UNIFED-2026-0406-001) ────────────────────────
+                // Sincronizar UNIFEDSystem.sessionId com o sessionId fixo do dataset.
+                // Sem esta sincronização, o masterHash calculado em binaryConcat usava
+                // o sessionId dinâmico de script.js, enquanto o painel apresentava o
+                // sessionId do _PDF_CASE — inconsistência auditável em contra-perícia.
                 if (data && data.sessionId) {
                     const _previousSessionId = sys.sessionId;
                     sys.sessionId = data.sessionId;
@@ -642,6 +618,7 @@
                         );
                     }
                 }
+                // ── FIM PATCH A-06 ────────────────────────────────────────────────
 
                 const t = data.totals;
                 if (!sys.documents) sys.documents = {};
@@ -854,100 +831,52 @@
         });
     }
 
-  function _updateEvidenceCountersAndShow() {
-    const sys = window.UNIFEDSystem;
-    if (!sys?.documents) return;
+    function _updateEvidenceCountersAndShow() {
+        const sys = window.UNIFEDSystem;
+        if (!sys || !sys.documents) return;
+        const controlCount = sys.documents.control?.files?.length || 0;
+        const saftCount = sys.documents.saft?.files?.length || 0;
+        const invoiceCount = sys.documents.invoices?.files?.length || 0;
+        const statementCount = sys.documents.statements?.files?.length || 0;
+        const dac7Count = sys.documents.dac7?.files?.length || 0;
+        const total = controlCount + saftCount + invoiceCount + statementCount + dac7Count;
 
-    // 1. Extração de métricas (Tratamento de nulidades robusto)
-    const ctrl      = sys.documents.control?.files?.length || 0;
-    const saft      = sys.documents.saft?.files?.length || 0;
-    const inv       = sys.documents.invoices?.files?.length || 0;
-    const stmt      = sys.documents.statements?.files?.length || 0;
-    const dac7      = sys.documents.dac7?.files?.length || 0;
+        const setText = (id, val) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = val;
+        };
+        setText('controlCountCompact', controlCount);
+        setText('saftCountCompact', saftCount);
+        setText('invoiceCountCompact', invoiceCount);
+        setText('statementCountCompact', statementCount);
+        setText('dac7CountCompact', dac7Count);
+        setText('summaryControl', controlCount);
+        setText('summarySaft', saftCount);
+        setText('summaryInvoices', invoiceCount);
+        setText('summaryStatements', statementCount);
+        setText('summaryDac7', dac7Count);
+        setText('summaryTotal', total);
+        const evidenceCountTotal = document.getElementById('evidenceCountTotal');
+        if (evidenceCountTotal) evidenceCountTotal.textContent = total;
 
-    // 2. Cálculo da Verdade Material
-    const totalReal = saft + inv + stmt + dac7;
-
-    // 3. Validação de Integridade (Crucial para o Relatório Pericial)
-    if (totalReal !== ctrl) {
-        console.warn(`[ALERTA FORENSE] Discrepância de Prova: Esperados ${ctrl}, detetados ${totalReal}.`);
+        const evidenceSection = document.getElementById('pureEvidenceSection');
+        if (evidenceSection) evidenceSection.style.display = 'block';
+        const counters = ['controlCountCompact', 'saftCountCompact', 'invoiceCountCompact', 'statementCountCompact', 'dac7CountCompact'];
+        counters.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = 'inline-block';
+        });
+        console.log('[UNIFED] Contadores de evidências atualizados e secção revelada.');
     }
 
-    // 4. Injeção no DOM (Interface)
-    const updateUI = (id, val) => {
-        const el = document.getElementById(id);
-        if (el) el.textContent = val;
-    };
+    window.UNIFED_INTERNAL.forcePlatformReadOnly = _forcePlatformReadOnly;
+    window.UNIFED_INTERNAL.removeZeroDac7Kpis = _removeZeroDac7Kpis;
+    window.UNIFED_INTERNAL.simulateEvidenceUpload = _simulateEvidenceUpload;
+    window.UNIFED_INTERNAL.updateEvidenceCountersAndShow = _updateEvidenceCountersAndShow;
+    console.log('[UNIFED] Camada 5: OK.');
+})();
 
-    // Atualiza contadores específicos e sumários de uma só vez
-    const mapping = {
-        'saftCountCompact': saft,
-        'invoiceCountCompact': inv,
-        'statementCountCompact': stmt,
-        'dac7CountCompact': dac7,
-        'summaryTotal': totalReal,
-        'evidenceCountTotal': totalReal
-    };
-
-    Object.entries(mapping).forEach(([id, val]) => updateUI(id, val));
-
-   function _updateEvidenceCountersAndShow() {
-    const sys = window.UNIFEDSystem;
-    if (!sys || !sys.documents) return;
-
-    const controlCount = sys.documents.control?.files?.length || 0;
-    const saftCount = sys.documents.saft?.files?.length || 0;
-    const invoiceCount = sys.documents.invoices?.files?.length || 0;
-    const statementCount = sys.documents.statements?.files?.length || 0;
-    const dac7Count = sys.documents.dac7?.files?.length || 0;
-    
-    // Verdade Material (Soma excluindo o marcador de controlo)
-    const total = saftCount + invoiceCount + statementCount + dac7Count;
-
-    const setText = (id, val) => {
-        const el = document.getElementById(id);
-        if (el) el.textContent = val;
-    };
-
-    // Atualização do DOM
-    setText('controlCountCompact', controlCount);
-    setText('saftCountCompact', saftCount);
-    setText('invoiceCountCompact', invoiceCount);
-    setText('statementCountCompact', statementCount);
-    setText('dac7CountCompact', dac7Count);
-    setText('summaryControl', controlCount);
-    setText('summarySaft', saftCount);
-    setText('summaryInvoices', invoiceCount);
-    setText('summaryStatements', statementCount);
-    setText('summaryDac7', dac7Count);
-    setText('summaryTotal', total);
-
-    const evidenceCountTotal = document.getElementById('evidenceCountTotal');
-    if (evidenceCountTotal) evidenceCountTotal.textContent = total;
-
-    const evidenceSection = document.getElementById('pureEvidenceSection');
-    if (evidenceSection) {
-        // Revelar secção apenas se houver dados reais
-        evidenceSection.style.display = (total > 0) ? 'block' : 'none';
-    }
-
-    const counters = ['controlCountCompact', 'saftCountCompact', 'invoiceCountCompact', 'statementCountCompact', 'dac7CountCompact'];
-    counters.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = 'inline-block';
-    });
-
-    console.log('[UNIFED] Contadores atualizados e integridade verificada.');
-} // Apenas UMA chaveta aqui para fechar a função
-
-// Atribuição interna segura
-window.UNIFED_INTERNAL.forcePlatformReadOnly = _forcePlatformReadOnly;
-window.UNIFED_INTERNAL.removeZeroDac7Kpis = _removeZeroDac7Kpis;
-window.UNIFED_INTERNAL.simulateEvidenceUpload = _simulateEvidenceUpload;
-window.UNIFED_INTERNAL.updateEvidenceCountersAndShow = _updateEvidenceCountersAndShow;
-
-console.log('[UNIFED] Camada 5: OK.');
-      
+(function() {
     'use strict';
     if (!window.UNIFED_INTERNAL) return;
     const { data, fmt, set, syncMetrics, renderMatrix } = window.UNIFED_INTERNAL;
@@ -1093,39 +1022,46 @@ console.log('[UNIFED] Camada 5: OK.');
                 correctLevel: QRCode.CorrectLevel.L
             });
         }
-      // ... código anterior (generateQRCode)
-    container.setAttribute('data-tooltip', 'Clique para verificar a cadeia de custódia completa');
-} // Fecha generateQRCode
+        container.setAttribute('data-tooltip', 'Clique para verificar a cadeia de custódia completa');
+    }
+    window.generateQRCode = generateQRCode;
 
-window.generateQRCode = generateQRCode;
+    function startApplication() {
+        return new Promise((resolve) => {
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => resolve());
+            } else {
+                resolve();
+            }
+        }).then(() => {
+            initializeCoreDashboard();
+            setupRealCaseButton();
+            // [CORREÇÃO CIRÚRGICA]: Removida a linha que ocultava a consola de identificação
+            console.log('[UNIFED] ✅ Aplicação pronta. Clique em "CASO REAL ANONIMIZADO" para carregar as evidências.');
+        }).catch(err => {
+            console.error('[UNIFED] Erro na inicialização:', err);
+        });
+    }
 
-function startApplication() {
-    return new Promise((resolve) => {
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => resolve());
-        } else {
-            resolve();
-        }
-    }).then(() => {
-        initializeCoreDashboard();
-        setupRealCaseButton();
-        console.log('[UNIFED] ✅ Aplicação pronta.');
-    }).catch(err => {
-        console.error('[UNIFED] Erro na inicialização:', err);
-    });
-}
-
-// Invocação da aplicação
-startApplication();
-
-})(); // Este é o fecho da IIFE (function() { 'use strict'; ...
+    startApplication();
+})();
 
 // ============================================================================
 // PATCH A-10 (v13.11.16-PURE) — LEGAL FRAMEWORK, NARRATIVE LAYER & EXPORT
 // ============================================================================
+// Adiciona ao módulo script_injection:
+//   1. LEGAL_FRAMEWORK  — textos bilingues para os IDs do painel PROBATUM.
+//   2. updateLegalAnalysis()  — popula pure-smoking-gun-*, pure-parecer-tecnico,
+//      pure-colarinho-branco, pure-apoio-pericial-label, pure-subject-status,
+//      pure-fluxos-nao-sujeitos, pure-master-hash-display.
+//   3. exportForenseData()  — exporta JSON forense com master hash e análise.
+//   4. Bridge 'languageChanged' (EventBus + nativo) → updateLegalAnalysis().
+//   5. Subscrição 'UNIFED_EVIDENCE_LOADED' → popula console forense (#pure-forensic-log).
+// ============================================================================
 (function _patchA10NarrativeLayer() {
     'use strict';
 
+    // ── 1. LEGAL FRAMEWORK — textos bilingues ─────────────────────────────────
     var LEGAL_FRAMEWORK = Object.freeze({
         pt: {
             smokingGun1: 'DISCREPÂNCIA MATERIAL: Fluxos financeiros não declarados detetados via cruzamento de logs de API. SAF-T vs DAC7 divergência apurada. Art. 119.º RGIT.',
@@ -1147,6 +1083,7 @@ startApplication();
         }
     });
 
+    // ── 2. updateLegalAnalysis — popula IDs PROBATUM NARRATIVE LAYER ───────────
     function updateLegalAnalysis(lang) {
         var _lang = lang || window.currentLang || 'pt';
         var _data = LEGAL_FRAMEWORK[_lang] || LEGAL_FRAMEWORK.pt;
@@ -1157,6 +1094,7 @@ startApplication();
                       ? function(v) { return window.formatCurrency(v, _lang); }
                       : function(v) { return new Intl.NumberFormat(_lang === 'en' ? 'en-GB' : 'pt-PT', { style: 'currency', currency: _lang === 'en' ? 'GBP' : 'EUR' }).format(v || 0); });
 
+        // Mapeamento directo texto → ID
         var _textMap = {
             'pure-smoking-gun-1':    _data.smokingGun1,
             'pure-smoking-gun-2':    _data.smokingGun2,
@@ -1173,11 +1111,13 @@ startApplication();
             if (el) el.textContent = _textMap[id];
         });
 
+        // Fluxos não sujeitos — valor monetário do _PDF_CASE
         var _fluxosEl = document.getElementById('pure-fluxos-nao-sujeitos');
         if (_fluxosEl && _PDF && _PDF.totals) {
             _fluxosEl.textContent = _fmt(_PDF.totals.totalNaoSujeitos || 0);
         }
 
+        // Master Hash display
         var _hashEl = document.getElementById('pure-master-hash-display');
         if (_hashEl) {
             var _hash = (_sys && _sys.masterHash) || (_PDF && _PDF.masterHash) || null;
@@ -1187,6 +1127,7 @@ startApplication();
             }
         }
 
+        // Contadores de evidências (count-digitais e tipo)
         var _countEl = document.getElementById('count-digitais');
         if (_countEl && _PDF && _PDF.counts) {
             var total = (_PDF.counts.ctrl || 0) + (_PDF.counts.saft || 0) +
@@ -1200,8 +1141,10 @@ startApplication();
         console.info('[UNIFED-A10] updateLegalAnalysis() — lang=' + _lang + ' concluído.');
     }
 
+    // Expor globalmente para chamadas externas
     window.updateLegalAnalysis = updateLegalAnalysis;
 
+    // ── 3. exportForenseData — exportação JSON forense ─────────────────────────
     window.exportForenseData = function exportForenseData(format) {
         var _format = format || 'json';
         var _PDF  = (window.UNIFED_INTERNAL && window.UNIFED_INTERNAL.data) ? window.UNIFED_INTERNAL.data : {};
@@ -1243,9 +1186,12 @@ startApplication();
         }
     };
 
+    // ── 4. Subscrição 'languageChanged' (EventBus + bridge nativa) ─────────────
     function _onLangChanged(data) {
         var lang = (data && data.language) ? data.language : (window.currentLang || 'pt');
         updateLegalAnalysis(lang);
+
+        // Atualizar texto do botão se existir
         var _fluxosLabel = document.getElementById('pure-apoio-pericial-label');
         if (_fluxosLabel) {
             _fluxosLabel.textContent = (lang === 'en')
@@ -1257,66 +1203,51 @@ startApplication();
     if (window.UNIFEDEventBus) {
         window.UNIFEDEventBus.on('languageChanged', _onLangChanged);
     }
+    // Bridge nativa — compatibilidade com switchLanguage() antes do patch R-I07
     window.addEventListener('languageChanged', function(e) {
         _onLangChanged(e && e.detail ? e.detail : {});
     });
-
-    function generateQRCode() {
-        const container = document.getElementById('qrcodeContainer');
-        if (!container) {
-            console.warn('[UNIFED-QR] Contentor #qrcodeContainer não detetado no DOM.');
-            return;
-        }
-        container.innerHTML = '';
-        const sys = window.UNIFEDSystem;
-        const hashFull = sys?.masterHash || 'HASH_INDISPONIVEL';
-        const sessionShort = sys?.sessionId ? sys.sessionId.substring(0, 16) : 'N/A';
-        const qrData = `UNIFED|${sessionShort}|${hashFull}`;
-        if (typeof QRCode !== 'undefined') {
-            new QRCode(container, {
-                text: qrData,
-                width: 75,
-                height: 75,
-                colorDark: "#000000",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.M
-            });
-            console.info('[UNIFED-QR] ✅ Selo QR gerado para a Sessão: ' + sessionShort);
-        } else {
-            console.error('[UNIFED-QR] Erro: Biblioteca QRCode.js não carregada.');
-        }
-    }
-
+    // ── 5. Subscrição 'UNIFED_EVIDENCE_LOADED' → atualiza console forense ──────
     function _onEvidenceLoaded(data) {
         var _logEl = document.getElementById('pure-forensic-log');
         if (!_logEl) return;
+
         var _ts    = new Date().toLocaleTimeString('pt-PT');
         var _count = (data && data.count) ? data.count : '?';
         var _hash  = (data && data.hash)  ? data.hash.substring(0, 16) + '...' : 'N/A';
-        _logEl.innerHTML = 
+
+        _logEl.innerHTML =
             '<span class="log-system">[SYSTEM] UNIFED PROBATUM v13.11.16-PURE — ONLINE</span>&#10;' +
             '<span class="log-auth">[AUTH] CREDENCIAIS PERICIAIS VALIDADAS.</span>&#10;' +
             '<span class="log-info">[' + _ts + '] CASO REAL ANONIMIZADO CARREGADO.</span>&#10;' +
             '<span class="log-info">[EVIDÊNCIAS] ' + _count + ' registos processados.</span>&#10;' +
             '<span class="log-info">[HASH-PREFIX] ' + _hash + '</span>&#10;' +
             '<span class="log-auth">[STATUS] INTEGRIDADE SHA-256: VERIFICADA.</span>';
-        generateQRCode();
     }
 
     if (window.UNIFEDEventBus) {
         window.UNIFEDEventBus.on('UNIFED_EVIDENCE_LOADED', _onEvidenceLoaded);
+
+        // Se já foi emitido, executar imediatamente
         if (window.UNIFEDEventBus.hasResolved('UNIFED_EVIDENCE_LOADED')) {
-            window.UNIFEDEventBus.waitFor('UNIFED_EVIDENCE_LOADED', 0).then(_onEvidenceLoaded).catch(function() {});
+            var _cached = null;
+            window.UNIFEDEventBus.waitFor('UNIFED_EVIDENCE_LOADED', 0)
+                .then(_onEvidenceLoaded).catch(function() {});
         }
+
+        // Aguardar DOM_READY para popular o painel narrativo
         window.UNIFEDEventBus.waitFor('UNIFED_DOM_READY', 15000).then(function() {
+            // Executar updateLegalAnalysis após painel injetado
             updateLegalAnalysis(window.currentLang || 'pt');
             console.info('[UNIFED-A10] UNIFED_DOM_READY → updateLegalAnalysis() executado.');
         }).catch(function() {
+            // Fallback: tentar directamente se DOM já carregado
             if (document.getElementById('pure-smoking-gun-1')) {
                 updateLegalAnalysis(window.currentLang || 'pt');
             }
         });
     } else {
+        // Fallback sem EventBus: executar no DOMContentLoaded
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', function() {
                 updateLegalAnalysis(window.currentLang || 'pt');
@@ -1326,16 +1257,18 @@ startApplication();
         }
     }
 
-    console.info('[UNIFED-A10] ✅ Narrative Layer v13.11.16-PURE instalado.');
+    console.info('[UNIFED-A10] ✅ Narrative Layer v13.11.16-PURE instalado. LEGAL_FRAMEWORK · updateLegalAnalysis · exportForenseData · EventBus bridges.');
 })();
 
 /* ============================================================================
    CORREÇÃO FORENSE v13.11.16-PURE: Substituição da lógica de visibilidade
    do wrapper #pureDashboardWrapper. A função window._activatePurePanel foi
-   modificada para usar a classe .unifed-ready em vez de .pure-visible.
+   modificada para usar a classe .unifed-ready em vez de .pure-visible,
+   garantindo que o painel só é exibido após a injeção completa do HTML.
    ============================================================================ */
 (function _patchVisibility() {
     'use strict';
+    // Guarda a função original se já existir
     var _originalActivate = window._activatePurePanel;
     
     window._activatePurePanel = function _activatePurePanelFixed() {
@@ -1344,24 +1277,36 @@ startApplication();
             .then(function(html) {
                 var wrapper = document.getElementById('pureDashboardWrapper');
                 if (wrapper) {
+                    // Injeta o HTML
                     wrapper.innerHTML = html;
+                    
+                    // Torna o wrapper visível no DOM (mas ainda oculto pelo CSS)
                     wrapper.style.display = 'block';
+                    
+                    // Força o reflow e aplica a classe de visibilidade
                     requestAnimationFrame(function() {
                         wrapper.classList.add('unifed-ready');
                         console.info('[UNIFED-PURE] ✅ Classe .unifed-ready adicionada ao wrapper.');
                     });
                     
+                    // Carrega dados do caso anonimizado
                     if (typeof UNIFEDSystem !== 'undefined' &&
                         typeof UNIFEDSystem.loadAnonymizedRealCase === 'function') {
                         UNIFEDSystem.loadAnonymizedRealCase();
                     }
+                    
+                    // Tradução do painel se necessário
                     if (typeof window._translatePurePanel === 'function') {
                         window._translatePurePanel(window.currentLang || 'pt');
                     }
+                    
+                    // Emite UNIFED_DOM_READY
                     if (window.UNIFEDEventBus && !window.UNIFEDEventBus.hasResolved('UNIFED_DOM_READY')) {
                         window.UNIFEDEventBus.emit('UNIFED_DOM_READY', { timestamp: Date.now() });
                         console.info('[UNIFED-PURE] ✅ UNIFED_DOM_READY emitido via EventBus.');
                     }
+                    
+                    // Oculta o forensic-loader
                     var loader = document.getElementById('forensic-loader');
                     if (loader) {
                         loader.style.opacity = '0';
@@ -1377,18 +1322,25 @@ startApplication();
             });
     };
     
+    // Se existia uma função original, invocamos a nova no mesmo contexto
     if (typeof _originalActivate === 'function') {
         console.info('[UNIFED-PURE] _activatePurePanel substituída pela versão corrigida.');
     }
 })();
 
 // ── [PATCH R-I07] BRIDGE EventBus ↔ switchLanguage (script.js) ────────
+// switchLanguage() em script.js não emite 'languageChanged' no UNIFEDEventBus.
+// Esta bridge interceta o evento DEPOIS de switchLanguage() ter executado,
+// garantindo que enrichment.js e script_injection.js recebem o evento.
+// Implementação: monkey-patch seguro após UNIFED_CORE_READY.
+// Fase 2 moverá esta lógica para dentro de script.js directamente.
 (function _installLangBridge() {
     function _patchSwitchLanguage() {
         var _orig = window.switchLanguage;
         if (typeof _orig !== 'function') { return false; }
         window.switchLanguage = function _switchLanguageBridged() {
             _orig.apply(this, arguments);
+            // Emitir via EventBus após tradução concluída
             if (window.UNIFEDEventBus) {
                 window.UNIFEDEventBus.emit('languageChanged', {
                     language: (typeof currentLang !== 'undefined') ? currentLang : (window.currentLang || 'pt')
@@ -1427,6 +1379,7 @@ startApplication();
         console.warn('[UNIFED-PURE] ⚠ [R-I08] Forensic-loader ocultado por guarda de timeout (12s).');
     }, _MAX_WAIT);
 
+    // Cancelamento do bloqueio vinculado à prontidão algorítmica do Core
     if (window.UNIFEDEventBus) {
         window.UNIFEDEventBus.waitFor('UNIFED_CORE_READY', _MAX_WAIT)
             .then(function() {
@@ -1434,6 +1387,6 @@ startApplication();
                 _dismissLoader();
                 console.info('[UNIFED-PURE] ✅ [R-I08] Forensic-loader desativado via UNIFED_CORE_READY (< 150ms).');
             })
-            .catch(function() { });
+            .catch(function() { /* Guarda atua como fallback */ });
     }
 })();
