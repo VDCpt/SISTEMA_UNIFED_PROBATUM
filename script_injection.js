@@ -160,7 +160,19 @@
             console.info('[UNIFED] syncMetrics abortado: painel pureDashboard ainda não injetado no DOM.');
             return;
         }
-
+/* ── RETIFICAÇÃO CIRÚRGICA: DESBLOQUEIO DO BARRAMENTO (PATCH R-I08) ── */
+if (window.UNIFEDEventBus) {
+    // 1. Emite o sinal para que o updateLegalAnalysis() saiba que pode ler o DOM
+    window.UNIFEDEventBus.emit('UNIFED_DOM_READY', { 
+        timestamp: Date.now(),
+        status: 'EMISSÃO_FORÇADA_PERÍCIA' 
+    });
+    
+    // 2. Compatibilidade com o loader do index.html
+    window.dispatchEvent(new CustomEvent('UNIFED_DOM_READY'));
+    
+    console.info('[UNIFED-FORENSIC] ✅ Sinal UNIFED_DOM_READY emitido via Patch R-I08.');
+}
         console.log('[UNIFED] Iniciando Sincronização Forense...');
         
         const mapping = {
