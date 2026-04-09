@@ -722,6 +722,162 @@
   </div><!-- FIM: pure-card-grid -->
 
   <!-- ══════════════════════════════════════════════════════════════════════
+       SECÇÃO PROBATUM FORENSIC NARRATIVE — v13.11.16-PURE
+       Adicionada cirurgicamente. NÃO altera o dashboard principal nem as
+       fórmulas aprovadas. Fornece os IDs necessários para:
+         · script_injection.js  → updateLegalAnalysis(), syncMetrics()
+         · enrichment.js        → generateLegalNarrative(), exportDOCX()
+         · nexus.js             → _nexusInjetarExtensoes()
+       Conformidade: DORA (UE) 2022/2554 · Art. 125.º CPP · ISO/IEC 27037:2012
+       ══════════════════════════════════════════════════════════════════════ -->
+  <div id="pure-forensic-narrative" aria-label="Narrativa Forense PROBATUM v13.11.16-PURE">
+
+    <!-- HEADER DA NARRATIVA -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+      <div>
+        <span style="font-size:0.65rem; color:#475569; font-family:'JetBrains Mono',monospace; letter-spacing:0.08em;">
+          PROBATUM NARRATIVE LAYER · v13.11.16-PURE
+        </span>
+        <div style="font-size:0.82rem; font-weight:700; color:var(--pure-accent,#00E5FF); margin-top:4px;"
+             data-pt="📄 ANÁLISE FORENSE E NARRATIVA JURÍDICA"
+             data-en="📄 FORENSIC ANALYSIS & LEGAL NARRATIVE">
+          📄 ANÁLISE FORENSE E NARRATIVA JURÍDICA
+        </div>
+      </div>
+      <!-- Indicador de Status de Auditoria -->
+      <div style="text-align:right;">
+        <div style="font-size:0.65rem; color:#475569; font-family:'JetBrains Mono',monospace;"
+             data-pt="STATUS AUDITORIA" data-en="AUDIT STATUS">STATUS AUDITORIA</div>
+        <div id="pure-subject-status"
+             style="font-size:0.78rem; font-weight:600; color:var(--pure-accent,#00E5FF); font-family:'JetBrains Mono',monospace;">
+          AGUARDANDO DADOS REAIS
+        </div>
+      </div>
+    </div>
+
+    <!-- GRID: INDICADORES FORENSES -->
+    <div class="pure-narrative-grid">
+
+      <!-- CARD: FLUXOS NÃO SUJEITOS A COMISSÃO -->
+      <div class="pure-narrative-card info-card">
+        <div id="pure-apoio-pericial-label"
+             style="font-size:0.65rem; color:#64748b; letter-spacing:0.06em; margin-bottom:6px;"
+             data-pt="INDICAÇÃO DE APOIO PERICIAL — FLUXOS NÃO SUJEITOS A COMISSÃO"
+             data-en="EXPERT SUPPORT INDICATION — FLOWS NOT SUBJECT TO COMMISSION">
+          INDICAÇÃO DE APOIO PERICIAL — FLUXOS NÃO SUJEITOS A COMISSÃO
+        </div>
+        <div id="pure-fluxos-nao-sujeitos"
+             style="font-size:1.4rem; font-weight:700; color:var(--pure-accent,#00E5FF); font-family:'JetBrains Mono',monospace;">
+          € 0,00
+        </div>
+        <div style="font-size:0.62rem; color:#475569; margin-top:4px;"
+             data-pt="ISENTO ART. 12º CIVA / EXEMPT" data-en="EXEMPT ART. 12 VAT ACT">
+          ISENTO ART. 12º CIVA / EXEMPT
+        </div>
+      </div>
+
+      <!-- CARD: GESTÃO DE EVIDÊNCIAS -->
+      <div class="pure-narrative-card info-card pure-evidence-manager">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+          <div style="font-size:0.65rem; color:#64748b; letter-spacing:0.06em;"
+               data-pt="🔬 GESTÃO DE EVIDÊNCIAS" data-en="🔬 EVIDENCE MANAGEMENT">
+            🔬 GESTÃO DE EVIDÊNCIAS
+          </div>
+          <span class="pure-evidence-count"
+                data-type="digitais"
+                id="count-digitais"
+                style="display:none;">0</span>
+        </div>
+        <div id="pure-evidence-status"
+             style="font-size:0.95rem; font-weight:700; color:var(--pure-accent,#00E5FF); font-family:'JetBrains Mono',monospace;"
+             data-pt="SISTEMA LIMPO" data-en="CLEAN SYSTEM">
+          SISTEMA LIMPO
+        </div>
+        <div style="font-size:0.62rem; color:#475569; margin-top:4px;"
+             data-pt="INTEGRIDADE: SHA-256 ATIVO" data-en="INTEGRITY: SHA-256 ACTIVE">
+          INTEGRIDADE: SHA-256 ATIVO
+        </div>
+      </div>
+
+      <!-- CARD: SMOKING GUN 1 — DISCREPÂNCIA -->
+      <div class="pure-narrative-card warn-card">
+        <div style="font-size:0.65rem; color:var(--pure-warn,#EF4444); letter-spacing:0.06em; margin-bottom:6px;"
+             data-pt="⚠️ SMOKING GUN 1: DISCREPÂNCIA" data-en="⚠️ SMOKING GUN 1: DISCREPANCY">
+          ⚠️ SMOKING GUN 1: DISCREPÂNCIA
+        </div>
+        <div id="pure-smoking-gun-1"
+             style="font-size:0.78rem; color:#f8fafc; line-height:1.5;">
+          ---
+        </div>
+      </div>
+
+      <!-- CARD: SMOKING GUN 2 — OCULTAÇÃO -->
+      <div class="pure-narrative-card warn-card">
+        <div style="font-size:0.65rem; color:var(--pure-warn,#EF4444); letter-spacing:0.06em; margin-bottom:6px;"
+             data-pt="⚠️ SMOKING GUN 2: OCULTAÇÃO" data-en="⚠️ SMOKING GUN 2: CONCEALMENT">
+          ⚠️ SMOKING GUN 2: OCULTAÇÃO
+        </div>
+        <div id="pure-smoking-gun-2"
+             style="font-size:0.78rem; color:#f8fafc; line-height:1.5;">
+          ---
+        </div>
+      </div>
+
+      <!-- CARD: CONCLUSÃO PERICIAL -->
+      <div class="pure-narrative-card info-card">
+        <div style="font-size:0.65rem; color:#64748b; letter-spacing:0.06em; margin-bottom:6px;"
+             data-pt="CONCLUSÃO PERICIAL" data-en="EXPERT CONCLUSION">
+          CONCLUSÃO PERICIAL
+        </div>
+        <p id="pure-parecer-tecnico"
+           style="font-size:0.8rem; color:#f8fafc; margin:0; line-height:1.6;">
+          Aguardando processamento de prova...
+        </p>
+      </div>
+
+      <!-- CARD: INDÍCIOS DE COLARINHO BRANCO -->
+      <div class="pure-narrative-card warn-card">
+        <div style="font-size:0.65rem; color:var(--pure-warn,#EF4444); letter-spacing:0.06em; margin-bottom:6px;"
+             data-pt="INDÍCIOS DE COLARINHO BRANCO" data-en="WHITE-COLLAR CRIME INDICATIONS">
+          INDÍCIOS DE COLARINHO BRANCO
+        </div>
+        <p id="pure-colarinho-branco"
+           style="font-size:0.8rem; color:var(--pure-warn,#EF4444); margin:0; line-height:1.6;">
+          Análise de fluxo transfronteiriço pendente.
+        </p>
+      </div>
+
+    </div>
+    <!-- FIM: pure-narrative-grid -->
+
+    <!-- CONSOLE DE LOGS FORENSES -->
+    <div id="pure-forensic-log" class="pure-forensic-console">
+      <span class="log-system">[SYSTEM] UNIFED PROBATUM v13.11.16-PURE BOOT...</span>&#10;<span class="log-auth">[AUTH] CREDENCIAIS PERICIAIS VALIDADAS.</span>&#10;<span class="log-info">[INFO] AGUARDANDO ACIONAMENTO DO BOTÃO "CASO REAL ANONIMIZADO".</span>
+    </div>
+
+    <!-- CONTAINER DE BOTÕES DE EXPORTAÇÃO DA NARRATIVA -->
+    <div id="pure-export-actions"
+         style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
+      <!-- Botões injetados dinamicamente por unifed_triada_export.js -->
+    </div>
+
+    <!-- RODAPÉ DA NARRATIVA: MASTER HASH -->
+    <div id="pure-narrative-footer">
+      <span data-pt="UNIFED-PROBATUM | v13.11.16-PURE | DORA COMPLIANT"
+            data-en="UNIFED-PROBATUM | v13.11.16-PURE | DORA COMPLIANT"
+            id="pure-footer-version">
+        UNIFED-PROBATUM | v13.11.16-PURE | DORA COMPLIANT
+      </span>
+      <span>
+        MASTER HASH SHA-253:
+        <span id="pure-master-hash-display">[PENDENTE]</span>
+      </span>
+    </div>
+
+  </div>
+  <!-- FIM: pure-forensic-narrative -->
+
+  <!-- ══════════════════════════════════════════════════════════════════════
        GRUPOS E (restantes) + F + G — CONTAINER DE SOCKETS OCULTOS
        Estes elementos NÃO têm representação visual.
        Existem exclusivamente para que _updateAuxiliaryUI() e syncMetrics()
@@ -740,120 +896,18 @@
     <span id="auxBoxTotalNSValue">€ 0,00</span>
     <span id="auxBoxCancelValue">€ 0,00</span>
 
+    <!-- GRUPO G: Sockets PROBATUM NARRATIVE LAYER — v13.11.16-PURE -->
+    <!-- Usados por enrichment.js (generateIntegritySeal) e script.js -->
+    <span id="pure-hash-prefix-verdict">00000000</span>
+    <!-- pure-subject-status, pure-fluxos-nao-sujeitos, pure-smoking-gun-1,
+         pure-smoking-gun-2, pure-parecer-tecnico, pure-colarinho-branco,
+         pure-master-hash-display, pure-forensic-log, pure-export-actions,
+         pure-evidence-status, pure-evidence-count / count-digitais,
+         pure-apoio-pericial-label, pure-footer-version
+         → Todos visíveis na secção #pure-forensic-narrative acima. -->
+
   </div>
   <!-- FIM: pureHiddenSockets -->
 
-  <!-- ══════════════════════════════════════════════════════════════════════
-       BLOCO PATCH v13.11.16-PURE · RTF-UNIFED-2026-0406-001
-       Novos elementos de UI para integração com EnrichmentModule e NexusLayer.
-       Conformidade: DORA (UE) 2022/2554 · Art. 125.º CPP · ISO/IEC 27037:2012
-       ══════════════════════════════════════════════════════════════════════ -->
-
-  <!-- CARD: GESTÃO DE EVIDÊNCIAS (EnrichmentModule + EventBus) -->
-  <div class="pure-card pure-evidence-manager" style="margin-top: 20px; border-top: 2px solid var(--pure-accent, #00E5FF);">
-    <div class="pure-card-title">
-      <span data-pt="🔬 GESTÃO DE EVIDÊNCIAS" data-en="🔬 EVIDENCE MANAGEMENT">🔬 GESTÃO DE EVIDÊNCIAS</span>
-      <span class="pure-evidence-count" data-type="digitals" id="count-digitais"
-            style="display:none; background: var(--pure-accent,#00E5FF); color:#020617; font-size:0.7rem;
-                   padding: 2px 8px; border-radius: 10px; font-weight:700; margin-left:8px;">0</span>
-    </div>
-    <div class="pure-card-value" id="pure-evidence-status"
-         data-pt="SISTEMA LIMPO" data-en="CLEAN SYSTEM"
-         style="font-size:1rem; color: var(--pure-accent,#00E5FF);">SISTEMA LIMPO</div>
-    <div class="pure-subject-label" style="margin-top: 10px;"
-         data-pt="INTEGRIDADE: SHA-256 ATIVO" data-en="INTEGRITY: SHA-256 ACTIVE">
-      INTEGRIDADE: SHA-256 ATIVO
-    </div>
-  </div>
-
-  <!-- CARD: FLUXOS NÃO SUJEITOS A COMISSÃO (Indicação de Apoio Pericial) -->
-  <div class="pure-card" style="margin-top: 10px;">
-    <div class="pure-card-title" id="pure-apoio-pericial-label"
-         data-pt="INDICAÇÃO DE APOIO PERICIAL — FLUXOS NÃO SUJEITOS A COMISSÃO"
-         data-en="EXPERT SUPPORT INDICATION — FLOWS NOT SUBJECT TO COMMISSION">
-      INDICAÇÃO DE APOIO PERICIAL — FLUXOS NÃO SUJEITOS A COMISSÃO
-    </div>
-    <div class="pure-card-value" id="pure-fluxos-nao-sujeitos" style="font-size: 1.4rem;">€ 0,00</div>
-    <div class="pure-subject-label" style="margin-top: 10px;"
-         data-pt="ISENTO ART. 12º CIVA / EXEMPT" data-en="EXEMPT ART. 12 VAT ACT">
-      ISENTO ART. 12º CIVA / EXEMPT
-    </div>
-  </div>
-
-  <!-- SMOKING GUN 1: DISCREPÂNCIA MATERIAL -->
-  <div class="pure-card" style="margin-top: 10px; border-left: 4px solid var(--pure-warn, #EF4444);">
-    <div class="pure-card-title"
-         data-pt="⚠️ SMOKING GUN 1: DISCREPÂNCIA" data-en="⚠️ SMOKING GUN 1: DISCREPANCY">
-      ⚠️ SMOKING GUN 1: DISCREPÂNCIA
-    </div>
-    <div class="pure-subject-value" id="pure-smoking-gun-1"
-         style="white-space: normal; font-size: 0.8rem; color: var(--pure-warn,#EF4444);">---</div>
-  </div>
-
-  <!-- SMOKING GUN 2: OCULTAÇÃO -->
-  <div class="pure-card" style="margin-top: 10px; border-left: 4px solid var(--pure-warn, #EF4444);">
-    <div class="pure-card-title"
-         data-pt="⚠️ SMOKING GUN 2: OCULTAÇÃO" data-en="⚠️ SMOKING GUN 2: CONCEALMENT">
-      ⚠️ SMOKING GUN 2: OCULTAÇÃO
-    </div>
-    <div class="pure-subject-value" id="pure-smoking-gun-2"
-         style="white-space: normal; font-size: 0.8rem; color: var(--pure-warn,#EF4444);">---</div>
-  </div>
-
-  <!-- SECÇÃO: PARECER TÉCNICO E ANÁLISE DE RISCO -->
-  <div class="pure-card" style="margin-top: 10px; border-top: 1px solid rgba(0,229,255,0.2);">
-    <div class="pure-card-title" style="color: var(--pure-accent, #00E5FF);">
-      <span data-pt="📄 PARECER TÉCNICO E ANÁLISE DE RISCO"
-            data-en="📄 EXPERT OPINION &amp; RISK ANALYSIS">
-        📄 PARECER TÉCNICO E ANÁLISE DE RISCO
-      </span>
-    </div>
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 12px;">
-      <div>
-        <div class="pure-subject-label"
-             data-pt="CONCLUSÃO PERICIAL" data-en="EXPERT CONCLUSION">CONCLUSÃO PERICIAL</div>
-        <p id="pure-parecer-tecnico" style="font-size: 0.82rem; color: var(--pure-text-secondary, #94a3b8); margin-top: 6px;">
-          Aguardando processamento de prova...
-        </p>
-      </div>
-      <div>
-        <div class="pure-subject-label"
-             data-pt="INDÍCIOS DE COLARINHO BRANCO" data-en="WHITE-COLLAR CRIME INDICATIONS">
-          INDÍCIOS DE COLARINHO BRANCO
-        </div>
-        <p id="pure-colarinho-branco"
-           style="font-size: 0.82rem; color: var(--pure-warn, #EF4444); margin-top: 6px;">
-          Análise de fluxo transfronteiriço pendente.
-        </p>
-      </div>
-    </div>
-  </div>
-
-  <!-- CONTAINER: BOTÕES DE EXPORTAÇÃO (preenchido por unifed_triada_export.js) -->
-  <div id="pure-export-actions"
-       style="display: flex; gap: 10px; flex-wrap: wrap; padding: 15px 0; margin-top: 5px;">
-  </div>
-
-  <!-- LOG FORENSE (Console Forense Nexus) -->
-  <div class="console-section" id="pure-forensic-log"
-       style="margin-top: 10px; max-height: 100px; overflow-y: auto; font-size: 0.7rem;">
-    [SYSTEM] UNIFED PROBATUM v13.11.16-PURE BOOT...&#10;[AUTH] CREDENCIAIS PERICIAIS VALIDADAS.&#10;[INFO] AGUARDANDO ACIONAMENTO DO BOTÃO "CASO REAL ANONIMIZADO".
-  </div>
-
-  <!-- RODAPÉ DO PAINEL PURE -->
-  <div style="padding: 10px 0; display: flex; justify-content: space-between; align-items: center;
-              border-top: 1px solid rgba(255,255,255,0.1); margin-top: 10px;">
-    <div class="pure-subject-label" id="pure-footer-version">
-      UNIFED-PROBATUM | v13.11.16-PURE | DORA COMPLIANT
-    </div>
-    <div class="pure-subject-label">
-      MASTER HASH SHA-253:
-      <span id="pure-master-hash-display"
-            style="color: var(--pure-accent, #00E5FF); font-family: 'JetBrains Mono', monospace;">[PENDENTE]</span>
-    </div>
-  </div>
-
-  </div><!-- FIM: pureHiddenSockets -->
-
 </section>
-<!-- FIM: pureDashboard · RETROFIT R-1 · v13.5.0-BASE + v13.11.16-PURE · PATCH RTF-UNIFED-2026-0406-001 -->
+<!-- FIM: pureDashboard · RETROFIT R-1 · v13.5.0-BASE + v13.11.16-SOCKETS -->

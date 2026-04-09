@@ -6,133 +6,216 @@
  * Versão        : 1.0.0-RTF-UNIFED-2026-0406-PURE
  * ============================================================================
  * OBJECTIVO:
- * Substituir padrões de latência (setTimeout) por sincronização por eventos.
- * Garante que o carregamento do "CASO REAL" aguarda a prontidão do DOM.
- * * EVENTOS PADRÃO DO SISTEMA:
- * 'UNIFED_CORE_READY'       — UNIFEDSystem inicializado
- * 'UNIFED_DOM_READY'        — Interface panel.html injetada
- * 'UNIFED_EVIDENCE_LOADED'  — Dados do caso real processados
- * 'languageChanged'         — Alteração global de idioma (PT/EN)
+ *   Substituir TODOS os padrões setTimeout() usados para sincronização de
+ *   estado entre módulos (script_injection.js, nexus.js, unifed_triada_export.js).
+ *   Expõe um barramento de eventos publish/subscribe que:
+ *     · Devolve Promises resolvidas quando o evento ocorre (waitFor).
+ *     · Recorda eventos já emitidos (idempotente — re-subscritores recebem
+ *       resolução imediata para eventos passados).
+ *     · Rejeita com timeout configurável (padrão: 10 000 ms).
+ *
+ * EVENTOS PADRÃO DO SISTEMA:
+ *   'UNIFED_CORE_READY'       — UNIFEDSystem inicializado (emitido por script.js)
+ *   'UNIFED_DOM_READY'        — #pureDashboard injectado no DOM
+ *   'UNIFED_EVIDENCE_LOADED'  — evidências carregadas e masterHash selado
+ *   'UNIFED_EXPORT_READY'     — ExportService registado (pdf + docx)
+ *
+ * CONFORMIDADE: ISO/IEC 27037:2012 · DORA (UE) 2022/2554
  * ============================================================================
  */
 
-window.UNIFEDEventBus = (function() {
-    'use strict';
+'use strict';
 
-    const _handlers = {};
-    const _resolved = new Set();
-    const _eventData = new Map();
+window.UNIFEDEventBus = (function _UNIFEDEventBusIIFE() {
+
+    /** @type {Object.<string, Function[]>} */
+    var _handlers = Object.create(null);
 
     /**
-     * Subscrever a um evento
+     * Conjunto de eventos já emitidos. Permite resolução imediata de
+     * waitFor() para subscritores tardios sem corrida de estado.
+     * @type {Set<string>}
      */
-    function on(eventName, handler) {
-        if (typeof handler !== 'function') return;
-        if (!_handlers[eventName]) _handlers[eventName] = [];
-        _handlers[eventName].push(handler);
+    var _resolved = new Set();
 
-        // Se o evento já tiver sido resolvido, dispara imediatamente (Idempotência)
-        if (_resolved.has(eventName)) {
-            handler(_eventData.get(eventName));
+    /**
+     * Dados associados ao último emit de cada evento.
+     * @type {Object.<string, *>}
+     */
+    var _resolvedData = Object.create(null);
+
+    /**
+     * Filas de Promises pendentes por evento.
+     * @type {Object.<string, Array<{resolve: Function, timer: number}>>}
+     */
+    var _pending = Object.create(null);
+
+    // ── UTILITÁRIO INTERNO ──────────────────────────────────────────────────
+    function _log(msg) {
+        console.log('[' + new Date().toISOString() + '] [UNIFEDEventBus] ' + msg);
+    }
+
+    // ── API PÚBLICA ──────────────────────────────────────────────────────────
+
+    /**
+     * Subscreve um handler a um evento. Chamado para CADA ocorrência.
+     * @param {string}   event
+     * @param {Function} handler
+     */
+    function on(event, handler) {
+        if (typeof event !== 'string' || typeof handler !== 'function') {
+            throw new TypeError('[UNIFEDEventBus] on() requer string e Function.');
+        }
+        if (!_handlers[event]) { _handlers[event] = []; }
+        _handlers[event].push(handler);
+    }
+
+    /**
+     * Subscreve um handler que é chamado uma única vez.
+     * Se o evento já foi emitido, o handler é chamado de imediato de forma
+     * assíncrona (microtask) para evitar re-entrância.
+     * @param {string}   event
+     * @param {Function} handler
+     */
+    function once(event, handler) {
+        if (typeof event !== 'string' || typeof handler !== 'function') {
+            throw new TypeError('[UNIFEDEventBus] once() requer string e Function.');
+        }
+        if (_resolved.has(event)) {
+            var data = _resolvedData[event];
+            Promise.resolve().then(function() { handler(data); });
+            return;
+        }
+        function _wrapper(d) {
+            off(event, _wrapper);
+            handler(d);
+        }
+        on(event, _wrapper);
+    }
+
+    /**
+     * Remove um handler previamente registado.
+     * @param {string}   event
+     * @param {Function} handler
+     */
+    function off(event, handler) {
+        if (_handlers[event]) {
+            _handlers[event] = _handlers[event].filter(function(h) { return h !== handler; });
         }
     }
 
     /**
-     * Subscrever apenas uma vez
+     * Emite um evento, notificando todos os handlers registados.
+     * Marca o evento como resolvido para futuros waitFor().
+     * @param {string} event
+     * @param {*}      [data]
      */
-    function once(eventName, handler) {
-        const wrapper = (data) => {
-            off(eventName, wrapper);
-            handler(data);
-        };
-        on(eventName, wrapper);
-    }
-
-    /**
-     * Remover subscrição
-     */
-    function off(eventName, handler) {
-        if (!_handlers[eventName]) return;
-        _handlers[eventName] = _handlers[eventName].filter(h => h !== handler);
-    }
-
-    /**
-     * Emitir evento para o barramento
-     */
-    function emit(eventName, data) {
-        _resolved.add(eventName);
-        _eventData.set(eventName, data);
-
-        if (_handlers[eventName]) {
-            _handlers[eventName].forEach(handler => {
-                try {
-                    handler(data);
-                } catch (e) {
-                    console.error(`[EVENT_BUS] Erro no handler de ${eventName}:`, e);
-                }
-            });
+    function emit(event, data) {
+        if (typeof event !== 'string') {
+            throw new TypeError('[UNIFEDEventBus] emit() requer string.');
         }
-    }
+        _resolved.add(event);
+        _resolvedData[event] = data;
 
-    /**
-     * Devolve uma Promise que resolve quando o evento ocorre
-     */
-    function waitFor(eventName, timeout = 10000) {
-        return new Promise((resolve, reject) => {
-            if (_resolved.has(eventName)) {
-                return resolve(_eventData.get(eventName));
+        // Notificar handlers subscritos
+        var handlers = (_handlers[event] || []).slice(); // cópia — handlers podem chamar off()
+        handlers.forEach(function(h) {
+            try { h(data); } catch (err) {
+                console.error('[UNIFEDEventBus] Erro no handler de "' + event + '":', err);
             }
+        });
 
-            const timer = setTimeout(() => {
-                reject(new Error(`[EVENT_BUS] Timeout aguardando por: ${eventName}`));
-            }, timeout);
-
-            once(eventName, (data) => {
-                clearTimeout(timer);
-                resolve(data);
+        // Resolver Promises pendentes
+        if (_pending[event]) {
+            _pending[event].forEach(function(entry) {
+                clearTimeout(entry.timer);
+                entry.resolve(data);
             });
+            delete _pending[event];
+        }
+
+        _log('emit("' + event + '") — ' + (_handlers[event] ? _handlers[event].length : 0) + ' handlers notificados.');
+    }
+
+    /**
+     * Devolve uma Promise que resolve quando o evento for emitido.
+     * Se o evento já foi emitido, resolve de imediato.
+     * Rejeita após timeoutMs milissegundos (padrão: 10 000).
+     *
+     * SUBSTITUI: await new Promise(r => setTimeout(r, N))
+     * USO:        await UNIFEDEventBus.waitFor('UNIFED_DOM_READY', 8000)
+     *
+     * @param {string} event
+     * @param {number} [timeoutMs=10000]
+     * @returns {Promise<*>}
+     */
+    function waitFor(event, timeoutMs) {
+        if (typeof event !== 'string') {
+            return Promise.reject(new TypeError('[UNIFEDEventBus] waitFor() requer string.'));
+        }
+        if (_resolved.has(event)) {
+            return Promise.resolve(_resolvedData[event]);
+        }
+        var _ms = (typeof timeoutMs === 'number' && timeoutMs > 0) ? timeoutMs : 10000;
+        return new Promise(function(resolve, reject) {
+            if (!_pending[event]) { _pending[event] = []; }
+            var timer = setTimeout(function() {
+                var idx = (_pending[event] || []).findIndex(function(e) { return e.resolve === resolve; });
+                if (idx !== -1 && _pending[event]) { _pending[event].splice(idx, 1); }
+                reject(new Error('[UNIFEDEventBus] Timeout (' + _ms + 'ms) aguardando evento: "' + event + '"'));
+            }, _ms);
+            _pending[event].push({ resolve: resolve, timer: timer });
         });
     }
 
-    function hasResolved(eventName) {
-        return _resolved.has(eventName);
+    /**
+     * Devolve true se o evento já foi emitido pelo menos uma vez.
+     * @param {string} event
+     * @returns {boolean}
+     */
+    function hasResolved(event) {
+        return _resolved.has(event);
     }
 
     /**
-     * Diagnóstico de integridade do barramento
+     * Devolve snapshot de diagnóstico — não expõe referências internas.
+     * @returns {Object}
      */
     function diagnostics() {
-        return {
-            resolved: Array.from(_resolved),
-            pending: Object.keys(_handlers).filter(e => !_resolved.has(e)),
-            activeHandlers: Object.keys(_handlers).length
-        };
+        var snap = Object.create(null);
+        snap.resolvedEvents  = Array.from(_resolved);
+        snap.pendingEvents   = Object.keys(_pending);
+        snap.subscribedEvents = Object.keys(_handlers).reduce(function(acc, k) {
+            acc[k] = _handlers[k].length;
+            return acc;
+        }, Object.create(null));
+        return snap;
     }
 
-    // Exposição da Interface Pública Congelada
+    // ── EXPOSIÇÃO: interface pública congelada ───────────────────────────────
     return Object.freeze({
-        on,
-        once,
-        off,
-        emit,
-        waitFor,
-        hasResolved,
-        diagnostics
+        on:           on,
+        once:         once,
+        off:          off,
+        emit:         emit,
+        waitFor:      waitFor,
+        hasResolved:  hasResolved,
+        diagnostics:  diagnostics
     });
+
 })();
 
-/**
- * BRIDGE LEGACY: Sincronização com eventos nativos do browser
- */
+// ── COMPATIBILIDADE: reemitir evento legado window.dispatchEvent ──────────────
+// Script.js emite: new CustomEvent('UNIFED_CORE_READY')
+// O EventBus monitoriza o evento nativo e propaga internamente.
 (function _bridgeLegacyEvents() {
-    const _LEGACY = ['UNIFED_CORE_READY', 'UNIFED_DOM_READY'];
-    _LEGACY.forEach(evt => {
-        window.addEventListener(evt, (e) => {
-            if (!window.UNIFEDEventBus.hasResolved(evt)) {
-                window.UNIFEDEventBus.emit(evt, e.detail || undefined);
+    var _LEGACY_EVENTS = ['UNIFED_CORE_READY'];
+    _LEGACY_EVENTS.forEach(function(evtName) {
+        window.addEventListener(evtName, function(e) {
+            if (!window.UNIFEDEventBus.hasResolved(evtName)) {
+                window.UNIFEDEventBus.emit(evtName, e && e.detail ? e.detail : undefined);
             }
-        });
+        }, { once: true });
     });
+    console.log('[UNIFEDEventBus] Bridge de eventos legados instalada para: ' + _LEGACY_EVENTS.join(', ') + '.');
 })();
-
-console.info('[UNIFED-BUS] ✅ Barramento de Eventos v1.0.0 Ativo (DORA Compliant).');
