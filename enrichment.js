@@ -1,5 +1,5 @@
 /**
- * UNIFED - PROBATUM · OUTPUT ENRICHMENT LAYER · v13.11.4-PURE
+ * UNIFED - PROBATUM · OUTPUT ENRICHMENT LAYER · v13.11.16-PURE
  * ============================================================================
  * Arquitetura: Asynchronous Post-Computation Orchestration
  * Padrão:      Read-Only Data Consumption sobre UNIFEDSystem.analysis
@@ -255,23 +255,36 @@ function _fallbackNarrative(reason) {
 }
 
 // ============================================================================
-// 8. EXPOSIÇÃO GLOBAL — generateLegalNarrative UNIFICADO v13.11.4-PURE
+// 8. EXPOSIÇÃO GLOBAL — generateLegalNarrative UNIFICADO v13.11.16-PURE
 // ============================================================================
 // PATCH A-01: Definição única global. System prompt forense completo (fusão).
-// Dados calculados localmente: valorBTOR, BTF, IVA 6% (de L1103 original).
-// Fallback estático: narrativa pericial enriquecida com 3 contra-argumentos.
+// PATCH A-08 (v13.11.16-PURE): Assinatura expandida — aceita (analysis) OU
+//   (lang: string) para compatibilidade com enrichment.js.js que invoca
+//   window.generateLegalNarrative(lang) em vez de (analysis).
+//   Quando o 1.º argumento é uma string, constrói o analysis a partir de
+//   window.UNIFEDSystem.analysis e usa o lang para formatCurrency.
 // ============================================================================
-window.generateLegalNarrative = async function(analysis) {
+window.generateLegalNarrative = async function(analysisOrLang) {
+    // [A-08] Disambiguação do argumento — string → modo lang; object → modo analysis
+    var analysis;
+    var _forcedLang = null;
+    if (typeof analysisOrLang === 'string') {
+        _forcedLang = analysisOrLang;
+        analysis = (window.UNIFEDSystem && window.UNIFEDSystem.analysis) ? window.UNIFEDSystem.analysis : {};
+    } else {
+        analysis = analysisOrLang || (window.UNIFEDSystem && window.UNIFEDSystem.analysis) || {};
+    }
     console.log('[UNIFED-AI] \u25b6 A gerar Síntese Jurídica Assistida por IA...');
 
     const t = (analysis && analysis.totals)    || {};
     const c = (analysis && analysis.crossings) || {};
 
     // ── Formatação local (independente de formatCurrency global) ──────────────
+    const _activeLang = _forcedLang || (typeof window.currentLang !== 'undefined' ? window.currentLang : 'pt');
     const _fmtLocal = (typeof window.formatCurrency === 'function')
-        ? window.formatCurrency.bind(window)
+        ? function(v) { return window.formatCurrency(v, _activeLang); }
         : function(v) {
-            return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(v || 0);
+            return new Intl.NumberFormat(_activeLang === 'en' ? 'en-GB' : 'pt-PT', { style: 'currency', currency: _activeLang === 'en' ? 'GBP' : 'EUR' }).format(v || 0);
           };
 
     // ── Valores calculados (usados no prompt e no fallback) ──────────────────
@@ -585,7 +598,7 @@ function generateIntegritySeal(masterHash, doc, x, y, sealSize) {
     doc.setFont('courier', 'bold');
     doc.setTextColor(0, 229, 255);
     doc.text('PROBATUM INTEGRITY SEAL', CX, y + 3.5, { align: 'center' });
-    doc.text('v13.11.4-PURE \u00b7 SHA-256', CX, y + 6.5, { align: 'center' });
+    doc.text('v13.11.16-PURE \u00b7 SHA-256', CX, y + 6.5, { align: 'center' });
     doc.setDrawColor(30, 60, 100);
     doc.setLineWidth(0.2);
     doc.circle(CX, CY, R, 'S');
@@ -643,7 +656,7 @@ async function exportDOCX(xmlInject) {
         if (typeof showToast === 'function') showToast('Sem sujeito passivo para gerar minuta.', 'error');
         return;
     }
-    if (typeof window.logAudit === 'function') window.logAudit('\ud83d\udcc4 [v13.11.4-PURE] A gerar Minuta de Peticao Inicial (DOCX)...', 'info');
+    if (typeof window.logAudit === 'function') window.logAudit('\ud83d\udcc4 [v13.11.16-PURE] A gerar Minuta de Peticao Inicial (DOCX)...', 'info');
     var sys  = window.UNIFEDSystem;
     var t    = sys.analysis.totals    || {};
     var c    = sys.analysis.crossings || {};
@@ -846,7 +859,7 @@ async function exportDOCX(xmlInject) {
         setTimeout(function() {
             try { URL.revokeObjectURL(url); document.body.removeChild(link); } catch (_) {}
         }, 2000);
-        if (typeof window.logAudit === 'function') window.logAudit('\u2705 [v13.11.4-PURE] Minuta DOCX exportada com sucesso.', 'success');
+        if (typeof window.logAudit === 'function') window.logAudit('\u2705 [v13.11.16-PURE] Minuta DOCX exportada com sucesso.', 'success');
         if (typeof showToast === 'function') showToast('Minuta DOCX exportada - Peticao Inicial pronta', 'success');
         if (typeof ForensicLogger !== 'undefined') ForensicLogger.addEntry('DOCX_EXPORT_COMPLETED', { sessionId: sys.sessionId });
     } catch (zipErr) {
@@ -1281,8 +1294,66 @@ function generateBurdenOfProofSection(discrepancyValue) {
 }
 window.generateBurdenOfProofSection = generateBurdenOfProofSection;
 
-console.log('[UNIFED-ENRICHMENT] \u2705 Output Enrichment Layer v13.11.4-PURE carregado.');
-console.log('[UNIFED-ENRICHMENT]   . generateLegalNarrative()     - IA Argumentativa + AI Adversarial Simulator (Patch A-01: unified)');
+// ============================================================================
+// PATCH A-09 (v13.11.16-PURE) — INTEGRAÇÃO COM UNIFEDEventBus
+// ============================================================================
+// 1. Subscrição ao evento 'languageChanged' para re-gerar narrativa no painel.
+// 2. Registo de exportDOCX no UNIFEDExportService (se disponível).
+//    Sem este registo, unifed_export_register.js captura window.exportDOCX
+//    corretamente — este bloco é defensivo/idempotente.
+// ============================================================================
+(function _enrichmentEventBusIntegration() {
+    function _onLanguageChanged(data) {
+        var lang = (data && data.language) ? data.language : (window.currentLang || 'pt');
+        var parecerEl = document.getElementById('pure-parecer-tecnico');
+        if (!parecerEl) return; // painel não injetado ainda
+
+        // Atualizar texto de espera traduzido enquanto API carrega
+        parecerEl.textContent = (lang === 'en')
+            ? 'Loading expert opinion...'
+            : 'A carregar parecer técnico...';
+
+        // Chamar generateLegalNarrative com lang para re-popular o painel
+        if (typeof window.generateLegalNarrative === 'function') {
+            window.generateLegalNarrative(lang).then(function(narrativa) {
+                var el = document.getElementById('pure-parecer-tecnico');
+                if (el) el.textContent = narrativa;
+            }).catch(function() { /* fallback silencioso */ });
+        }
+    }
+
+    if (window.UNIFEDEventBus) {
+        // Subscrição idempotente — UNIFEDEventBus.on permite múltiplos handlers
+        window.UNIFEDEventBus.on('languageChanged', _onLanguageChanged);
+
+        // Registar renderer DOCX no ExportService quando core estiver pronto
+        window.UNIFEDEventBus.waitFor('UNIFED_CORE_READY', 15000).then(function() {
+            var svc = window.UNIFEDExportService && window.UNIFEDExportService.getInstance();
+            if (svc && typeof exportDOCX === 'function') {
+                // Só registar se não registado — unifed_export_register.js é o
+                // ponto central; este bloco é fallback para inicializações tardias.
+                var st = svc.status();
+                if (st.registeredTypes.indexOf('docx') === -1) {
+                    svc.register('docx', async function(masterHash) {
+                        if (window.UNIFEDSystem && masterHash) {
+                            window.UNIFEDSystem.masterHash = masterHash;
+                        }
+                        await exportDOCX();
+                    });
+                    console.info('[UNIFED-ENRICHMENT] [A-09] Renderer DOCX registado via fallback no ExportService.');
+                }
+            }
+        }).catch(function() { /* silencioso */ });
+    } else {
+        // Bridge legado: evento nativo languageChanged
+        window.addEventListener('languageChanged', function(e) {
+            _onLanguageChanged(e && e.detail ? e.detail : {});
+        });
+    }
+})();
+
+console.log('[UNIFED-ENRICHMENT] \u2705 Output Enrichment Layer v13.11.16-PURE carregado.');
+console.log('[UNIFED-ENRICHMENT]   . generateLegalNarrative()     - IA Argumentativa + AI Adversarial Simulator (Patch A-01+A-08: unified, lang-aware)');
 console.log('[UNIFED-ENRICHMENT]   . renderSankeyToImage()        - Dynamic Canvas-to-PDF (Sankey)');
 console.log('[UNIFED-ENRICHMENT]   . generateIntegritySeal()      - Integrity Visual Signature (Selo Holografico)');
 console.log('[UNIFED-ENRICHMENT]   . exportDOCX()                 - Structural DOCX (Minuta Peticao Inicial)');
@@ -1291,3 +1362,4 @@ console.log('[UNIFED-ENRICHMENT]   . generateTemporalChartImage() - ATF Grafico 
 console.log('[UNIFED-ENRICHMENT]   . computeTemporalAnalysis()    - ATF Analytics (2sigma SP Outliers)');
 console.log('[UNIFED-ENRICHMENT]   . openATFModal()               - ATF Dashboard Modal (Chart.js)');
 console.log('[UNIFED-ENRICHMENT]   . Modo: Read-Only - Fonte: UNIFEDSystem.analysis + monthlyData');
+console.log('[UNIFED-ENRICHMENT]   . [A-09] EventBus: languageChanged subscrito · ExportService: renderer docx fallback registado');

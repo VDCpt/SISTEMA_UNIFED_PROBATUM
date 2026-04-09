@@ -3,7 +3,7 @@
  * UNIFED - PROBATUM · EVENT BUS CENTRALIZADO
  * ============================================================================
  * Ficheiro      : unifed_event_bus.js
- * Versão        : 1.0.0-RTF-UNIFED-2026-0406
+ * Versão        : 1.0.0-RTF-UNIFED-2026-0406-PURE
  * ============================================================================
  * OBJECTIVO:
  *   Substituir TODOS os padrões setTimeout() usados para sincronização de

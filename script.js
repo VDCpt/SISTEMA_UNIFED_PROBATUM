@@ -8388,13 +8388,100 @@ window.resetAuxiliaryData = resetAuxiliaryData;
         return;
     }
 
-    UNIFEDSystem._pureModuleVersion = 'v13.5.0-PURE';
+    UNIFEDSystem._pureModuleVersion = 'v13.11.16-PURE';
     UNIFEDSystem._pureModuleLoaded = true;
 
     if (typeof UNIFEDSystem.loadAnonymizedRealCase !== 'function') {
         UNIFEDSystem.loadAnonymizedRealCase = function _pureStub() {
-            // console.warn('[UNIFED-PURE] ⚠ script_injection_v13.5.0-PURE.js não carregado. Verificar ordem de carregamento em index.html.');
+            // console.warn('[UNIFED-PURE] ⚠ script_injection_v13.11.16-PURE.js não carregado. Verificar ordem de carregamento em index.html.');
         };
+    }
+
+    // ── [PATCH B-01] loadEvidence() — compatibilidade com enrichment.js e nexus.js ──
+    // A correção enrichment.js.js invoca window.UNIFEDSystem.loadEvidence(evidences).
+    // Sem esta função, a chamada falha silenciosamente e o masterHash fica nulo.
+    if (typeof UNIFEDSystem.loadEvidence !== 'function') {
+        UNIFEDSystem.loadEvidence = function _loadEvidence(evidences) {
+            if (!Array.isArray(evidences)) {
+                console.warn('[UNIFED-CORE] loadEvidence(): argumento não é Array.');
+                return;
+            }
+            console.info('[UNIFED-CORE] loadEvidence(): processando ' + evidences.length + ' evidências.');
+
+            // Armazenar no evidenceIntegrity para compatibilidade com exportDOCX
+            UNIFEDSystem.analysis.evidenceIntegrity = UNIFEDSystem.analysis.evidenceIntegrity || [];
+            evidences.forEach(function(ev) {
+                var existing = UNIFEDSystem.analysis.evidenceIntegrity.find(function(e) { return e.hash === ev.hash; });
+                if (!existing) {
+                    UNIFEDSystem.analysis.evidenceIntegrity.push({
+                        filename: ev.tipo || ev.type || ev.id || 'Evidência',
+                        type:     ev.tipo || ev.type || 'N/A',
+                        hash:     ev.hash || 'N/A',
+                        id:       ev.id   || null
+                    });
+                }
+            });
+
+            // Atualizar contagem
+            UNIFEDSystem.counts = UNIFEDSystem.counts || {};
+            UNIFEDSystem.counts.total = UNIFEDSystem.analysis.evidenceIntegrity.length;
+
+            // Emitir evento via EventBus para enriquecer o painel PROBATUM
+            if (window.UNIFEDEventBus) {
+                window.UNIFEDEventBus.emit('UNIFED_EVIDENCE_LOADED', {
+                    hash:  UNIFEDSystem.masterHash || 'PENDING',
+                    count: evidences.length
+                });
+            }
+
+            // Sincronizar UI do painel
+            if (typeof window._updatePureUI === 'function') {
+                window._updatePureUI();
+            }
+
+            console.info('[UNIFED-CORE] [B-01] loadEvidence() concluído — ' + UNIFEDSystem.analysis.evidenceIntegrity.length + ' evidências em vault.');
+        };
+        console.info('[UNIFED-CORE] [B-01] UNIFEDSystem.loadEvidence() registado.');
+    }
+
+    // ── [PATCH B-02] checkEconomicAnomalies() ────────────────────────────────
+    // Invocado pelo módulo de análise para classificar valores omitidos.
+    // Art. 103.º RGIT — limiar de crime qualificado: > € 50.000.
+    if (typeof window.checkEconomicAnomalies !== 'function') {
+        window.checkEconomicAnomalies = function checkEconomicAnomalies(valorOmitido) {
+            if (typeof valorOmitido !== 'number' || isNaN(valorOmitido)) return null;
+            if (valorOmitido > 250000) {
+                return {
+                    classificacao: 'COLARINHO BRANCO — FRAUDE QUALIFICADA',
+                    risco:         'CRÍTICO',
+                    artigo:        'Art. 103.º n.º 2 RGIT',
+                    procedimento:  'Comunicação imediata ao Ministério Público · Arresto preventivo (Art. 214.º CPP)'
+                };
+            }
+            if (valorOmitido > 50000) {
+                return {
+                    classificacao: 'COLARINHO BRANCO',
+                    risco:         'ELEVADO',
+                    artigo:        'Art. 103.º RGIT',
+                    procedimento:  'Comunicação imediata ao Ministério Público'
+                };
+            }
+            if (valorOmitido > 7500) {
+                return {
+                    classificacao: 'CONTRA-ORDENAÇÃO TRIBUTÁRIA',
+                    risco:         'MÉDIO',
+                    artigo:        'Art. 119.º RGIT',
+                    procedimento:  'Participação à Autoridade Tributária'
+                };
+            }
+            return {
+                classificacao: 'IRREGULARIDADE FISCAL',
+                risco:         'BAIXO',
+                artigo:        'Art. 119.º RGIT',
+                procedimento:  'Regularização voluntária (Art. 29.º RGIT)'
+            };
+        };
+        console.info('[UNIFED-CORE] [B-02] checkEconomicAnomalies() registado.');
     }
 
     if (
@@ -8432,17 +8519,30 @@ window.resetAuxiliaryData = resetAuxiliaryData;
         console.info('[UNIFED-PURE] _updatePureUI v1 (bootstrap) registado — script_injection.js substituirá por v2.');
     }
 
-    console.info('[UNIFED-PURE] ✅ Sistema Consolidado com Sucesso.');
+    console.info('[UNIFED-PURE] ✅ Sistema v13.11.16-PURE Consolidado com Sucesso.');
 })();
 
+// ── [PATCH B-03] Dupla emissão UNIFED_CORE_READY (dispatchEvent + EventBus) ──
+// O EventBus está agora carregado antes de script.js (index.html patch R-I01).
+// Emitir via ambos os canais garante compatibilidade com módulos que subscrevem
+// apenas via EventBus e módulos legados que escutam window.addEventListener.
 if (typeof window.dispatchEvent === 'function') {
     window.dispatchEvent(new CustomEvent('UNIFED_CORE_READY', {
         detail: {
             timestamp: Date.now(),
-            version: UNIFEDSystem._pureModuleVersion || 'v13.5.0-PURE'
+            version:   UNIFEDSystem._pureModuleVersion || 'v13.11.16-PURE'
         }
     }));
-    console.log('[UNIFED-CORE] Evento UNIFED_CORE_READY despachado.');
+    console.log('[UNIFED-CORE] Evento UNIFED_CORE_READY despachado (dispatchEvent).');
 }
 
-console.log('UNIFED - PROBATUM v13.5.0-PURE · DORA COMPLIANT · ATF · INTEGRITY SEAL · DOCX · AI ADVERSARIAL · NIFAF GUARD · NEXUS · ATIVADO');
+// Emissão directa via EventBus (resolvida imediatamente para subscritores tardios)
+if (window.UNIFEDEventBus && !window.UNIFEDEventBus.hasResolved('UNIFED_CORE_READY')) {
+    window.UNIFEDEventBus.emit('UNIFED_CORE_READY', {
+        timestamp: Date.now(),
+        version:   UNIFEDSystem._pureModuleVersion || 'v13.11.16-PURE'
+    });
+    console.log('[UNIFED-CORE] Evento UNIFED_CORE_READY emitido via UNIFEDEventBus. [B-03]');
+}
+
+console.log('UNIFED - PROBATUM v13.11.16-PURE · DORA COMPLIANT · ATF · INTEGRITY SEAL · DOCX · AI ADVERSARIAL · NIFAF GUARD · NEXUS · ATIVADO');

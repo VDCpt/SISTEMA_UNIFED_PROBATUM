@@ -1,5 +1,5 @@
 /**
- * UNIFED - PROBATUM · NEXUS LAYER · v13.11.4-PURE
+ * UNIFED - PROBATUM · NEXUS LAYER · v13.11.16-PURE
  * ============================================================================
  * Arquitetura : Adaptive Extension Layer — carregado APÓS enrichment.js
  * Padrão      : Read-Only sobre UNIFEDSystem · Nenhum cálculo fiscal alterado
@@ -909,7 +909,7 @@
 // NEXUS · EXPOSIÇÃO GLOBAL E LOG DE ARRANQUE
 // ============================================================================
 console.info(
-    '%c[NEXUS · UNIFED-PROBATUM · v13.11.4-PURE · RTF-UNIFED-2026-0406]\n' +
+    '%c[NEXUS · UNIFED-PROBATUM · v13.11.16-PURE · RTF-UNIFED-2026-0406]\n' +
     '%c  M1 · Stealth Network Interceptor     — Anti-F12 Protocol ATIVO\n' +
     '  M2 · RAG Jurisprudencial DOCX         — Hook exportDOCX() instalado\n' +
     '  M3 · Motor Preditivo ATF (6M)         — R-N01: createElement (innerHTML eliminado)\n' +
