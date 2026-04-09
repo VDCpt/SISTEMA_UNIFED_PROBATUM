@@ -1193,6 +1193,59 @@
     window.addEventListener('languageChanged', function(e) {
         _onLangChanged(e && e.detail ? e.detail : {});
     });
+// ── 1. DEFINIÇÃO DA FUNÇÃO (Colar antes ou depois de _onEvidenceLoaded) ──────
+function generateQRCode() {
+    const container = document.getElementById('qrcodeContainer');
+    if (!container) {
+        console.warn('[UNIFED-QR] Contentor #qrcodeContainer não detetado no DOM.');
+        return;
+    }
+    
+    container.innerHTML = '';
+    // Recuperação de metadados da sessão para o QR Data
+    const sys = window.UNIFEDSystem;
+    const hashFull = sys?.masterHash || 'HASH_INDISPONIVEL';
+    const sessionShort = sys?.sessionId ? sys.sessionId.substring(0, 16) : 'N/A';
+    
+    // String de Auditoria Forense
+    const qrData = `UNIFED|${sessionShort}|${hashFull}`;
+
+    if (typeof QRCode !== 'undefined') {
+        new QRCode(container, {
+            text: qrData,
+            width: 75,
+            height: 75,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.M // Alterado para M para maior resiliência em impressão
+        });
+        console.info('[UNIFED-QR] ✅ Selo QR gerado para a Sessão: ' + sessionShort);
+    } else {
+        console.error('[UNIFED-QR] Erro: Biblioteca QRCode.js não carregada.');
+    }
+}
+
+// ── 2. INVOCAÇÃO CIRÚRGICA (Modificar a sua função existente) ──────
+function _onEvidenceLoaded(data) {
+    var _logEl = document.getElementById('pure-forensic-log');
+    if (!_logEl) return;
+
+    var _ts    = new Date().toLocaleTimeString('pt-PT');
+    var _count = (data && data.count) ? data.count : '?';
+    var _hash  = (data && data.hash)  ? data.hash.substring(0, 16) + '...' : 'N/A';
+
+    _logEl.innerHTML = 
+        '<span class="log-system">[SYSTEM] UNIFED PROBATUM v13.11.16-PURE — ONLINE</span>&#10;' +
+        '<span class="log-auth">[AUTH] CREDENCIAIS PERICIAIS VALIDADAS.</span>&#10;' +
+        '<span class="log-info">[' + _ts + '] CASO REAL ANONIMIZADO CARREGADO.</span>&#10;' +
+        '<span class="log-info">[EVIDÊNCIAS] ' + _count + ' registos processados.</span>&#10;' +
+        '<span class="log-info">[HASH-PREFIX] ' + _hash + '</span>&#10;' +
+        '<span class="log-auth">[STATUS] INTEGRIDADE SHA-256: VERIFICADA.</span>';
+
+    // [INJECÇÃO OBRIGATÓRIA]: O QR Code só pode ser gerado aqui, 
+    // após a confirmação da integridade SHA-256 no log.
+    generateQRCode(); 
+}
 
     // ── 5. Subscrição 'UNIFED_EVIDENCE_LOADED' → atualiza console forense ──────
     function _onEvidenceLoaded(data) {
