@@ -66,7 +66,7 @@
         atf: {
             zScore: 2.45,
            /**
- * UNIFED - PROBATUM · CASO REAL ANONIMIZADO v13.11.16-PURE (RECONSTITUÍDO)
+/* * UNIFED - PROBATUM · CASO REAL ANONIMIZADO v13.11.16-PURE (RECONSTITUÍDO)
  * ============================================================================
  * Missão: Injeção Forense e Reconstituição da Verdade Material
  * Patch R-I09: Correção de Escopo Atómico e Sincronização de Sockets
@@ -80,7 +80,6 @@
         const dashboard = document.getElementById('pureDashboard');
         if (!dashboard) return;
 
-        // [CORREÇÃO] O mapeamento deve residir dentro da função para acesso dinâmico
         const sys = window.UNIFEDSystem || {};
         const data = sys.analysis || {};
         const counts = sys.counts || { evidence: 0, logs: 0 };
@@ -96,7 +95,6 @@
             'pure-session-id':          sys.sessionId || 'MMLADX8Q'
         };
 
-        // Aplicação atómica nos sockets DOM
         Object.keys(mapping).forEach(id => {
             const el = document.getElementById(id);
             if (el) {
@@ -141,10 +139,9 @@
         setTimeout(dismiss, 5000);
     }
 })();
-        console.log('[UNIFED] Escudo CORS silencioso instalado para FreeTSA e api.unifed.com.');
-    })();
 
-    // 3. UTILITÁRIOS DE FORMATAÇÃO E ACESSO AO DOM
+console.log('[UNIFED] Escudo CORS silencioso instalado para FreeTSA e api.unifed.com.');
+    
     const _fmt = (v) => new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(v);
     
     const _set = (id, val) => {
