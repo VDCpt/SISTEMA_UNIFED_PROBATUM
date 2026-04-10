@@ -186,7 +186,7 @@
         console.log('[UNIFED] Contadores de evidências atualizados.');
     };
 
-    // 5. FUNÇÃO DE INJEÇÃO DO PAINEL VIA TEMPLATE
+      // 5. FUNÇÃO DE INJEÇÃO DO PAINEL VIA TEMPLATE
     window._activatePurePanel = function _activatePurePanelFixed() {
         var template = document.getElementById('purePanelTemplate');
         if (!template) {
@@ -241,21 +241,6 @@
     }
 
 })();
-    } else {
-        window._activatePurePanel();
-        if (typeof window.UNIFED_INTERNAL !== 'undefined' && window.UNIFED_INTERNAL.simulateEvidenceUpload) {
-            window.UNIFED_INTERNAL.simulateEvidenceUpload().then(function() {
-                if (window.UNIFED_INTERNAL.updateEvidenceCountersAndShow) window.UNIFED_INTERNAL.updateEvidenceCountersAndShow();
-                if (window.UNIFED_INTERNAL.syncMetrics) window.UNIFED_INTERNAL.syncMetrics();
-            }).catch(function(e) { console.warn('[UNIFED] Erro ao simular upload:', e); });
-        }
-    }
-
-})();
-
-// ============================================================================
-// PATCH A-10 (v13.11.16-PURE) — LEGAL FRAMEWORK, NARRATIVE LAYER & EXPORT
-// ============================================================================
 (function _patchA10NarrativeLayer() {
     'use strict';
 
