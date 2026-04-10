@@ -3,37 +3,14 @@
  * UNIFED - PROBATUM · SERVIÇO DE EXPORTAÇÃO UNIFICADO (SINGLETON)
  * ============================================================================
  * Ficheiro      : unifed_export_service.js
- * Versão        : 1.0.0-RTF-UNIFED-2026-0406
+ * Versão        : 1.1.0-RTF-UNIFED-2026-0406
  * ============================================================================
- * OBJECTIVO:
- *   Centralizar a lógica de exportPDF e exportDOCX (actualmente fragmentada
- *   entre enrichment.js, script.js e unifed_triada_export.js) num único
- *   serviço Singleton que:
- *     1. Realiza a selagem criptográfica (Master Hash) de forma ATÓMICA antes
- *        de qualquer serialização de ficheiro.
- *     2. Previne chamadas concorrentes (lock optimista).
- *     3. Emite eventos UNIFEDEventBus.emit('UNIFED_EXPORT_READY') após
- *        registo dos renderers.
- *     4. Expõe interface pública congelada via Object.freeze().
- *
- * ARQUITECTURA:
- *   · ExportService.getInstance()     → instância única (Singleton)
- *   · instance.register(type, fn)     → regista renderer ('pdf' | 'docx' | 'custody')
- *   · instance.export(type)           → sela + serializa atomicamente
- *   · instance.status()               → diagnóstico sem mutação
- *
- * ELIMINAÇÃO DE DUPLICADOS:
- *   · window.exportPDF   (script.js L5291)    → delegado via register('pdf', fn)
- *   · window.exportDOCX  (enrichment.js L636) → delegado via register('docx', fn)
- *   · gerarAnexoCustodia (triada L79)         → delegado via register('custody', fn)
- *   Todos chamam instance.export(type) — a selagem ocorre uma única vez,
- *   atomicamente, independentemente do ponto de entrada.
- *
- * DEPENDÊNCIAS:
- *   · window.UNIFEDEventBus   (unifed_event_bus.js — carregado antes)
- *   · window.UNIFEDSystem     (script.js — disponível após UNIFED_CORE_READY)
- *
- * CONFORMIDADE: ISO/IEC 27037:2012 · DORA (UE) 2022/2554
+ * [EV-012] RECTIFICAÇÕES (2026-04-10):
+ *   · Removida a IIFE _installCompatAdapters (injeção global síncrona).
+ *   · Adicionado método público initAdapters() para ser invocado pelo
+ *     unifed_event_bus.js após a validação do Master Hash inicial.
+ *   · Eliminada qualquer mutação directa de window.exportPDF/exportDOCX
+ *     durante o carregamento do script.
  * ============================================================================
  */
 
@@ -49,7 +26,8 @@ window.UNIFEDExportService = (function _UNIFEDExportServiceIIFE() {
         locked:    false,                // lock de exportação em curso
         lastHash:  null,                 // último masterHash selado
         lastType:  null,                 // último tipo exportado
-        exportCount: 0                   // contador de exportações (auditoria)
+        exportCount: 0,                  // contador de exportações (auditoria)
+        adaptersInstalled: false         // flag para evitar dupla instalação
     };
 
     // ── TIPOS VÁLIDOS ────────────────────────────────────────────────────────
@@ -200,14 +178,73 @@ window.UNIFEDExportService = (function _UNIFEDExportServiceIIFE() {
                 locked:          _state.locked,
                 lastType:        _state.lastType,
                 lastHashPrefix:  _state.lastHash ? _state.lastHash.substring(0, 12) + '...' : null,
-                exportCount:     _state.exportCount
+                exportCount:     _state.exportCount,
+                adaptersInstalled: _state.adaptersInstalled
             });
+        }
+
+        /**
+         * [EV-012] Método público para instalar os adaptadores de compatibilidade.
+         * DEVE ser chamado pelo unifed_event_bus.js APÓS a validação do Master Hash
+         * inicial e APÓS o registo dos renderers (pdf, docx, custody) estar completo.
+         *
+         * Substitui as funções window.exportPDF e window.exportDOCX pelos adaptadores
+         * que delegam para ExportService.export(type).
+         */
+        function initAdapters() {
+            if (_state.adaptersInstalled) {
+                _log('Adaptadores já instalados. Nenhuma acção tomada.', 'warn');
+                return;
+            }
+
+            // Verificar se os renderers críticos já estão registados
+            if (!_state.renderers['pdf'] || !_state.renderers['docx']) {
+                _log('initAdapters() chamado antes do registo dos renderers pdf/docx. Aguardar UNIFED_EXPORT_READY.', 'warn');
+                // Tentar novamente quando o evento de prontidão for emitido
+                if (window.UNIFEDEventBus && !window.UNIFEDEventBus.hasResolved('UNIFED_EXPORT_READY')) {
+                    window.UNIFEDEventBus.once('UNIFED_EXPORT_READY', function() {
+                        _installAdapters();
+                    });
+                } else {
+                    setTimeout(function() { initAdapters(); }, 500);
+                }
+                return;
+            }
+
+            _installAdapters();
+        }
+
+        function _installAdapters() {
+            if (_state.adaptersInstalled) return;
+
+            window.exportPDF = async function _exportPDFAdapter() {
+                try {
+                    await exportDocument('pdf');
+                } catch (err) {
+                    console.error('[ExportService·Adapter] exportPDF falhou:', err);
+                }
+            };
+
+            window.exportDOCX = async function _exportDOCXAdapter(xmlInject) {
+                if (xmlInject !== undefined) {
+                    console.warn('[ExportService·Adapter] Argumento xmlInject ignorado — usar UNIFEDSystem.xmlInject.');
+                }
+                try {
+                    await exportDocument('docx');
+                } catch (err) {
+                    console.error('[ExportService·Adapter] exportDOCX falhou:', err);
+                }
+            };
+
+            _state.adaptersInstalled = true;
+            _log('Adaptadores de compatibilidade instalados (window.exportPDF, window.exportDOCX → ExportService).', 'success');
         }
 
         return Object.freeze({
             register:       register,
             export:         exportDocument,
-            status:         status
+            status:         status,
+            initAdapters:   initAdapters    // [EV-012] novo método público
         });
     }
 
@@ -225,43 +262,7 @@ window.UNIFEDExportService = (function _UNIFEDExportServiceIIFE() {
 
 })();
 
-// ── ADAPTADORES DE COMPATIBILIDADE ───────────────────────────────────────────
-// Mantém window.exportPDF e window.exportDOCX funcionais para código legado
-// que ainda os chame directamente, delegando para o ExportService.
-// Os renderers reais são registados pelos módulos originais (script.js e
-// enrichment.js) após UNIFED_CORE_READY, usando:
-//
-//   UNIFEDExportService.getInstance().register('pdf',  exportPDF_impl);
-//   UNIFEDExportService.getInstance().register('docx', exportDOCX_impl);
-//
-// Estas linhas devem ser adicionadas ao final das definições originais.
-// O adaptador abaixo garante retrocompatibilidade durante a transição.
-(function _installCompatAdapters() {
-    var _svc = window.UNIFEDExportService.getInstance();
-
-    // Substituir window.exportPDF pelo adaptador de delegação
-    window.exportPDF = async function _exportPDFAdapter() {
-        try {
-            await _svc.export('pdf');
-        } catch (err) {
-            console.error('[ExportService·Adapter] exportPDF falhou:', err);
-        }
-    };
-
-    // Substituir window.exportDOCX pelo adaptador de delegação
-    window.exportDOCX = async function _exportDOCXAdapter(xmlInject) {
-        // xmlInject é passado pelo nexus.js — preservar para compatibilidade
-        // O renderer deve inspeccionar window.UNIFEDSystem directamente
-        // (o argumento xmlInject é descontinuado nesta arquitectura).
-        if (xmlInject !== undefined) {
-            console.warn('[ExportService·Adapter] Argumento xmlInject ignorado — usar UNIFEDSystem.xmlInject.');
-        }
-        try {
-            await _svc.export('docx');
-        } catch (err) {
-            console.error('[ExportService·Adapter] exportDOCX falhou:', err);
-        }
-    };
-
-    console.log('[ExportService] Adaptadores de compatibilidade instalados (window.exportPDF, window.exportDOCX).');
-})();
+// NOTA: A IIFE _installCompatAdapters foi REMOVIDA conforme [EV-012].
+// A instalação dos adaptadores deve ser feita MANUALMENTE pelo unifed_event_bus.js
+// chamando UNIFEDExportService.getInstance().initAdapters() após a validação
+// do Master Hash inicial e após o registo de todos os renderers.

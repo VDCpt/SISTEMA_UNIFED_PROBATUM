@@ -1,23 +1,25 @@
 /**
+ * ============================================================================
  * UNIFED - PROBATUM · v13.12.0-PURE · MÓDULO DE EXPORTAÇÃO — TRÍADE DOCUMENTAL
  * ============================================================================
  * Ficheiro      : unifed_triada_export.js
- * Versão        : 1.0.18-TRIADA-FINAL (Rectificação Sintaxe + QR Code)
+ * Versão        : 1.2.0-RTF-UNIFED-2026-0406
  * ============================================================================
- * RECTIFICAÇÕES v1.0.18-TRIADA (2026-04-06):
- *   [FIX-E] Estratégia robusta de 3 camadas de inicialização (UNIFED_CORE_READY, DOMContentLoaded, MutationObserver).
- *   [FIX-E2] Labels PT/EN dos botões reflectem currentLang dinamicamente via _resolveLabels().
- *   [FIX-E3] ID do container mantido: 'export-tools-container'.
- *   [FIX-PDF] Rodapé centralizado com Master Hash SHA-256 em todas as páginas do PDF.
- *   [FIX-QR] QR Code de integridade injetado na última página do relatório pericial.
- *   [FIX-SYNTAX] Corrigido bloco try/catch e uso de await no gerarAnexoCustodia.
+ * [EV-013] RECTIFICAÇÕES (2026-04-10):
+ *   · Substituído window.addEventListener('UNIFED_CORE_READY') por
+ *     UNIFEDEventBus.on('UNIFED_CORE_READY', ...) para garantir sincronia
+ *     com o barramento forense.
+ *   · Adicionado registo do renderer 'custody' no ExportService:
+ *     UNIFEDExportService.getInstance().register('custody', gerarAnexoCustodia)
+ *   · Eliminado evento nativo duplicado; mantida apenas a subscrição via
+ *     UNIFEDEventBus.
  * ============================================================================
  */
 
 'use strict';
 
 (function _unifedTriadaModule() {
-    const _VERSION = '1.0.18-TRIADA-FINAL';
+    const _VERSION = '1.2.0-RTF-UNIFED-2026-0406';
 
     // ── UTILITÁRIO DE LOG ────────────────────────────────────────────────────
     function _log(msg, type = 'log') {
@@ -214,8 +216,6 @@
         // ── QR Code ──────────────────────────────────────────────────────────
         try {
             const qrPayload = `UNIFED|${sessionId}|${masterHash}`;
-            const qrCanvas  = document.createElement('canvas');
-
             if (typeof QRCode !== 'undefined') {
                 const tmpDiv = document.createElement('div');
                 tmpDiv.style.cssText = 'position:absolute;left:-9999px;top:-9999px;';
@@ -381,29 +381,48 @@
         return true;
     }
 
-    // ── ESTRATÉGIA ROBUSTA DE 3 CAMADAS DE INICIALIZAÇÃO ─────────────────────
-    window.addEventListener('UNIFED_CORE_READY', () => {
-        if (initInterface()) return;
+    // ── ESTRATÉGIA DE INICIALIZAÇÃO VIA EVENTBUS (EV-013) ───────────────────
+    // Substitui o antigo window.addEventListener('UNIFED_CORE_READY')
+    function _startInit() {
+        var bus = window.UNIFEDEventBus;
+        if (!bus) {
+            // Fallback extremo: EventBus não carregado — usar evento nativo
+            window.addEventListener('UNIFED_CORE_READY', function() {
+                _attemptInit();
+            }, { once: true });
+            return;
+        }
+        // Subscrição passiva via EventBus
+        bus.on('UNIFED_CORE_READY', function() {
+            _attemptInit();
+        });
+        // Se o evento já tiver sido emitido, executar imediatamente
+        if (bus.hasResolved('UNIFED_CORE_READY')) {
+            _attemptInit();
+        }
+    }
+
+    function _attemptInit() {
+        if (initInterface()) { return; }
 
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => {
-                if (initInterface()) return;
-                _startMutationObserver();
+            document.addEventListener('DOMContentLoaded', function() {
+                if (!initInterface()) { _startMutationObserver(); }
             }, { once: true });
         } else {
             _startMutationObserver();
         }
-    });
+    }
 
+    // ── Camada 3: MutationObserver (sem setTimeout de fallback) ──────────────
     function _startMutationObserver() {
         if (!('MutationObserver' in window)) {
-            setTimeout(initInterface, 500);
-            _log('MutationObserver indisponível — setTimeout(500ms) activado.', 'warn');
+            _log('MutationObserver indisponível — inicialização manual necessária.', 'warn');
             return;
         }
 
-        const _observer = new MutationObserver((_mutations, obs) => {
-            const container = document.getElementById('export-tools-container');
+        var _observer = new MutationObserver(function(_mutations, obs) {
+            var container = document.getElementById('export-tools-container');
             if (container) {
                 obs.disconnect();
                 initInterface();
@@ -411,19 +430,44 @@
             }
         });
 
-        _observer.observe(document.body || document.documentElement, {
-            childList: true,
-            subtree:   true
-        });
+        _observer.observe(document.body || document.documentElement, { childList: true, subtree: true });
 
-        setTimeout(() => {
+        // Segurança: desligar observer após 15 s para evitar memory leak
+        setTimeout(function() {
             _observer.disconnect();
             _log('MutationObserver desligado após timeout de segurança (15s).', 'warn');
         }, 15000);
     }
 
+    // ── REGISTO DO RENDERER CUSTODY NO EXPORT SERVICE (EV-013) ───────────────
+    // Esta linha fecha a tríade documental, garantindo que o Anexo de Custódia
+    // seja gerido atomicamente pelo ExportService.
+    function _registerCustodyRenderer() {
+        var svc = window.UNIFEDExportService && window.UNIFEDExportService.getInstance();
+        if (!svc) {
+            _log('UNIFEDExportService não disponível para registo do renderer custody.', 'warn');
+            return;
+        }
+        svc.register('custody', gerarAnexoCustodia);
+        _log('Renderer "custody" registado no ExportService. Tríade documental completa.', 'success');
+    }
+
+    // ── ARRANQUE ──────────────────────────────────────────────────────────────
+    _startInit();
+
+    // Aguardar que o ExportService esteja disponível e registar o renderer custody
+    if (window.UNIFEDEventBus) {
+        window.UNIFEDEventBus.waitFor('UNIFED_CORE_READY', 15000)
+            .then(_registerCustodyRenderer)
+            .catch(function() { _registerCustodyRenderer(); });
+    } else {
+        window.addEventListener('UNIFED_CORE_READY', _registerCustodyRenderer, { once: true });
+    }
+
+    // ── EXPOSIÇÃO GLOBAL ──────────────────────────────────────────────────────
     window.gerarAnexoCustodia   = gerarAnexoCustodia;
     window.initTriadaButtons    = initInterface;
     window.UNIFEDSystem         = window.UNIFEDSystem || {};
     window.UNIFEDSystem.triadaUpdateLabels = initInterface;
+
 })();
