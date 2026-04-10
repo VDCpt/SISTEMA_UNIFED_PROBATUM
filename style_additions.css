@@ -760,13 +760,11 @@ html, body {
 
 /* Garante fundo escuro durante injeção de panel.html — sem flash branco */
 html,
-body {
+body,
+#pureDashboardWrapper {
     background-color: var(--pure-bg-dark) !important;
     color: #f8fafc !important;
 }
-/* NOTA: #pureDashboardWrapper removido deste selector (Bug 3 — RTF-UNIFED-2026-0409).
-   As regras display:none / .unifed-ready estão definidas no topo do ficheiro (linhas 29-40)
-   e não devem ser sobrescritas por propriedades de background neste bloco. */
 
 /* ── A2. ESTABILIZAÇÃO DO WRAPPER DE INJEÇÃO (já actualizado acima) ──────── */
 /* Nota: as regras #pureDashboardWrapper e .unifed-ready foram movidas
