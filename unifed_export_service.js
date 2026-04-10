@@ -1,10 +1,21 @@
 /**
+ * ============================================================================
  * UNIFED - PROBATUM · SERVIÇO DE EXPORTAÇÃO UNIFICADO (SINGLETON)
- * Versão: 1.0.0-RTF-UNIFED-2026-0406 (sem adaptadores automáticos)
+ * ============================================================================
+ * Ficheiro      : unifed_export_service.js
+ * Versão        : 1.0.0-RTF-UNIFED-2026-0406 (sem adaptadores automáticos)
+ * ============================================================================
+ * OBJECTIVO:
+ *   Centralizar a lógica de exportação num único serviço Singleton.
+ *   NÃO substitui window.exportPDF ou window.exportDOCX.
+ *   O registo dos renderers é feito por unifed_export_register.js.
+ * ============================================================================
  */
+
 'use strict';
 
 window.UNIFEDExportService = (function _UNIFEDExportServiceIIFE() {
+
     var _instance = null;
     var _state = {
         renderers: Object.create(null),
@@ -24,12 +35,8 @@ window.UNIFEDExportService = (function _UNIFEDExportServiceIIFE() {
         var sys = window.UNIFEDSystem;
         if (!sys) throw new Error('UNIFEDSystem não inicializado.');
         if (typeof sys.generateForensicSeal === 'function') {
-            try {
-                await sys.generateForensicSeal();
-                _log('generateForensicSeal() executado com sucesso.');
-            } catch (sealErr) {
-                _log('generateForensicSeal() falhou: ' + sealErr.message, 'warn');
-            }
+            try { await sys.generateForensicSeal(); _log('generateForensicSeal() executado com sucesso.'); }
+            catch (sealErr) { _log('generateForensicSeal() falhou: ' + sealErr.message, 'warn'); }
         }
         var hash = sys.masterHash;
         if (typeof hash !== 'string' || !/^[0-9A-Fa-f]{64}$/.test(hash)) {
@@ -42,12 +49,8 @@ window.UNIFEDExportService = (function _UNIFEDExportServiceIIFE() {
 
     function _createInstance() {
         function register(type, rendererFn) {
-            if (_VALID_TYPES.indexOf(type) === -1) {
-                throw new TypeError('[ExportService] Tipo inválido: "' + type + '".');
-            }
-            if (typeof rendererFn !== 'function') {
-                throw new TypeError('[ExportService] rendererFn deve ser uma Function.');
-            }
+            if (_VALID_TYPES.indexOf(type) === -1) throw new TypeError('[ExportService] Tipo inválido: "' + type + '".');
+            if (typeof rendererFn !== 'function') throw new TypeError('[ExportService] rendererFn deve ser uma Function.');
             _state.renderers[type] = rendererFn;
             _log('Renderer "' + type + '" registado.');
             if (_state.renderers.pdf && _state.renderers.docx) {
