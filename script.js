@@ -705,56 +705,84 @@ function closeCustodyChainModal() {
 }
 
 function renderCustodyLog(logs) {
-    const container = document.getElementById('custodyLogContainer');
-    const countEl = document.getElementById('custodyEntryCount');
+    var container = document.getElementById('custodyLogContainer');
+    var countEl = document.getElementById('custodyEntryCount');
     if (!container) return;
 
     if (!logs || logs.length === 0) {
-        container.innerHTML = `
-            <div class="custody-empty-state">
-                <i class="fas fa-inbox"></i>
-                Sem eventos registados. Faça upload de ficheiros para iniciar a cadeia de custódia.
-            </div>`;
+        container.innerHTML = '';
+        var emptyDiv = document.createElement('div');
+        emptyDiv.className = 'custody-empty-state';
+        emptyDiv.innerHTML = '<i class="fas fa-inbox"></i> Sem eventos registados. Faça upload de ficheiros para iniciar a cadeia de custódia.';
+        container.appendChild(emptyDiv);
         if (countEl) countEl.textContent = '0';
         return;
     }
 
     if (countEl) countEl.textContent = logs.length;
 
-    const sorted = [...logs].reverse();
-    container.innerHTML = sorted.map(entry => {
-        const d = entry.data || {};
-        const hash = d.hash || '—';
-        const serial = d.serial || (d.rfc3161 && d.rfc3161.serialNumber) || '—';
-        const level = d.level || 'Certificação de Tempo Interna (Nível 1)';
-        const source = d.source || 'PROBATUM INTERNAL SEAL';
-        const fname = d.fileName || d.filename || '—';
-        const ts = entry.timestamp
-            ? entry.timestamp.replace('T', ' ').replace(/\.\d+Z$/, ' UTC')
-            : '—';
-        const hasHash = hash && hash.length === 64;
-        const stateClass = hasHash ? 'log-verified'
-            : (entry.action && entry.action.includes('ERROR') ? 'log-error' : 'log-pending');
+    var sorted = [...logs].reverse();
+    container.innerHTML = '';
+    sorted.forEach(function(entry) {
+        var d = entry.data || {};
+        var hash = d.hash || '—';
+        var serial = d.serial || (d.rfc3161 && d.rfc3161.serialNumber) || '—';
+        var level = d.level || 'Certificação de Tempo Interna (Nível 1)';
+        var source = d.source || 'PROBATUM INTERNAL SEAL';
+        var fname = d.fileName || d.filename || '—';
+        var ts = entry.timestamp ? entry.timestamp.replace('T', ' ').replace(/\.\d+Z$/, ' UTC') : '—';
+        var hasHash = hash && hash.length === 64;
+        var stateClass = hasHash ? 'log-verified' : (entry.action && entry.action.includes('ERROR') ? 'log-error' : 'log-pending');
 
-        return `
-            <div class="custody-entry ${stateClass}">
-                <div class="custody-header">
-                    <span class="custody-badge">NÍVEL 1: ATIVO</span>
-                    <span class="custody-serial">S/N: ${serial}</span>
-                </div>
-                <div class="custody-body">
-                    <p><strong>EVENTO:</strong> ${entry.action}</p>
-                    <p><strong>FICHEIRO:</strong> <span style="color:#e2b87a;">${fname}</span></p>
-                    <p><strong>TIMESTAMP:</strong> ${ts}</p>
-                    ${hasHash ? `<p><strong>HASH SHA-256:</strong><br><code class="hash-text">${hash}</code></p>` : ''}
-                    <p><strong>FONTE:</strong> ${source}</p>
-                    <p><strong>NÍVEL:</strong> ${level}</p>
-                </div>
-                ${hasHash ? `<button class="blockchain-btn" onclick="showBlockchainExplain('${hash}')">
-                    <i class="fas fa-link"></i> Validar na Blockchain/TSA
-                </button>` : ''}
-            </div>`;
-    }).join('');
+        var entryDiv = document.createElement('div');
+        entryDiv.className = 'custody-entry ' + stateClass;
+
+        var headerDiv = document.createElement('div');
+        headerDiv.className = 'custody-header';
+        var badgeSpan = document.createElement('span');
+        badgeSpan.className = 'custody-badge';
+        badgeSpan.textContent = 'NÍVEL 1: ATIVO';
+        var serialSpan = document.createElement('span');
+        serialSpan.className = 'custody-serial';
+        serialSpan.textContent = 'S/N: ' + serial;
+        headerDiv.appendChild(badgeSpan);
+        headerDiv.appendChild(serialSpan);
+
+        var bodyDiv = document.createElement('div');
+        bodyDiv.className = 'custody-body';
+        bodyDiv.innerHTML = '<p><strong>EVENTO:</strong> ' + escapeHtml(entry.action) + '</p>' +
+                            '<p><strong>FICHEIRO:</strong> <span style="color:#e2b87a;">' + escapeHtml(fname) + '</span></p>' +
+                            '<p><strong>TIMESTAMP:</strong> ' + escapeHtml(ts) + '</p>';
+        if (hasHash) {
+            var hashP = document.createElement('p');
+            hashP.innerHTML = '<strong>HASH SHA-256:</strong><br><code class="hash-text">' + escapeHtml(hash) + '</code>';
+            bodyDiv.appendChild(hashP);
+        }
+        bodyDiv.innerHTML += '<p><strong>FONTE:</strong> ' + escapeHtml(source) + '</p>' +
+                             '<p><strong>NÍVEL:</strong> ' + escapeHtml(level) + '</p>';
+
+        entryDiv.appendChild(headerDiv);
+        entryDiv.appendChild(bodyDiv);
+
+        if (hasHash) {
+            var btn = document.createElement('button');
+            btn.className = 'blockchain-btn';
+            btn.innerHTML = '<i class="fas fa-link"></i> Validar na Blockchain/TSA';
+            btn.onclick = function() { showBlockchainExplain(hash); };
+            entryDiv.appendChild(btn);
+        }
+
+        container.appendChild(entryDiv);
+    });
+
+    function escapeHtml(str) {
+        return String(str).replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
 }
 
 function exportCustodyChainJSON() {
@@ -4122,63 +4150,46 @@ function updateCounters() {
 }
 
 // ============================================================================
-// 21. MODO DEMO — v13.1.2-GOLD · DADOS FIXOS PARA APRESENTAÇÃO (NIF unificado)
+// 21. MODO DEMO — v13.12.0-PURE · DADOS FIXOS PARA APRESENTAÇÃO
 // ============================================================================
+
 function activateDemoMode() {
-    // ── GUARD CLAUSE: re-entrada bloqueada enquanto processamento activo ──────
-    // Idempotência de Execução: garante que loadAnonymizedRealCase não é
-    // disparado mais de uma vez por ciclo de DOM. A flag UNIFEDSystem.processing
-    // actua como mutex de estado (Stable/Ready).
     if (UNIFEDSystem.processing) return;
     UNIFEDSystem.processing = true;
 
     ForensicLogger.addEntry('DEMO_MODE_ACTIVATED');
 
-    // ── GUARD CLAUSE: verificar disponibilidade de _activatePurePanel ─────────
-    // _activatePurePanel() (definido em index.html) é o único ponto de montagem
-    // do panel.html. Internamente, após a Promise do fetch('panel.html') resolver,
-    // chama loadAnonymizedRealCase() uma única vez — garantindo que a injecção
-    // de dados ocorre DEPOIS dos nós DOM estarem em estado Stable/Ready.
-    // NÃO invocar loadAnonymizedRealCase() aqui directamente: seria uma
-    // segunda invocação redundante (race condition de dupla injecção).
     if (typeof window._activatePurePanel !== 'function') {
         console.error('[UNIFED] _activatePurePanel não registado. Verifique a ordem de carregamento de scripts.');
         UNIFEDSystem.processing = false;
         return;
     }
 
-    // 1. DISPARAR A MONTAGEM DO PAINEL (fetch + inject HTML + loadAnonymizedRealCase)
-    //    A Promise do fetch é assíncrona; o setTimeout abaixo aguarda a sua resolução.
     window._activatePurePanel();
 
-    // 2. LATÊNCIA DE I/O GARANTIDA: 500ms
-    //    Compensa: fetch('panel.html') [I/O disco/rede] + wrapper.innerHTML [Reflow]
-    //    + crypto.subtle.digest() [async] + _updatePureUI() [Repaint].
-    //    NÃO reduzir para 150ms: o encadeamento assíncrono excede esse valor
-    //    em contextos de servidor HTTP com latência de disco não nula.
-    setTimeout(() => {
-        // 3. ACTUALIZAR CAMPOS DE IDENTIFICAÇÃO DO SUJEITO PASSIVO
-        //    Os dados já foram injectados por loadAnonymizedRealCase() via
-        //    _activatePurePanel(). Apenas sincronizar os inputs de UI.
-        const client = UNIFEDSystem.client;
+    // Substituído setTimeout por EventBus.waitFor
+    window.UNIFEDEventBus.waitFor('UNIFED_DOM_READY', 10000).then(function() {
+        var client = UNIFEDSystem.client;
         if (client) {
-            const nameInput = document.getElementById('clientNameFixed');
-            const nifInput  = document.getElementById('clientNIFFixed');
+            var nameInput = document.getElementById('clientNameFixed');
+            var nifInput  = document.getElementById('clientNIFFixed');
             if (nameInput) nameInput.value = client.name;
             if (nifInput)  nifInput.value  = client.nif;
             registerClient();
         }
 
-        // 4. LIBERTAR MUTEX E RESTAURAR ESTADO DA UI
         UNIFEDSystem.processing = false;
-        const demoBtn = document.getElementById('demoModeBtn');
+        var demoBtn = document.getElementById('demoModeBtn');
         if (demoBtn) {
             demoBtn.disabled = false;
-            demoBtn.innerHTML = `<i class="fas fa-flask"></i> ${translations[currentLang].navDemo}`;
+            demoBtn.innerHTML = '<i class="fas fa-flask"></i> ' + translations[currentLang].navDemo;
         }
         forensicDataSynchronization();
         logAudit('✅ Caso Real (Anonimizado) carregado com sucesso.', 'success');
-    }, 500); // [ISO/IEC 27037] Latência de I/O Garantida — não alterar sem validação
+    }).catch(function(err) {
+        console.warn('[UNIFED] Timeout aguardando DOM_READY:', err);
+        UNIFEDSystem.processing = false;
+    });
 }
 
 function simulateUpload(type, count) {

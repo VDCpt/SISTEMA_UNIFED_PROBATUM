@@ -1,130 +1,73 @@
 <!--
   ============================================================================
-  UNIFED - PROBATUM · RETROFIT v13.5.0-PURE → v13.11.16-SOCKETS · FASE R-1
+  UNIFED - PROBATUM · v13.12.0-PURE · PAINEL DE CASO REAL ANONIMIZADO
   ============================================================================
-  BASE VISUAL    : panel.html v13.5.0-PURE (METODOLOGIA) — estrutura intacta
-  CÉREBRO LÓGICO : script_injection.js v13.11.16-PURE (SISTEMA)
-  OPERAÇÃO       : Injeção cirúrgica de 32 sockets DOM (IDs órfãos resolvidos)
-
-  GRUPOS INJETADOS:
-    C — 12 IDs visíveis (Sujeito Passivo · Contadores · ATF extra)
-    D —  2 IDs visíveis (Cartão Asfixia Financeira / Impacto Macro 7 Anos)
-    E —  9 IDs espelho ocultos (aria-hidden · escrita JS · sem display)
-    F —  8 IDs auxiliares ocultos (auxBox* · auxDac7*)
-    G —  1 ID percentagem calculada (omissaoDespesasPctValue)
-
-  GRUPOS NÃO INJETADOS (por design):
-    A — 14 IDs pertencem ao index.html (sidebar / modais / chart)
-    B —  9 IDs injetados dinamicamente em runtime pelo _injectMacroCard() e
-           renderMatrix() — não pré-definir em HTML para evitar IDs duplicados
-
-  SUPORTE A TRADUÇÃO PT/EN:
-    - Todos os elementos novos possuem atributos data-pt / data-en
-    - A função window._translatePurePanel() é chamada quando o idioma muda
-
-  CONFORMIDADE: ISO/IEC 27037:2012 · Art. 125.º CPP · Art. 119.º RGIT
+  CONSOLIDAÇÃO FINAL COM CORREÇÕES:
+    - Bloco de identificação do sujeito passivo sempre visível (não ocultado)
+    - Guard clause no syncMetrics para evitar erro dos 42 IDs
+    - Remoção do texto "(browser)" do selo Privacy by Design
+    - Ajuste de layout (eliminação do gap entre gráfico e log)
+    - Contadores de evidências visíveis na UI (movidos para o bloco de gestão)
+    - Escudo CORS mantido (freetsa.org)
+    - Adicionado cartão "Risco de Asfixia Financeira" (Art. 405.º C. Civil)
+    - Adicionado suporte para análise macroeconómica (7 anos · 38.000 operadores)
+    - Correcção de layout: flex-wrap ajustado para não esmagar labels
+  Conformidade: ISO/IEC 27037:2012 · Art. 125.º CPP · Art. 119.º RGIT
   ============================================================================
 -->
 
-<section id="pureDashboard" class="pure-section" aria-label="Painel Caso Real Anonimizado v13.5.0-PURE · Retrofit R-1">
+<section id="pureDashboard" class="pure-section" aria-label="Painel Caso Real Anonimizado v13.12.0-PURE">
 
-  <!-- ── HEADER DA SECÇÃO ────────────────────────────────────────────────── -->
+  <!-- HEADER -->
   <div class="pure-section-header">
     <div class="pure-section-title">
-      <span class="pure-badge-version">v13.5.0-PURE</span>
+      <span class="pure-badge-version" title="Versão / Version">v13.12.0-PURE</span>
       <span id="pure-title-text" data-pt="RECONSTITUIÇÃO DA VERDADE MATERIAL — SESSÃO" data-en="RECONSTRUCTION OF MATERIAL TRUTH — SESSION">RECONSTITUIÇÃO DA VERDADE MATERIAL — SESSÃO</span>
       <span id="pure-session-id" class="pure-mono">UNIFED-MMLADX8Q-CV69L</span>
     </div>
     <div class="pure-session-badge">
-      <span class="pure-label">SHA-256</span>
+      <span class="pure-label" data-pt="INTEGRIDADE" data-en="INTEGRITY">SHA-256</span>
       <span id="pure-hash-prefix" class="pure-mono pure-hash">5150e767...</span>
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════════════════════════════════════
-       GRUPO C — BLOCO DE IDENTIFICAÇÃO DO SUJEITO PASSIVO
-       IDs: pure-subject-name · pure-subject-nif · pure-subject-platform
-       Preenchido por syncMetrics() via data.client.*
-       ══════════════════════════════════════════════════════════════════════ -->
-  <div id="pureSubjectBlock"
-       style="display:flex; gap:1rem; margin-bottom:1.5rem; flex-wrap:wrap; align-items:stretch;">
-
-    <div class="pure-data-block"
-         style="flex:1 1 200px; background:rgba(255,255,255,0.03); border-radius:6px; padding:12px 14px;">
-      <div class="pure-data-label"
-           data-pt="Sujeito Passivo"
-           data-en="Subject">Sujeito Passivo</div>
-      <div id="pure-subject-name"
-           class="pure-subject-value"
-           style="font-size:1rem; font-weight:600; color:#00E5FF;">---</div>
+  <!-- IDENTIFICAÇÃO DO SUJEITO PASSIVO -->
+  <div class="pure-subject-header" style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: stretch;">
+    <div class="pure-data-block" style="flex: 1 1 200px; background: rgba(255,255,255,0.03); border-radius: 6px; padding: 12px 14px;">
+      <div class="pure-data-label" data-pt="Sujeito Passivo" data-en="Subject">Sujeito Passivo</div>
+      <div id="pure-subject-name" class="pure-subject-value" style="font-size:1rem; font-weight:600; color:#00E5FF;">---</div>
     </div>
-
-    <div class="pure-data-block"
-         style="flex:1 1 150px; background:rgba(255,255,255,0.03); border-radius:6px; padding:12px 14px;">
-      <div class="pure-data-label"
-           data-pt="NIF"
-           data-en="Tax ID">NIF</div>
-      <div id="pure-subject-nif"
-           class="pure-subject-value"
-           style="font-size:1rem; font-weight:600; color:#00E5FF;">---</div>
+    <div class="pure-data-block" style="flex: 1 1 150px; background: rgba(255,255,255,0.03); border-radius: 6px; padding: 12px 14px;">
+      <div class="pure-data-label" data-pt="NIF" data-en="Tax ID">NIF</div>
+      <div id="pure-subject-nif" class="pure-subject-value" style="font-size:1rem; font-weight:600; color:#00E5FF;">---</div>
     </div>
-
-    <div class="pure-data-block"
-         style="flex:1 1 200px; background:rgba(255,255,255,0.03); border-radius:6px; padding:12px 14px;">
-      <div class="pure-data-label"
-           data-pt="Plataforma"
-           data-en="Platform">Plataforma</div>
-      <div id="pure-subject-platform"
-           class="pure-subject-value"
-           style="font-size:1rem; font-weight:600; color:#00E5FF;">---</div>
+    <div class="pure-data-block" style="flex: 1 1 200px; background: rgba(255,255,255,0.03); border-radius: 6px; padding: 12px 14px;">
+      <div class="pure-data-label" data-pt="Plataforma" data-en="Platform">Plataforma</div>
+      <div id="pure-subject-platform" class="pure-subject-value" style="font-size:1rem; font-weight:600; color:#00E5FF;">---</div>
     </div>
-
   </div>
-  <!-- FIM: pureSubjectBlock -->
 
-  <!-- ══════════════════════════════════════════════════════════════════════
-       GRUPO C — SECÇÃO DE EVIDÊNCIAS COM CONTADORES
-       IDs: pureEvidenceSection · pure-ctrl-qty · pure-saft-qty
-            pure-fat-qty · pure-ext-qty · pure-dac7-qty
-       display:none por defeito — JS controla visibilidade via data.counts.*
-       ══════════════════════════════════════════════════════════════════════ -->
-  <div id="pureEvidenceSection"
-       class="evidence-management-section-solid"
-       style="margin-bottom:1rem; display:none;">
-
-    <div style="display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap;">
-      <div class="evidence-management-btn-solid" style="flex:1; cursor:default;">
-        <span>
-          <i class="fas fa-folder-open"></i>
-          <span data-pt="EVIDÊNCIAS CARREGADAS" data-en="LOADED EVIDENCE">EVIDÊNCIAS CARREGADAS</span>
-        </span>
-      </div>
-      <div class="pure-evidence-stats"
-           style="display:flex; gap:0.75rem; flex-wrap:wrap; justify-content:flex-end;">
-        <div class="pure-evidence-item"
-             style="background:rgba(0,229,255,0.08); padding:4px 8px; border-radius:4px; font-size:0.7rem;">
-          CTRL: <span id="pure-ctrl-qty" class="pure-accent" style="font-weight:800;">0</span>
-        </div>
-        <div class="pure-evidence-item"
-             style="background:rgba(0,229,255,0.08); padding:4px 8px; border-radius:4px; font-size:0.7rem;">
-          SAF-T: <span id="pure-saft-qty" class="pure-accent" style="font-weight:800;">0</span>
-        </div>
-        <div class="pure-evidence-item"
-             style="background:rgba(0,229,255,0.08); padding:4px 8px; border-radius:4px; font-size:0.7rem;">
-          FAT: <span id="pure-fat-qty" class="pure-accent" style="font-weight:800;">0</span>
-        </div>
-        <div class="pure-evidence-item"
-             style="background:rgba(0,229,255,0.08); padding:4px 8px; border-radius:4px; font-size:0.7rem;">
-          EXT: <span id="pure-ext-qty" class="pure-accent" style="font-weight:800;">0</span>
-        </div>
-        <div class="pure-evidence-item"
-             style="background:rgba(0,229,255,0.08); padding:4px 8px; border-radius:4px; font-size:0.7rem;">
-          DAC7: <span id="pure-dac7-qty" class="pure-accent" style="font-weight:800;">0</span>
-        </div>
+  <!-- EVIDÊNCIAS CARREGADAS (contadores) -->
+  <div id="pureEvidenceSection" class="evidence-management-section-solid" style="margin-bottom: 1rem; display: none;">
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+      <div class="evidence-management-btn-solid" style="flex: 1; cursor: default;"><span><i class="fas fa-folder-open"></i> <span>EVIDÊNCIAS CARREGADAS</span></span><span id="pure-evidence-count-display" class="evidence-count-solid">0</span></div>
+      <div class="pure-evidence-stats" style="display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: flex-end;">
+        <div class="pure-evidence-item" style="background: rgba(0,229,255,0.08); padding: 4px 8px; border-radius: 4px; font-size: 0.7rem;">CTRL: <span id="pure-ctrl-qty" class="pure-accent" style="font-weight: 800;">0</span></div>
+        <div class="pure-evidence-item" style="background: rgba(0,229,255,0.08); padding: 4px 8px; border-radius: 4px; font-size: 0.7rem;">SAF-T: <span id="pure-saft-qty" class="pure-accent" style="font-weight: 800;">0</span></div>
+        <div class="pure-evidence-item" style="background: rgba(0,229,255,0.08); padding: 4px 8px; border-radius: 4px; font-size: 0.7rem;">FAT: <span id="pure-fat-qty" class="pure-accent" style="font-weight: 800;">0</span></div>
+        <div class="pure-evidence-item" style="background: rgba(0,229,255,0.08); padding: 4px 8px; border-radius: 4px; font-size: 0.7rem;">EXT: <span id="pure-ext-qty" class="pure-accent" style="font-weight: 800;">0</span></div>
+        <div class="pure-evidence-item" style="background: rgba(0,229,255,0.08); padding: 4px 8px; border-radius: 4px; font-size: 0.7rem;">DAC7: <span id="pure-dac7-qty" class="pure-accent" style="font-weight: 800;">0</span></div>
       </div>
     </div>
-
-  </div>
+    <div class="counters-compact" style="margin-top: 0.5rem;">
+      <div class="counter-item-compact"><span id="pure-counter-ctrl" class="counter-value-compact">0</span><span class="counter-label-compact">CTRL</span></div>
+      <div class="counter-item-compact"><span id="pure-counter-saft" class="counter-value-compact">0</span><span class="counter-label-compact">SAF-T</span></div>
+      <div class="counter-item-compact"><span id="pure-counter-fat" class="counter-value-compact">0</span><span class="counter-label-compact">FAT</span></div>
+      <div class="counter-item-compact"><span id="pure-counter-ext" class="counter-value-compact">0</span><span class="counter-label-compact">EXT</span></div>
+      <div class="counter-item-compact"><span id="pure-counter-dac7" class="counter-value-compact">0</span><span class="counter-label-compact">DAC7</span></div>
+    </div>
+</div>
+  
   <!-- FIM: pureEvidenceSection -->
 
   <!-- ── GRID DE PAINÉIS (pure-card-grid) ─────────────────────────────────── -->
