@@ -5346,6 +5346,8 @@ async function exportPDF() {
             console.warn('[UNIFED-PDF] Não foi possível atualizar o hash dinâmico:', e);
         }
     }
+    // ... resto do corpo da função ...
+}
 
     ForensicLogger.addEntry('PDF_EXPORT_STARTED');
     logAudit('📄 A gerar Parecer Técnico (Estilo Institucional v13.5.0-PURE)...', 'info');

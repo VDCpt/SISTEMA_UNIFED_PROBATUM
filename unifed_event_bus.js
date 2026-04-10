@@ -3,16 +3,11 @@
  * UNIFED - PROBATUM · EVENT BUS CENTRALIZADO
  * ============================================================================
  * Ficheiro      : unifed_event_bus.js
- * Versão        : 1.0.0-RTF-UNIFED-2026-0406-PURE
+ * Versão        : 1.1.0-RTF-UNIFED-2026-0406
  * ============================================================================
  * OBJECTIVO:
  *   Substituir TODOS os padrões setTimeout() usados para sincronização de
- *   estado entre módulos (script_injection.js, nexus.js, unifed_triada_export.js).
- *   Expõe um barramento de eventos publish/subscribe que:
- *     · Devolve Promises resolvidas quando o evento ocorre (waitFor).
- *     · Recorda eventos já emitidos (idempotente — re-subscritores recebem
- *       resolução imediata para eventos passados).
- *     · Rejeita com timeout configurável (padrão: 10 000 ms).
+ *   estado entre módulos. Expõe um barramento de eventos publish/subscribe.
  *
  * EVENTOS PADRÃO DO SISTEMA:
  *   'UNIFED_CORE_READY'       — UNIFEDSystem inicializado (emitido por script.js)
@@ -20,7 +15,10 @@
  *   'UNIFED_EVIDENCE_LOADED'  — evidências carregadas e masterHash selado
  *   'UNIFED_EXPORT_READY'     — ExportService registado (pdf + docx)
  *
- * CONFORMIDADE: ISO/IEC 27037:2012 · DORA (UE) 2022/2554
+ * [EV-ORQUESTRADOR] (2026-04-10):
+ *   · Adicionado listener interno para UNIFED_CORE_READY que aguarda a validação
+ *     do UNIFEDSystem.masterHash e invoca UNIFEDExportService.getInstance().initAdapters()
+ *     após a selagem estar completa.
  * ============================================================================
  */
 
@@ -33,7 +31,7 @@ window.UNIFEDEventBus = (function _UNIFEDEventBusIIFE() {
 
     /**
      * Conjunto de eventos já emitidos. Permite resolução imediata de
-     * waitFor() para subscritores tardios sem corrida de estado.
+     * waitFor() para subscritores tardios.
      * @type {Set<string>}
      */
     var _resolved = new Set();
@@ -73,7 +71,7 @@ window.UNIFEDEventBus = (function _UNIFEDEventBusIIFE() {
     /**
      * Subscreve um handler que é chamado uma única vez.
      * Se o evento já foi emitido, o handler é chamado de imediato de forma
-     * assíncrona (microtask) para evitar re-entrância.
+     * assíncrona (microtask).
      * @param {string}   event
      * @param {Function} handler
      */
@@ -118,7 +116,7 @@ window.UNIFEDEventBus = (function _UNIFEDEventBusIIFE() {
         _resolvedData[event] = data;
 
         // Notificar handlers subscritos
-        var handlers = (_handlers[event] || []).slice(); // cópia — handlers podem chamar off()
+        var handlers = (_handlers[event] || []).slice();
         handlers.forEach(function(h) {
             try { h(data); } catch (err) {
                 console.error('[UNIFEDEventBus] Erro no handler de "' + event + '":', err);
@@ -141,9 +139,6 @@ window.UNIFEDEventBus = (function _UNIFEDEventBusIIFE() {
      * Devolve uma Promise que resolve quando o evento for emitido.
      * Se o evento já foi emitido, resolve de imediato.
      * Rejeita após timeoutMs milissegundos (padrão: 10 000).
-     *
-     * SUBSTITUI: await new Promise(r => setTimeout(r, N))
-     * USO:        await UNIFEDEventBus.waitFor('UNIFED_DOM_READY', 8000)
      *
      * @param {string} event
      * @param {number} [timeoutMs=10000]
@@ -178,7 +173,7 @@ window.UNIFEDEventBus = (function _UNIFEDEventBusIIFE() {
     }
 
     /**
-     * Devolve snapshot de diagnóstico — não expõe referências internas.
+     * Devolve snapshot de diagnóstico.
      * @returns {Object}
      */
     function diagnostics() {
@@ -205,9 +200,69 @@ window.UNIFEDEventBus = (function _UNIFEDEventBusIIFE() {
 
 })();
 
+// ============================================================================
+// [EV-ORQUESTRADOR] Listener interno para activar os adaptadores de exportação
+// ============================================================================
+(function _activateExportAdapters() {
+    var bus = window.UNIFEDEventBus;
+    if (!bus) {
+        console.warn('[UNIFEDEventBus] EventBus não disponível para activar adaptadores.');
+        return;
+    }
+
+    // Aguardar que o core esteja pronto
+    bus.once('UNIFED_CORE_READY', function() {
+        console.log('[UNIFEDEventBus] UNIFED_CORE_READY recebido. A aguardar validação do Master Hash...');
+
+        // Função para verificar se o Master Hash é válido (SHA-256 de 64 caracteres hex)
+        function isMasterHashValid() {
+            var sys = window.UNIFEDSystem;
+            if (!sys || !sys.masterHash) return false;
+            var hash = sys.masterHash;
+            return (typeof hash === 'string' && /^[0-9A-Fa-f]{64}$/.test(hash));
+        }
+
+        // Função para aguardar a validação do hash com re-tentativas
+        function waitForValidMasterHash(maxAttempts, intervalMs) {
+            maxAttempts = maxAttempts || 10;  // 10 * 500ms = 5 segundos
+            intervalMs  = intervalMs  || 500;
+            return new Promise(function(resolve, reject) {
+                var attempts = 0;
+                function check() {
+                    attempts++;
+                    if (isMasterHashValid()) {
+                        resolve(window.UNIFEDSystem.masterHash);
+                        return;
+                    }
+                    if (attempts >= maxAttempts) {
+                        reject(new Error('Master Hash não validado após ' + (maxAttempts * intervalMs) + 'ms.'));
+                        return;
+                    }
+                    setTimeout(check, intervalMs);
+                }
+                check();
+            });
+        }
+
+        // Aguardar a validação do hash e depois invocar initAdapters()
+        waitForValidMasterHash()
+            .then(function(masterHash) {
+                console.log('[UNIFEDEventBus] Master Hash validado: ' + masterHash.substring(0, 16) + '...');
+                var svc = window.UNIFEDExportService && window.UNIFEDExportService.getInstance();
+                if (svc && typeof svc.initAdapters === 'function') {
+                    svc.initAdapters();
+                    console.log('[UNIFEDEventBus] Adaptadores de exportação activados com sucesso.');
+                } else {
+                    console.warn('[UNIFEDEventBus] UNIFEDExportService.initAdapters() não disponível. Verifique a ordem de carregamento.');
+                }
+            })
+            .catch(function(err) {
+                console.warn('[UNIFEDEventBus] ' + err.message + ' Os adaptadores de exportação não foram activados.');
+            });
+    });
+})();
+
 // ── COMPATIBILIDADE: reemitir evento legado window.dispatchEvent ──────────────
-// Script.js emite: new CustomEvent('UNIFED_CORE_READY')
-// O EventBus monitoriza o evento nativo e propaga internamente.
 (function _bridgeLegacyEvents() {
     var _LEGACY_EVENTS = ['UNIFED_CORE_READY'];
     _LEGACY_EVENTS.forEach(function(evtName) {

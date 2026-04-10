@@ -1,25 +1,22 @@
 /**
- * ============================================================================
  * UNIFED - PROBATUM · v13.12.0-PURE · MÓDULO DE EXPORTAÇÃO — TRÍADE DOCUMENTAL
  * ============================================================================
  * Ficheiro      : unifed_triada_export.js
- * Versão        : 1.2.0-RTF-UNIFED-2026-0406
+ * Versão        : 1.3.0-RTF-UNIFED-2026-0406
  * ============================================================================
- * [EV-013] RECTIFICAÇÕES (2026-04-10):
- *   · Substituído window.addEventListener('UNIFED_CORE_READY') por
- *     UNIFEDEventBus.on('UNIFED_CORE_READY', ...) para garantir sincronia
- *     com o barramento forense.
- *   · Adicionado registo do renderer 'custody' no ExportService:
- *     UNIFEDExportService.getInstance().register('custody', gerarAnexoCustodia)
- *   · Eliminado evento nativo duplicado; mantida apenas a subscrição via
- *     UNIFEDEventBus.
+ * [EV-013] + [EV-SINC-UI] (2026-04-10):
+ *   · Subscrição única ao evento UNIFED_CORE_READY (bus.once).
+ *   · Flag _initialized para prevenir duplicação de botões.
+ *   · MutationObserver sem timeout excessivo; desconexão imediata após sucesso.
+ *   · Cleanup obrigatório do container via innerHTML.
  * ============================================================================
  */
 
 'use strict';
 
 (function _unifedTriadaModule() {
-    const _VERSION = '1.2.0-RTF-UNIFED-2026-0406';
+    const _VERSION = '1.3.0-RTF-UNIFED-2026-0406';
+    let _initialized = false;   // estado global do módulo
 
     // ── UTILITÁRIO DE LOG ────────────────────────────────────────────────────
     function _log(msg, type = 'log') {
@@ -87,7 +84,6 @@
         const pageWidth    = doc.internal.pageSize.getWidth();
         const lang         = (typeof window.currentLang !== 'undefined') ? window.currentLang : 'pt';
 
-        // ── Rodapé com Master Hash centralizado ───────────────────────────────
         function addFooter(pageNum, totalPages) {
             doc.setFont('courier', 'normal');
             doc.setFontSize(7);
@@ -101,7 +97,6 @@
             doc.setTextColor(0, 0, 0);
         }
 
-        // ── Cabeçalho ────────────────────────────────────────────────────────
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(12);
         doc.text(
@@ -122,7 +117,6 @@
         );
         currentY += 15;
 
-        // ── Metadados ────────────────────────────────────────────────────────
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8);
         doc.text(
@@ -138,7 +132,6 @@
         doc.text(`Master Hash: ${masterHash}`, marginX, currentY);
         currentY += 10;
 
-        // ── Lista de Evidências ──────────────────────────────────────────────
         const evidences = window.UNIFEDSystem?.analysis?.evidenceIntegrity || [];
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9);
@@ -174,14 +167,12 @@
             });
         }
 
-        // ── Paginação retroactiva ────────────────────────────────────────────
         const totalPages = doc.internal.getNumberOfPages() + 1;
         for (let p = 1; p <= totalPages - 1; p++) {
             doc.setPage(p);
             addFooter(p, totalPages);
         }
 
-        // ── Página final: Selo QR ────────────────────────────────────────────
         doc.addPage();
         const lastPageNum = totalPages;
         currentY = 20;
@@ -213,7 +204,6 @@
         );
         currentY += 12;
 
-        // ── QR Code ──────────────────────────────────────────────────────────
         try {
             const qrPayload = `UNIFED|${sessionId}|${masterHash}`;
             if (typeof QRCode !== 'undefined') {
@@ -261,7 +251,6 @@
             currentY += 10;
         }
 
-        // ── Nota de verificação ──────────────────────────────────────────────
         doc.setFont('courier', 'normal');
         doc.setFontSize(8);
         doc.setTextColor(100, 100, 100);
@@ -288,17 +277,23 @@
         doc.setTextColor(0, 0, 0);
 
         addFooter(lastPageNum, totalPages);
-
         doc.save(`UNIFED_ANEXO_CUSTODIA_${sessionId}.pdf`);
         _log(`✅ Anexo de Custódia gerado com QR Code: ${sessionId}`, 'success');
     }
 
-    // ── INICIALIZAÇÃO DA INTERFACE DOS BOTÕES ────────────────────────────────
+    // ── INICIALIZAÇÃO DA INTERFACE DOS BOTÕES (COM CLEANUP E STATE-CHECK) ────
     function initInterface() {
+        if (_initialized) {
+            _log('Interface já inicializada. Ignorando nova chamada.', 'warn');
+            return false;
+        }
+
         const container = document.getElementById('export-tools-container');
         if (!container) return false;
 
+        // Cleanup obrigatório
         container.innerHTML = '';
+
         const labels = _resolveLabels();
 
         const botoes = [
@@ -377,44 +372,45 @@
             if (old) old.style.display = 'none';
         });
 
+        _initialized = true;
         _log(`Interface Tríade Documental ${_VERSION} activada.`);
         return true;
     }
 
-    // ── ESTRATÉGIA DE INICIALIZAÇÃO VIA EVENTBUS (EV-013) ───────────────────
-    // Substitui o antigo window.addEventListener('UNIFED_CORE_READY')
+    // ── ESTRATÉGIA DE INICIALIZAÇÃO VIA EVENTBUS (UMA ÚNICA VEZ) ─────────────
     function _startInit() {
         var bus = window.UNIFEDEventBus;
         if (!bus) {
-            // Fallback extremo: EventBus não carregado — usar evento nativo
             window.addEventListener('UNIFED_CORE_READY', function() {
                 _attemptInit();
             }, { once: true });
             return;
         }
-        // Subscrição passiva via EventBus
-        bus.on('UNIFED_CORE_READY', function() {
+        // Subscrição única (once) para evitar duplicação
+        bus.once('UNIFED_CORE_READY', function() {
             _attemptInit();
         });
-        // Se o evento já tiver sido emitido, executar imediatamente
         if (bus.hasResolved('UNIFED_CORE_READY')) {
             _attemptInit();
         }
     }
 
     function _attemptInit() {
-        if (initInterface()) { return; }
+        if (_initialized) return;
+        if (initInterface()) return;
 
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', function() {
-                if (!initInterface()) { _startMutationObserver(); }
+                if (!_initialized && !initInterface()) {
+                    _startMutationObserver();
+                }
             }, { once: true });
         } else {
             _startMutationObserver();
         }
     }
 
-    // ── Camada 3: MutationObserver (sem setTimeout de fallback) ──────────────
+    // ── MUTATION OBSERVER (SIN TIMEOUT EXCESSIVO) ───────────────────────────
     function _startMutationObserver() {
         if (!('MutationObserver' in window)) {
             _log('MutationObserver indisponível — inicialização manual necessária.', 'warn');
@@ -422,6 +418,10 @@
         }
 
         var _observer = new MutationObserver(function(_mutations, obs) {
+            if (_initialized) {
+                obs.disconnect();
+                return;
+            }
             var container = document.getElementById('export-tools-container');
             if (container) {
                 obs.disconnect();
@@ -430,18 +430,24 @@
             }
         });
 
-        _observer.observe(document.body || document.documentElement, { childList: true, subtree: true });
+        _observer.observe(document.body || document.documentElement, {
+            childList: true,
+            subtree:   true
+        });
 
-        // Segurança: desligar observer após 15 s para evitar memory leak
+        // Fallback de segurança: desligar o observer após 30 segundos para evitar memory leak
+        // (valor mais alto que o anterior, para não cortar prematuremente)
         setTimeout(function() {
-            _observer.disconnect();
-            _log('MutationObserver desligado após timeout de segurança (15s).', 'warn');
-        }, 15000);
+            if (_observer) {
+                _observer.disconnect();
+                if (!_initialized) {
+                    _log('MutationObserver desligado após timeout de segurança (30s).', 'warn');
+                }
+            }
+        }, 30000);
     }
 
-    // ── REGISTO DO RENDERER CUSTODY NO EXPORT SERVICE (EV-013) ───────────────
-    // Esta linha fecha a tríade documental, garantindo que o Anexo de Custódia
-    // seja gerido atomicamente pelo ExportService.
+    // ── REGISTO DO RENDERER CUSTODY NO EXPORT SERVICE ───────────────────────
     function _registerCustodyRenderer() {
         var svc = window.UNIFEDExportService && window.UNIFEDExportService.getInstance();
         if (!svc) {
@@ -452,10 +458,9 @@
         _log('Renderer "custody" registado no ExportService. Tríade documental completa.', 'success');
     }
 
-    // ── ARRANQUE ──────────────────────────────────────────────────────────────
+    // ── ARRANQUE ─────────────────────────────────────────────────────────────
     _startInit();
 
-    // Aguardar que o ExportService esteja disponível e registar o renderer custody
     if (window.UNIFEDEventBus) {
         window.UNIFEDEventBus.waitFor('UNIFED_CORE_READY', 15000)
             .then(_registerCustodyRenderer)
@@ -464,10 +469,9 @@
         window.addEventListener('UNIFED_CORE_READY', _registerCustodyRenderer, { once: true });
     }
 
-    // ── EXPOSIÇÃO GLOBAL ──────────────────────────────────────────────────────
+    // ── EXPOSIÇÃO GLOBAL ─────────────────────────────────────────────────────
     window.gerarAnexoCustodia   = gerarAnexoCustodia;
     window.initTriadaButtons    = initInterface;
     window.UNIFEDSystem         = window.UNIFEDSystem || {};
     window.UNIFEDSystem.triadaUpdateLabels = initInterface;
-
 })();
