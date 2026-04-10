@@ -3275,14 +3275,74 @@ function startGatekeeperSession() {
     ForensicLogger.addEntry('SESSION_START', { from: 'splash' });
     const splash = document.getElementById('splashScreen');
     const loading = document.getElementById('loadingOverlay');
+    
+    // [FIX] Definir window.showMainInterface ANTES de qualquer timeout que a utilize
+    window.showMainInterface = function() {
+        const loadingEl = document.getElementById('loadingOverlay');
+        const mainEl = document.getElementById('mainContainer');
+        if (loadingEl && mainEl) {
+            loadingEl.style.opacity = '0';
+            setTimeout(() => {
+                loadingEl.style.display = 'none';
+                mainEl.style.display = 'block';
+                setTimeout(() => mainEl.style.opacity = '1', 50);
+                ForensicLogger.addEntry('MAIN_INTERFACE_SHOWN');
+            }, 500);
+        }
+        if (typeof logAudit === 'function') {
+            logAudit('SISTEMA UNIFED - PROBATUM v13.12.0-PURE · DORA COMPLIANT · MODO PROFISSIONAL ATIVADO', 'success');
+        }
+    };
+
     if (splash && loading) {
         splash.style.opacity = '0';
         setTimeout(() => {
             splash.style.display = 'none';
             loading.style.display = 'flex';
-            loadSystemCore();
+            // Agora window.showMainInterface já está definida
+            if (typeof window.showMainInterface === 'function') {
+                window.showMainInterface();
+            } else {
+                console.error('[UNIFED] window.showMainInterface não definida. Verifique a ordem de carregamento.');
+            }
         }, 500);
     }
+
+    UNIFEDSystem.sessionId = generateSessionId();
+    UNIFEDSystem._sessionStart = Date.now();
+    setElementText('sessionIdDisplay', UNIFEDSystem.sessionId);
+    setElementText('verdictSessionId', UNIFEDSystem.sessionId);
+    if (typeof generateQRCode === 'function') generateQRCode();
+
+    ForensicLogger.addEntry('SESSION_CREATED', { sessionId: UNIFEDSystem.sessionId });
+
+    // Inicialização única com temporização
+    setTimeout(async () => {
+        if (typeof updateLoadingProgress === 'function') updateLoadingProgress(40);
+        if (typeof populateYears === 'function') populateYears();
+        if (typeof populateAnoFiscal === 'function') populateAnoFiscal();
+        if (typeof startClockAndDate === 'function') startClockAndDate();
+        if (typeof setupMainListeners === 'function') setupMainListeners();
+        
+        if (UNIFEDSystem.generateMasterHash) {
+            await UNIFEDSystem.generateMasterHash();
+            window.activeForensicSession = { sessionId: UNIFEDSystem.sessionId, masterHash: UNIFEDSystem.masterHash };
+        }
+        
+        if (typeof updateLoadingProgress === 'function') updateLoadingProgress(80);
+    }, 500);
+
+    const idsToEnable = ['analyzeBtn', 'exportPDFBtn', 'exportJSONBtn'];
+    idsToEnable.forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.disabled = false;
+    });
+
+    if (typeof injectAuxiliaryHelperBoxes === 'function') injectAuxiliaryHelperBoxes();
+
+    setTimeout(() => {
+        if (typeof forensicDataSynchronization === 'function') forensicDataSynchronization();
+    }, 1000);
 }
 
 function loadSystemCore() {
@@ -8343,8 +8403,9 @@ function setupDualScreenDetection() {
 }
 
 // ============================================================================
-// 30. EXPOSIÇÃO GLOBAL
+// 30. EXPOSIÇÃO GLOBAL (restante)
 // ============================================================================
+
 window.UNIFEDSystem = UNIFEDSystem;
 
 UNIFEDSystem.utils = {
@@ -8360,7 +8421,6 @@ window.forensicDataSynchronization = forensicDataSynchronization;
 window.switchLanguage = switchLanguage;
 window.openLogsModal = openLogsModal;
 window.openHashModal = openHashModal;
-window.clearConsole = clearConsole;
 window.filterDAC7ByPeriod = filterDAC7ByPeriod;
 window.processAuxiliaryPlatformData = processAuxiliaryPlatformData;
 window.injectAuxiliaryHelperBoxes = injectAuxiliaryHelperBoxes;
@@ -8372,100 +8432,11 @@ window.resetAuxiliaryData = resetAuxiliaryData;
         return;
     }
 
-    UNIFEDSystem._pureModuleVersion = 'v13.11.16-PURE';
+    UNIFEDSystem._pureModuleVersion = 'v13.12.0-PURE';
     UNIFEDSystem._pureModuleLoaded = true;
 
     if (typeof UNIFEDSystem.loadAnonymizedRealCase !== 'function') {
-        UNIFEDSystem.loadAnonymizedRealCase = function _pureStub() {
-            // console.warn('[UNIFED-PURE] ⚠ script_injection_v13.11.16-PURE.js não carregado. Verificar ordem de carregamento em index.html.');
-        };
-    }
-
-    // ── [PATCH B-01] loadEvidence() — compatibilidade com enrichment.js e nexus.js ──
-    // A correção enrichment.js.js invoca window.UNIFEDSystem.loadEvidence(evidences).
-    // Sem esta função, a chamada falha silenciosamente e o masterHash fica nulo.
-    if (typeof UNIFEDSystem.loadEvidence !== 'function') {
-        UNIFEDSystem.loadEvidence = function _loadEvidence(evidences) {
-            if (!Array.isArray(evidences)) {
-                console.warn('[UNIFED-CORE] loadEvidence(): argumento não é Array.');
-                return;
-            }
-            console.info('[UNIFED-CORE] loadEvidence(): processando ' + evidences.length + ' evidências.');
-
-            // Armazenar no evidenceIntegrity para compatibilidade com exportDOCX
-            UNIFEDSystem.analysis.evidenceIntegrity = UNIFEDSystem.analysis.evidenceIntegrity || [];
-            evidences.forEach(function(ev) {
-                var existing = UNIFEDSystem.analysis.evidenceIntegrity.find(function(e) { return e.hash === ev.hash; });
-                if (!existing) {
-                    UNIFEDSystem.analysis.evidenceIntegrity.push({
-                        filename: ev.tipo || ev.type || ev.id || 'Evidência',
-                        type:     ev.tipo || ev.type || 'N/A',
-                        hash:     ev.hash || 'N/A',
-                        id:       ev.id   || null
-                    });
-                }
-            });
-
-            // Atualizar contagem
-            UNIFEDSystem.counts = UNIFEDSystem.counts || {};
-            UNIFEDSystem.counts.total = UNIFEDSystem.analysis.evidenceIntegrity.length;
-
-            // Emitir evento via EventBus para enriquecer o painel PROBATUM
-            if (window.UNIFEDEventBus) {
-                window.UNIFEDEventBus.emit('UNIFED_EVIDENCE_LOADED', {
-                    hash:  UNIFEDSystem.masterHash || 'PENDING',
-                    count: evidences.length
-                });
-            }
-
-            // Sincronizar UI do painel
-            if (typeof window._updatePureUI === 'function') {
-                window._updatePureUI();
-            }
-
-            console.info('[UNIFED-CORE] [B-01] loadEvidence() concluído — ' + UNIFEDSystem.analysis.evidenceIntegrity.length + ' evidências em vault.');
-        };
-        console.info('[UNIFED-CORE] [B-01] UNIFEDSystem.loadEvidence() registado.');
-    }
-
-    // ── [PATCH B-02] checkEconomicAnomalies() ────────────────────────────────
-    // Invocado pelo módulo de análise para classificar valores omitidos.
-    // Art. 103.º RGIT — limiar de crime qualificado: > € 50.000.
-    if (typeof window.checkEconomicAnomalies !== 'function') {
-        window.checkEconomicAnomalies = function checkEconomicAnomalies(valorOmitido) {
-            if (typeof valorOmitido !== 'number' || isNaN(valorOmitido)) return null;
-            if (valorOmitido > 250000) {
-                return {
-                    classificacao: 'COLARINHO BRANCO — FRAUDE QUALIFICADA',
-                    risco:         'CRÍTICO',
-                    artigo:        'Art. 103.º n.º 2 RGIT',
-                    procedimento:  'Comunicação imediata ao Ministério Público · Arresto preventivo (Art. 214.º CPP)'
-                };
-            }
-            if (valorOmitido > 50000) {
-                return {
-                    classificacao: 'COLARINHO BRANCO',
-                    risco:         'ELEVADO',
-                    artigo:        'Art. 103.º RGIT',
-                    procedimento:  'Comunicação imediata ao Ministério Público'
-                };
-            }
-            if (valorOmitido > 7500) {
-                return {
-                    classificacao: 'CONTRA-ORDENAÇÃO TRIBUTÁRIA',
-                    risco:         'MÉDIO',
-                    artigo:        'Art. 119.º RGIT',
-                    procedimento:  'Participação à Autoridade Tributária'
-                };
-            }
-            return {
-                classificacao: 'IRREGULARIDADE FISCAL',
-                risco:         'BAIXO',
-                artigo:        'Art. 119.º RGIT',
-                procedimento:  'Regularização voluntária (Art. 29.º RGIT)'
-            };
-        };
-        console.info('[UNIFED-CORE] [B-02] checkEconomicAnomalies() registado.');
+        UNIFEDSystem.loadAnonymizedRealCase = function _pureStub() {};
     }
 
     if (
@@ -8503,82 +8474,31 @@ window.resetAuxiliaryData = resetAuxiliaryData;
         console.info('[UNIFED-PURE] _updatePureUI v1 (bootstrap) registado — script_injection.js substituirá por v2.');
     }
 
-    console.info('[UNIFED-PURE] ✅ Sistema v13.11.16-PURE Consolidado com Sucesso.');
+    console.info('[UNIFED-PURE] ✅ Sistema Consolidado com Sucesso.');
 })();
 
-// ── [FIX-C] Registo de renderers PDF/DOCX no ExportService — RTF-UNIFED-2026-0409-004 ──
-// unifed_export_service.js instala adaptadores em window.exportPDF/exportDOCX via
-// _installCompatAdapters() antes de UNIFED_CORE_READY. O unifed_export_register.js
-// detecta esses adaptadores e recusa capturá-los (correcto). A solução canónica é
-// registar aqui as implementações originais ANTES de qualquer substituição por adaptadores.
-// Este bloco corre no final de script.js, após todas as funções estarem definidas,
-// e antes da emissão de UNIFED_CORE_READY para que o ExportService esteja pronto.
-(function _registerExportRenderersNative() {
-    if (typeof window.UNIFEDExportService !== 'object') {
-        // ExportService não carregado ainda — o register será feito pelo export_register.js
-        console.info('[FIX-C] UNIFEDExportService não disponível — registo delegado a unifed_export_register.js.');
-        return;
-    }
-    var svc = window.UNIFEDExportService.getInstance();
-
-    // Capturar implementação original de exportPDF (definida neste ficheiro)
-    // ANTES de o _installCompatAdapters() a substituir
-    if (typeof window.exportPDF === 'function' &&
-        window.exportPDF.toString().indexOf('_exportPDF_original') === -1 &&
-        window.exportPDF.toString().indexOf('ExportService') === -1) {
-        window._exportPDF_original = window.exportPDF;
-        svc.register('pdf', async function _pdfRendererNative(masterHash) {
-            if (window.UNIFEDSystem && masterHash) {
-                window.UNIFEDSystem.masterHash = masterHash;
-                if (window.activeForensicSession) {
-                    window.activeForensicSession.masterHash = masterHash;
-                }
-            }
-            await window._exportPDF_original();
-        });
-        console.info('[FIX-C] Renderer PDF registado no ExportService (implementação nativa de script.js).');
-    }
-
-    // Capturar implementação original de exportDOCX se já estiver definida
-    // (enrichment.js é carregado após script.js, por isso pode não estar disponível aqui)
-    if (typeof window.exportDOCX === 'function' &&
-        window.exportDOCX.toString().indexOf('_exportDOCX_original') === -1 &&
-        window.exportDOCX.toString().indexOf('ExportService') === -1) {
-        window._exportDOCX_original = window.exportDOCX;
-        svc.register('docx', async function _docxRendererNative(masterHash) {
-            if (window.UNIFEDSystem && masterHash) {
-                window.UNIFEDSystem.masterHash = masterHash;
-                if (window.activeForensicSession) {
-                    window.activeForensicSession.masterHash = masterHash;
-                }
-            }
-            await window._exportDOCX_original();
-        });
-        console.info('[FIX-C] Renderer DOCX registado no ExportService (implementação nativa — enriquecida por enrichment.js via nexus).');
-    }
-})();
-
-// ── [PATCH B-03] Dupla emissão UNIFED_CORE_READY (dispatchEvent + EventBus) ──
-// O EventBus está agora carregado antes de script.js (index.html patch R-I01).
-// Emitir via ambos os canais garante compatibilidade com módulos que subscrevem
-// apenas via EventBus e módulos legados que escutam window.addEventListener.
+// ── Emissão do evento UNIFED_CORE_READY (com pequeno atraso para garantir listeners) ──
 if (typeof window.dispatchEvent === 'function') {
-    window.dispatchEvent(new CustomEvent('UNIFED_CORE_READY', {
-        detail: {
-            timestamp: Date.now(),
-            version:   UNIFEDSystem._pureModuleVersion || 'v13.11.16-PURE'
-        }
-    }));
-    console.log('[UNIFED-CORE] Evento UNIFED_CORE_READY despachado (dispatchEvent).');
+    setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('UNIFED_CORE_READY', {
+            detail: {
+                timestamp: Date.now(),
+                version: UNIFEDSystem._pureModuleVersion || 'v13.12.0-PURE'
+            }
+        }));
+        console.log('[UNIFED-CORE] Evento UNIFED_CORE_READY despachado (dispatchEvent).');
+    }, 100);
 }
 
-// Emissão directa via EventBus (resolvida imediatamente para subscritores tardios)
 if (window.UNIFEDEventBus && !window.UNIFEDEventBus.hasResolved('UNIFED_CORE_READY')) {
-    window.UNIFEDEventBus.emit('UNIFED_CORE_READY', {
-        timestamp: Date.now(),
-        version:   UNIFEDSystem._pureModuleVersion || 'v13.11.16-PURE'
-    });
-    console.log('[UNIFED-CORE] Evento UNIFED_CORE_READY emitido via UNIFEDEventBus. [B-03]');
+    setTimeout(() => {
+        window.UNIFEDEventBus.emit('UNIFED_CORE_READY', {
+            timestamp: Date.now(),
+            version: UNIFEDSystem._pureModuleVersion || 'v13.12.0-PURE'
+        });
+        console.log('[UNIFED-CORE] Evento UNIFED_CORE_READY emitido via UNIFEDEventBus.');
+    }, 100);
 }
 
-console.log('UNIFED - PROBATUM v13.11.16-PURE · DORA COMPLIANT · ATF · INTEGRITY SEAL · DOCX · AI ADVERSARIAL · NIFAF GUARD · NEXUS · ATIVADO');
+// ── Mensagem final de arranque ──
+console.log('UNIFED - PROBATUM v13.12.0-PURE · DORA COMPLIANT · ATF · INTEGRITY SEAL · DOCX · AI ADVERSARIAL · NIFAF GUARD · NEXUS · ATIVADO');
