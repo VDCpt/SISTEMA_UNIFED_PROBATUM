@@ -8402,7 +8402,7 @@ function setupDualScreenDetection() {
 }
 
 // ============================================================================
-// 30. EXPOSIÇÃO GLOBAL (restante)
+// 30. EXPOSIÇÃO GLOBAL E RECTIFICAÇÃO DE FLUXO - CAMADA DE INTEGRIDADE
 // ============================================================================
 
 window.UNIFEDSystem = UNIFEDSystem;
@@ -8425,79 +8425,92 @@ window.processAuxiliaryPlatformData = processAuxiliaryPlatformData;
 window.injectAuxiliaryHelperBoxes = injectAuxiliaryHelperBoxes;
 window.resetAuxiliaryData = resetAuxiliaryData;
 
-(function _registerPUREModule() {
-    if (typeof UNIFEDSystem === 'undefined') {
-        console.warn('[UNIFED-PURE] UNIFEDSystem não disponível no momento do registo — aguardar DOMContentLoaded.');
-        return;
-    }
+// ============================================================================
+// RECTIFICAÇÃO DE FLUXO - FUNÇÃO DE FINALIZAÇÃO FORENSE
+// ============================================================================
 
-    UNIFEDSystem._pureModuleVersion = 'v13.12.0-PURE';
-    UNIFEDSystem._pureModuleLoaded = true;
-
-    if (typeof UNIFEDSystem.loadAnonymizedRealCase !== 'function') {
-        UNIFEDSystem.loadAnonymizedRealCase = function _pureStub() {};
-    }
-
-    if (
-        typeof window._updatePureUI === 'undefined' ||
-        !window._updatePureUI._version ||
-        window._updatePureUI._version < 1
-    ) {
-        window._updatePureUI = function _updatePureUI_v1_bootstrap() {
-            const sys = window.UNIFEDSystem;
-            if (!sys || !sys.analysis) return;
-            const t   = sys.analysis.totals;
-            const c   = sys.analysis.crossings;
-            const fmt = (typeof window.formatCurrency === 'function')
-                ? window.formatCurrency
-                : (v) => new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(v || 0);
-            const fields = {
-                'pure-ganhos':      fmt(t.ganhos || t.bruto || 0),
-                'pure-despesas':    fmt(t.despesas || 0),
-                'pure-liquido':     fmt(t.ganhosLiquidos || 0),
-                'pure-saft':        fmt(t.saftBruto || t.bruto || 0),
-                'pure-dac7':        fmt(t.dac7TotalPeriodo || 0),
-                'pure-disc-c2':     fmt(c.discrepanciaCritica || 0),
-                'pure-disc-c2-pct': ((c.percentagemOmissao || 0).toFixed(2)) + '%'
+async function finalizeForensicSession() {
+    try {
+        console.log('[UNIFED] Finalizando sessão pericial...');
+        
+        // 1. Recomputar Master Hash (Concatenação binária dos hashes das evidências)
+        const hashes = UNIFEDSystem.analysis.evidenceIntegrity.map(e => e.hash);
+        if (hashes.length > 0) {
+            const combinedString = hashes.sort().join('|');
+            // Usar a função generateForensicHash existente
+            UNIFEDSystem.masterHash = await generateForensicHash(combinedString);
+            
+            // Atualizar elementos da UI
+            setElementText('masterHashValue', UNIFEDSystem.masterHash);
+            if (typeof generateQRCode === 'function') generateQRCode();
+            window.activeForensicSession = {
+                sessionId: UNIFEDSystem.sessionId,
+                masterHash: UNIFEDSystem.masterHash
             };
-            Object.entries(fields).forEach(([id, val]) => {
-                const el = document.getElementById(id);
-                if (el) el.textContent = val;
-            });
-            if (sys.masterHash) {
-                const h = document.getElementById('pure-hash-prefix-verdict');
-                if (h) h.textContent = sys.masterHash.substring(0, 16).toUpperCase();
+            try { sessionStorage.setItem('currentSession', JSON.stringify(window.activeForensicSession)); } catch (_e) { }
+            
+            // 2. Notificar o Event Bus que o Hash está pronto
+            if (window.UNIFEDEventBus) {
+                window.UNIFEDEventBus.emit('MASTER_HASH_READY', {
+                    hash: UNIFEDSystem.masterHash,
+                    timestamp: new Date().toISOString()
+                });
+                console.log('[UNIFED] ✅ Master Hash validado e propagado:', UNIFEDSystem.masterHash);
+            } else {
+                console.warn('[UNIFED] UNIFEDEventBus não disponível. Emissão manual de evento...');
+                window.dispatchEvent(new CustomEvent('MASTER_HASH_READY', {
+                    detail: { hash: UNIFEDSystem.masterHash, timestamp: new Date().toISOString() }
+                }));
             }
-        };
-        window._updatePureUI._version = 1;
-        console.info('[UNIFED-PURE] _updatePureUI v1 (bootstrap) registado — script_injection.js substituirá por v2.');
+        } else {
+            console.warn('[UNIFED] Nenhuma evidência para gerar Master Hash.');
+            if (window.UNIFEDEventBus) {
+                window.UNIFEDEventBus.emit('MASTER_HASH_READY', {
+                    hash: '',
+                    timestamp: new Date().toISOString(),
+                    warning: 'No evidence files'
+                });
+            }
+        }
+    } catch (err) {
+        console.error('[UNIFED] Erro na finalização forense:', err);
     }
+}
 
-    console.info('[UNIFED-PURE] ✅ Sistema Consolidado com Sucesso.');
-})();
-
-// ── Emissão do evento UNIFED_CORE_READY (com pequeno atraso para garantir listeners) ──
-if (typeof window.dispatchEvent === 'function') {
-    setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('UNIFED_CORE_READY', {
-            detail: {
-                timestamp: Date.now(),
-                version: UNIFEDSystem._pureModuleVersion || 'v13.12.0-PURE'
+// ============================================================================
+// INICIALIZAÇÃO CORRIGIDA - IIFE com aguardo de DOM e finalização
+// ============================================================================
+(function() {
+    window.addEventListener('load', () => {
+        console.log('[UNIFED] DOM totalmente carregado. Inicializando componentes...');
+        
+        // Inicializa componentes que dependem do DOM
+        if (typeof setupRealCaseButton === 'function') setupRealCaseButton();
+        if (typeof setupMainListeners === 'function') setupMainListeners();
+        if (typeof setupDragAndDrop === 'function') setupDragAndDrop();
+        if (typeof setupLogsModal === 'function') setupLogsModal();
+        if (typeof setupHashModal === 'function') setupHashModal();
+        if (typeof setupDualScreenDetection === 'function') setupDualScreenDetection();
+        if (typeof setupWipeButton === 'function') setupWipeButton();
+        if (typeof setupClearConsoleButton === 'function') setupClearConsoleButton();
+        
+        // Se já houver dados (ex: após processamento em lote), força a validação
+        if (UNIFEDSystem.documents?.saft?.totals?.bruto > 0 || 
+            UNIFEDSystem.analysis.evidenceIntegrity.length > 0) {
+            console.log('[UNIFED] Evidências detetadas, finalizando sessão...');
+            finalizeForensicSession();
+        } else {
+            console.log('[UNIFED] Nenhuma evidência ainda. Aguardando uploads...');
+            // Listener para quando evidências forem adicionadas (opcional)
+            if (window.UNIFEDEventBus) {
+                window.UNIFEDEventBus.on('EVIDENCE_ADDED', () => {
+                    console.log('[UNIFED] Evidência adicionada, finalizando sessão...');
+                    finalizeForensicSession();
+                });
             }
-        }));
-        console.log('[UNIFED-CORE] Evento UNIFED_CORE_READY despachado (dispatchEvent).');
-    }, 100);
-}
-
-if (window.UNIFEDEventBus && !window.UNIFEDEventBus.hasResolved('UNIFED_CORE_READY')) {
-    setTimeout(() => {
-        window.UNIFEDEventBus.emit('UNIFED_CORE_READY', {
-            timestamp: Date.now(),
-            version: UNIFEDSystem._pureModuleVersion || 'v13.12.0-PURE'
-        });
-        console.log('[UNIFED-CORE] Evento UNIFED_CORE_READY emitido via UNIFEDEventBus.');
-    }, 100);
-}
+        }
+    });
+})();
 
 // ── Mensagem final de arranque ──
 console.log('UNIFED - PROBATUM v13.12.0-PURE · DORA COMPLIANT · ATF · INTEGRITY SEAL · DOCX · AI ADVERSARIAL · NIFAF GUARD · NEXUS · ATIVADO');
