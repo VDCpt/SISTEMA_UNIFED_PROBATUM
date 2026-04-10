@@ -5397,79 +5397,76 @@ async function exportPDF() {
             doc.setTextColor(0, 0, 0);
         };
 
-        const _qrHashFull = UNIFEDSystem.masterHash || 'HASH_INDISPONIVEL';
-        const _qrSessionShort = UNIFEDSystem.sessionId ? UNIFEDSystem.sessionId.substring(0, 20) : 'N/A';
-        const _qrPayload = `UNIFED|${_qrSessionShort}|${_qrHashFull}`;
+        // ========== QR Code síncrono (sem await / Promise) ==========
+const _qrHashFull = UNIFEDSystem.masterHash || 'HASH_INDISPONIVEL';
+const _qrSessionShort = UNIFEDSystem.sessionId ? UNIFEDSystem.sessionId.substring(0, 20) : 'N/A';
+const _qrPayload = `UNIFED|${_qrSessionShort}|${_qrHashFull}`;
 
-        const _qrDataUrl = await new Promise((resolve) => {
-            if (typeof QRCode === 'undefined') { resolve(null); return; }
-            const _tmpDiv = document.createElement('div');
-            _tmpDiv.style.cssText = 'position:absolute;left:-9999px;top:-9999px;';
-            document.body.appendChild(_tmpDiv);
-            new QRCode(_tmpDiv, {
-                text: _qrPayload,
-                width: 256,
-                height: 256,
-                colorDark: '#000000',
-                colorLight: '#ffffff',
-                correctLevel: QRCode.CorrectLevel.L
-            });
-            setTimeout(() => {
-                const _canvas = _tmpDiv.querySelector('canvas');
-                const _dataUrl = _canvas ? _canvas.toDataURL('image/png') : null;
-                document.body.removeChild(_tmpDiv);
-                resolve(_dataUrl);
-            }, 200);
-        });
+let _qrDataUrl = null;
+if (typeof QRCode !== 'undefined') {
+    const _tmpDiv = document.createElement('div');
+    _tmpDiv.style.cssText = 'position:absolute;left:-9999px;top:-9999px;';
+    document.body.appendChild(_tmpDiv);
+    new QRCode(_tmpDiv, {
+        text: _qrPayload,
+        width: 256,
+        height: 256,
+        colorDark: '#000000',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.L
+    });
+    const _canvas = _tmpDiv.querySelector('canvas');
+    _qrDataUrl = _canvas ? _canvas.toDataURL('image/png') : null;
+    document.body.removeChild(_tmpDiv);
+}
+if (_qrDataUrl) {
+    console.log('[UNIFED-PDF] ✅ QR Code gerado sincronamente.');
+} else {
+    console.warn('[UNIFED-PDF] ⚠ QR Code não disponível (biblioteca QRCode ausente).');
+}
 
-        if (_qrDataUrl) {
-            console.log('[UNIFED-PDF] ✅ QR Code pré-gerado com sucesso — dataURL pronto para inserção no PDF.');
+// ========== Resto do código (já com await, mas dentro de async function) ==========
+let _enrichLegalNarrative = null;
+let _enrichSankeyImage = null;
+let _enrichTemporalImage = null;
+
+if (typeof window.generateLegalNarrative === 'function') {
+    try {
+        logAudit('🤖 [v13.3.0] A gerar Síntese Jurídica + Simulador Adversarial (IA)...', 'info');
+        _enrichLegalNarrative = await window.generateLegalNarrative(UNIFEDSystem.analysis);
+        logAudit('✅ [v13.3.0] Síntese Jurídica + Contra-Interrogatório gerados.', 'success');
+    } catch (_aiErr) {
+        _enrichLegalNarrative = '[Síntese jurídica indisponível — motor forense íntegro]';
+        logAudit('⚠ [v13.3.0] IA indisponível — PDF gerado sem síntese (CORS/offline).', 'warning');
+    }
+}
+
+if (typeof window.renderSankeyToImage === 'function') {
+    try {
+        logAudit('📊 [v13.3.0] A renderizar Diagrama de Fluxo Financeiro (Sankey)...', 'info');
+        _enrichSankeyImage = await window.renderSankeyToImage(UNIFEDSystem.analysis);
+        if (_enrichSankeyImage) {
+            logAudit('✅ [v13.3.0] Diagrama Sankey renderizado com sucesso.', 'success');
         } else {
-            console.warn('[UNIFED-PDF] ⚠ QR Code não disponível (biblioteca QRCode ausente).');
+            logAudit('⚠ [v13.3.0] Diagrama Sankey indisponível — PDF gerado sem gráfico.', 'warning');
         }
-
-        let _enrichLegalNarrative = null;
-        let _enrichSankeyImage = null;
-        let _enrichTemporalImage = null;
-
-        if (typeof window.generateLegalNarrative === 'function') {
-            try {
-                logAudit('🤖 [v13.3.0] A gerar Síntese Jurídica + Simulador Adversarial (IA)...', 'info');
-                _enrichLegalNarrative = await window.generateLegalNarrative(UNIFEDSystem.analysis);
-                logAudit('✅ [v13.3.0] Síntese Jurídica + Contra-Interrogatório gerados.', 'success');
-            } catch (_aiErr) {
-                _enrichLegalNarrative = '[Síntese jurídica indisponível — motor forense íntegro]';
-                logAudit('⚠ [v13.3.0] IA indisponível — PDF gerado sem síntese (CORS/offline).', 'warning');
-            }
+    } catch (_sankeyErr) {
+        _enrichSankeyImage = null;
+        logAudit('⚠ [v13.3.0] Erro Sankey — PDF gerado sem diagrama.', 'warning');
+    }
+}
+if (typeof window.generateTemporalChartImage === 'function') {
+    try {
+        logAudit('📅 [v13.3.0] A renderizar Gráfico ATF (Análise Temporal Forense)...', 'info');
+        _enrichTemporalImage = await window.generateTemporalChartImage(UNIFEDSystem.monthlyData, UNIFEDSystem.analysis);
+        if (_enrichTemporalImage) {
+            logAudit('✅ [v13.3.0] Gráfico ATF renderizado com sucesso.', 'success');
         }
-
-        if (typeof window.renderSankeyToImage === 'function') {
-            try {
-                logAudit('📊 [v13.3.0] A renderizar Diagrama de Fluxo Financeiro (Sankey)...', 'info');
-                _enrichSankeyImage = await window.renderSankeyToImage(UNIFEDSystem.analysis);
-                if (_enrichSankeyImage) {
-                    logAudit('✅ [v13.3.0] Diagrama Sankey renderizado com sucesso.', 'success');
-                } else {
-                    logAudit('⚠ [v13.3.0] Diagrama Sankey indisponível — PDF gerado sem gráfico.', 'warning');
-                }
-            } catch (_sankeyErr) {
-                _enrichSankeyImage = null;
-                logAudit('⚠ [v13.3.0] Erro Sankey — PDF gerado sem diagrama.', 'warning');
-            }
-        }
-        if (typeof window.generateTemporalChartImage === 'function') {
-            try {
-                logAudit('📅 [v13.3.0] A renderizar Gráfico ATF (Análise Temporal Forense)...', 'info');
-                _enrichTemporalImage = await window.generateTemporalChartImage(UNIFEDSystem.monthlyData, UNIFEDSystem.analysis);
-                if (_enrichTemporalImage) {
-                    logAudit('✅ [v13.3.0] Gráfico ATF renderizado com sucesso.', 'success');
-                }
-            } catch (_atfErr) {
-                _enrichTemporalImage = null;
-                logAudit('⚠ [v13.3.0] ATF gráfico indisponível — PDF sem análise temporal.', 'warning');
-            }
-        }
-
+    } catch (_atfErr) {
+        _enrichTemporalImage = null;
+        logAudit('⚠ [v13.3.0] ATF gráfico indisponível — PDF sem análise temporal.', 'warning');
+    }
+}
         const addFooter = (doc, pageNum, isLastPage = false) => {
             const pageWidth = doc.internal.pageSize.getWidth();
             const pageHeight = doc.internal.pageSize.getHeight();
